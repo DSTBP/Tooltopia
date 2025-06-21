@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word文档初始化工具</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/png" sizes="64x64" href="facvion.png">
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-btn">← 返回首页</a>
+        <h1>Word文档初始化工具</h1>
+        <form id="wordForm">
+            <div class="main-content">
+                <!-- 左侧栏：基本设置 -->
+                <div class="left-column">
+                    <!-- 基本设置 -->
+                    <div class="section">
+                        <div class="section-title">基本设置</div>
+                        <div class="form-group">
+                            <label for="fileName" class="required">Word文件名</label>
+                            <input type="text" id="fileName" required placeholder="请输入文件名（无需.docx后缀）">
+                        </div>
+                    </div>
+
+                    <!-- 字体设置 -->
+                    <div class="section">
+                        <div class="section-title">字体设置</div>
+                        <div class="form-group">
+                            <label for="fontSize">整体字号</label>
+                            <select id="fontSize">
+                                <!-- 中文字号 -->
+                                <optgroup label="中文字号">
+                                    <option value="42">初号</option>
+                                    <option value="36">小初</option>
+                                    <option value="26">一号</option>
+                                    <option value="24">小一</option>
+                                    <option value="22">二号</option>
+                                    <option value="18">小二</option>
+                                    <option value="16">三号</option>
+                                    <option value="15">小三</option>
+                                    <option value="14">四号</option>
+                                    <option value="12">小四</option>
+                                    <option value="10.5">五号</option>
+                                    <option value="9">小五</option>
+                                    <option value="7.5">六号</option>
+                                    <option value="6.5">小六</option>
+                                    <option value="5.5">七号</option>
+                                    <option value="5">八号</option>
+                                </optgroup>
+                                <!-- 数字字号 -->
+                                <optgroup label="数字字号">
+                                    <option value="5">5</option>
+                                    <option value="5.5">5.5</option>
+                                    <option value="6.5">6.5</option>
+                                    <option value="7.5">7.5</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="10.5">10.5</option>
+                                    <option value="11">11</option>
+                                    <option value="12" selected>12</option>
+                                    <option value="14">14</option>
+                                    <option value="16">16</option>
+                                    <option value="18">18</option>
+                                    <option value="20">20</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fontFamily">整体字体</label>
+                            <div class="font-settings">
+                                <div class="form-group">
+                                    <label for="chineseFont">中文字体</label>
+                                    <select id="chineseFont">
+                                        <option value="宋体">宋体</option>
+                                        <option value="黑体">黑体</option>
+                                        <option value="微软雅黑" selected>微软雅黑</option>
+                                        <option value="楷体">楷体</option>
+                                        <option value="仿宋">仿宋</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="englishFont">英文字体</label>
+                                    <select id="englishFont">
+                                        <option value="Times New Roman" selected>Times New Roman</option>
+                                        <option value="Arial">Arial</option>
+                                        <option value="Calibri">Calibri</option>
+                                        <option value="Cambria">Cambria</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="lineSpacing">整体行距</label>
+                            <input type="number" id="lineSpacing" min="1" max="3" step="0.01" value="1.15">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="textAlignment">整体对齐方式</label>
+                            <select id="textAlignment">
+                                <option value="left">左对齐</option>
+                                <option value="center">居中对齐</option>
+                                <option value="right">右对齐</option>
+                                <option value="both">两端对齐</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 页边距设置 -->
+                    <div class="section">
+                        <div class="section-title">页边距设置</div>
+                        <div class="margins-grid">
+                            <div class="form-group">
+                                <label for="marginTop">上边距(cm)</label>
+                                <input type="number" id="marginTop" min="0" max="10" step="0.01" value="2.54">
+                            </div>
+                            <div class="form-group">
+                                <label for="marginBottom">下边距(cm)</label>
+                                <input type="number" id="marginBottom" min="0" max="10" step="0.01" value="2.54">
+                            </div>
+                            <div class="form-group">
+                                <label for="marginLeft">左边距(cm)</label>
+                                <input type="number" id="marginLeft" min="0" max="10" step="0.01" value="3.18">
+                            </div>
+                            <div class="form-group">
+                                <label for="marginRight">右边距(cm)</label>
+                                <input type="number" id="marginRight" min="0" max="10" step="0.01" value="3.18">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧栏：页眉页脚设置 -->
+                <div class="right-column">
+                    <!-- 第一页设计框 -->
+                    <div class="section">
+                        <div class="section-title">第一页设计</div>
+                        <div class="form-group">
+                            <label for="firstPageContent">内容</label>
+                            <textarea id="firstPageContent" rows="8" style="width: 100%; min-height: 200px; white-space: pre-wrap;" placeholder="请输入文档内容（支持换行和空行）"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="firstPageContentFont">内容字体</label>
+                            <div class="font-settings">
+                                <div class="form-group">
+                                    <label for="firstPageContentChineseFont">中文字体</label>
+                                    <select id="firstPageContentChineseFont">
+                                        <option value="宋体">宋体</option>
+                                        <option value="黑体">黑体</option>
+                                        <option value="微软雅黑" selected>微软雅黑</option>
+                                        <option value="楷体">楷体</option>
+                                        <option value="仿宋">仿宋</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="firstPageContentEnglishFont">英文字体</label>
+                                    <select id="firstPageContentEnglishFont">
+                                        <option value="Times New Roman" selected>Times New Roman</option>
+                                        <option value="Arial">Arial</option>
+                                        <option value="Calibri">Calibri</option>
+                                        <option value="Cambria">Cambria</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="firstPageContentSize">内容字号</label>
+                            <select id="firstPageContentSize">
+                                <option value="42">初号</option>
+                                <option value="36">小初</option>
+                                <option value="26">一号</option>
+                                <option value="24">小一</option>
+                                <option value="22">二号</option>
+                                <option value="18">小二</option>
+                                <option value="16">三号</option>
+                                <option value="15">小三</option>
+                                <option value="14">四号</option>
+                                <option value="12" selected>小四</option>
+                                <option value="10.5">五号</option>
+                                <option value="9">小五</option>
+                                <option value="7.5">六号</option>
+                                <option value="6.5">小六</option>
+                                <option value="5.5">七号</option>
+                                <option value="5">八号</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="firstPageContentAlign">内容对齐方式</label>
+                            <select id="firstPageContentAlign">
+                                <option value="left">左对齐</option>
+                                <option value="center">居中对齐</option>
+                                <option value="right">右对齐</option>
+                                <option value="both" selected>两端对齐</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="section">
+                        <div class="section-title">页眉页脚设置</div>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="hasHeader" onchange="toggleHeaderFooter()">
+                                <label for="hasHeader">需要页眉</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="hasFooter" onchange="toggleHeaderFooter()">
+                                <label for="hasFooter">需要页脚</label>
+                            </div>
+                        </div>
+
+                        <!-- 页眉设置 -->
+                        <div class="header-footer-settings" id="headerTextGroup" style="display: none;">
+                            <div class="settings-title">页眉设置</div>
+                            <div class="form-group">
+                                <label for="headerText">页眉文本</label>
+                                <input type="text" id="headerText" placeholder="请输入页眉内容">
+                            </div>
+                            <div class="form-group">
+                                <label for="headerTextAlign">页眉文本位置</label>
+                                <select id="headerTextAlign">
+                                    <option value="left">左侧</option>
+                                    <option value="center" selected>居中</option>
+                                    <option value="right">右侧</option>
+                                    <option value="both" disabled>两端对齐</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="headerFontFamily">页眉字体</label>
+                                <div class="font-settings">
+                                    <div class="form-group">
+                                        <label for="headerChineseFont">中文字体</label>
+                                        <select id="headerChineseFont">
+                                            <option value="宋体">宋体</option>
+                                            <option value="黑体">黑体</option>
+                                            <option value="微软雅黑" selected>微软雅黑</option>
+                                            <option value="楷体">楷体</option>
+                                            <option value="仿宋">仿宋</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="headerEnglishFont">英文字体</label>
+                                        <select id="headerEnglishFont">
+                                            <option value="Times New Roman" selected>Times New Roman</option>
+                                            <option value="Arial">Arial</option>
+                                            <option value="Calibri">Calibri</option>
+                                            <option value="Cambria">Cambria</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="headerFontSize">页眉字号</label>
+                                <select id="headerFontSize">
+                                    <option value="42">初号</option>
+                                    <option value="36">小初</option>
+                                    <option value="26">一号</option>
+                                    <option value="24">小一</option>
+                                    <option value="22">二号</option>
+                                    <option value="18">小二</option>
+                                    <option value="16">三号</option>
+                                    <option value="15">小三</option>
+                                    <option value="14">四号</option>
+                                    <option value="12" selected>小四</option>
+                                    <option value="10.5">五号</option>
+                                    <option value="9">小五</option>
+                                    <option value="7.5">六号</option>
+                                    <option value="6.5">小六</option>
+                                    <option value="5.5">七号</option>
+                                    <option value="5">八号</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="headerUnderline">
+                                    <label for="headerUnderline">添加下划线</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="headerBeforeSpacing">段前间距(磅)</label>
+                                <input type="number" id="headerBeforeSpacing" min="0" max="100" step="0.01" value="0.00">
+                            </div>
+                            <div class="form-group">
+                                <label for="headerAfterSpacing">段后间距(磅)</label>
+                                <input type="number" id="headerAfterSpacing" min="0" max="100" step="0.01" value="0.00">
+                            </div>
+                            <div class="form-group">
+                                <label for="headerTextSpacing">文本间距(倍数)</label>
+                                <input type="number" id="headerTextSpacing" min="1" max="3" step="0.01" value="1.00">
+                            </div>
+                            <div class="form-group">
+                                <label for="headerMarginTop">页眉上边距(cm)</label>
+                                <input type="number" id="headerMarginTop" min="0" max="10" step="0.01" value="1.5">
+                            </div>
+                        </div>
+
+                        <!-- 页脚设置 -->
+                        <div class="header-footer-settings" id="footerTextGroup" style="display: none;">
+                            <div class="settings-title">页脚设置</div>
+                            <div class="form-group">
+                                <label for="footerText">页脚文本</label>
+                                <input type="text" id="footerText" placeholder="请输入页脚内容">
+                            </div>
+                            <div class="form-group">
+                                <label for="footerTextAlign">页脚文本位置</label>
+                                <select id="footerTextAlign">
+                                    <option value="left">左侧</option>
+                                    <option value="center" selected>居中</option>
+                                    <option value="right">右侧</option>
+                                    <option value="both" disabled>两端对齐</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="footerFontFamily">页脚字体</label>
+                                <div class="font-settings">
+                                    <div class="form-group">
+                                        <label for="footerChineseFont">中文字体</label>
+                                        <select id="footerChineseFont">
+                                            <option value="宋体">宋体</option>
+                                            <option value="黑体">黑体</option>
+                                            <option value="微软雅黑" selected>微软雅黑</option>
+                                            <option value="楷体">楷体</option>
+                                            <option value="仿宋">仿宋</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="footerEnglishFont">英文字体</label>
+                                        <select id="footerEnglishFont">
+                                            <option value="Times New Roman" selected>Times New Roman</option>
+                                            <option value="Arial">Arial</option>
+                                            <option value="Calibri">Calibri</option>
+                                            <option value="Cambria">Cambria</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="footerFontSize">页脚字号</label>
+                                <select id="footerFontSize">
+                                    <option value="42">初号</option>
+                                    <option value="36">小初</option>
+                                    <option value="26">一号</option>
+                                    <option value="24">小一</option>
+                                    <option value="22">二号</option>
+                                    <option value="18">小二</option>
+                                    <option value="16">三号</option>
+                                    <option value="15">小三</option>
+                                    <option value="14">四号</option>
+                                    <option value="12" selected>小四</option>
+                                    <option value="10.5">五号</option>
+                                    <option value="9">小五</option>
+                                    <option value="7.5">六号</option>
+                                    <option value="6.5">小六</option>
+                                    <option value="5.5">七号</option>
+                                    <option value="5">八号</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <div class="checkbox-item">
+                                    <input type="checkbox" id="footerUnderline">
+                                    <label for="footerUnderline">添加下划线</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="footerBeforeSpacing">段前间距(磅)</label>
+                                <input type="number" id="footerBeforeSpacing" min="0" max="100" step="0.01" value="0.00">
+                            </div>
+                            <div class="form-group">
+                                <label for="footerAfterSpacing">段后间距(磅)</label>
+                                <input type="number" id="footerAfterSpacing" min="0" max="100" step="0.01" value="0.00">
+                            </div>
+                            <div class="form-group">
+                                <label for="footerTextSpacing">文本间距(倍数)</label>
+                                <input type="number" id="footerTextSpacing" min="1" max="3" step="0.01" value="1.00">
+                            </div>
+                            <div class="form-group">
+                                <label for="footerMarginBottom">页脚下边距(cm)</label>
+                                <input type="number" id="footerMarginBottom" min="0" max="10" step="0.01" value="1.75">
+                            </div>
+                        </div>
+
+                        <!-- 页码设置 -->
+                        <div class="form-group">
+                            <label>页码设置</label>
+                            <div class="page-number-settings">
+                                <div class="form-group">
+                                    <label for="pageNumberLocation">页码位置</label>
+                                    <select id="pageNumberLocation" onchange="togglePageNumberSettings()">
+                                        <option value="none">不显示页码</option>
+                                        <option value="header">页眉</option>
+                                        <option value="footer">页脚</option>
+                                    </select>
+                                </div>
+                                
+                                <div id="pageNumberAlignmentGroup" style="display: none;">
+                                    <div class="form-group">
+                                        <label for="pageNumberAlignment">页码对齐方式</label>
+                                        <select id="pageNumberAlignment">
+                                            <option value="left">左侧</option>
+                                            <option value="center" selected>居中</option>
+                                            <option value="right">右侧</option>
+                                            <option value="both">两端对齐</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit">生成Word文档</button>
+            </div>
+        </form>
+    </div>
+    <script src="https://unpkg.com/docx@9.5.0/dist/index.umd.cjs"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.4/FileSaver.js"></script>
+    <script src="assets/js/init_doc.js"></script>
+</body>
+</html> 

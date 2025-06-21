@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="64x64" href="facvion.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <title>源代码生成工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #e0f2f7, #c5e1ee, #a9d4e5);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        h1 {
+            color: #3498db;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: bold;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+
+        .file {
+            vertical-align: top;
+            position: relative;
+            display: inline-block;
+            background: #D0EEFF;
+            border: 1px solid #99D3F5;
+            border-radius: 4px;
+            padding: 4px 12px;
+            overflow: hidden;
+            color: #1E88C7;
+            text-decoration: none;
+            text-indent: 0;
+            line-height: 20px;
+        }
+
+        .file input {
+            position: absolute;
+            font-size: 100px;
+            right: 0;
+            top: 0;
+            opacity: 0;
+        }
+
+        .file:hover {
+            background: #AADFFD;
+            border-color: #78C3F3;
+            color: #004974;
+            text-decoration: none;
+        }
+
+        /* 文件树样式 */
+        #fileTree {
+            margin-top: 20px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .directory-item, .file-item {
+            padding: 5px 10px;
+            margin: 2px 0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .directory-item:hover, .file-item:hover {
+            background-color: #f0f7ff;
+        }
+
+        .folder-icon, .file-icon {
+            margin-right: 5px;
+        }
+
+        .directory-item {
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        .file-item {
+            color: #34495e;
+        }
+
+        /* 必填项样式 */
+        .required-field::after {
+            content: '*';
+            color: #ddd;
+            margin-left: 4px;
+        }
+
+        input[type="text"].required {
+            border-color: #ddd;
+        }
+
+        input[type="text"].required:focus {
+            border-color: #3498db;
+        }
+
+        /* 错误状态样式 */
+        input[type="text"].error {
+            border-color: #e74c3c;
+            background-color: #fff5f5;
+        }
+
+        input[type="text"].error:focus {
+            border-color: #e74c3c;
+            box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
+        }
+
+        /* 文件内容显示框样式 */
+        #fileContentDisplay {
+            margin-top: 20px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 5px;
+            /* 移除阴影效果，使其更像干净的代码块 */
+            /* box-shadow: 0 2px 5px rgba(0,0,0,0.1); */
+        }
+
+        .back-to-tree-link {
+            display: block;
+            margin-bottom: 15px;
+            color: #3498db;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .back-to-tree-link:hover {
+            text-decoration: underline;
+        }
+
+        #displayFileName {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        /* 将所有代码块样式应用到 #displayFileCode (现在是 pre 标签) */
+        #displayFileCode {
+            display: block; /* 确保是块级元素 */
+            margin: 0;
+            padding: 15px; /* 代码块内边距 */
+            white-space: pre; /* 确保所有空白字符按原样保留，不自动换行 */
+            overflow-x: auto; /* 为超出宽度的内容添加横向滚动条 */
+            overflow-y: auto; /* 允许垂直滚动以查看所有内容 */
+            background-color: #f8f8f8;
+            border: 1px solid #ddd; /* 代码块边框 */
+            border-radius: 5px; /* 圆角 */
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace; /* 等宽字体 */
+            font-size: 16px; /* 增大字体大小 */
+            line-height: 24px; /* 设置固定行高，确保有足够的空间 */
+            color: #333; /* 字体颜色 */
+            box-sizing: border-box; /* 包含 padding 和 border 在元素的总宽度和高度内 */
+            /* 移除 word-wrap 和 word-break，因为它们与 white-space: pre 冲突 */
+        }
+
+        /* 移除通用 pre 和 code 标签的样式，避免冲突 */
+    </style>
+</head>
+<body>
+    <div class="fillinCode-container">
+        <a href="index.html" class="back-btn">← 返回首页</a>
+        <h1>源代码文档生成工具</h1>
+        
+        <div class="form-group">
+            <label>文档状态：</label>
+            <div id="docStatusDisplay" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; background-color: #f9f9f9; text-align: center;">正在加载文档...</div>
+        </div>
+
+        <div class="form-group">
+            <label for="fileExtensions" class="required-field">文件后缀（多个文件用英文逗号分隔）：</label>
+            <input type="text" id="fileExtensions" class="required" placeholder="例如：py,txt,cpp,java" required>
+        </div>
+
+        <div class="form-group">
+            <label for="projectPath">选择代码项目文件夹：</label>
+            <div class="fillinCode-file-input-wrapper">
+                <div class="fillinCode-file-input-trigger">点击选择项目文件夹</div>
+                <input type="file" id="projectPath" webkitdirectory directory onchange="updateFileName(this, 'projectPathName')">
+            </div>
+            <div id="projectPathName" class="fillinCode-file-name"></div>
+        </div>
+        
+        <div class="form-group">
+            <label for="codeLines">代码行数</label>
+            <input type="text" id="codeLines" placeholder="例如：2500">
+        </div>
+
+        <button class="btn" onclick="scanProject()">扫描项目</button>
+        <button class="btn" onclick="getCode()" style="margin-left: 10px;">获取代码</button>
+        <button class="btn" onclick="downloadDocument()" style="margin-left: 10px;">下载处理后文档</button>
+
+        <div id="fileTree"></div>
+
+        <div id="fileContentDisplay" style="display: none;">
+            <a href="#" class="back-to-tree-link" onclick="backToFileTree(); return false;">← 返回目录树</a>
+            <h2 id="displayFileName"></h2>
+            <pre id="displayFileCode"></pre>
+        </div>
+
+        <div id="processingStatus" style="margin-top: 20px; display: none;">
+            <h3>处理进度</h3>
+            <div id="progressInfo"></div>
+        </div>
+    </div>
+
+    <script src="assets/js/fillin_code.js"></script>
+    <script src="https://unpkg.com/docx@9.5.0/dist/index.umd.cjs"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.4/FileSaver.js"></script>
+    <script>
+        function updateFileName(input, displayId) {
+            const display = document.getElementById(displayId);
+            if (input.files && input.files.length > 0) {
+                if (input.webkitdirectory) {
+                    // 如果是文件夹选择器
+                    const path = input.files[0].webkitRelativePath;
+                    const folderName = path.split('/')[0];
+                    display.textContent = `已选择文件夹: ${folderName}`;
+                } else {
+                    // 如果是文件选择器
+                    display.textContent = `已选择文件: ${input.files[0].name}`;
+                }
+            } else {
+                display.textContent = '';
+            }
+        }
+    </script>
+</body>
+</html>

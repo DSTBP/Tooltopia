@@ -1,0 +1,38 @@
+<!--
+ * @Description: 
+ * @Author: DSTBP
+ * @Date: 2025-04-13 13:08:51
+ * @LastEditTime: 2025-04-13 13:53:06
+ * @LastEditors: DSTBP
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>疾病诊断对话系统</title>
+    <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>疾病诊断对话系统</h1>
+            <div class="date-selector">
+                <input type="date" id="dateInput" min="2022-01-01">
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="message-content">
+                    您好，医生，我要看病
+                </div>
+            </div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="userInput" placeholder="请输入您的症状...">
+            <button id="sendButton">发送</button>
+        </div>
+    </div>
+    <script src="./assets/js/script.js"></script>
+</body>
+</html> 
