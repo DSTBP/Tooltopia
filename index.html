@@ -6,54 +6,153 @@
     <title>Tooltopia</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            overflow: hidden;
+        }
+
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding-top: 50px;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: fadeInDown 1s ease-out;
+            color: #e94560;
+        }
+
+        .cards-container {
             display: flex;
             justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
+            gap: 30px;
+            margin-top: 50px;
+            flex-wrap: wrap;
         }
-        .container {
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 30px;
+            width: 280px;
             text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: fadeInUp 1s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
         }
-        h1 {
-            color: #333;
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
         }
-        .button-container {
-            margin-top: 20px;
+
+        .card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #e94560;
         }
+
+        .card p {
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            color: #c0c0c0;
+        }
+
         .button {
             display: inline-block;
-            padding: 15px 25px;
-            font-size: 16px;
-            cursor: pointer;
-            text-align: center;
+            padding: 12px 24px;
+            font-size: 1rem;
             text-decoration: none;
-            outline: none;
             color: #fff;
-            background-color: #4CAF50;
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 9px #999;
-            margin: 10px;
+            background: #e94560;
+            border-radius: 50px;
+            transition: background-color 0.3s ease;
         }
-        .button:hover {background-color: #3e8e41}
-        .button:active {
-            background-color: #3e8e41;
-            box-shadow: 0 5px #666;
-            transform: translateY(4px);
+
+        .button:hover {
+            background-color: #d43d51;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
     </style>
 </head>
 <body>
+    <div id="particles-js"></div>
     <div class="container">
         <h1>Welcome to Tooltopia</h1>
-        <div class="button-container">
-            <a href="utils/CSCSourceFormatter/index.html" class="button">CSC Source Formatter</a>
-            <a href="utils/GuessDisease/index.html" class="button">Guess The Disease</a>
-            <a href="utils/LinearTransformation/index.html" class="button">Linear Transformation</a>
+        <div class="cards-container">
+            <div class="card" style="animation-delay: 0.2s;">
+                <h2>CSC Formatter</h2>
+                <p>一个用于格式化和美化特定CSC源代码的在线工具。</p>
+                <a href="utils/CSCSourceFormatter/index.html" class="button">进入</a>
+            </div>
+            <div class="card" style="animation-delay: 0.4s;">
+                <h2>Guess The Disease</h2>
+                <p>一个有趣的问答小游戏，根据一系列症状来猜测可能的疾病。</p>
+                <a href="utils/GuessDisease/index.html" class="button">进入</a>
+            </div>
+            <div class="card" style="animation-delay: 0.6s;">
+                <h2>Linear Transformation</h2>
+                <p>一个交互式工具，用于可视化线性代数中的二维线性变换。</p>
+                <a href="utils/LinearTransformation/index.html" class="button">进入</a>
+            </div>
         </div>
     </div>
+
+    <script src="assets/js/particles.min.js"></script>
+    <script>
+        particlesJS('particles-js', {
+            "particles": {
+                "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#ffffff" },
+                "shape": { "type": "circle", "stroke": { "width": 0, "color": "#000000" }, "polygon": { "nb_sides": 5 } },
+                "opacity": { "value": 0.5, "random": false, "anim": { "enable": false, "speed": 1, "opacity_min": 0.1, "sync": false } },
+                "size": { "value": 3, "random": true, "anim": { "enable": false, "speed": 40, "size_min": 0.1, "sync": false } },
+                "line_linked": { "enable": true, "distance": 150, "color": "#ffffff", "opacity": 0.4, "width": 1 },
+                "move": { "enable": true, "speed": 6, "direction": "none", "random": false, "straight": false, "out_mode": "out", "bounce": false, "attract": { "enable": false, "rotateX": 600, "rotateY": 1200 } }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": { "onhover": { "enable": true, "mode": "repulse" }, "onclick": { "enable": true, "mode": "push" }, "resize": true },
+                "modes": { "grab": { "distance": 400, "line_linked": { "opacity": 1 } }, "bubble": { "distance": 400, "size": 40, "duration": 2, "opacity": 8, "speed": 3 }, "repulse": { "distance": 200, "duration": 0.4 }, "push": { "particles_nb": 4 }, "remove": { "particles_nb": 2 } }
+            },
+            "retina_detect": true
+        });
+    </script>
 </body>
 </html>
