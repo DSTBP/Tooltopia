@@ -4,7 +4,7 @@ body {
     padding: 0;
     background-color: #1a1a2e;
     color: #e0e0e0;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
 #particles-js {
