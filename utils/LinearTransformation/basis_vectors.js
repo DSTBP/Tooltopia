@@ -20,9 +20,35 @@ class VectorVisualization {
         this.vectors = [this.createVector()];
         this.showSpanTrans = false;
 
+        // 触摸相关变量
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        this.touchStartDistance = 0;
+        this.touchStartScale = 1;
+        this.lastTouchCenter = { x: 0, y: 0 };
+
+        // 初始化手机端画布尺寸
+        this.initializeMobileCanvas();
+
         this.setupEventListeners();
         this.renderVectorsControl();
         this.draw();
+    }
+
+    initializeMobileCanvas() {
+        if (this.isMobile) {
+            // 手机端使用更小的画布尺寸
+            const mobileWidth = Math.min(window.innerWidth - 32, 400); // 减去边距
+            const mobileHeight = Math.min(window.innerHeight * 0.4, 300);
+            
+            this.canvas.width = mobileWidth;
+            this.canvas.height = mobileHeight;
+            this.centerX = mobileWidth / 2;
+            this.centerY = mobileHeight / 2;
+            
+            // 更新输入框的值
+            document.getElementById('canvas-width').value = mobileWidth;
+            document.getElementById('canvas-height').value = mobileHeight;
+        }
     }
 
     createVector() {
@@ -74,7 +100,8 @@ class VectorVisualization {
             this.centerY = h / 2;
             this.draw();
         });
-        // 画布缩放
+        
+        // 桌面端滚轮缩放
         this.canvas.addEventListener('wheel', (e) => {
             if (e.ctrlKey) {
                 e.preventDefault();
@@ -88,6 +115,10 @@ class VectorVisualization {
                 this.draw();
             }
         }, { passive: false });
+
+        // 触摸事件处理
+        this.setupTouchEvents();
+
         // 添加向量
         document.getElementById('addVector').addEventListener('click', () => {
             if (this.vectors.length < this.maxVectors) {
@@ -109,6 +140,60 @@ class VectorVisualization {
             this.draw();
             document.getElementById('showSpanTrans').textContent = this.showSpanTrans ? '隐藏张成空间变换' : '显示张成空间变换';
         });
+
+        // 窗口大小变化时重新初始化手机端画布
+        window.addEventListener('resize', () => {
+            if (this.isMobile) {
+                this.initializeMobileCanvas();
+                this.draw();
+            }
+        });
+    }
+
+    setupTouchEvents() {
+        // 触摸开始
+        this.canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 2) {
+                // 双指触摸 - 准备缩放
+                this.touchStartDistance = this.getTouchDistance(e.touches);
+                this.touchStartScale = this.scale;
+                this.lastTouchCenter = this.getTouchCenter(e.touches);
+            }
+        }, { passive: false });
+
+        // 触摸移动
+        this.canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches.length === 2) {
+                // 双指缩放
+                const currentDistance = this.getTouchDistance(e.touches);
+                const scaleFactor = currentDistance / this.touchStartDistance;
+                const newScale = this.touchStartScale * scaleFactor;
+                
+                this.scale = Math.max(this.minScale, Math.min(this.maxScale, newScale));
+                this.draw();
+            }
+        }, { passive: false });
+
+        // 触摸结束
+        this.canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            this.touchStartDistance = 0;
+            this.touchStartScale = 1;
+        }, { passive: false });
+    }
+
+    getTouchDistance(touches) {
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    getTouchCenter(touches) {
+        const x = (touches[0].clientX + touches[1].clientX) / 2;
+        const y = (touches[0].clientY + touches[1].clientY) / 2;
+        return { x, y };
     }
 
     renderVectorsControl() {
@@ -204,46 +289,41 @@ class VectorVisualization {
                 };
                 group.appendChild(removeBtn);
             }
-            // 事件
+            container.appendChild(group);
+
+            // 绑定事件
             a1Slider.addEventListener('input', (e) => {
                 vec.a1 = parseFloat(e.target.value);
                 a1Value.textContent = vec.a1.toFixed(1);
                 a1Input.value = vec.a1;
-                expr.textContent = this.getVectorExpr(idx);
-                valueDiv.textContent = this.getVectorValue(idx);
+                document.getElementById(`vector-expr-${idx}`).textContent = this.getVectorExpr(idx);
+                document.getElementById(`vector-value-${idx}`).textContent = this.getVectorValue(idx);
                 this.draw();
             });
             a1Input.addEventListener('input', (e) => {
-                let val = parseFloat(e.target.value);
-                if (isNaN(val)) val = 0;
-                val = Math.max(-50, Math.min(50, val));
-                vec.a1 = val;
-                a1Slider.value = val;
-                a1Value.textContent = val.toFixed(1);
-                expr.textContent = this.getVectorExpr(idx);
-                valueDiv.textContent = this.getVectorValue(idx);
+                vec.a1 = parseFloat(e.target.value);
+                a1Slider.value = vec.a1;
+                a1Value.textContent = vec.a1.toFixed(1);
+                document.getElementById(`vector-expr-${idx}`).textContent = this.getVectorExpr(idx);
+                document.getElementById(`vector-value-${idx}`).textContent = this.getVectorValue(idx);
                 this.draw();
             });
             a2Slider.addEventListener('input', (e) => {
                 vec.a2 = parseFloat(e.target.value);
                 a2Value.textContent = vec.a2.toFixed(1);
                 a2Input.value = vec.a2;
-                expr.textContent = this.getVectorExpr(idx);
-                valueDiv.textContent = this.getVectorValue(idx);
+                document.getElementById(`vector-expr-${idx}`).textContent = this.getVectorExpr(idx);
+                document.getElementById(`vector-value-${idx}`).textContent = this.getVectorValue(idx);
                 this.draw();
             });
             a2Input.addEventListener('input', (e) => {
-                let val = parseFloat(e.target.value);
-                if (isNaN(val)) val = 0;
-                val = Math.max(-50, Math.min(50, val));
-                vec.a2 = val;
-                a2Slider.value = val;
-                a2Value.textContent = val.toFixed(1);
-                expr.textContent = this.getVectorExpr(idx);
-                valueDiv.textContent = this.getVectorValue(idx);
+                vec.a2 = parseFloat(e.target.value);
+                a2Slider.value = vec.a2;
+                a2Value.textContent = vec.a2.toFixed(1);
+                document.getElementById(`vector-expr-${idx}`).textContent = this.getVectorExpr(idx);
+                document.getElementById(`vector-value-${idx}`).textContent = this.getVectorValue(idx);
                 this.draw();
             });
-            container.appendChild(group);
         });
     }
 
@@ -342,7 +422,8 @@ class VectorVisualization {
         this.ctx.lineTo(this.centerX, h);
         this.ctx.stroke();
         // 坐标数值
-        this.ctx.font = '13px Arial';
+        const fontSize = this.isMobile ? '11px' : '13px';
+        this.ctx.font = `${fontSize} Arial`;
         this.ctx.fillStyle = '#888';
         for (let i = -Math.floor(this.centerX / this.scale); i <= Math.floor((w - this.centerX) / this.scale); i++) {
             if (i === 0) continue;
@@ -361,10 +442,12 @@ class VectorVisualization {
         // 原点坐标
         this.ctx.save();
         this.ctx.beginPath();
-        this.ctx.arc(this.centerX, this.centerY, 4, 0, 2 * Math.PI);
+        const originSize = this.isMobile ? 3 : 4;
+        this.ctx.arc(this.centerX, this.centerY, originSize, 0, 2 * Math.PI);
         this.ctx.fillStyle = '#22223b';
         this.ctx.fill();
-        this.ctx.font = 'bold 14px Arial';
+        const fontSize = this.isMobile ? '12px' : '14px';
+        this.ctx.font = `bold ${fontSize} Arial`;
         this.ctx.fillStyle = '#22223b';
         this.ctx.fillText('(0,0)', this.centerX + 8, this.centerY - 8);
         this.ctx.restore();
@@ -405,7 +488,7 @@ class VectorVisualization {
         this.ctx.stroke();
         // 箭头
         const angle = Math.atan2(endY - startY, endX - startX);
-        const arrowLength = 14;
+        const arrowLength = this.isMobile ? 10 : 14;
         const arrowAngle = Math.PI / 7;
         this.ctx.beginPath();
         this.ctx.moveTo(endX, endY);
@@ -422,9 +505,11 @@ class VectorVisualization {
         this.ctx.fill();
         // 标签
         if (label) {
-            this.ctx.font = '16px Arial';
+            const fontSize = this.isMobile ? '12px' : '16px';
+            this.ctx.font = `${fontSize} Arial`;
             this.ctx.fillStyle = color;
-            this.ctx.fillText(label, endX + 10, endY - 10);
+            const labelOffset = this.isMobile ? 8 : 10;
+            this.ctx.fillText(label, endX + labelOffset, endY - labelOffset);
         }
         this.ctx.restore();
     }
