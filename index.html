@@ -1,10 +1,21 @@
+<!--
+ * @Description: 
+ * @Author: DSTBP
+ * @Date: 2025-06-21 20:32:19
+ * @LastEditTime: 2025-06-28 09:24:43
+ * @LastEditors: DSTBP
+-->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="format-detection" content="telephone=no">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
-    <title>Tooltopia</title>
+    <title>Tooltopia - 工具集合</title>
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -32,23 +43,70 @@
 
     <script src="assets/js/particles.min.js"></script>
     <script>
-        particlesJS('particles-js', {
+        // 检测设备类型
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isTablet = /iPad|Android(?=.*\bMobile\b)(?=.*\bSafari\b)/i.test(navigator.userAgent);
+        
+        // 根据设备类型调整粒子配置
+        const particleConfig = {
             "particles": {
-                "number": { "value": 80, "density": { "enable": true, "value_area": 800 } },
+                "number": { 
+                    "value": isMobile ? 40 : (isTablet ? 60 : 80), 
+                    "density": { "enable": true, "value_area": 800 } 
+                },
                 "color": { "value": "#ffffff" },
-                "shape": { "type": "circle", "stroke": { "width": 0, "color": "#000000" }, "polygon": { "nb_sides": 5 } },
-                "opacity": { "value": 0.5, "random": false, "anim": { "enable": false, "speed": 1, "opacity_min": 0.1, "sync": false } },
-                "size": { "value": 3, "random": true, "anim": { "enable": false, "speed": 40, "size_min": 0.1, "sync": false } },
-                "line_linked": { "enable": true, "distance": 150, "color": "#ffffff", "opacity": 0.4, "width": 1 },
-                "move": { "enable": true, "speed": 2, "direction": "none", "random": false, "straight": false, "out_mode": "out", "bounce": false, "attract": { "enable": false, "rotateX": 600, "rotateY": 1200 } }
+                "shape": { 
+                    "type": "circle", 
+                    "stroke": { "width": 0, "color": "#000000" }, 
+                    "polygon": { "nb_sides": 5 } 
+                },
+                "opacity": { 
+                    "value": 0.5, 
+                    "random": false, 
+                    "anim": { "enable": false, "speed": 1, "opacity_min": 0.1, "sync": false } 
+                },
+                "size": { 
+                    "value": isMobile ? 2 : 3, 
+                    "random": true, 
+                    "anim": { "enable": false, "speed": 40, "size_min": 0.1, "sync": false } 
+                },
+                "line_linked": { 
+                    "enable": !isMobile, 
+                    "distance": 150, 
+                    "color": "#ffffff", 
+                    "opacity": 0.4, 
+                    "width": 1 
+                },
+                "move": { 
+                    "enable": true, 
+                    "speed": isMobile ? 1 : 2, 
+                    "direction": "none", 
+                    "random": false, 
+                    "straight": false, 
+                    "out_mode": "out", 
+                    "bounce": false, 
+                    "attract": { "enable": false, "rotateX": 600, "rotateY": 1200 } 
+                }
             },
             "interactivity": {
                 "detect_on": "canvas",
-                "events": { "onhover": { "enable": true, "mode": "repulse" }, "onclick": { "enable": true, "mode": "push" }, "resize": true },
-                "modes": { "grab": { "distance": 400, "line_linked": { "opacity": 1 } }, "bubble": { "distance": 400, "size": 40, "duration": 2, "opacity": 8, "speed": 3 }, "repulse": { "distance": 200, "duration": 0.4 }, "push": { "particles_nb": 4 }, "remove": { "particles_nb": 2 } }
+                "events": { 
+                    "onhover": { "enable": !isMobile, "mode": "repulse" }, 
+                    "onclick": { "enable": true, "mode": "push" }, 
+                    "resize": true 
+                },
+                "modes": { 
+                    "grab": { "distance": 400, "line_linked": { "opacity": 1 } }, 
+                    "bubble": { "distance": 400, "size": 40, "duration": 2, "opacity": 8, "speed": 3 }, 
+                    "repulse": { "distance": 200, "duration": 0.4 }, 
+                    "push": { "particles_nb": isMobile ? 2 : 4 }, 
+                    "remove": { "particles_nb": 2 } 
+                }
             },
             "retina_detect": true
-        });
+        };
+        
+        particlesJS('particles-js', particleConfig);
     </script>
 </body>
 </html>

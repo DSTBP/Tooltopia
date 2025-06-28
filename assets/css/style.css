@@ -5,20 +5,28 @@ body {
     background-color: #1a1a2e;
     color: #e0e0e0;
     overflow-x: hidden;
+    min-height: 100vh;
 }
 
 #particles-js {
-    position: absolute;
+    position: fixed;
     width: 100%;
     height: 100%;
     z-index: -1;
+    top: 0;
+    left: 0;
 }
 
 .container {
     position: relative;
     z-index: 1;
     text-align: center;
-    padding-top: 50px;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
 }
 
 h1 {
@@ -26,6 +34,8 @@ h1 {
     margin-bottom: 1rem;
     animation: fadeInDown 1s ease-out;
     color: #e94560;
+    text-shadow: 0 2px 10px rgba(233, 69, 96, 0.3);
+    font-weight: 700;
 }
 
 .cards-container {
@@ -34,51 +44,101 @@ h1 {
     gap: 30px;
     margin-top: 50px;
     flex-wrap: wrap;
+    width: 100%;
+    max-width: 1200px;
 }
 
 .card {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
     padding: 30px;
     width: 280px;
     text-align: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     animation: fadeInUp 1s ease-out;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(15px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s;
+}
+
+.card:hover::before {
+    left: 100%;
 }
 
 .card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    border-color: rgba(233, 69, 96, 0.3);
 }
 
 .card h2 {
     font-size: 1.8rem;
     margin-bottom: 15px;
     color: #e94560;
+    font-weight: 600;
+    position: relative;
 }
 
 .card p {
     font-size: 1rem;
-    line-height: 1.5;
+    line-height: 1.6;
     margin-bottom: 25px;
     color: #c0c0c0;
+    opacity: 0.9;
 }
 
 .button {
     display: inline-block;
-    padding: 12px 24px;
+    padding: 14px 28px;
     font-size: 1rem;
     text-decoration: none;
     color: #fff;
-    background: #e94560;
+    background: linear-gradient(135deg, #e94560, #d43d51);
     border-radius: 50px;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.button:hover::before {
+    left: 100%;
 }
 
 .button:hover {
-    background-color: #d43d51;
+    background: linear-gradient(135deg, #d43d51, #c03547);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(233, 69, 96, 0.4);
+}
+
+.button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(233, 69, 96, 0.3);
 }
 
 @keyframes fadeInDown {
@@ -103,49 +163,209 @@ h1 {
     }
 }
 
-/* Responsive Styles */
-@media (max-width: 768px) {
-    h1 {
-        font-size: 3rem;
+/* 平板设备适配 */
+@media (max-width: 1024px) {
+    .container {
+        padding: 30px 20px;
     }
-
+    
+    h1 {
+        font-size: 3.5rem;
+    }
+    
     .cards-container {
-        flex-direction: column;
-        align-items: center;
         gap: 25px;
     }
-
+    
     .card {
-        width: 80%;
-        max-width: 400px;
-        animation: none; /* Disable animation on smaller screens for simplicity */
+        width: 260px;
+        padding: 25px;
     }
 }
 
-@media (max-width: 480px) {
-    h1 {
-        font-size: 2.5rem;
-    }
-
+/* 手机端适配 */
+@media (max-width: 768px) {
     .container {
-        padding-top: 30px;
+        padding: 20px 15px;
+        justify-content: flex-start;
+        padding-top: 60px;
     }
-
+    
+    h1 {
+        font-size: 2.8rem;
+        margin-bottom: 0.5rem;
+        line-height: 1.2;
+    }
+    
+    .cards-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        margin-top: 30px;
+        width: 100%;
+    }
+    
     .card {
-        width: 90%;
-        padding: 20px;
+        width: 100%;
+        max-width: 350px;
+        padding: 25px 20px;
+        margin: 0 auto;
+        animation: fadeInUp 0.8s ease-out;
+        border-radius: 16px;
     }
-
+    
     .card h2 {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
+        margin-bottom: 12px;
     }
+    
+    .card p {
+        font-size: 0.95rem;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+    
+    .button {
+        padding: 12px 24px;
+        font-size: 0.95rem;
+        width: 100%;
+        max-width: 200px;
+        display: block;
+        margin: 0 auto;
+    }
+}
 
+/* 小屏手机适配 */
+@media (max-width: 480px) {
+    .container {
+        padding: 15px 10px;
+        padding-top: 50px;
+    }
+    
+    h1 {
+        font-size: 2.2rem;
+        margin-bottom: 0.3rem;
+    }
+    
+    .cards-container {
+        gap: 15px;
+        margin-top: 25px;
+    }
+    
+    .card {
+        padding: 20px 15px;
+        border-radius: 12px;
+        max-width: 320px;
+    }
+    
+    .card h2 {
+        font-size: 1.4rem;
+        margin-bottom: 10px;
+    }
+    
     .card p {
         font-size: 0.9rem;
+        margin-bottom: 18px;
+        line-height: 1.4;
     }
-
+    
     .button {
         padding: 10px 20px;
         font-size: 0.9rem;
+        border-radius: 25px;
+    }
+}
+
+/* 超小屏手机适配 */
+@media (max-width: 360px) {
+    .container {
+        padding: 10px 8px;
+        padding-top: 40px;
+    }
+    
+    h1 {
+        font-size: 1.8rem;
+    }
+    
+    .card {
+        padding: 18px 12px;
+        max-width: 280px;
+    }
+    
+    .card h2 {
+        font-size: 1.3rem;
+    }
+    
+    .card p {
+        font-size: 0.85rem;
+    }
+    
+    .button {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
+}
+
+/* 横屏模式适配 */
+@media (max-height: 500px) and (orientation: landscape) {
+    .container {
+        padding-top: 20px;
+        justify-content: flex-start;
+    }
+    
+    h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .cards-container {
+        margin-top: 15px;
+        flex-direction: row;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+    
+    .card {
+        width: 200px;
+        padding: 15px;
+        max-width: none;
+    }
+    
+    .card h2 {
+        font-size: 1.2rem;
+        margin-bottom: 8px;
+    }
+    
+    .card p {
+        font-size: 0.8rem;
+        margin-bottom: 12px;
+    }
+    
+    .button {
+        padding: 8px 16px;
+        font-size: 0.8rem;
+    }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+    .card:hover {
+        transform: none;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+    
+    .button:hover {
+        transform: none;
+        box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
+    }
+    
+    .card:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+    
+    .button:active {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
     }
 } 
