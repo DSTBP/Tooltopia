@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+    <title>二维向量可视化</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/vector_concept.css">
+</head>
+<body>
+    <!-- 头部导航栏 -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <img src="favicon.png" alt="Logo" class="header-logo">
+            </div>
+            <div class="header-center">
+                <button class="nav-btn" onclick="window.location.href='https://tooltopia.dstbp.net/utils/LinearAlgebra/index.html'">
+                    <i class="fas fa-vector-square"></i>
+                    向量概念
+                </button>
+            </div>
+            <div class="header-right">
+                <!-- 右侧区域暂时空置 -->
+            </div>
+        </div>
+    </header>
+    
+    <!-- 主内容区域 -->
+    <div class="main-layout">
+        <!-- 左侧栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-content">
+                <div class="input-group">
+                    <h3>起点坐标</h3>
+                    <div class="coordinate-inputs">
+                        <label>
+                            X坐标:
+                            <input type="number" id="startX" value="0" step="0.1">
+                        </label>
+                        <label>
+                            Y坐标:
+                            <input type="number" id="startY" value="0" step="0.1">
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="input-group">
+                    <h3>终点坐标</h3>
+                    <div class="coordinate-inputs">
+                        <label>
+                            X坐标:
+                            <input type="number" id="endX" value="2.0" step="0.1">
+                        </label>
+                        <label>
+                            Y坐标:
+                            <input type="number" id="endY" value="2.0" step="0.1">
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="vector-info">
+                    <h3>向量信息</h3>
+                    <div id="vectorInfo">
+                        <p>向量: <span id="vectorText">(2.00, 2.00)</span></p>
+                        <p>长度: <span id="vectorLength">2.12</span></p>
+                        <p>角度: <span id="vectorAngle">45.0°</span></p>
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="showMatrix" class="action-btn matrix-btn">
+                        <span class="btn-icon">📊</span>
+                        显示向量分量
+                    </button>
+                    <button id="showTrajectory" class="action-btn trajectory-btn">
+                        <span class="btn-icon">🎯</span>
+                        显示运动轨迹
+                    </button>
+                </div>
+                
+                <div class="zoom-instructions">
+                    <p>按住Ctrl并滚动鼠标滚轮可缩放画布坐标</p>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- 左侧栏折叠按钮 -->
+        <button class="sidebar-toggle-btn" id="sidebarToggleBtn">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        
+        <!-- 画布区域 -->
+        <main class="canvas-area">
+            <canvas id="coordinateCanvas"></canvas>
+        </main>
+        
+        <!-- 右侧信息栏 -->
+        <aside class="info-sidebar">
+            <div class="info-content">
+                <div class="info-header">
+                    <h3><i class="fas fa-info-circle"></i> 学习笔记</h3>
+                </div>
+                <div class="info-body">
+                    <div class="info-section">
+                        <h4>使用说明</h4>
+                        <ul>
+                            <li>在左侧栏设置起点和终点坐标</li>
+                            <li>点击"显示向量分量"查看向量分解</li>
+                            <li>点击"显示运动轨迹"观看动画演示</li>
+                        </ul>
+                    </div>
+                    <div class="info-section">
+                        <h4>向量概念</h4>
+                        <p>向量是具有大小和方向的量，在二维平面中可以用有序数对 (x, y) 表示。</p>
+                    </div>
+                    <div class="info-section">
+                        <h4>分量分解</h4>
+                        <ul>
+                            <li>任何向量都可以分解为多个维度的分量，每个分量就是一个轨迹。</li>
+                            <li>一个向量实际上就是一组指令，告诉你如何从原点移动到某个终点。</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- 右侧栏折叠按钮 -->
+        <button class="info-toggle-btn" id="infoToggleBtn">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+    
+    <script src="assets/js/vector_concept.js"></script>
+</body>
+</html>
