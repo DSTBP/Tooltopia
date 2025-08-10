@@ -37,6 +37,18 @@ header h1 {
     margin: 0 auto;
 }
 
+.mobile-tips {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    max-width: 600px;
+    margin: 10px auto 0;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 .visualization-container {
     display: flex;
     gap: 30px;
@@ -224,37 +236,321 @@ header h1 {
     line-height: 1.6;
 }
 
+/* 基础响应式设计 */
+@media (max-width: 1200px) {
+    .container {
+        max-width: 95%;
+        padding: 15px;
+    }
+    
+    .visualization-container {
+        gap: 20px;
+    }
+    
+    #trackCanvas {
+        width: 500px;
+        height: 500px;
+        max-width: 500px;
+        max-height: 500px;
+        min-width: 500px;
+        min-height: 500px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .container {
+        max-width: 98%;
+        padding: 12px;
+    }
+    
+    header h1 {
+        font-size: 2.2rem;
+    }
+    
+    .description {
+        font-size: 1rem;
+    }
+    
+    #trackCanvas {
+        width: 450px;
+        height: 450px;
+        max-width: 450px;
+        max-height: 450px;
+        min-width: 450px;
+        min-height: 450px;
+    }
+    
+    .controls {
+        flex: 0 0 280px;
+        padding: 20px;
+    }
+}
+
 @media (max-width: 768px) {
+    .mobile-tips {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        margin: 8px auto 0;
+    }
+    
     .visualization-container {
         flex-direction: column;
+        gap: 20px;
     }
     
     .track-container {
         min-width: auto;
+        order: 2;
+    }
+    
+    .controls {
+        flex: none;
+        order: 1;
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
     }
     
     #trackCanvas {
-        width: 400px;
-        height: 400px;
-        max-width: 400px;
-        max-height: 400px;
-        min-width: 400px;
-        min-height: 400px;
+        width: 350px;
+        height: 350px;
+        max-width: 350px;
+        max-height: 350px;
+        min-width: 350px;
+        min-height: 350px;
     }
     
     .track-info {
         flex-direction: column;
         gap: 15px;
+        padding: 15px;
     }
     
-    .controls {
-        flex: none;
+    .control-buttons {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.95rem;
+        min-width: 70px;
     }
     
     .explanation-content {
         grid-template-columns: 1fr;
+        gap: 20px;
     }
-} 
+    
+    .explanation {
+        padding: 20px;
+    }
+    
+    .explanation h2 {
+        font-size: 1.6rem;
+    }
+    
+    .explanation-item {
+        padding: 15px;
+    }
+    
+    .explanation-item h3 {
+        font-size: 1.1rem;
+    }
+    
+    .explanation-item p {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+    
+    header {
+        margin-bottom: 25px;
+    }
+    
+    header h1 {
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+    }
+    
+    .description {
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    
+    #trackCanvas {
+        width: 300px;
+        height: 300px;
+        max-width: 300px;
+        max-height: 300px;
+        min-width: 300px;
+        min-height: 300px;
+    }
+    
+    .track-info {
+        padding: 12px;
+        gap: 12px;
+    }
+    
+    .info-item .label {
+        font-size: 0.8rem;
+    }
+    
+    .info-item span:last-child {
+        font-size: 1.1rem;
+    }
+    
+    .controls {
+        padding: 15px;
+    }
+    
+    .control-group {
+        margin-bottom: 15px;
+    }
+    
+    .control-group label {
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+    }
+    
+    .control-group input[type="number"] {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+    
+    .btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+        min-width: 60px;
+    }
+    
+    .explanation {
+        padding: 15px;
+    }
+    
+    .explanation h2 {
+        font-size: 1.4rem;
+        margin-bottom: 20px;
+    }
+    
+    .explanation-item {
+        padding: 12px;
+    }
+    
+    .explanation-item h3 {
+        font-size: 1rem;
+    }
+    
+    .explanation-item p {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 360px) {
+    header h1 {
+        font-size: 1.6rem;
+    }
+    
+    .description {
+        font-size: 0.85rem;
+    }
+    
+    #trackCanvas {
+        width: 280px;
+        height: 280px;
+        max-width: 280px;
+        max-height: 280px;
+        min-width: 280px;
+        min-height: 280px;
+    }
+    
+    .controls {
+        padding: 12px;
+    }
+    
+    .btn {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        min-width: 50px;
+    }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+    .btn {
+        min-height: 44px; /* 触摸友好的最小高度 */
+        touch-action: manipulation; /* 优化触摸响应 */
+    }
+    
+    .control-group input[type="range"] {
+        min-height: 44px;
+        touch-action: pan-x; /* 只允许水平滑动 */
+    }
+    
+    .control-group input[type="number"] {
+        min-height: 44px;
+        font-size: 16px; /* 防止iOS缩放 */
+    }
+    
+    /* 增加触摸区域 */
+    .track-info {
+        padding: 20px;
+    }
+    
+    .info-item {
+        padding: 10px;
+        min-height: 44px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    /* 触摸友好的预设按钮 */
+    .preset-btn {
+        min-height: 44px;
+        min-width: 60px;
+    }
+    
+    /* 触摸友好的Canvas */
+    #trackCanvas {
+        touch-action: manipulation;
+        cursor: pointer;
+    }
+}
+
+/* 横屏模式优化 */
+@media (orientation: landscape) and (max-height: 600px) {
+    header {
+        margin-bottom: 20px;
+    }
+    
+    header h1 {
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+    }
+    
+    .description {
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+    
+    .visualization-container {
+        margin-bottom: 20px;
+    }
+    
+    .explanation {
+        padding: 15px;
+    }
+    
+    .explanation h2 {
+        font-size: 1.4rem;
+        margin-bottom: 15px;
+    }
+}
 
 /* 重复点弹窗样式 */
 .duplicate-point-modal {
@@ -362,5 +658,122 @@ header h1 {
     
     .modal-content p {
         font-size: 0.95rem;
+    }
+    
+    /* 移动端弹窗优化 */
+    .duplicate-data {
+        margin: 15px 0;
+    }
+    
+    .data-output {
+        height: 100px;
+        font-size: 0.8rem;
+    }
+    
+    .modal-buttons .btn {
+        min-height: 44px;
+        padding: 12px 20px;
+    }
+}
+
+/* 移动端性能优化 */
+@media (max-width: 768px) {
+    /* 减少阴影和模糊效果以提高性能 */
+    .track-container {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+    
+    #trackCanvas {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(5px);
+    }
+    
+    .controls {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .explanation {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* 平板设备优化 */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .visualization-container {
+        gap: 25px;
+    }
+    
+    .track-container {
+        min-width: 500px;
+    }
+    
+    .controls {
+        flex: 0 0 320px;
+        padding: 30px;
+    }
+    
+    .preset-buttons {
+        gap: 10px;
+    }
+    
+    .preset-btn {
+        padding: 10px 18px;
+        font-size: 1rem;
+    }
+}
+
+/* 横屏手机优化 */
+@media (max-width: 768px) and (orientation: landscape) {
+    header {
+        margin-bottom: 15px;
+    }
+    
+    header h1 {
+        font-size: 1.6rem;
+        margin-bottom: 8px;
+    }
+    
+    .description {
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+    
+    .visualization-container {
+        flex-direction: row;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .track-container {
+        order: 1;
+        flex: 1;
+    }
+    
+    .controls {
+        order: 2;
+        flex: 0 0 250px;
+        max-width: none;
+        margin: 0;
+    }
+    
+    #trackCanvas {
+        width: 280px;
+        height: 280px;
+        max-width: 280px;
+        max-height: 280px;
+        min-width: 280px;
+        min-height: 280px;
+    }
+    
+    .explanation {
+        display: none; /* 横屏时隐藏说明部分以节省空间 */
+    }
+}
+
+/* 高DPI屏幕优化 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    #trackCanvas {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
     }
 } 

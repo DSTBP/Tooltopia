@@ -10,13 +10,8 @@ class WeylSequenceVisualizer {
         this.canvas = document.getElementById('trackCanvas');
         this.ctx = this.canvas.getContext('2d');
         
-        // 设置固定的Canvas尺寸，避免动态变化
-        this.canvas.width = 600;
-        this.canvas.height = 600;
-        
-        this.centerX = this.canvas.width / 2;
-        this.centerY = this.canvas.height / 2;
-        this.radius = 250;
+        // 响应式Canvas尺寸设置
+        this.setupResponsiveCanvas();
         
         this.isRunning = false;
         this.animationId = null;
@@ -36,6 +31,61 @@ class WeylSequenceVisualizer {
         this.initializeCanvas();
         this.bindEvents();
         this.drawTrack();
+        
+        // 添加触摸事件支持
+        this.setupTouchEvents();
+    }
+    
+    setupResponsiveCanvas() {
+        // 获取设备信息
+        this.isMobile = window.innerWidth <= 768;
+        this.isTablet = window.innerWidth > 768 && window.innerWidth <= 1024;
+        
+        // 根据设备类型设置Canvas尺寸
+        if (this.isMobile) {
+            this.canvasSize = Math.min(window.innerWidth - 40, 350);
+        } else if (this.isTablet) {
+            this.canvasSize = Math.min(window.innerWidth - 80, 500);
+        } else {
+            this.canvasSize = 600;
+        }
+        
+        // 设置Canvas尺寸
+        this.canvas.width = this.canvasSize;
+        this.canvas.height = this.canvasSize;
+        
+        // 更新相关属性
+        this.centerX = this.canvasSize / 2;
+        this.centerY = this.canvasSize / 2;
+        this.radius = this.canvasSize / 2 - 20;
+        
+        // 更新CSS样式
+        this.canvas.style.width = this.canvasSize + 'px';
+        this.canvas.style.height = this.canvasSize + 'px';
+    }
+    
+    setupTouchEvents() {
+        // 触摸事件支持
+        this.canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (this.isRunning) {
+                this.pause();
+            } else {
+                this.start();
+            }
+        }, { passive: false });
+        
+        // 双击重置
+        let lastTap = 0;
+        this.canvas.addEventListener('touchend', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTap;
+            if (tapLength < 500 && tapLength > 0) {
+                // 双击检测
+                this.reset();
+            }
+            lastTap = currentTime;
+        });
     }
     
     initializeCanvas() {
@@ -47,9 +97,12 @@ class WeylSequenceVisualizer {
         }
     }
     
-    // 简化窗口大小变化处理，避免重新计算Canvas尺寸
+    // 响应式窗口大小变化处理
     handleResize() {
-        // 保持Canvas尺寸不变，只重新绘制内容
+        // 重新计算Canvas尺寸
+        this.setupResponsiveCanvas();
+        this.initializeCanvas();
+        this.recalculatePoints();
         this.drawTrack();
         this.redrawAllPoints();
     }
@@ -71,10 +124,42 @@ class WeylSequenceVisualizer {
             document.getElementById('speedValue').textContent = this.speed + 'ms';
         });
         
-        // 简化resize事件处理
+        // 响应式resize事件处理
         window.addEventListener('resize', () => {
-            this.handleResize();
+            // 防抖处理
+            clearTimeout(this.resizeTimeout);
+            this.resizeTimeout = setTimeout(() => {
+                this.handleResize();
+            }, 250);
         });
+        
+        // 添加触摸手势支持
+        this.setupGestureSupport();
+    }
+    
+    setupGestureSupport() {
+        // 手势支持：滑动控制速度
+        let startY = 0;
+        let startSpeed = 0;
+        
+        this.canvas.addEventListener('touchstart', (e) => {
+            startY = e.touches[0].clientY;
+            startSpeed = this.speed;
+        }, { passive: true });
+        
+        this.canvas.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) {
+                const deltaY = startY - e.touches[0].clientY;
+                const speedChange = deltaY * 2; // 每像素改变2ms
+                const newSpeed = Math.max(100, Math.min(2000, startSpeed + speedChange));
+                
+                if (Math.abs(newSpeed - this.speed) > 50) {
+                    this.speed = newSpeed;
+                    document.getElementById('speedInput').value = this.speed;
+                    document.getElementById('speedValue').textContent = this.speed + 'ms';
+                }
+            }
+        }, { passive: true });
     }
     
     drawTrack() {
