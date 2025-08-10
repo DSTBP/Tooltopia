@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: DSTBP
  * @Date: 2025-08-10 19:52:02
- * @LastEditTime: 2025-08-10 20:34:31
+ * @LastEditTime: 2025-08-10 22:38:29
  * @LastEditors: DSTBP
  */
 class WeylSequenceVisualizer {
@@ -57,6 +57,7 @@ class WeylSequenceVisualizer {
     bindEvents() {
         document.getElementById('startBtn').addEventListener('click', () => this.start());
         document.getElementById('pauseBtn').addEventListener('click', () => this.pause());
+        document.getElementById('continueBtn').addEventListener('click', () => this.continueAfterDuplicate());
         document.getElementById('resetBtn').addEventListener('click', () => this.reset());
         
         document.getElementById('alphaInput').addEventListener('change', (e) => {
@@ -112,61 +113,61 @@ class WeylSequenceVisualizer {
         }
     }
     
+    // 添加新点
     addPoint() {
-        const angle = (this.currentStep * this.alpha) % (2 * Math.PI);
-        
-        const x = this.centerX + this.radius * Math.cos(angle);
-        const y = this.centerY + this.radius * Math.sin(angle);
-        
         // 检测是否与之前的点重叠
-        if (this.checkDuplicatePoint(x, y)) {
+        if (this.checkDuplicatePoint()) {
             this.showDuplicatePointAlert();
             this.pause();
             return;
         }
         
+        const currentAngle = (this.currentStep * this.alpha) % (2 * Math.PI);
+        const currentAngleMod1 = ((this.currentStep * this.alpha) % 1).toFixed(10);
+        
+        const x = this.centerX + this.radius * Math.cos(currentAngle);
+        const y = this.centerY + this.radius * Math.sin(currentAngle);
+        
+        // 生成颜色
+        const hue = (this.currentStep * 30) % 360;
+        const color = `hsl(${hue}, 70%, 60%)`;
+        
+        // 保存点信息，包括角度模1的值
         this.points.push({
             x: x,
             y: y,
-            angle: angle,
+            angle: currentAngle,
+            angleMod1: currentAngleMod1,
             step: this.currentStep,
-            color: this.colors[this.currentStep % this.colors.length]
+            color: color
         });
         
-        if (this.points.length > this.maxPoints) {
-            this.points.shift();
+        // 绘制轨迹
+        if (this.currentStep > 0) {
+            const prevPoint = this.points[this.currentStep - 1];
+            this.drawTrajectory(prevPoint.x, prevPoint.y, x, y, color);
         }
         
-        this.updateInfo();
-        
-        this.drawPoint(x, y, this.colors[this.currentStep % this.colors.length]);
-        
-        if (this.points.length > 1) {
-            const prevPoint = this.points[this.points.length - 2];
-            this.drawTrajectory(prevPoint.x, prevPoint.y, x, y, this.colors[this.currentStep % this.colors.length]);
-        }
+        // 绘制点
+        this.drawPoint(x, y, color);
         
         this.currentStep++;
+        this.updateInfo();
     }
     
     // 检测重复点的方法
-    checkDuplicatePoint(x, y) {
-        const tolerance = 8; // 坐标容差范围，考虑到点的绘制大小
-        const angleTolerance = 0.1; // 角度容差范围（弧度）
-        
+    checkDuplicatePoint() {
+        // 提高精度到小数点后10位
         const currentAngle = (this.currentStep * this.alpha) % (2 * Math.PI);
+        const currentAngleMod1 = ((this.currentStep * this.alpha) % 1).toFixed(10);
         
         return this.points.some(point => {
-            // 检查坐标距离
-            const distance = Math.sqrt((point.x - x) ** 2 + (point.y - y) ** 2);
-            const coordinateMatch = distance < tolerance;
+            // 检查角度模1的值（精确到小数点后10位）
+            const pointAngleMod1 = point.angleMod1;
+            const angleMatch = currentAngleMod1 === pointAngleMod1;
             
-            // 检查角度（考虑模2π的周期性）
-            const angleDiff = Math.abs((currentAngle - point.angle + Math.PI) % (2 * Math.PI) - Math.PI);
-            const angleMatch = angleDiff < angleTolerance;
-            
-            // 如果坐标和角度都匹配，认为是重复点
-            return coordinateMatch && angleMatch;
+            // 如果角度模1匹配，认为是重复点
+            return angleMatch;
         });
     }
     
@@ -175,29 +176,82 @@ class WeylSequenceVisualizer {
         const modal = document.createElement('div');
         modal.className = 'duplicate-point-modal';
         
-        // 找到最接近的重复点
+        // 找到重复的点
         const currentAngle = (this.currentStep * this.alpha) % (2 * Math.PI);
-        const closestPoint = this.points.find(point => {
-            const distance = Math.sqrt((point.x - (this.centerX + this.radius * Math.cos(currentAngle))) ** 2 + 
-                                     (point.y - (this.centerY + this.radius * Math.sin(currentAngle))) ** 2);
-            return distance < 8;
-        });
+        const currentAngleMod1 = ((this.currentStep * this.alpha) % 1).toFixed(10);
+        const duplicatePoint = this.points.find(point => point.angleMod1 === currentAngleMod1);
         
-        const stepDiff = closestPoint ? this.currentStep - closestPoint.step : '未知';
+        const stepDiff = duplicatePoint ? this.currentStep - duplicatePoint.step : '未知';
+        
+        // 生成详细的重复数据信息
+        const duplicateData = `
+重复点详细信息：
+当前步数: ${this.currentStep}
+重复步数: ${duplicatePoint ? duplicatePoint.step : '未知'}
+步数差异: ${stepDiff}
+当前角度: ${(currentAngle * 180 / Math.PI).toFixed(6)}°
+角度模1值: ${currentAngleMod1}
+坐标位置: (${(this.centerX + this.radius * Math.cos(currentAngle)).toFixed(6)}, ${(this.centerY + this.radius * Math.sin(currentAngle)).toFixed(6)})
+        `.trim();
         
         modal.innerHTML = `
             <div class="modal-content">
                 <h3>🎯 发现重复点！</h3>
                 <p>在第 ${this.currentStep} 步时，点落到了之前走过的位置。</p>
-                <p>与第 ${closestPoint ? closestPoint.step : '未知'} 步的点重叠（相差 ${stepDiff} 步）</p>
-                <p>Weyl Sequence 开始出现周期性行为。</p>
+                <p>与第 ${duplicatePoint ? duplicatePoint.step : '未知'} 步的点重叠（相差 ${stepDiff} 步）</p>
+                <p>这说明 Weyl Sequence 开始出现周期性行为。</p>
+                
+                <div class="duplicate-data">
+                    <h4>重复数据详情：</h4>
+                    <textarea readonly class="data-output">${duplicateData}</textarea>
+                </div>
+                
                 <div class="modal-buttons">
-                    <button class="btn btn-primary" onclick="this.closest('.duplicate-point-modal').remove()">确定</button>
+                    <button class="btn btn-secondary" onclick="this.closest('.duplicate-point-modal').remove()">关闭</button>
                 </div>
             </div>
         `;
         
         document.body.appendChild(modal);
+    }
+    
+    // 在重复点后继续生成
+    continueAfterDuplicate() {
+        // 直接添加当前点（跳过重复检测）
+        const currentAngle = (this.currentStep * this.alpha) % (2 * Math.PI);
+        const currentAngleMod1 = ((this.currentStep * this.alpha) % 1).toFixed(10);
+        
+        const x = this.centerX + this.radius * Math.cos(currentAngle);
+        const y = this.centerY + this.radius * Math.sin(currentAngle);
+        
+        // 生成颜色
+        const hue = (this.currentStep * 30) % 360;
+        const color = `hsl(${hue}, 70%, 60%)`;
+        
+        // 保存点信息
+        this.points.push({
+            x: x,
+            y: y,
+            angle: currentAngle,
+            angleMod1: currentAngleMod1,
+            step: this.currentStep,
+            color: color
+        });
+        
+        // 绘制轨迹
+        if (this.currentStep > 0) {
+            const prevPoint = this.points[this.currentStep - 1];
+            this.drawTrajectory(prevPoint.x, prevPoint.y, x, y, color);
+        }
+        
+        // 绘制点
+        this.drawPoint(x, y, color);
+        
+        this.currentStep++;
+        this.updateInfo();
+        
+        // 重新开始动画
+        this.start();
     }
     
     drawPoint(x, y, color) {
@@ -250,6 +304,7 @@ class WeylSequenceVisualizer {
         this.isRunning = true;
         document.getElementById('startBtn').disabled = true;
         document.getElementById('pauseBtn').disabled = false;
+        document.getElementById('continueBtn').disabled = true;
         
         this.animate();
     }
@@ -258,6 +313,7 @@ class WeylSequenceVisualizer {
         this.isRunning = false;
         document.getElementById('startBtn').disabled = false;
         document.getElementById('pauseBtn').disabled = true;
+        document.getElementById('continueBtn').disabled = false;
         
         if (this.animationId) {
             clearTimeout(this.animationId);
@@ -269,6 +325,7 @@ class WeylSequenceVisualizer {
         this.pause();
         this.currentStep = 0;
         this.points = [];
+        document.getElementById('continueBtn').disabled = true;
         this.drawTrack();
         this.updateInfo();
     }
