@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flight Out - 变体中心</title>
+    <link rel="icon" href="favicon.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+    .variant-container { max-width: 1000px; margin: 0 auto; padding: 24px 12px; }
+    .variant-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+    .variant-card { background: rgba(255,255,255,.95); border-radius: 12px; padding: 18px; box-shadow: 0 8px 24px rgba(0,0,0,.12); display: flex; flex-direction: column; gap: 10px; }
+    .variant-card h3 { margin: 0; color: #667eea; }
+    .variant-card p { color: #555; flex: 1; }
+    .top-actions { display: flex; justify-content: center; margin-bottom: 18px; }
+    .top-actions a { text-decoration: none; }
+    /* 仅本页：进入按钮悬停时才高亮 */
+    .variant-card .fo-btn:hover { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
+    </style>
+    </head>
+<body>
+    <div class="variant-container">
+        <header class="fo-header">
+            <h1>Flight Out - 变体中心</h1>
+            <p class="fo-sub">选择一个玩法变体进入</p>
+        </header>
+
+        
+
+        <section class="variant-grid">
+            <article class="variant-card">
+                <h3>标准版</h3>
+                <p>经典十字翻转，点击翻转自身与上下左右相邻格，推荐从这里开始。</p>
+                <a class="fo-btn" href="index.html">进入</a>
+            </article>
+
+            <article class="variant-card">
+                <h3>无边界版</h3>
+                <p>十字翻转，上下左右边界首尾相接，每一步操作都会改变 5 个灯。</p>
+                <a class="fo-btn" href="variant-circular.html">进入</a>
+            </article>
+
+            <article class="variant-card">
+                <h3>高难度随机版</h3>
+                <p>更大棋盘与更高密度随机初始状态，步数最优更难达成。</p>
+                <a class="fo-btn" href="variant-hard.html">进入</a>
+            </article>
+        </section>
+    </div>
+
+    <script>
+    // 可在此扩展：统计或动态加载变体清单
+    </script>
+</body>
+</html>
+
+

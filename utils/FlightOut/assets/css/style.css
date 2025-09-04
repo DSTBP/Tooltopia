@@ -853,11 +853,19 @@ header h1 {
     color: #444;
     cursor: pointer;
     transition: transform .15s ease, box-shadow .15s ease, background .2s;
+    text-decoration: none; /* 作为链接使用时去下划线 */
+    display: inline-block; /* 统一按钮盒模型 */
+}
+
+/* 统一超链接按钮的字体大小，避免与 <button> 呈现不一致 */
+a.fo-btn {
+    font-size: 0.83rem;
 }
 
 .fo-btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 16px rgba(0,0,0,.12);
+    text-decoration: none; /* 悬停也不显示下划线 */
 }
 
 .fo-primary {
