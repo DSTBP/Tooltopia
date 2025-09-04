@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flight Out - 多色版</title>
+    <link rel="icon" href="favicon.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div class="fo-container">
+        <header class="fo-header">
+            <h1>Flight Out - 多色版</h1>
+            <p class="fo-sub">灯具有多种状态（颜色），按下按键：关 → 颜色1 → 颜色2 → … → 关</p>
+        </header>
+
+        <section class="fo-panel">
+            <div class="fo-left">
+                <div class="fo-controls">
+                    <div class="fo-row">
+                        <label>关卡
+                            <select id="levelSelect"></select>
+                        </label>
+                        <button id="prevLevel" class="fo-btn">上一关</button>
+                        <button id="nextLevel" class="fo-btn">下一关</button>
+                    </div>
+                    <div class="fo-row">
+                        <label>行 <input type="number" id="rowsInput" min="2" max="100" value="5" disabled></label>
+                        <label>列 <input type="number" id="colsInput" min="2" max="100" value="5" disabled></label>
+                        <label>颜色数量 <input type="number" id="colorInput" min="2" max="8" value="3" disabled></label>
+                    </div>
+                    <div class="fo-row">
+                        <button id="reset" class="fo-btn">重开本关</button>
+                        <button id="undo" class="fo-btn" disabled>撤销</button>
+                        <button id="hint" class="fo-btn">提示</button>
+                    </div>
+                    <div class="fo-row">
+                        <button id="customize" class="fo-btn">自定义</button>
+                        <button id="customDone" class="fo-btn fo-primary" style="display:none;">完成</button>
+                        <a href="variant.html" class="fo-btn" id="variantBtn" style="margin-left: 8px;">返回中心</a>
+                    </div>
+                    <div class="fo-stats">
+                        <span>步数：<b id="moveCount">0</b></span>
+                        <span>目标：全(K-1)</span>
+                        <span id="statusText"></span>
+                    </div>
+                </div>
+
+                <div class="fo-help">
+                    <details open>
+                        <summary>如何游玩 / 规则说明（多色版）</summary>
+                        <ul>
+                            <li>每个格子有 0..(K-1) 共 K 种状态（0 为关）</li>
+                            <li>点击会使“自身+上下左右”状态 +1（对 K 取模）</li>
+                            <li>目标：将所有格子状态变为 (K-1) 状态</li>
+                            <li>默认 K=3（关→红→绿→关），可在自定义模式修改</li>
+                            <li>自定义颜色数量最高为 8 种</li>
+                            <li>提示功能暂未实现</li>
+                        </ul>
+                    </details>
+                </div>
+            </div>
+
+            <div class="fo-board-wrap">
+                <div id="board" class="fo-board" aria-label="lights-grid" role="grid"></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+    (function(){
+        const boardEl = document.getElementById('board');
+        const levelSelect = document.getElementById('levelSelect');
+        const prevLevelBtn = document.getElementById('prevLevel');
+        const nextLevelBtn = document.getElementById('nextLevel');
+        const rowsInput = document.getElementById('rowsInput');
+        const colsInput = document.getElementById('colsInput');
+        const colorInput = document.getElementById('colorInput');
+        const resetBtn = document.getElementById('reset');
+        const undoBtn = document.getElementById('undo');
+        const customizeBtn = document.getElementById('customize');
+        const customDoneBtn = document.getElementById('customDone');
+        const hintBtn = document.getElementById('hint');
+        const moveCountEl = document.getElementById('moveCount');
+        const statusText = document.getElementById('statusText');
+
+        // 高对比度调色板：避免与背景紫蓝系和提示粉色 (#ff6b9d) 相近
+        const palette = ['#f1f3f5', '#ff922b', '#51cf66', '#22b8cf', '#ffd43b', '#087f5b', '#e8590c', '#343a40'];
+
+        let TOTAL_LEVELS;
+        let successTimer = null;
+        let isCustomizing = false;
+        let colorCount = 3;
+
+        const baseSizes = [
+            [2,3], [3,3], [3,4], [4,4], [4,5],
+            [5,5], [5,6], [6,6], [6,7], [7,7],
+            [7,8], [8,8], [8,9], [9,9], [10,10],
+            [10,11], [11,11], [12,12]
+        ];
+        const levelConfigs = [];
+        for (const [r, c] of baseSizes) {
+            const rows = Math.min(12, r);
+            const cols = Math.min(12, c);
+            levelConfigs.push({ rows, cols, moves: 0, mode: 'allZero' });
+            const area = rows * cols;
+            const moves = Math.max(1, Math.min(area, Math.round(area * 0.25)));
+            levelConfigs.push({ rows, cols, moves, mode: 'random' });
+        }
+        TOTAL_LEVELS = levelConfigs.length; // 36 关
+
+        let currentLevelIndex = 0;
+        let rows = levelConfigs[0].rows;
+        let cols = levelConfigs[0].cols;
+        let grid = createMatrix(rows, cols, 0);
+        let moveCount = 0;
+        let undoStack = [];
+        const initialStates = Array(TOTAL_LEVELS).fill(null);
+
+        init();
+
+        function init(){
+            for (let i = 0; i < TOTAL_LEVELS; i++) {
+                const opt = document.createElement('option');
+                opt.value = String(i);
+                opt.textContent = `第 ${i + 1} 关`;
+                levelSelect.appendChild(opt);
+            }
+            levelSelect.value = String(currentLevelIndex);
+
+            boardEl.addEventListener('click', onBoardClick);
+            prevLevelBtn.addEventListener('click', () => switchLevel(currentLevelIndex - 1));
+            nextLevelBtn.addEventListener('click', () => switchLevel(currentLevelIndex + 1));
+            levelSelect.addEventListener('change', () => switchLevel(parseInt(levelSelect.value, 10)));
+            resetBtn.addEventListener('click', () => generateLevel(currentLevelIndex, false));
+            undoBtn.addEventListener('click', undoMove);
+            hintBtn.addEventListener('click', () => { statusText.textContent = '提示功能暂未实现'; });
+
+            if (customizeBtn) customizeBtn.addEventListener('click', enterCustomizeMode);
+            if (customDoneBtn) customDoneBtn.addEventListener('click', finishCustomizeMode);
+
+            if (rowsInput) rowsInput.addEventListener('input', onSizeInputChange);
+            if (colsInput) colsInput.addEventListener('input', onSizeInputChange);
+            if (colorInput) colorInput.addEventListener('input', onColorInputChange);
+
+            generateLevel(0, false);
+        }
+
+        function createMatrix(r, c, fill = 0){
+            return Array.from({ length: r }, () => Array.from({ length: c }, () => fill));
+        }
+
+        function renderBoard(){
+            boardEl.innerHTML = '';
+            boardEl.style.setProperty('--rows', String(rows));
+            boardEl.style.setProperty('--cols', String(cols));
+            for(let r=0;r<rows;r++){
+                for(let c=0;c<cols;c++){
+                    const cell = document.createElement('button');
+                    cell.className = 'fo-cell';
+                    const v = grid[r][c] % colorCount;
+                    cell.style.background = palette[v % palette.length];
+                    cell.setAttribute('data-r', String(r));
+                    cell.setAttribute('data-c', String(c));
+                    boardEl.appendChild(cell);
+                }
+            }
+            moveCountEl.textContent = String(moveCount);
+            undoBtn.disabled = undoStack.length === 0;
+            statusText.textContent = '';
+        }
+
+        function onBoardClick(e){
+            const target = e.target;
+            if(!(target instanceof HTMLElement)) return;
+            if(!target.classList.contains('fo-cell')) return;
+            const r = parseInt(target.getAttribute('data-r'), 10);
+            const c = parseInt(target.getAttribute('data-c'), 10);
+            if (isCustomizing){
+                grid[r][c] = (grid[r][c] + 1) % colorCount; // 自定义时点按循环颜色
+                renderBoard();
+                return;
+            }
+            applyFlip(r, c, true);
+        }
+
+        function applyFlip(r, c, recordHistory){
+            if (!inBounds(r,c)) return;
+            const snapshot = deepClone(grid);
+            const deltas = [[0,0],[1,0],[-1,0],[0,1],[0,-1]];
+            for (const [dr,dc] of deltas){
+                const rr = r+dr, cc = c+dc;
+                if (inBounds(rr,cc)) grid[rr][cc] = (grid[rr][cc] + 1) % colorCount;
+            }
+            moveCount++;
+            if (recordHistory) undoStack.push(snapshot);
+            renderBoard();
+            if (isAllTarget()) showSuccessModal();
+        }
+
+        function isAllTarget(){
+            const target = (colorCount - 1 + colorCount) % colorCount;
+            for (let r=0;r<rows;r++){
+                for (let c=0;c<cols;c++) if ((grid[r][c] % colorCount) !== target) return false;
+            }
+            return true;
+        }
+
+        function inBounds(r,c){ return r>=0 && r<rows && c>=0 && c<cols; }
+        function deepClone(mat){ return mat.map(row=>row.slice()); }
+
+        function undoMove(){ if(undoStack.length===0) return; grid = undoStack.pop(); moveCount=Math.max(0,moveCount-1); renderBoard(); }
+
+        function switchLevel(nextIndex){
+            cancelSuccessTimer();
+            if (isCustomizing) return;
+            if (nextIndex<0) nextIndex=0; if (nextIndex>=TOTAL_LEVELS) nextIndex=TOTAL_LEVELS-1;
+            currentLevelIndex = nextIndex; levelSelect.value = String(currentLevelIndex);
+            generateLevel(currentLevelIndex, false);
+        }
+
+        function generateLevel(levelIndex){
+            cancelSuccessTimer(); if (isCustomizing) return;
+            const config = levelConfigs[levelIndex];
+            rows = clamp(config.rows,2,100); cols = clamp(config.cols,2,100);
+            if (rowsInput) rowsInput.value=String(rows); if (colsInput) colsInput.value=String(cols);
+            if (colorInput) colorInput.value = String(colorCount);
+
+            if (initialStates[levelIndex]){
+                const saved = initialStates[levelIndex];
+                grid = deepClone(saved.grid);
+                colorCount = saved.colorCount;
+                rows = grid.length; cols = grid[0]?.length || 0;
+                if (rowsInput) rowsInput.value=String(rows); if (colsInput) colsInput.value=String(cols); if(colorInput) colorInput.value=String(colorCount);
+            } else {
+                if (config.mode === 'allZero') { grid = createMatrix(rows, cols, 0); }
+                else { grid = generateRandomInitial(rows, cols, config.moves); }
+                initialStates[levelIndex] = { grid: deepClone(grid), colorCount };
+            }
+            moveCount=0; undoStack=[]; renderBoard();
+        }
+
+        function generateRandomInitial(r, c, moves){
+            const g = createMatrix(r, c, 0);
+            let steps = Math.max(1, Math.min(r*c, moves|0));
+            while (steps-- > 0){
+                const rr = Math.floor(Math.random()*r);
+                const cc = Math.floor(Math.random()*c);
+                const deltas=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
+                for(const [dr,dc] of deltas){ const nr=rr+dr, nc=cc+dc; if(nr>=0&&nr<r&&nc>=0&&nc<c) g[nr][nc] = (g[nr][nc]+1) % colorCount; }
+            }
+            // 保证不是“全(K-1)”
+            let allTarget=true; const target=(colorCount-1+colorCount)%colorCount;
+            outer: for(let i=0;i<r;i++){ for(let j=0;j<c;j++){ if((g[i][j]%colorCount)!==target){ allTarget=false; break outer; } } }
+            if(allTarget){ const deltas=[[0,0],[1,0],[-1,0],[0,1],[0,-1]]; for(const [dr,dc] of deltas){ const nr=0+dr, nc=0+dc; if(nr>=0&&nr<r&&nc>=0&&nc<c) g[nr][nc]=(g[nr][nc]+1)%colorCount; } }
+            return g;
+        }
+
+        function enterCustomizeMode(){ if(isCustomizing) return; isCustomizing=true; if(rowsInput){rowsInput.disabled=false; rowsInput.max='100';} if(colsInput){colsInput.disabled=false; colsInput.max='100';} if(colorInput){colorInput.disabled=false; colorInput.max='8';} if(customDoneBtn) customDoneBtn.style.display=''; moveCount=0; undoStack=[]; renderBoard(); }
+        function finishCustomizeMode(){ if(!isCustomizing) return; isCustomizing=false; if(rowsInput) rowsInput.disabled=true; if(colsInput) colsInput.disabled=true; if(colorInput) colorInput.disabled=true; if(customDoneBtn) customDoneBtn.style.display='none'; initialStates[currentLevelIndex] = { grid: deepClone(grid), colorCount }; renderBoard(); }
+        function onSizeInputChange(){ if(!isCustomizing) return; const rVal=clamp(parseInt(rowsInput.value||'0',10)||0,2,100); const cVal=clamp(parseInt(colsInput.value||'0',10)||0,2,100); if(rVal!==rows||cVal!==cols){ rows=rVal; cols=cVal; grid=createMatrix(rows, cols, 0); moveCount=0; undoStack=[]; renderBoard(); } }
+        function onColorInputChange(){ if(!isCustomizing) return; const k = clamp(parseInt(colorInput.value||'0',10)||0, 2, 8); if (k!==colorCount){ colorCount=k; // 正规化当前 grid
+                for(let i=0;i<rows;i++) for(let j=0;j<cols;j++) grid[i][j]%=colorCount; renderBoard(); } }
+
+        function showSuccessModal(){
+            if (successTimer){ clearTimeout(successTimer); successTimer=null; }
+            const modal = document.createElement('div'); modal.className='success-modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>通关成功</h3>
+                    <p>5 秒后自动进入下一关…</p>
+                    <div class="modal-buttons">
+                        <button class="btn btn-primary" id="nextNow">立即下一关</button>
+                        <button class="btn btn-secondary" id="closeModal">关闭</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            const cleanup=()=>{ if(modal&&modal.parentNode) modal.parentNode.removeChild(modal); };
+            modal.addEventListener('click',(e)=>{ if(e.target===modal) cleanup(); });
+            modal.querySelector('#closeModal').addEventListener('click', cleanup);
+            modal.querySelector('#nextNow').addEventListener('click', ()=>{ cleanup(); switchLevel(currentLevelIndex+1); });
+            successTimer = setTimeout(()=>{ cleanup(); switchLevel(currentLevelIndex+1); }, 5000);
+        }
+
+        function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi,v)); }
+        function cancelSuccessTimer(){ if(successTimer){ clearTimeout(successTimer); successTimer=null; } const m=document.querySelector('.success-modal'); if(m&&m.parentNode) m.parentNode.removeChild(m); }
+    })();
+    </script>
+</body>
+</html>
+
+

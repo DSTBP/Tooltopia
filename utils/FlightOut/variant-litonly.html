@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flight Out - 仅熄灭可按版</title>
+    <link rel="icon" href="favicon.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div class="fo-container">
+        <header class="fo-header">
+            <h1>Flight Out - 仅熄灭可按版</h1>
+            <p class="fo-sub">与标准版相同，但只能点击“灭”的格子，点“亮”的格子无效</p>
+        </header>
+
+        <section class="fo-panel">
+            <div class="fo-left">
+                <div class="fo-controls">
+                    <div class="fo-row">
+                        <label>关卡
+                            <select id="levelSelect"></select>
+                        </label>
+                        <button id="prevLevel" class="fo-btn">上一关</button>
+                        <button id="nextLevel" class="fo-btn">下一关</button>
+                    </div>
+                    <div class="fo-row">
+                        <label>行 <input type="number" id="rowsInput" min="2" max="100" value="5" disabled></label>
+                        <label>列 <input type="number" id="colsInput" min="2" max="100" value="5" disabled></label>
+                    </div>
+                    <div class="fo-row">
+                        <button id="reset" class="fo-btn">重开本关</button>
+                        <button id="undo" class="fo-btn" disabled>撤销</button>
+                        <button id="hint" class="fo-btn">提示</button>
+                    </div>
+                    <div class="fo-row">
+                        <button id="customize" class="fo-btn">自定义</button>
+                        <button id="customDone" class="fo-btn fo-primary" style="display:none;">完成</button>
+                        <a href="variant.html" class="fo-btn" id="variantBtn" style="margin-left: 8px;">返回中心</a>
+                    </div>
+                    <div class="fo-stats">
+                        <span>步数：<b id="moveCount">0</b></span>
+                        <span>目标：全亮</span>
+                        <span id="statusText"></span>
+                    </div>
+                </div>
+
+                <div class="fo-help">
+                    <details open>
+                        <summary>如何游玩 / 规则说明</summary>
+                        <ul>
+                            <li>只能点击“灭”的格子；点“亮”的格子无效果</li>
+                            <li>点击会翻转自身与上下左右邻居（边界不环绕）</li>
+                            <li>目标是将棋盘中所有灯全部点亮</li>
+                            <li>“提示”基于标准求解器，给出最少步方案</li>
+                        </ul>
+                    </details>
+                </div>
+            </div>
+
+            <div class="fo-board-wrap">
+                <div id="board" class="fo-board" aria-label="lights-grid" role="grid"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="assets/js/solve.js"></script>
+    <script>
+    (function(){
+        const boardEl = document.getElementById('board');
+        const levelSelect = document.getElementById('levelSelect');
+        const prevLevelBtn = document.getElementById('prevLevel');
+        const nextLevelBtn = document.getElementById('nextLevel');
+        const rowsInput = document.getElementById('rowsInput');
+        const colsInput = document.getElementById('colsInput');
+        const resetBtn = document.getElementById('reset');
+        const undoBtn = document.getElementById('undo');
+        const customizeBtn = document.getElementById('customize');
+        const customDoneBtn = document.getElementById('customDone');
+        const hintBtn = document.getElementById('hint');
+        const moveCountEl = document.getElementById('moveCount');
+        const statusText = document.getElementById('statusText');
+
+        let TOTAL_LEVELS;
+        let successTimer = null;
+        let isCustomizing = false;
+        let hintMode = false;
+        let hintPlan = null;
+        let clickedHints = new Set();
+
+        const baseSizes = [
+            [2,3], [3,3], [3,4], [4,4], [4,5],
+            [5,5], [5,6], [6,6], [6,7], [7,7],
+            [7,8], [8,8], [8,9], [9,9], [10,10],
+            [10,11], [11,11], [12,12]
+        ];
+        const levelConfigs = [];
+        for (const [r, c] of baseSizes) {
+            const rows = Math.min(12, r);
+            const cols = Math.min(12, c);
+            levelConfigs.push({ rows, cols, moves: 0, mode: 'allOff' });
+            const area = rows * cols;
+            const moves = Math.max(1, Math.min(area, Math.round(area * 0.25)));
+            levelConfigs.push({ rows, cols, moves, mode: 'random' });
+        }
+        TOTAL_LEVELS = levelConfigs.length; // 36 关
+
+        let currentLevelIndex = 0;
+        let rows = levelConfigs[0].rows;
+        let cols = levelConfigs[0].cols;
+        let grid = createMatrix(rows, cols, 0);
+        let moveCount = 0;
+        let undoStack = [];
+        const initialStates = Array(TOTAL_LEVELS).fill(null);
+
+        init();
+
+        function init(){
+            for (let i = 0; i < TOTAL_LEVELS; i++) {
+                const opt = document.createElement('option');
+                opt.value = String(i);
+                opt.textContent = `第 ${i + 1} 关`;
+                levelSelect.appendChild(opt);
+            }
+            levelSelect.value = String(currentLevelIndex);
+
+            boardEl.addEventListener('click', onBoardClick);
+            prevLevelBtn.addEventListener('click', () => switchLevel(currentLevelIndex - 1));
+            nextLevelBtn.addEventListener('click', () => switchLevel(currentLevelIndex + 1));
+            levelSelect.addEventListener('change', () => switchLevel(parseInt(levelSelect.value, 10)));
+            resetBtn.addEventListener('click', () => generateLevel(currentLevelIndex, false));
+            undoBtn.addEventListener('click', undoMove);
+
+            if (customizeBtn) customizeBtn.addEventListener('click', enterCustomizeMode);
+            if (customDoneBtn) customDoneBtn.addEventListener('click', finishCustomizeMode);
+            if (hintBtn) hintBtn.addEventListener('click', toggleHint);
+
+            if (rowsInput) rowsInput.addEventListener('input', onSizeInputChange);
+            if (colsInput) colsInput.addEventListener('input', onSizeInputChange);
+
+            generateLevel(0, false);
+        }
+
+        function createMatrix(r, c, fill = 0){
+            return Array.from({ length: r }, () => Array.from({ length: c }, () => fill));
+        }
+
+        function renderBoard(){
+            boardEl.innerHTML = '';
+            boardEl.style.setProperty('--rows', String(rows));
+            boardEl.style.setProperty('--cols', String(cols));
+            for(let r=0;r<rows;r++){
+                for(let c=0;c<cols;c++){
+                    const cell = document.createElement('button');
+                    cell.className = 'fo-cell';
+                    if (grid[r][c] === 1) cell.classList.add('on');
+                    if (hintMode && hintPlan && hintPlan[r] && hintPlan[r][c] === 1) {
+                        const key = r+','+c; if (!clickedHints.has(key)) cell.classList.add('hint');
+                    }
+                    cell.setAttribute('data-r', String(r));
+                    cell.setAttribute('data-c', String(c));
+                    boardEl.appendChild(cell);
+                }
+            }
+            moveCountEl.textContent = String(moveCount);
+            undoBtn.disabled = undoStack.length === 0;
+            statusText.textContent = '';
+        }
+
+        function onBoardClick(e){
+            const target = e.target;
+            if(!(target instanceof HTMLElement)) return;
+            if(!target.classList.contains('fo-cell')) return;
+            const r = parseInt(target.getAttribute('data-r'), 10);
+            const c = parseInt(target.getAttribute('data-c'), 10);
+            if (isCustomizing){
+                grid[r][c] = grid[r][c] ^ 1;
+                renderBoard();
+                return;
+            }
+            // 仅熄灭格可按
+            if (grid[r][c] !== 0) return;
+            applyFlip(r, c, true);
+            if (hintMode && hintPlan && hintPlan[r] && hintPlan[r][c] === 1) {
+                const key = r+','+c; clickedHints.add(key);
+            }
+        }
+
+        function applyFlip(r, c, recordHistory){
+            if (!inBounds(r,c)) return;
+            const snapshot = deepClone(grid);
+            const deltas = [[0,0],[1,0],[-1,0],[0,1],[0,-1]];
+            for (const [dr,dc] of deltas){
+                const rr = r+dr, cc = c+dc;
+                if (inBounds(rr,cc)) grid[rr][cc] ^= 1;
+            }
+            moveCount++;
+            if (recordHistory) undoStack.push(snapshot);
+            renderBoard();
+            if (isAllOn()) showSuccessModal();
+        }
+
+        function inBounds(r,c){ return r>=0 && r<rows && c>=0 && c<cols; }
+        function deepClone(mat){ return mat.map(row=>row.slice()); }
+        function isAllOn(){ for(let r=0;r<rows;r++){ for(let c=0;c<cols;c++){ if(grid[r][c]!==1) return false; } } return true; }
+
+        function undoMove(){ if(undoStack.length===0) return; grid = undoStack.pop(); moveCount=Math.max(0,moveCount-1); renderBoard(); }
+
+        function switchLevel(nextIndex){
+            cancelSuccessTimer();
+            if (isCustomizing) return;
+            if (nextIndex<0) nextIndex=0; if (nextIndex>=TOTAL_LEVELS) nextIndex=TOTAL_LEVELS-1;
+            currentLevelIndex = nextIndex; levelSelect.value = String(currentLevelIndex);
+            generateLevel(currentLevelIndex, false);
+        }
+
+        function generateLevel(levelIndex){
+            cancelSuccessTimer(); if (isCustomizing) return; exitHintMode();
+            const config = levelConfigs[levelIndex];
+            rows = clamp(config.rows,2,100); cols = clamp(config.cols,2,100);
+            if (rowsInput) rowsInput.value=String(rows); if (colsInput) colsInput.value=String(cols);
+            if (initialStates[levelIndex]){
+                grid = deepClone(initialStates[levelIndex]);
+                rows = grid.length; cols = grid[0]?.length || 0;
+                if (rowsInput) rowsInput.value=String(rows); if (colsInput) colsInput.value=String(cols);
+            } else {
+                if (config.mode === 'allOff') { grid = createMatrix(rows, cols, 0); }
+                else {
+                    const result = generateRandomInitial(rows, cols, config.moves);
+                    grid = result.grid;
+                }
+                initialStates[levelIndex] = deepClone(grid);
+            }
+            moveCount=0; undoStack=[]; renderBoard();
+        }
+
+        function generateRandomInitial(r, c, moves){
+            const g = createMatrix(r, c, 1);
+            const used = new Set(); let steps = Math.max(1, Math.min(r*c, moves|0));
+            while (steps-- > 0){
+                let rr,cc,key,guard=0; do{
+                    rr=Math.floor(Math.random()*r); cc=Math.floor(Math.random()*c); key=rr+':'+cc; guard++; if(guard>8) break;
+                }while(used.has(key)); used.add(key);
+                const deltas=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
+                for(const [dr,dc] of deltas){ const nr=rr+dr, nc=cc+dc; if(nr>=0&&nr<r&&nc>=0&&nc<c) g[nr][nc]^=1; }
+            }
+            // 保证不是全亮
+            let allOn=true; outer: for(let i=0;i<r;i++){ for(let j=0;j<c;j++){ if(g[i][j]!==1){ allOn=false; break outer; } } }
+            if(allOn){ const deltas=[[0,0],[1,0],[-1,0],[0,1],[0,-1]]; for(const [dr,dc] of deltas){ const nr=0+dr, nc=0+dc; if(nr>=0&&nr<r&&nc>=0&&nc<c) g[nr][nc]^=1; } }
+            return { grid:g };
+        }
+
+        function enterCustomizeMode(){ if(isCustomizing) return; isCustomizing=true; if(rowsInput){rowsInput.disabled=false; rowsInput.max='100';} if(colsInput){colsInput.disabled=false; colsInput.max='100';} if(customDoneBtn) customDoneBtn.style.display=''; moveCount=0; undoStack=[]; renderBoard(); }
+        function finishCustomizeMode(){ if(!isCustomizing) return; isCustomizing=false; initialStates[currentLevelIndex]=deepClone(grid); if(rowsInput) rowsInput.disabled=true; if(colsInput) colsInput.disabled=true; if(customDoneBtn) customDoneBtn.style.display='none'; levelConfigs[currentLevelIndex].rows=clamp(grid.length,2,100); levelConfigs[currentLevelIndex].cols=clamp(grid[0]?.length||0,2,100); renderBoard(); }
+        function onSizeInputChange(){ if(!isCustomizing) return; const rVal=clamp(parseInt(rowsInput.value||'0',10)||0,2,100); const cVal=clamp(parseInt(colsInput.value||'0',10)||0,2,100); if(rVal!==rows||cVal!==cols){ rows=rVal; cols=cVal; grid=createMatrix(rows, cols, 0); moveCount=0; undoStack=[]; renderBoard(); } }
+
+        function toggleHint(){ if(isCustomizing) return; if(hintMode) exitHintMode(); else enterHintMode(); }
+        function enterHintMode(){
+            try {
+                // 转换为求解器格式：亮=0，灭=1
+                const solverInput = grid.map(row => row.map(cell => cell === 1 ? 0 : 1));
+                const solver = new BinaryMatrixSolver(solverInput);
+                const [minFlips, firstRowPath] = solver.solve();
+                if (solver.hasSolution){
+                    hintPlan = solver.fullPlan;
+                    hintMode = true; clickedHints.clear();
+                    if(hintBtn) hintBtn.textContent='隐藏提示';
+                    renderBoard();
+                    statusText.textContent = `最少需要 ${minFlips} 步`;
+                } else {
+                    statusText.textContent = '此关卡无解';
+                }
+            } catch (err) {
+                statusText.textContent = '求解失败: ' + err.message;
+            }
+        }
+        function exitHintMode(){ hintMode=false; hintPlan=null; clickedHints.clear(); if(hintBtn) hintBtn.textContent='提示'; statusText.textContent=''; renderBoard(); }
+
+        function showSuccessModal(){
+            if (successTimer){ clearTimeout(successTimer); successTimer=null; }
+            const modal = document.createElement('div'); modal.className='success-modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>通关成功</h3>
+                    <p>5 秒后自动进入下一关…</p>
+                    <div class="modal-buttons">
+                        <button class="btn btn-primary" id="nextNow">立即下一关</button>
+                        <button class="btn btn-secondary" id="closeModal">关闭</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            const cleanup=()=>{ if(modal&&modal.parentNode) modal.parentNode.removeChild(modal); };
+            modal.addEventListener('click',(e)=>{ if(e.target===modal) cleanup(); });
+            modal.querySelector('#closeModal').addEventListener('click', cleanup);
+            modal.querySelector('#nextNow').addEventListener('click', ()=>{ cleanup(); switchLevel(currentLevelIndex+1); });
+            successTimer = setTimeout(()=>{ cleanup(); switchLevel(currentLevelIndex+1); }, 5000);
+        }
+
+        function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi,v)); }
+        function cancelSuccessTimer(){ if(successTimer){ clearTimeout(successTimer); successTimer=null; } const m=document.querySelector('.success-modal'); if(m&&m.parentNode) m.parentNode.removeChild(m); }
+    })();
+    </script>
+</body>
+</html>
+
+
