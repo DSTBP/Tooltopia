@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flight Out - 点灯游戏</title>
+    <link rel="icon" href="favicon.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div class="fo-container">
+        <header class="fo-header">
+            <h1>Flight Out - 点灯游戏</h1>
+        </header>
+
+        <section class="fo-panel">
+            <div class="fo-left">
+                <div class="fo-controls">
+                <div class="fo-row">
+                    <label>关卡
+                        <select id="levelSelect"></select>
+                    </label>
+                    <button id="prevLevel" class="fo-btn">上一关</button>
+                    <button id="nextLevel" class="fo-btn">下一关</button>
+                </div>
+                <div class="fo-row">
+                    <label>行 <input type="number" id="rowsInput" min="2" max="100" value="5" disabled></label>
+                    <label>列 <input type="number" id="colsInput" min="2" max="100" value="5" disabled></label>
+                </div>
+                <div class="fo-row">
+                    <button id="reset" class="fo-btn">重开本关</button>
+                    <button id="undo" class="fo-btn" disabled>撤销</button>
+                    <button id="hint" class="fo-btn">提示</button>
+                </div>
+                <div class="fo-row">
+                    <button id="customize" class="fo-btn">自定义</button>
+                    <button id="customDone" class="fo-btn fo-primary" style="display:none;">完成</button>
+                </div>
+                <div class="fo-stats">
+                    <span>步数：<b id="moveCount">0</b></span>
+                    <span>目标：全亮</span>
+                    <span id="statusText"></span>
+                </div>
+                </div>
+
+                <div class="fo-help">
+                    <details open>
+                        <summary>如何游玩 / 规则说明</summary>
+                        <ul>
+                            <li>每个灯显示亮或灭</li>
+                            <li>点击一个灯格，影响自身及上下左右相邻的方格</li>
+                            <li>影响规则：如果灯亮则将其熄灭，如果熄灭则点亮</li>
+                            <li>如果是边缘或角落，则可能是三个或两个</li>
+                            <li>将棋盘中灯全部点亮即通关</li>
+                        </ul>
+                    </details>
+                </div>
+            </div>
+
+            <div class="fo-board-wrap">
+                <div id="board" class="fo-board" aria-label="lights-grid" role="grid"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="assets/js/solve.js"></script>
+    <script src="assets/js/script.js"></script>
+</body>
+</html>
