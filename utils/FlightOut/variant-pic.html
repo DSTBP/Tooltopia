@@ -195,38 +195,52 @@
             e.target.value = '';
         }
 
-        function setImageUrl(url, isFromRandomImage = false, currentIndex = 0){
+        function setImageUrl(url, isFromRandomImage = false, currentIndex = 0) {
             if (!url) return;
             
+            // 更新全局图片URL，更新预览区背景（先显示占位，提升体验）
             imgUrl = url;
             previewEl.style.backgroundImage = `url('${imgUrl}')`;
+            // 可选：添加加载中样式（如模糊过渡）
+            previewEl.style.opacity = '0.5';
             
+            // 创建Image对象验证加载状态（避免直接用backgroundImage无法捕获错误）
             const img = new Image();
+            // 关键：启用跨域支持（部分API需要）
             img.crossOrigin = 'anonymous';
+            img.addEventListener("load", imageReceived, false);
             
+            // 图片加载成功回调
             img.onload = () => {
+                // 恢复预览区透明度，标记真实图片尺寸
+                previewEl.style.opacity = '1';
                 naturalW = img.naturalWidth;
                 naturalH = img.naturalHeight;
+                // 执行图片颜色分析（原逻辑保留）
                 analyzeImageForHintColor(img);
-                // 图片加载成功后自动随机打乱
+                console.log(`第 ${currentIndex + 1} 个图源加载成功: ${imgUrl}`);
+                // 图片加载成功后执行随机打乱（原逻辑保留）
                 shuffleRandom();
             };
             
+            // 图片加载失败回调
             img.onerror = (error) => {
-                console.error('图片加载失败:', error);
-                // 清除无效的图片URL
+                console.error(`第 ${currentIndex + 1} 个图源加载失败:`, error);
+                // 清空无效URL和预览区背景
                 imgUrl = '';
-                previewEl.style.backgroundImage = '';
+                previewEl.style.backgroundImage = 'none';
+                previewEl.style.opacity = '1';
                 
+                // 如果是随机图片加载失败，自动尝试下一个图源
                 if (isFromRandomImage) {
-                    // 如果是随机图片加载失败，尝试下一个图源
                     tryNextRandomImage(currentIndex + 1);
                 } else {
-                    // 如果是手动输入的图片链接失败，显示错误提示
-                    alert('图片加载失败，请检查图片链接或选择其他图片');
+                    // 手动输入链接失败，提示用户检查
+                    alert('手动输入的图片链接加载失败，请确认链接有效且支持跨域访问~');
                 }
             };
             
+            // 触发图片加载（必须放在最后，确保onload/onerror已绑定）
             img.src = imgUrl;
         }
 
@@ -248,41 +262,36 @@
 
         // 全局变量存储图源列表
         let imageSources = [
-            // 图源1: https://t.alcy.cc/fj
-            'https://t.alcy.cc/fj',
-            // 图源2: http://www.98qy.com/sjbz/api.php
-            'http://www.98qy.com/sjbz/api.php',
-            // 图源3: https://imgapi.xl0408.top/index.php
-            'https://imgapi.xl0408.top/index.php',
-            // 图源4: https://www.dmoe.cc/random.php
-            'https://www.dmoe.cc/random.php',
-            // 图源5: https://api.mtyqx.cn/tapi/random.php
-            'https://api.mtyqx.cn/tapi/random.php',
-            // 图源6: https://cdn.seovx.com/?mom=302
-            'https://cdn.seovx.com/?mom=302',
-            // 备用方案1: picsum.photos
-            `https://picsum.photos/800/600?random=${Date.now()}`,
-            // 备用方案2: 另一个随机图片API
-            `https://source.unsplash.com/800x600/?nature&${Date.now()}`,
-            // 备用方案3: 再一个随机图片API
-            `https://picsum.photos/800/600?blur=1&random=${Date.now()}`
+            // 优选无CORS限制的随机图API
+            'https://api.mtyqx.cn/api/random.php?random=',
+            'https://picsum.photos/800/600?random=', // 官方无CORS，稳定
+            'https://source.unsplash.com/800x600/?nature,random&', // 支持HTTPS+无CORS
+            'https://placehold.co/800x600/cccccc/666666?text=Random+Image&', // 备用占位图（确保不失效）
+            'https://picsum.photos/800/600?blur=1&random=', // 模糊风格备用
+            'https://source.unsplash.com/800x600/?city,random&', // 城市主题备用
+            'https://placekitten.com/800/600?random=' // 猫咪主题备用（极低概率失效）
         ];
 
         function tryNextRandomImage(index) {
+            // 所有图源尝试完毕，显示友好提示（替换alert为更柔和的提示，可选）
             if (index >= imageSources.length) {
-                alert('所有图源都无法加载，请稍后重试');
+                alert('所有图源已尝试，当前暂无可用图片，请稍后重试~');
                 return;
             }
             
-            const imageUrl = imageSources[index];
-            console.log(`尝试图源 ${index + 1}: ${imageUrl}`);
+            // 拼接时间戳，避免浏览器缓存旧图
+            const timestamp = Date.now();
+            const imageUrl = imageSources[index] + timestamp;
+            console.log(`正在尝试第 ${index + 1} 个图源: ${imageUrl}`);
             
-            // 直接尝试加载图片，标记为来自随机图片
+            // 调用设置图片方法，标记为随机图片加载
             setImageUrl(imageUrl, true, index);
         }
 
-        function loadRandomImage(){
-            // 开始尝试第一个图源
+        function loadRandomImage() {
+            // 可选：加载前清空预览区，避免旧图残留
+            previewEl.style.backgroundImage = 'none';
+            // 从第一个图源开始尝试
             tryNextRandomImage(0);
         }
 
