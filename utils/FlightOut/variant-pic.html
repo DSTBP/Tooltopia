@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flight Out - 图片旋转版</title>
+    <link rel="icon" href="favicon.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+    /* 本页样式：为每个格子放置图片切片，并显示提示数字 */
+    .fo-board { --cell: 56px; }
+    .pic-form .fo-row { gap: 16px; align-items: center; }
+    .pic-form .inline { display: flex; align-items: center; gap: 8px; }
+    .pic-form .inline input[type="number"]{ width: 84px; }
+    .pic-form .url-input { width: 340px; padding: 6px 10px; border-radius: 8px; border: 1px solid #dee2e6; }
+    .pic-form .group { display: flex; gap: 18px; align-items: center; }
+    .pic-form .group .left { display: flex; flex-direction: column; gap: 10px; }
+    .pic-form .hint { color: #667085; font-size: 12px; }
+    .fo-cell.pic {
+        position: relative;
+        overflow: hidden;
+        background: transparent !important;
+    }
+    .fo-cell.pic .piece {
+        position: absolute;
+        left: 0; top: 0; right: 0; bottom: 0;
+        background-repeat: no-repeat;
+        background-size: var(--bgW) var(--bgH);
+        transform-origin: center center;
+        transition: transform 120ms ease-out;
+    }
+    .fo-cell.pic.hint-num {
+        color: var(--hintColor, #1f2d3d);
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+    }
+    .fo-cell.pic .hintText {
+        position: absolute;
+        left: 0; right: 0; top: 0; bottom: 0;
+        display: flex; align-items: center; justify-content: center;
+        pointer-events: none;
+        background: var(--hintBg, transparent);
+        border-radius: 6px;
+        font-size: 1.2rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+    .fo-preview {
+        width: 120px; height: 120px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        background-size: cover; background-position: center;
+    }
+    </style>
+    <script src="assets/js/solve-colorful.js"></script>
+    <script>
+    // 通过背景定位切片：背景整体尺寸按 (cols*100%) x (rows*100%)，每片位置为 (c/cols*100%, r/rows*100%)
+    </script>
+</head>
+<body>
+    <div class="fo-container">
+        <header class="fo-header">
+            <h1>Flight Out - 图片旋转版</h1>
+            <p class="fo-sub">点击某格会使“自身+上下左右”顺时针旋转 90°。共 4 种状态，旋转 4 次回到初始。</p>
+        </header>
+
+        <section class="fo-panel">
+            <div class="fo-left">
+                <div class="fo-controls pic-form">
+                    <div class="fo-row">
+                        <label class="inline">行 <input type="number" id="rowsInput" min="2" max="20" value="3"></label>
+                        <label class="inline">列 <input type="number" id="colsInput" min="2" max="20" value="3"></label>
+                    </div>
+                    <div class="fo-row group">
+                        <div class="left">
+                            <label class="inline">本地图片 <input type="file" id="fileInput" accept="image/*"></label>
+                            <label class="inline">图片链接
+                                <input type="text" id="photoUrl" class="url-input" placeholder="https://...">
+                            </label>
+                            <div class="hint">支持本地文件或网络链接，加载后自动匹配高对比提示色</div>
+                        </div>
+                        <div class="fo-preview" id="preview"></div>
+                    </div>
+                    <div class="fo-row">
+                        <button id="loadPhoto" class="fo-btn">加载图片</button>
+                        <button id="reset" class="fo-btn">重开本关</button>
+                        <button id="undo" class="fo-btn" disabled>撤销</button>
+                        <button id="shuffle" class="fo-btn">随机一图</button>
+                        <button id="hint" class="fo-btn">提示</button>
+                        <a href="variant.html" class="fo-btn" id="variantBtn" style="margin-left: 8px;">返回中心</a>
+                    </div>
+                    <div class="fo-stats">
+                        <span>步数：<b id="moveCount">0</b></span>
+                        <span id="minStepsWrap" style="display:none;">最少需要 <b id="minSteps">-</b> 步</span>
+                        <span id="statusText"></span>
+                    </div>
+                </div>
+
+                <div class="fo-help">
+                    <details open>
+                        <summary>玩法说明（图片旋转点灯）</summary>
+                        <ul>
+                            <li>将图片切割为 m x n 的网格，每一块为一个格子。</li>
+                            <li>点击会使“自身+上下左右”顺时针旋转 90°。</li>
+                            <li>目标：所有格子回到初始方向（旋转 0 度）。</li>
+                            <li>支持从本地、链接以及随机一图选择图片。</li>
+                            <li>支持自定义盘面尺寸，最大不超过 20 行 20 列。</li>
+                            <li>“提示”使用 4 状态求解器计算，按数字显示剩余次数。</li>
+                        </ul>
+                    </details>
+                </div>
+            </div>
+
+            <div class="fo-board-wrap">
+                <div id="board" class="fo-board" aria-label="pic-grid" role="grid"></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+    (function(){
+        const boardEl = document.getElementById('board');
+        const rowsInput = document.getElementById('rowsInput');
+        const colsInput = document.getElementById('colsInput');
+        const fileInput = document.getElementById('fileInput');
+        const photoUrlInput = document.getElementById('photoUrl');
+        const loadPhotoBtn = document.getElementById('loadPhoto');
+        const previewEl = document.getElementById('preview');
+        const resetBtn = document.getElementById('reset');
+        const undoBtn = document.getElementById('undo');
+        const hintBtn = document.getElementById('hint');
+        const moveCountEl = document.getElementById('moveCount');
+        const statusText = document.getElementById('statusText');
+        const minStepsEl = document.getElementById('minSteps');
+        const minStepsWrap = document.getElementById('minStepsWrap');
+
+        const K = 4; // 四状态
+        let rows = 3, cols = 3;
+        let grid = createMatrix(rows, cols, 0);
+        let moveCount = 0;
+        let undoStack = [];
+        let hintMode = false; // 是否显示提示
+        let hintCounts = new Map(); // key -> remain
+        let imgUrl = '';
+        let naturalW = 0, naturalH = 0;
+        let hintTextColor = '#1f2d3d';
+        let hintBgColor = 'rgba(255,255,255,0.0)';
+
+        init();
+
+        function init(){
+            boardEl.addEventListener('click', onBoardClick);
+            rowsInput.addEventListener('input', onSizeChange);
+            colsInput.addEventListener('input', onSizeChange);
+            if (fileInput) fileInput.addEventListener('change', onFileSelect);
+            resetBtn.addEventListener('click', resetLevel);
+            undoBtn.addEventListener('click', undoMove);
+            document.getElementById('shuffle').addEventListener('click', loadRandomImage);
+            hintBtn.addEventListener('click', toggleHint);
+            if (loadPhotoBtn) loadPhotoBtn.addEventListener('click', loadSelectedPhoto);
+            renderBoard();
+        }
+
+        function loadSelectedPhoto(){
+            if (!photoUrlInput) return;
+            const url = (photoUrlInput.value||'').trim();
+            if (!url) {
+                alert('请输入图片链接');
+                return;
+            }
+            setImageUrl(url, false, 0);
+        }
+
+        function onFileSelect(e){
+            const file = e.target.files && e.target.files[0];
+            if (!file) {
+                alert('请选择图片文件');
+                return;
+            }
+            
+            // 检查文件类型
+            if (!file.type.startsWith('image/')) {
+                alert('请选择图片文件');
+                return;
+            }
+            
+            // 清除之前的URL（如果存在）
+            if (imgUrl && imgUrl.startsWith('blob:')) {
+                URL.revokeObjectURL(imgUrl);
+            }
+            
+            const url = URL.createObjectURL(file);
+            setImageUrl(url, false, 0);
+            
+            // 重置文件输入框，确保下次选择相同文件时也能触发change事件
+            e.target.value = '';
+        }
+
+        function setImageUrl(url, isFromRandomImage = false, currentIndex = 0){
+            if (!url) return;
+            
+            imgUrl = url;
+            previewEl.style.backgroundImage = `url('${imgUrl}')`;
+            
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            
+            img.onload = () => {
+                naturalW = img.naturalWidth;
+                naturalH = img.naturalHeight;
+                analyzeImageForHintColor(img);
+                // 图片加载成功后自动随机打乱
+                shuffleRandom();
+            };
+            
+            img.onerror = (error) => {
+                console.error('图片加载失败:', error);
+                // 清除无效的图片URL
+                imgUrl = '';
+                previewEl.style.backgroundImage = '';
+                
+                if (isFromRandomImage) {
+                    // 如果是随机图片加载失败，尝试下一个图源
+                    tryNextRandomImage(currentIndex + 1);
+                } else {
+                    // 如果是手动输入的图片链接失败，显示错误提示
+                    alert('图片加载失败，请检查图片链接或选择其他图片');
+                }
+            };
+            
+            img.src = imgUrl;
+        }
+
+        function onSizeChange(){
+            rows = clamp(parseInt(rowsInput.value||'3',10)||3, 2, 20);
+            cols = clamp(parseInt(colsInput.value||'3',10)||3, 2, 20);
+            grid = createMatrix(rows, cols, 0);
+            moveCount = 0; undoStack = [];
+            exitHintMode();
+            renderBoard();
+        }
+
+        function resetLevel(){
+            grid = createMatrix(rows, cols, 0);
+            moveCount = 0; undoStack = [];
+            exitHintMode();
+            renderBoard();
+        }
+
+        // 全局变量存储图源列表
+        let imageSources = [
+            // 图源1: https://t.alcy.cc/fj
+            'https://t.alcy.cc/fj',
+            // 图源2: http://www.98qy.com/sjbz/api.php
+            'http://www.98qy.com/sjbz/api.php',
+            // 图源3: https://imgapi.xl0408.top/index.php
+            'https://imgapi.xl0408.top/index.php',
+            // 图源4: https://www.dmoe.cc/random.php
+            'https://www.dmoe.cc/random.php',
+            // 图源5: https://api.mtyqx.cn/tapi/random.php
+            'https://api.mtyqx.cn/tapi/random.php',
+            // 图源6: https://cdn.seovx.com/?mom=302
+            'https://cdn.seovx.com/?mom=302',
+            // 备用方案1: picsum.photos
+            `https://picsum.photos/800/600?random=${Date.now()}`,
+            // 备用方案2: 另一个随机图片API
+            `https://source.unsplash.com/800x600/?nature&${Date.now()}`,
+            // 备用方案3: 再一个随机图片API
+            `https://picsum.photos/800/600?blur=1&random=${Date.now()}`
+        ];
+
+        function tryNextRandomImage(index) {
+            if (index >= imageSources.length) {
+                alert('所有图源都无法加载，请稍后重试');
+                return;
+            }
+            
+            const imageUrl = imageSources[index];
+            console.log(`尝试图源 ${index + 1}: ${imageUrl}`);
+            
+            // 直接尝试加载图片，标记为来自随机图片
+            setImageUrl(imageUrl, true, index);
+        }
+
+        function loadRandomImage(){
+            // 开始尝试第一个图源
+            tryNextRandomImage(0);
+        }
+
+        function shuffleRandom(){
+            // 对每个单元以一定概率随机旋转 0..3 次，确保非全 0
+            const prev = createMatrix(rows, cols, 0);
+            grid = createMatrix(rows, cols, 0);
+            let changed = false;
+            for (let r=0;r<rows;r++) for (let c=0;c<cols;c++){
+                const t = Math.floor(Math.random()*4); if(t>0){ grid[r][c]=t; changed=true; }
+            }
+            if (!changed) grid[0][0] = 1;
+            moveCount = 0; undoStack = [];
+            exitHintMode();
+            renderBoard();
+            animatePiecesFromTo(prev, grid);
+        }
+
+        function createMatrix(r,c,fill=0){
+            return Array.from({length:r},()=>Array.from({length:c},()=>fill));
+        }
+
+        function renderBoard(){
+            boardEl.innerHTML = '';
+            boardEl.style.setProperty('--rows', String(rows));
+            boardEl.style.setProperty('--cols', String(cols));
+            // 设置整体背景尺寸百分比
+            const bgW = `${cols*100}%`;
+            const bgH = `${rows*100}%`;
+            boardEl.style.setProperty('--bgW', bgW);
+            boardEl.style.setProperty('--bgH', bgH);
+            if (boardEl && hintTextColor) {
+                boardEl.style.setProperty('--hintColor', hintTextColor);
+                boardEl.style.setProperty('--hintBg', hintBgColor);
+            }
+
+            for (let r=0; r<rows; r++){
+                for (let c=0; c<cols; c++){
+                    const cell = document.createElement('button');
+                    cell.className = 'fo-cell pic';
+                    cell.setAttribute('data-r', String(r));
+                    cell.setAttribute('data-c', String(c));
+
+                    const piece = document.createElement('div');
+                    piece.className = 'piece';
+                    if (imgUrl) piece.style.backgroundImage = `url('${imgUrl}')`;
+                    const bx = (c/(cols-1||1))*100; // 百分比位置
+                    const by = (r/(rows-1||1))*100;
+                    piece.style.backgroundPosition = `${bx}% ${by}%`;
+                    piece.style.transform = `rotate(${(grid[r][c]%K)*90}deg)`;
+                    cell.appendChild(piece);
+
+                    if (hintMode && hintCounts.has(r+','+c)){
+                        cell.classList.add('hint-num');
+                        const txt = document.createElement('div');
+                        txt.className = 'hintText';
+                        txt.textContent = String(hintCounts.get(r+','+c));
+                        cell.appendChild(txt);
+                    }
+
+                    boardEl.appendChild(cell);
+                }
+            }
+            moveCountEl.textContent = String(moveCount);
+            undoBtn.disabled = undoStack.length===0;
+            statusText.textContent = '';
+        }
+
+        function onBoardClick(e){
+            const target = e.target;
+            if(!(target instanceof HTMLElement)) return;
+            const cell = target.closest('.fo-cell');
+            if(!cell) return;
+            const r = parseInt(cell.getAttribute('data-r'),10);
+            const c = parseInt(cell.getAttribute('data-c'),10);
+
+            const before = deepClone(grid);
+            applyFlip(r,c,true);
+
+            if (hintMode){
+                // 确认真实点击（仅这五个格子变化）
+                const deltas=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
+                const changed=new Set();
+                for(let i=0;i<rows;i++) for(let j=0;j<cols;j++) if((before[i][j]%K)!==(grid[i][j]%K)) changed.add(i+','+j);
+                const expected=new Set();
+                for(const [dr,dc] of deltas){ const rr=r+dr, cc=c+dc; if(inBounds(rr,cc)) expected.add(rr+','+cc); }
+                let isDirect=true; for(const key of expected){ if(!changed.has(key)){ isDirect=false; break; } }
+                if (isDirect && changed.size!==expected.size) isDirect=false;
+                if (isDirect){
+                    const k=r+','+c;
+                    if(hintCounts.has(k)){
+                        let v=hintCounts.get(k)-1; if(v<=0) hintCounts.delete(k); else hintCounts.set(k,v);
+                    }
+                }
+                // 仍需展示旋转动画后的状态
+                renderBoard();
+                animatePiecesFromTo(before, grid);
+            }
+        }
+
+        function applyFlip(r,c,record){
+            if(!inBounds(r,c)) return;
+            const prevGrid = deepClone(grid);
+            const snapshot = deepClone(grid);
+            const deltas=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
+            for(const [dr,dc] of deltas){ const rr=r+dr, cc=c+dc; if(inBounds(rr,cc)) grid[rr][cc]=(grid[rr][cc]+1)%K; }
+            moveCount++;
+            if(record) undoStack.push(snapshot);
+            renderBoard();
+            animatePiecesFromTo(prevGrid, grid);
+            if (isAllTarget()) showSuccessModal();
+        }
+
+        function isAllTarget(){
+            for(let i=0;i<rows;i++) for(let j=0;j<cols;j++) if((grid[i][j]%K)!==0) return false; return true;
+        }
+
+        function inBounds(r,c){ return r>=0 && r<rows && c>=0 && c<cols; }
+        function deepClone(m){ return m.map(row=>row.slice()); }
+        function animatePiecesFromTo(prev, next){
+            try {
+                for (let r=0;r<rows;r++){
+                    for (let c=0;c<cols;c++){
+                        const piece = boardEl.querySelector(`.fo-cell[data-r="${r}"][data-c="${c}"] .piece`);
+                        if (!piece) continue;
+                        const fromDeg = ((prev[r][c]%K)+K)%K * 90;
+                        const rawTo = ((next[r][c]%K)+K)%K * 90;
+                        // 始终顺时针：将目标角度调整为 fromDeg 向前（+）到达 rawTo
+                        const delta = (rawTo - fromDeg + 360) % 360; // 0..270
+                        const toDeg = fromDeg + delta; // 单调递增
+
+                        // 先无动画设置到起点
+                        const oldTransition = piece.style.transition;
+                        piece.style.transition = 'none';
+                        piece.style.transform = `rotate(${fromDeg}deg)`;
+                        // 强制回流
+                        void piece.offsetWidth;
+                        // 再恢复动画并设置到目标
+                        piece.style.transition = oldTransition || 'transform 180ms ease-out';
+                        requestAnimationFrame(()=>{ piece.style.transform = `rotate(${toDeg}deg)`; });
+                    }
+                }
+            } catch(_) {}
+        }
+
+        function analyzeImageForHintColor(image){
+            try {
+                const w = 80, h = 80; // 取缩略图近似平均亮度
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(image, 0, 0, w, h);
+                const data = ctx.getImageData(0,0,w,h).data;
+                let sum = 0; const n = w*h;
+                for (let i=0;i<data.length;i+=4){
+                    const r=data[i], g=data[i+1], b=data[i+2];
+                    const lum = 0.2126*r + 0.7152*g + 0.0722*b; // 相对亮度
+                    sum += lum;
+                }
+                const avg = sum / n; // 0..255
+                // 亮图用深色字+浅底，暗图用浅色字+深底
+                if (avg >= 140) {
+                    hintTextColor = '#1f2d3d';
+                    hintBgColor = 'rgba(255,255,255,0.35)';
+                } else {
+                    hintTextColor = '#f8f9fa';
+                    hintBgColor = 'rgba(0,0,0,0.35)';
+                }
+            } catch (_) {
+                hintTextColor = '#1f2d3d';
+                hintBgColor = 'rgba(255,255,255,0.25)';
+            }
+        }
+
+        function undoMove(){ if(undoStack.length===0) return; grid=undoStack.pop(); moveCount=Math.max(0,moveCount-1); renderBoard(); }
+
+        function toggleHint(){ if(hintMode) exitHintMode(); else enterHintMode(); }
+
+        function enterHintMode(){
+            try {
+                const solver = new NStateMatrixSolver(grid.map(row=>row.map(v=>v%K)), K);
+                const res = solver.solve();
+                if (!solver.hasSolution){
+                    hintCounts = new Map();
+                    if (minStepsWrap) { minStepsWrap.textContent='此初始状态无解'; minStepsWrap.style.display=''; }
+                    hintMode = true; if(hintBtn) hintBtn.textContent='隐藏提示'; renderBoard(); return;
+                }
+                const plan = solver.fullPlan || [];
+                hintCounts = new Map();
+                for(let r=0;r<plan.length;r++) for(let c=0;c<plan[0].length;c++){
+                    const need = plan[r][c]%K; if(need) hintCounts.set(r+','+c, need);
+                }
+                if (minStepsWrap){
+                    let min=0; for(const row of plan) for(const v of row) min += (v%K);
+                    minStepsWrap.innerHTML = '最少需要 <b id="minSteps"></b> 步';
+                    const el = document.getElementById('minSteps'); if(el) el.textContent=String(min);
+                    minStepsWrap.style.display='';
+                }
+                hintMode = true; if(hintBtn) hintBtn.textContent='隐藏提示'; renderBoard();
+            } catch(err){ statusText.textContent='提示计算失败或无解'; }
+        }
+
+        function exitHintMode(){
+            hintMode = false;
+            hintCounts = new Map();
+            if (hintBtn) hintBtn.textContent = '提示';
+            if (minStepsWrap) minStepsWrap.style.display = 'none';
+            renderBoard();
+        }
+
+        function showSuccessModal(){
+            const modal = document.createElement('div'); modal.className='success-modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>完成拼图</h3>
+                    <div class="modal-buttons">
+                        <button class="btn btn-secondary" id="closeModal">关闭</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            const cleanup=()=>{ if(modal&&modal.parentNode) modal.parentNode.removeChild(modal); };
+            modal.addEventListener('click',(e)=>{ if(e.target===modal) cleanup(); });
+            modal.querySelector('#closeModal').addEventListener('click', cleanup);
+        }
+
+        function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi,v)); }
+    })();
+    </script>
+</body>
+</html>
+
