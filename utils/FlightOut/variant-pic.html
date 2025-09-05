@@ -167,7 +167,27 @@
                 alert('请输入图片链接');
                 return;
             }
-            setImageUrl(url, false, 0);
+            
+            // 使用 AllOrigins 代理处理用户输入的图片链接
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            console.log(`用户输入图片链接，使用 AllOrigins 代理: ${proxyUrl}`);
+            
+            fetch(proxyUrl)
+                .then(res => {
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    return res.blob();   // 获取图片二进制数据
+                })
+                .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+                    console.log(`用户图片链接代理成功，blob 地址: ${blobUrl}`);
+                    setImageUrl(blobUrl, false, 0);
+                })
+                .catch(err => {
+                    console.error('用户图片链接代理失败:', err);
+                    // 如果代理失败，尝试直接使用原始URL
+                    console.log('尝试直接使用原始URL:', url);
+                    setImageUrl(url, false, 0);
+                });
         }
 
         function onFileSelect(e){
@@ -208,7 +228,7 @@
             const img = new Image();
             // 关键：启用跨域支持（部分API需要）
             img.crossOrigin = 'anonymous';
-            
+
             // 图片加载成功回调
             img.onload = () => {
                 // 恢复预览区透明度，标记真实图片尺寸
@@ -259,31 +279,82 @@
             renderBoard();
         }
 
-        // 全局变量存储图源列表
+        // 全局变量存储图源列表（使用多个CORS代理服务）
+        // ------------------- 图源列表 -------------------
         let imageSources = [
-            // 优选无CORS限制的随机图API
-            'https://picsum.photos/800/600?random=', // 官方无CORS，稳定
-            'https://source.unsplash.com/800x600/?nature,random&', // 支持HTTPS+无CORS
-            'https://placehold.co/800x600/cccccc/666666?text=Random+Image&', // 备用占位图（确保不失效）
-            'https://picsum.photos/800/600?blur=1&random=', // 模糊风格备用
-            'https://source.unsplash.com/800x600/?city,random&', // 城市主题备用
-            'https://placekitten.com/800/600?random=' // 猫咪主题备用（极低概率失效）
+            // 必应每日一图（通过 AllOrigins 代理 JSON）
+            () => `https://api.allorigins.win/raw?url=${encodeURIComponent(
+                `https://cn.bing.com/HPImageArchive.aspx?format=js&idx=${Math.floor(Math.random() * 30)}&n=1&mkt=zh-CN`
+            )}`,
+
+            // 随机二次元（通过 AllOrigins 代理）
+            () => `https://api.allorigins.win/raw?url=${encodeURIComponent('https://t.alcy.cc/fj')}`,
+            () => `https://api.allorigins.win/raw?url=${encodeURIComponent('http://www.98qy.com/sjbz/api.php')}`,
+            () => `https://api.allorigins.win/raw?url=${encodeURIComponent('https://imgapi.xl0408.top/index.php')}`,
+            () => `https://api.allorigins.win/raw?url=${encodeURIComponent('https://www.dmoe.cc/random.php')}`,
+            () => `https://api.allorigins.win/raw?url=${encodeURIComponent('https://api.mtyqx.cn/tapi/random.php')}`,
+            () => `https://api.allorigins.win/raw?url=${encodeURIComponent('https://cdn.seovx.com/?mom=302')}`,
+
+            // 无需 CORS 的公开随机图
+            () => `https://picsum.photos/800/600?random=${Date.now()}`,
+            () => `https://source.unsplash.com/800x600/?nature&${Date.now()}`,
+            () => `https://placekitten.com/800/600?random=${Date.now()}`,
+            () => `https://picsum.photos/800/600?blur=1&random=${Date.now()}`
         ];
 
+        // ------------------- 尝试加载随机图片 -------------------
         function tryNextRandomImage(index) {
-            // 所有图源尝试完毕，显示友好提示（替换alert为更柔和的提示，可选）
             if (index >= imageSources.length) {
                 alert('所有图源已尝试，当前暂无可用图片，请稍后重试~');
                 return;
             }
-            
-            // 拼接时间戳，避免浏览器缓存旧图
-            const timestamp = Date.now();
-            const imageUrl = imageSources[index] + timestamp;
-            console.log(`正在尝试第 ${index + 1} 个图源: ${imageUrl}`);
-            
-            // 调用设置图片方法，标记为随机图片加载
-            setImageUrl(imageUrl, true, index);
+
+            const sourceFunction = imageSources[index];
+            const sourceUrl = sourceFunction();
+            console.log(`正在尝试第 ${index + 1} 个图源: ${sourceUrl}`);
+
+            // 如果是必应 API（第 1 个图源）
+            if (index === 0) {
+                fetch(sourceUrl)
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data.images && data.images[0] && data.images[0].url) {
+                            const imageUrl = 'https://cn.bing.com' + data.images[0].url;
+                            console.log(`必应API成功: ${imageUrl}`);
+                            setImageUrl(imageUrl, true, index);
+                        } else {
+                            throw new Error('必应API返回格式错误');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('必应API失败:', err);
+                        tryNextRandomImage(index + 1);
+                    });
+            }
+            // 如果是 AllOrigins 代理的图源
+            else if (sourceUrl.includes('allorigins.win')) {
+                fetch(sourceUrl)
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                        return res.blob();   // 拿到图片二进制
+                    })
+                    .then(blob => {
+                        const blobUrl = URL.createObjectURL(blob);
+                        console.log(`AllOrigins 成功，blob 地址: ${blobUrl}`);
+                        setImageUrl(blobUrl, true, index);
+                    })
+                    .catch(err => {
+                        console.error(`AllOrigins 失败:`, err);
+                        tryNextRandomImage(index + 1);
+                    });
+            }
+            // 普通图源（无需 CORS）
+            else {
+                setImageUrl(sourceUrl, true, index);
+            }
         }
 
         function loadRandomImage() {
@@ -520,4 +591,3 @@
     </script>
 </body>
 </html>
-
