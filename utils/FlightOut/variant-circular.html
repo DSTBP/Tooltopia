@@ -64,7 +64,7 @@
         </section>
     </div>
 
-    <script src="assets/js/solve2.js"></script>
+    <script src="assets/js/solve-circular.js"></script>
     <script>
     (function(){
         const boardEl = document.getElementById('board');
@@ -209,6 +209,8 @@
             if (hintMode) {
                 const key = r+','+c;
                 clickedHints.add(key);
+                // 立即刷新，使当前格子的数字即时变化
+                renderBoard();
             }
         }
 

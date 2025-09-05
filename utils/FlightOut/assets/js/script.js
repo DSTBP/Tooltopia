@@ -170,6 +170,9 @@
         if (hintMode && hintPlan && hintPlan[r] && hintPlan[r][c] === 1) {
             const hintKey = `${r},${c}`;
             clickedHints.add(hintKey);
+            
+            // 立即刷新，使当前格子的数字即时变化
+            renderBoard();
         }
     }
 

@@ -6,6 +6,15 @@
     <title>Flight Out - 彩色版</title>
     <link rel="icon" href="favicon.png">
     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+    /* 仅本页：提示数字样式 */
+    .fo-cell.hint-num {
+        color: #1f2d3d;
+        font-weight: 700;
+        font-size: 0.95rem;
+        text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+    }
+    </style>
 </head>
 <body>
     <div class="fo-container">
@@ -42,6 +51,7 @@
                     <div class="fo-stats">
                         <span>步数：<b id="moveCount">0</b></span>
                         <span>目标：全(K-1)</span>
+                        <span id="minStepsWrap" style="display:none;">最少需要 <b id="minSteps">-</b> 步</span>
                         <span id="statusText"></span>
                     </div>
                 </div>
@@ -55,7 +65,6 @@
                             <li>目标：将所有格子状态变为 (K-1) 状态</li>
                             <li>默认 K=3（关→红→绿→关），可在自定义模式修改</li>
                             <li>自定义颜色数量最高为 8 种</li>
-                            <li>提示功能暂未实现</li>
                         </ul>
                     </details>
                 </div>
@@ -67,6 +76,7 @@
         </section>
     </div>
 
+    <script src="assets/js/solve-colorful.js"></script>
     <script>
     (function(){
         const boardEl = document.getElementById('board');
@@ -82,6 +92,8 @@
         const customDoneBtn = document.getElementById('customDone');
         const hintBtn = document.getElementById('hint');
         const moveCountEl = document.getElementById('moveCount');
+        const minStepsEl = document.getElementById('minSteps');
+        const minStepsWrap = document.getElementById('minStepsWrap');
         const statusText = document.getElementById('statusText');
 
         // 高对比度调色板：避免与背景紫蓝系和提示粉色 (#ff6b9d) 相近
@@ -91,6 +103,9 @@
         let successTimer = null;
         let isCustomizing = false;
         let colorCount = 3;
+        let hintMode = false;
+        // key => remaining presses needed (1..K-1)
+        let hintCounts = new Map();
 
         const baseSizes = [
             [2,3], [3,3], [3,4], [4,4], [4,5],
@@ -160,7 +175,7 @@
             levelSelect.addEventListener('change', () => switchLevel(parseInt(levelSelect.value, 10)));
             resetBtn.addEventListener('click', () => generateLevel(currentLevelIndex, false));
             undoBtn.addEventListener('click', undoMove);
-            hintBtn.addEventListener('click', () => { statusText.textContent = '提示功能暂未实现'; });
+            hintBtn.addEventListener('click', toggleHint);
 
             if (customizeBtn) customizeBtn.addEventListener('click', enterCustomizeMode);
             if (customDoneBtn) customDoneBtn.addEventListener('click', finishCustomizeMode);
@@ -188,6 +203,14 @@
                     cell.style.background = palette[v % palette.length];
                     cell.setAttribute('data-r', String(r));
                     cell.setAttribute('data-c', String(c));
+                    if (hintMode) {
+                        const key = r+','+c;
+                        if (hintCounts.has(key)) {
+                            cell.classList.add('hint-num');
+                            const remain = hintCounts.get(key);
+                            cell.textContent = String(remain);
+                        }
+                    }
                     boardEl.appendChild(cell);
                 }
             }
@@ -207,7 +230,32 @@
                 renderBoard();
                 return;
             }
+            const before = deepClone(grid);
             applyFlip(r, c, true);
+            if (hintMode) {
+                const deltas=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
+                const changed = new Set();
+                for(let i=0;i<rows;i++){
+                    for(let j=0;j<cols;j++){
+                        if ((before[i][j] % colorCount) !== (grid[i][j] % colorCount)) changed.add(i+','+j);
+                    }
+                }
+                const expected = new Set();
+                for(const [dr,dc] of deltas){ const rr=r+dr, cc=c+dc; if(inBounds(rr,cc)) expected.add(rr+','+cc); }
+                let isDirectClick = true;
+                for (const key of expected){ if (!changed.has(key)) { isDirectClick = false; break; } }
+                if (isDirectClick && changed.size !== expected.size) isDirectClick = false;
+
+                if (isDirectClick) {
+                    // 仅减少“被点击的那个格子”的提示数字；周围受影响的格子不减少
+                    const k = r+','+c;
+                    if (hintCounts.has(k)) {
+                        let v = hintCounts.get(k) - 1;
+                        if (v <= 0) hintCounts.delete(k); else hintCounts.set(k, v);
+                    }
+                }
+                renderBoard();
+            }
         }
 
         function applyFlip(r, c, recordHistory){
@@ -240,6 +288,7 @@
         function switchLevel(nextIndex){
             cancelSuccessTimer();
             if (isCustomizing) return;
+            if (hintMode) exitHintMode();
             if (nextIndex<0) nextIndex=0; if (nextIndex>=TOTAL_LEVELS) nextIndex=TOTAL_LEVELS-1;
             currentLevelIndex = nextIndex; levelSelect.value = String(currentLevelIndex);
             generateLevel(currentLevelIndex, false);
@@ -264,6 +313,65 @@
                 initialStates[levelIndex] = { grid: deepClone(grid), colorCount };
             }
             moveCount=0; undoStack=[]; renderBoard();
+            if (minStepsWrap) { minStepsWrap.style.display = 'none'; }
+        }
+
+        function toggleHint(){
+            if (hintMode) { exitHintMode(); } else { enterHintMode(); }
+        }
+
+        function enterHintMode(){
+            try {
+                // 目标为 (K-1)，将矩阵转换到“求解为全0”形式：v' = (v - (K-1)) mod K = (v + 1) mod K
+                const transformed = grid.map(row => row.map(v => (v + 1) % colorCount));
+                const solver = new NStateMatrixSolver(transformed, colorCount);
+                solver.solve();
+                if (!solver.hasSolution) {
+                    // 无解：显示“此初始状态无解”，不生成数字提示
+                    hintCounts = new Map();
+                    if (minStepsWrap) {
+                        minStepsWrap.textContent = '此初始状态无解';
+                        minStepsWrap.style.display = '';
+                    }
+                    hintMode = true;
+                    if (hintBtn) hintBtn.textContent = '隐藏提示';
+                    renderBoard();
+                    return;
+                }
+                const plan = solver.fullPlan || [];
+                hintCounts = new Map();
+                const rowsP = plan.length;
+                const colsP = rowsP ? plan[0].length : 0;
+                for (let r = 0; r < rowsP; r++) {
+                    for (let c = 0; c < colsP; c++) {
+                        const need = plan[r][c] % colorCount;
+                        if (need) hintCounts.set(r+','+c, need);
+                    }
+                }
+                // 进入提示时显示“最少需要 X 步”
+                if (minStepsWrap) {
+                    let min = 0;
+                    for (const row of plan) for (const v of row) min += (v % colorCount);
+                    // 重建模板，确保无解后恢复结构
+                    minStepsWrap.innerHTML = '最少需要 <b id="minSteps"></b> 步';
+                    const el = document.getElementById('minSteps');
+                    if (el) el.textContent = String(min);
+                    minStepsWrap.style.display = '';
+                }
+                hintMode = true;
+                if (hintBtn) hintBtn.textContent = '隐藏提示';
+                renderBoard();
+            } catch (e) {
+                statusText.textContent = '提示计算失败或无解';
+            }
+        }
+
+        function exitHintMode(){
+            hintMode = false;
+            hintCounts = new Map();
+            if (hintBtn) hintBtn.textContent = '提示';
+            if (minStepsWrap) { minStepsWrap.style.display = 'none'; }
+            renderBoard();
         }
 
         function generateRandomInitial(r, c, moves){
@@ -310,6 +418,24 @@
 
         function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi,v)); }
         function cancelSuccessTimer(){ if(successTimer){ clearTimeout(successTimer); successTimer=null; } const m=document.querySelector('.success-modal'); if(m&&m.parentNode) m.parentNode.removeChild(m); }
+
+        function computeMinStepsAsync(){
+            try {
+                if (!minStepsEl) return;
+                const transformed = grid.map(row => row.map(v => (v + 1) % colorCount));
+                const solver = new NStateMatrixSolver(transformed, colorCount);
+                const res = solver.solve();
+                let min = 0;
+                if (solver && solver.fullPlan && solver.fullPlan.length) {
+                    for (const row of solver.fullPlan) for (const v of row) min += (v % colorCount);
+                } else if (res && typeof res.minFlips === 'number' && res.minFlips >= 0) {
+                    min = res.minFlips;
+                }
+                minStepsEl.textContent = String(min);
+            } catch (e) {
+                if (minStepsEl) minStepsEl.textContent = '-';
+            }
+        }
     })();
     </script>
 </body>
