@@ -7,6 +7,8 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-attachment: fixed;
+    background-size: 100% 100%;
     min-height: 100vh;
     color: #333;
     line-height: 1.6;
@@ -894,7 +896,7 @@ button#customDone.fo-btn:hover:not(:disabled) {
 
 .fo-board-wrap {
     background: transparent;
-    padding: 0;
+    padding: 8px; /* 棋盘四周留缝，与左侧布局一致 */
     box-shadow: none;
     display: flex;
     justify-content: center; /* 让矩阵在右侧区域水平居中 */
@@ -904,7 +906,7 @@ button#customDone.fo-btn:hover:not(:disabled) {
 .fo-board {
     --rows: 5;
     --cols: 5;
-    --cell: 48px;
+    --cell: 40px;
     display: grid;
     grid-template-rows: repeat(var(--rows), var(--cell));
     grid-template-columns: repeat(var(--cols), var(--cell));

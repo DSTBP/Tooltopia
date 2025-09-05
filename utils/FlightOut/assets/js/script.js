@@ -33,12 +33,38 @@
         [2,3], [3,3], [3,4], [4,4], [4,5],
         [5,5], [5,6], [6,6], [6,7], [7,7],
         [7,8], [8,8], [8,9], [9,9], [10,10],
-        [10,11], [11,11], [12,12]
+        [10,11], [11,11], [12,12], [12,13], [13,13],
+        [13,14], [14,14], [14,15], [15,15], [15,16],
+        [16,16], [16,17], [17,17], [17,18], [18,18],
+        [18,19], [19,19], [19,20], [20,20], [20,21],
+        [21,21], [21,22], [22,22], [22,23], [23,23]
     ];
+    
+    // 穿插特殊尺寸到常规关卡中
+    const specialSizes = [
+        // 行列相差2的3关
+        [3,5], [4,6], [5,7],
+        // 行列相差3的6关
+        [3,6], [4,7], [5,8], [6,9], [7,10], [8,11],
+        // 行列相差4的6关
+        [3,7], [4,8], [5,9], [6,10], [7,11], [8,12]
+    ];
+    
+    // 将特殊尺寸穿插到基础尺寸中
+    const finalSizes = [];
+    let specialIndex = 0;
+    for (let i = 0; i < baseSizes.length; i++) {
+        finalSizes.push(baseSizes[i]);
+        // 每5个常规关卡后插入1个特殊关卡
+        if ((i + 1) % 5 === 0 && specialIndex < specialSizes.length) {
+            finalSizes.push(specialSizes[specialIndex]);
+            specialIndex++;
+        }
+    }
     const levelConfigs = [];
-    for (const [r, c] of baseSizes) {
-        const rows = Math.min(12, r);
-        const cols = Math.min(12, c);
+    for (const [r, c] of finalSizes) {
+        const rows = Math.min(23, r);
+        const cols = Math.min(23, c);
         // 全灭一关
         levelConfigs.push({ rows, cols, moves: 0, mode: 'allOff' });
         // 随机初始一关：按面积的25%作为翻转步数上限
