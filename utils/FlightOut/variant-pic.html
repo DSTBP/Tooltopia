@@ -208,7 +208,6 @@
             const img = new Image();
             // 关键：启用跨域支持（部分API需要）
             img.crossOrigin = 'anonymous';
-            img.addEventListener("load", imageReceived, false);
             
             // 图片加载成功回调
             img.onload = () => {
@@ -263,7 +262,7 @@
         // 全局变量存储图源列表
         let imageSources = [
             // 优选无CORS限制的随机图API
-            'https://api.mtyqx.cn/api/random.php?random=',
+            'https://img.paulzzh.com/touhou/random?random=',
             'https://picsum.photos/800/600?random=', // 官方无CORS，稳定
             'https://source.unsplash.com/800x600/?nature,random&', // 支持HTTPS+无CORS
             'https://placehold.co/800x600/cccccc/666666?text=Random+Image&', // 备用占位图（确保不失效）
