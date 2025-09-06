@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flight Out - 递减矩阵版</title>
+    <link rel="icon" href="favicon.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+    /* 仅本页：提示高亮样式 */
+    .fo-cell.hint-highlight {
+        background: #ff6b9d !important;
+        color: white !important;
+        box-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+    }
+    </style>
+</head>
+<body>
+    <div class="fo-container">
+        <header class="fo-header">
+            <h1>Flight Out - 递减矩阵版</h1>
+            <p class="fo-sub">每个格子都有数字，点击使自身及上下左右数字减1，目标将所有数字降为0</p>
+        </header>
+
+        <section class="fo-panel">
+            <div class="fo-left">
+                <div class="fo-controls">
+                    <div class="fo-row">
+                        <label>关卡
+                            <select id="levelSelect"></select>
+                        </label>
+                        <button id="prevLevel" class="fo-btn">上一关</button>
+                        <button id="nextLevel" class="fo-btn">下一关</button>
+                    </div>
+                    <div class="fo-row">
+                        <label>行 <input type="number" id="rowsInput" min="2" max="100" value="5" disabled></label>
+                        <label>列 <input type="number" id="colsInput" min="2" max="100" value="5" disabled></label>
+                        <label>模数 <input type="number" id="modInput" min="2" max="10" value="5" disabled></label>
+                    </div>
+                    <div class="fo-row">
+                        <button id="reset" class="fo-btn">重开本关</button>
+                        <button id="undo" class="fo-btn" disabled>撤销</button>
+                        <button id="hint" class="fo-btn">提示</button>
+                    </div>
+                    <div class="fo-row">
+                        <button id="customize" class="fo-btn">自定义</button>
+                        <button id="customDone" class="fo-btn fo-primary" style="display:none;">完成</button>
+                        <a href="variant.html" class="fo-btn" id="variantBtn" style="margin-left: 8px;">返回中心</a>
+                    </div>
+                    <div class="fo-stats">
+                        <span>步数：<b id="moveCount">0</b></span>
+                        <span>目标：全0</span>
+                        <span id="minStepsWrap" style="display:none;">最少需要 <b id="minSteps">-</b> 步</span>
+                        <span id="statusText"></span>
+                    </div>
+                </div>
+
+                <div class="fo-help">
+                    <details open>
+                        <summary>如何游玩 / 规则说明</summary>
+                        <ul>
+                            <li>每个格子有 0..(N-1) 共 N 种数字状态（0 为目标）</li>
+                            <li>点击会使“自身+上下左右”数字 -1（对 N 取模）</li>
+                            <li>目标：将所有格子数字变为 0</li>
+                            <li>默认 N=5（0→4→3→2→1→0），可在自定义模式修改</li>
+                            <li>自定义模数最高为 10</li>
+                        </ul>
+                    </details>
+                </div>
+            </div>
+
+            <div class="fo-board-wrap">
+                <div id="board" class="fo-board" aria-label="lights-grid" role="grid"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="assets/js/solve-colorful.js"></script>
+    <script>
+    (function(){
+        const boardEl = document.getElementById('board');
+        const levelSelect = document.getElementById('levelSelect');
+        const prevLevelBtn = document.getElementById('prevLevel');
+        const nextLevelBtn = document.getElementById('nextLevel');
+        const rowsInput = document.getElementById('rowsInput');
+        const colsInput = document.getElementById('colsInput');
+        const modInput = document.getElementById('modInput');
+        const resetBtn = document.getElementById('reset');
+        const undoBtn = document.getElementById('undo');
+        const customizeBtn = document.getElementById('customize');
+        const customDoneBtn = document.getElementById('customDone');
+        const hintBtn = document.getElementById('hint');
+        const moveCountEl = document.getElementById('moveCount');
+        const minStepsEl = document.getElementById('minSteps');
+        const minStepsWrap = document.getElementById('minStepsWrap');
+        const statusText = document.getElementById('statusText');
+
+        // 数字颜色调色板：不同数字用不同颜色
+        const palette = ['#f1f3f5', '#ff6b9d', '#51cf66', '#22b8cf', '#ffd43b', '#087f5b', '#e8590c', '#343a40', '#9775fa', '#fd7e14'];
+
+        let TOTAL_LEVELS;
+        let successTimer = null;
+        let isCustomizing = false;
+        let modValue = 5;
+        let hintMode = false;
+        // key => remaining presses needed (1..K-1)
+        let hintCounts = new Map();
+
+        const baseSizes = [
+            [2,3], [3,3], [3,4], [4,4], [4,5],
+            [5,5], [5,6], [6,6], [6,7], [7,7],
+            [7,8], [8,8], [8,9], [9,9], [10,10],
+            [10,11], [11,11], [12,12], [12,13], [13,13],
+            [13,14], [14,14], [14,15], [15,15], [15,16],
+            [16,16], [16,17], [17,17], [17,18], [18,18],
+            [18,19], [19,19], [19,20], [20,20], [20,21],
+            [21,21], [21,22], [22,22], [22,23], [23,23]
+        ];
+        
+        // 穿插特殊尺寸到常规关卡中
+        const specialSizes = [
+            // 行列相差2的3关
+            [3,5], [4,6], [5,7],
+            // 行列相差3的6关
+            [3,6], [4,7], [5,8], [6,9], [7,10], [8,11],
+            // 行列相差4的6关
+            [3,7], [4,8], [5,9], [6,10], [7,11], [8,12]
+        ];
+        
+        // 将特殊尺寸穿插到基础尺寸中
+        const finalSizes = [];
+        let specialIndex = 0;
+        for (let i = 0; i < baseSizes.length; i++) {
+            finalSizes.push(baseSizes[i]);
+            // 每5个常规关卡后插入1个特殊关卡
+            if ((i + 1) % 5 === 0 && specialIndex < specialSizes.length) {
+                finalSizes.push(specialSizes[specialIndex]);
+                specialIndex++;
+            }
+        }
+        const levelConfigs = [];
+        for (const [r, c] of finalSizes) {
+            const rows = Math.min(23, r);
+            const cols = Math.min(23, c);
+            levelConfigs.push({ rows, cols, moves: 0, mode: 'allMax' });
+            const area = rows * cols;
+            const moves = Math.max(1, Math.min(area, Math.round(area * 0.25)));
+            levelConfigs.push({ rows, cols, moves, mode: 'random' });
+        }
+        TOTAL_LEVELS = levelConfigs.length; // 36 关
+
+        let currentLevelIndex = 0;
+        let rows = levelConfigs[0].rows;
+        let cols = levelConfigs[0].cols;
+        let grid = createMatrix(rows, cols, 0);
+        let moveCount = 0;
+        let undoStack = [];
+        const initialStates = Array(TOTAL_LEVELS).fill(null);
+
+        init();
+
+        function init(){
+            for (let i = 0; i < TOTAL_LEVELS; i++) {
+                const opt = document.createElement('option');
+                opt.value = String(i);
+                opt.textContent = `第 ${i + 1} 关`;
+                levelSelect.appendChild(opt);
+            }
+            levelSelect.value = String(currentLevelIndex);
+
+            boardEl.addEventListener('click', onBoardClick);
+            prevLevelBtn.addEventListener('click', () => switchLevel(currentLevelIndex - 1));
+            nextLevelBtn.addEventListener('click', () => switchLevel(currentLevelIndex + 1));
+            levelSelect.addEventListener('change', () => switchLevel(parseInt(levelSelect.value, 10)));
+            resetBtn.addEventListener('click', () => generateLevel(currentLevelIndex, false));
+            undoBtn.addEventListener('click', undoMove);
+            hintBtn.addEventListener('click', toggleHint);
+
+            if (customizeBtn) customizeBtn.addEventListener('click', enterCustomizeMode);
+            if (customDoneBtn) customDoneBtn.addEventListener('click', finishCustomizeMode);
+
+            if (rowsInput) rowsInput.addEventListener('input', onSizeInputChange);
+            if (colsInput) colsInput.addEventListener('input', onSizeInputChange);
+            if (modInput) modInput.addEventListener('input', onModInputChange);
+
+            generateLevel(0, false);
+        }
+
+        function createMatrix(r, c, fill = 0){
+            return Array.from({ length: r }, () => Array.from({ length: c }, () => fill));
+        }
+
+        function renderBoard(){
+            boardEl.innerHTML = '';
+            boardEl.style.setProperty('--rows', String(rows));
+            boardEl.style.setProperty('--cols', String(cols));
+            for(let r=0;r<rows;r++){
+                for(let c=0;c<cols;c++){
+                    const cell = document.createElement('button');
+                    cell.className = 'fo-cell';
+                    const v = grid[r][c] % modValue;
+                    cell.textContent = String(v);
+                    cell.style.color = '#333';
+                    cell.style.fontWeight = 'bold';
+                    cell.style.fontSize = '1.1rem';
+                    cell.setAttribute('data-r', String(r));
+                    cell.setAttribute('data-c', String(c));
+                    if (hintMode) {
+                        const key = r+','+c;
+                        if (hintCounts.has(key)) {
+                            cell.classList.add('hint-highlight');
+                        }
+                    }
+                    boardEl.appendChild(cell);
+                }
+            }
+            moveCountEl.textContent = String(moveCount);
+            undoBtn.disabled = undoStack.length === 0;
+            statusText.textContent = '';
+        }
+
+        function onBoardClick(e){
+            const target = e.target;
+            if(!(target instanceof HTMLElement)) return;
+            if(!target.classList.contains('fo-cell')) return;
+            const r = parseInt(target.getAttribute('data-r'), 10);
+            const c = parseInt(target.getAttribute('data-c'), 10);
+            if (isCustomizing){
+                grid[r][c] = (grid[r][c] + 1) % modValue; // 自定义时点按循环数字
+                renderBoard();
+                return;
+            }
+            const before = deepClone(grid);
+            applyFlip(r, c, true);
+            if (hintMode) {
+                const deltas=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
+                const changed = new Set();
+                for(let i=0;i<rows;i++){
+                    for(let j=0;j<cols;j++){
+                        if ((before[i][j] % modValue) !== (grid[i][j] % modValue)) changed.add(i+','+j);
+                    }
+                }
+                const expected = new Set();
+                for(const [dr,dc] of deltas){ const rr=r+dr, cc=c+dc; if(inBounds(rr,cc)) expected.add(rr+','+cc); }
+                let isDirectClick = true;
+                for (const key of expected){ if (!changed.has(key)) { isDirectClick = false; break; } }
+                if (isDirectClick && changed.size !== expected.size) isDirectClick = false;
+
+                if (isDirectClick) {
+                    // 点击后移除该格子的提示高亮
+                    const k = r+','+c;
+                    if (hintCounts.has(k)) {
+                        let v = hintCounts.get(k) - 1;
+                        if (v <= 0) hintCounts.delete(k); else hintCounts.set(k, v);
+                    }
+                }
+                renderBoard();
+            }
+        }
+
+        function applyFlip(r, c, recordHistory){
+            if (!inBounds(r,c)) return;
+            const snapshot = deepClone(grid);
+            const deltas = [[0,0],[1,0],[-1,0],[0,1],[0,-1]];
+            for (const [dr,dc] of deltas){
+                const rr = r+dr, cc = c+dc;
+                if (inBounds(rr,cc)) grid[rr][cc] = (grid[rr][cc] - 1 + modValue) % modValue;
+            }
+            moveCount++;
+            if (recordHistory) undoStack.push(snapshot);
+            renderBoard();
+            if (isAllTarget()) showSuccessModal();
+        }
+
+        function isAllTarget(){
+            for (let r=0;r<rows;r++){
+                for (let c=0;c<cols;c++) if ((grid[r][c] % modValue) !== 0) return false;
+            }
+            return true;
+        }
+
+        function inBounds(r,c){ return r>=0 && r<rows && c>=0 && c<cols; }
+        function deepClone(mat){ return mat.map(row=>row.slice()); }
+
+        function undoMove(){ if(undoStack.length===0) return; grid = undoStack.pop(); moveCount=Math.max(0,moveCount-1); renderBoard(); }
+
+        function switchLevel(nextIndex){
+            cancelSuccessTimer();
+            if (isCustomizing) return;
+            if (hintMode) exitHintMode();
+            if (nextIndex<0) nextIndex=0; if (nextIndex>=TOTAL_LEVELS) nextIndex=TOTAL_LEVELS-1;
+            currentLevelIndex = nextIndex; levelSelect.value = String(currentLevelIndex);
+            generateLevel(currentLevelIndex, false);
+        }
+
+        function generateLevel(levelIndex){
+            cancelSuccessTimer(); if (isCustomizing) return;
+            const config = levelConfigs[levelIndex];
+            rows = clamp(config.rows,2,100); cols = clamp(config.cols,2,100);
+            if (rowsInput) rowsInput.value=String(rows); if (colsInput) colsInput.value=String(cols);
+            if (modInput) modInput.value = String(modValue);
+
+            if (initialStates[levelIndex]){
+                const saved = initialStates[levelIndex];
+                grid = deepClone(saved.grid);
+                modValue = saved.modValue;
+                rows = grid.length; cols = grid[0]?.length || 0;
+                if (rowsInput) rowsInput.value=String(rows); if (colsInput) colsInput.value=String(cols); if(modInput) modInput.value=String(modValue);
+            } else {
+                if (config.mode === 'allMax') { grid = createMatrix(rows, cols, modValue - 1); }
+                else { grid = generateRandomInitial(rows, cols, config.moves); }
+                initialStates[levelIndex] = { grid: deepClone(grid), modValue };
+            }
+            moveCount=0; undoStack=[]; renderBoard();
+            if (minStepsWrap) { minStepsWrap.style.display = 'none'; }
+        }
+
+        function toggleHint(){
+            if (hintMode) { exitHintMode(); } else { enterHintMode(); }
+        }
+
+        function enterHintMode(){
+            try {
+                // 将递减问题转换为等价的加法问题
+                // 对于递减操作 (v - 1) mod N，等价于加法操作 (v + (N-1)) mod N
+                // 所以我们需要将目标从全0转换为全(N-1)，然后求解
+                const transformed = grid.map(row => row.map(v => (modValue - v) % modValue));
+                const solver = new NStateMatrixSolver(transformed, modValue);
+                solver.solve();
+                if (!solver.hasSolution) {
+                    // 无解：显示“此初始状态无解”，不生成数字提示
+                    hintCounts = new Map();
+                    if (minStepsWrap) {
+                        minStepsWrap.textContent = '此初始状态无解';
+                        minStepsWrap.style.display = '';
+                    }
+                    hintMode = true;
+                    if (hintBtn) hintBtn.textContent = '隐藏提示';
+                    renderBoard();
+                    return;
+                }
+                const plan = solver.fullPlan || [];
+                hintCounts = new Map();
+                const rowsP = plan.length;
+                const colsP = rowsP ? plan[0].length : 0;
+                for (let r = 0; r < rowsP; r++) {
+                    for (let c = 0; c < colsP; c++) {
+                        const need = plan[r][c] % modValue;
+                        if (need) hintCounts.set(r+','+c, need);
+                    }
+                }
+                // 进入提示时显示“最少需要 X 步”
+                if (minStepsWrap) {
+                    let min = 0;
+                    for (const row of plan) for (const v of row) min += (v % modValue);
+                    // 重建模板，确保无解后恢复结构
+                    minStepsWrap.innerHTML = '最少需要 <b id="minSteps"></b> 步';
+                    const el = document.getElementById('minSteps');
+                    if (el) el.textContent = String(min);
+                    minStepsWrap.style.display = '';
+                }
+                hintMode = true;
+                if (hintBtn) hintBtn.textContent = '隐藏提示';
+                renderBoard();
+            } catch (e) {
+                statusText.textContent = '提示计算失败或无解';
+            }
+        }
+
+        function exitHintMode(){
+            hintMode = false;
+            hintCounts = new Map();
+            if (hintBtn) hintBtn.textContent = '提示';
+            if (minStepsWrap) { minStepsWrap.style.display = 'none'; }
+            renderBoard();
+        }
+
+        function generateRandomInitial(r, c, moves){
+            const g = createMatrix(r, c, 0);
+            let steps = Math.max(1, Math.min(r*c, moves|0));
+            while (steps-- > 0){
+                const rr = Math.floor(Math.random()*r);
+                const cc = Math.floor(Math.random()*c);
+                const deltas=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
+                for(const [dr,dc] of deltas){ const nr=rr+dr, nc=cc+dc; if(nr>=0&&nr<r&&nc>=0&&nc<c) g[nr][nc] = (g[nr][nc]+1) % modValue; }
+            }
+            // 保证不是“全0”
+            let allTarget=true;
+            outer: for(let i=0;i<r;i++){ for(let j=0;j<c;j++){ if((g[i][j]%modValue)!==0){ allTarget=false; break outer; } } }
+            if(allTarget){ const deltas=[[0,0],[1,0],[-1,0],[0,1],[0,-1]]; for(const [dr,dc] of deltas){ const nr=0+dr, nc=0+dc; if(nr>=0&&nr<r&&nc>=0&&nc<c) g[nr][nc]=(g[nr][nc]+1)%modValue; } }
+            return g;
+        }
+
+        function enterCustomizeMode(){ if(isCustomizing) return; isCustomizing=true; if(rowsInput){rowsInput.disabled=false; rowsInput.max='100';} if(colsInput){colsInput.disabled=false; colsInput.max='100';} if(modInput){modInput.disabled=false; modInput.max='10';} if(customDoneBtn) customDoneBtn.style.display=''; moveCount=0; undoStack=[]; renderBoard(); }
+        function finishCustomizeMode(){ if(!isCustomizing) return; isCustomizing=false; if(rowsInput) rowsInput.disabled=true; if(colsInput) colsInput.disabled=true; if(modInput) modInput.disabled=true; if(customDoneBtn) customDoneBtn.style.display='none'; initialStates[currentLevelIndex] = { grid: deepClone(grid), modValue }; renderBoard(); }
+        function onSizeInputChange(){ if(!isCustomizing) return; const rVal=clamp(parseInt(rowsInput.value||'0',10)||0,2,100); const cVal=clamp(parseInt(colsInput.value||'0',10)||0,2,100); if(rVal!==rows||cVal!==cols){ rows=rVal; cols=cVal; grid=createMatrix(rows, cols, 0); moveCount=0; undoStack=[]; renderBoard(); } }
+        function onModInputChange(){ if(!isCustomizing) return; const k = clamp(parseInt(modInput.value||'0',10)||0, 2, 10); if (k!==modValue){ modValue=k; // 正规化当前 grid
+                for(let i=0;i<rows;i++) for(let j=0;j<cols;j++) grid[i][j]%=modValue; renderBoard(); } }
+
+        function showSuccessModal(){
+            if (successTimer){ clearTimeout(successTimer); successTimer=null; }
+            const modal = document.createElement('div'); modal.className='success-modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>通关成功</h3>
+                    <p>5 秒后自动进入下一关…</p>
+                    <div class="modal-buttons">
+                        <button class="btn btn-primary" id="nextNow">立即下一关</button>
+                        <button class="btn btn-secondary" id="closeModal">关闭</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            const cleanup=()=>{ if(modal&&modal.parentNode) modal.parentNode.removeChild(modal); };
+            modal.addEventListener('click',(e)=>{ if(e.target===modal) cleanup(); });
+            modal.querySelector('#closeModal').addEventListener('click', cleanup);
+            modal.querySelector('#nextNow').addEventListener('click', ()=>{ cleanup(); switchLevel(currentLevelIndex+1); });
+            successTimer = setTimeout(()=>{ cleanup(); switchLevel(currentLevelIndex+1); }, 5000);
+        }
+
+        function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi,v)); }
+        function cancelSuccessTimer(){ if(successTimer){ clearTimeout(successTimer); successTimer=null; } const m=document.querySelector('.success-modal'); if(m&&m.parentNode) m.parentNode.removeChild(m); }
+
+        function computeMinStepsAsync(){
+            try {
+                if (!minStepsEl) return;
+                const transformed = grid.map(row => row.map(v => (modValue - v) % modValue));
+                const solver = new NStateMatrixSolver(transformed, modValue);
+                const res = solver.solve();
+                let min = 0;
+                if (solver && solver.fullPlan && solver.fullPlan.length) {
+                    for (const row of solver.fullPlan) for (const v of row) min += (v % modValue);
+                } else if (res && typeof res.minFlips === 'number' && res.minFlips >= 0) {
+                    min = res.minFlips;
+                }
+                minStepsEl.textContent = String(min);
+            } catch (e) {
+                if (minStepsEl) minStepsEl.textContent = '-';
+            }
+        }
+    })();
+    </script>
+</body>
+</html>
