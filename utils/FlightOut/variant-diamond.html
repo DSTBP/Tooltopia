@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flight Out - 菱形点灯版</title>
+    <link rel="icon" href="favicon.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .fo-cell-placeholder {
+            width: var(--cell-size, 40px);
+            height: var(--cell-size, 40px);
+            background: transparent;
+            border: none;
+            pointer-events: none;
+        }
+        .diamond-layout {
+            /* 确保菱形布局居中 */
+            display: grid;
+            place-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="fo-container">
+        <header class="fo-header">
+            <h1>Flight Out - 菱形点灯版</h1>
+            <p class="fo-sub">菱形布局的点灯游戏，十字翻转规则</p>
+        </header>
+
+        <section class="fo-panel">
+            <div class="fo-left">
+                <div class="fo-controls">
+                    <div class="fo-row">
+                        <label>关卡
+                            <select id="levelSelect"></select>
+                        </label>
+                        <button id="prevLevel" class="fo-btn">上一关</button>
+                        <button id="nextLevel" class="fo-btn">下一关</button>
+                    </div>
+                    <div class="fo-row">
+                        <label>尺寸 <input type="number" id="sizeInput" min="3" max="21" value="7" step="2" disabled></label>
+                    </div>
+                    <div class="fo-row">
+                        <button id="reset" class="fo-btn">重开本关</button>
+                        <button id="undo" class="fo-btn" disabled>撤销</button>
+                        <button id="hint" class="fo-btn">提示</button>
+                    </div>
+                    <div class="fo-row">
+                        <button id="customize" class="fo-btn">自定义</button>
+                        <button id="customDone" class="fo-btn fo-primary" style="display:none;">完成</button>
+                        <a href="variant.html" class="fo-btn" id="variantBtn" style="margin-left: 8px;">返回中心</a>
+                    </div>
+                    <div class="fo-stats">
+                        <span>步数：<b id="moveCount">0</b></span>
+                        <span>目标：全亮</span>
+                        <span id="statusText"></span>
+                    </div>
+                </div>
+
+                <div class="fo-help">
+                    <details open>
+                        <summary>如何游玩 / 规则说明</summary>
+                        <ul>
+                            <li>棋盘为菱形布局，中间最宽，上下逐渐变窄</li>
+                            <li>点击一个格子会翻转自身与上下左右相邻的格子</li>
+                            <li>如果相邻位置不在菱形范围内，则不会翻转</li>
+                            <li>目标是将菱形中所有灯全部点亮</li>
+                            <li>可自定义菱形尺寸（必须为奇数）</li>
+                        </ul>
+                    </details>
+                </div>
+            </div>
+
+            <div class="fo-board-wrap">
+                <div id="board" class="fo-board" aria-label="lights-grid" role="grid"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="assets/js/solve-diamond.js"></script>
+    <script>
+    (function(){
+        const boardEl = document.getElementById('board');
+        const levelSelect = document.getElementById('levelSelect');
+        const prevLevelBtn = document.getElementById('prevLevel');
+        const nextLevelBtn = document.getElementById('nextLevel');
+        const sizeInput = document.getElementById('sizeInput');
+        const resetBtn = document.getElementById('reset');
+        const undoBtn = document.getElementById('undo');
+        const customizeBtn = document.getElementById('customize');
+        const customDoneBtn = document.getElementById('customDone');
+        const hintBtn = document.getElementById('hint');
+        const moveCountEl = document.getElementById('moveCount');
+        const statusText = document.getElementById('statusText');
+
+        let TOTAL_LEVELS;
+        let successTimer = null;
+        let isCustomizing = false;
+        let hintMode = false;
+        let hintSet = new Set();
+        let clickedHints = new Set();
+
+        // 菱形尺寸配置（只用奇数）
+        const diamondSizes = [3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
+        
+        const levelConfigs = [];
+        for (const size of diamondSizes) {
+            // 每个尺寸两关：全灭关 + 随机关
+            levelConfigs.push({ size, moves: 0, mode: 'allOff' });
+            const area = getDiamondArea(size);
+            const moves = Math.max(1, Math.min(area, Math.round(area * 0.25)));
+            levelConfigs.push({ size, moves, mode: 'random' });
+        }
+        TOTAL_LEVELS = levelConfigs.length;
+
+        let currentLevelIndex = 0;
+        let diamondSize = levelConfigs[0].size;
+        let grid = createDiamondMatrix(diamondSize, 0);
+        let moveCount = 0;
+        let undoStack = [];
+        const initialStates = Array(TOTAL_LEVELS).fill(null);
+        
+        // 菱形工具函数
+        function getDiamondArea(size) {
+            // 计算菱形的总格子数
+            let area = 0;
+            const center = Math.floor(size / 2);
+            for (let row = 0; row < size; row++) {
+                const width = size - 2 * Math.abs(row - center);
+                area += width;
+            }
+            return area;
+        }
+        
+        function diamondSizeToK(size) {
+            // 将菱形尺寸转换为 k 参数：size = 2k+1，所以 k = (size-1)/2
+            return Math.floor((size - 1) / 2);
+        }
+        
+        function convertGridToSolverMatrix(grid, size) {
+            // 将包含null的grid转换为求解器期望的纯数字矩阵
+            const k = diamondSizeToK(size);
+            const matrix = [];
+            for (let row = 0; row < size; row++) {
+                const rowData = [];
+                for (let col = 0; col < size; col++) {
+                    if (grid[row][col] !== null) {
+                        // 求解器期望：灯亮=0，灯灭=1（与游戏状态相反）
+                        rowData.push(grid[row][col] === 1 ? 0 : 1);
+                    }
+                }
+                if (rowData.length > 0) {
+                    matrix.push(rowData);
+                }
+            }
+            return matrix;
+        }
+        
+        function solverCoordsToGridCoords(solverRow, solverCol, size) {
+            // 将求解器坐标转换为HTML网格坐标
+            // 求解器使用紧凑格式，HTML使用方形格式（带null填充）
+            const gridRow = solverRow;
+            const rowStartCol = getRowStartCol(gridRow, size);
+            const gridCol = rowStartCol + solverCol;
+            return [gridRow, gridCol];
+        }
+        
+        function gridCoordsToSolverCoords(gridRow, gridCol, size) {
+            // 将HTML网格坐标转换为求解器坐标
+            const solverRow = gridRow;
+            const rowStartCol = getRowStartCol(gridRow, size);
+            const solverCol = gridCol - rowStartCol;
+            return [solverRow, solverCol];
+        }
+        
+        function getRowWidth(row, size) {
+            // 计算第 row 行的宽度
+            const center = Math.floor(size / 2);
+            return size - 2 * Math.abs(row - center);
+        }
+        
+        function getRowStartCol(row, size) {
+            // 计算第 row 行的起始列位置（用于居中对齐）
+            const width = getRowWidth(row, size);
+            return Math.floor((size - width) / 2);
+        }
+        
+        function isInDiamond(row, col, size) {
+            // 判断坐标 (row, col) 是否在菱形内
+            if (row < 0 || row >= size) return false;
+            const startCol = getRowStartCol(row, size);
+            const width = getRowWidth(row, size);
+            return col >= startCol && col < startCol + width;
+        }
+        
+        function createDiamondMatrix(size, fill = 0) {
+            // 创建菱形矩阵，非菱形区域用 null 填充
+            const matrix = [];
+            for (let row = 0; row < size; row++) {
+                const rowArray = new Array(size).fill(null);
+                const startCol = getRowStartCol(row, size);
+                const width = getRowWidth(row, size);
+                for (let i = 0; i < width; i++) {
+                    rowArray[startCol + i] = fill;
+                }
+                matrix.push(rowArray);
+            }
+            return matrix;
+        }
+
+        init();
+
+        function init(){
+            for (let i = 0; i < TOTAL_LEVELS; i++) {
+                const opt = document.createElement('option');
+                opt.value = String(i);
+                opt.textContent = `第 ${i + 1} 关`;
+                levelSelect.appendChild(opt);
+            }
+            levelSelect.value = String(currentLevelIndex);
+
+            boardEl.addEventListener('click', onBoardClick);
+            prevLevelBtn.addEventListener('click', () => switchLevel(currentLevelIndex - 1));
+            nextLevelBtn.addEventListener('click', () => switchLevel(currentLevelIndex + 1));
+            levelSelect.addEventListener('change', () => switchLevel(parseInt(levelSelect.value, 10)));
+            resetBtn.addEventListener('click', () => generateLevel(currentLevelIndex, false));
+            undoBtn.addEventListener('click', undoMove);
+
+            if (customizeBtn) customizeBtn.addEventListener('click', enterCustomizeMode);
+            if (customDoneBtn) customDoneBtn.addEventListener('click', finishCustomizeMode);
+            if (hintBtn) hintBtn.addEventListener('click', toggleHint);
+
+            if (sizeInput) sizeInput.addEventListener('input', onSizeInputChange);
+
+            generateLevel(0, false);
+        }
+
+        function renderBoard(){
+            boardEl.innerHTML = '';
+            boardEl.style.setProperty('--rows', String(diamondSize));
+            boardEl.style.setProperty('--cols', String(diamondSize));
+            boardEl.classList.add('diamond-layout');
+            
+            for(let r = 0; r < diamondSize; r++){
+                for(let c = 0; c < diamondSize; c++){
+                    if (grid[r][c] === null) {
+                        // 非菱形区域，创建空白占位
+                        const placeholder = document.createElement('div');
+                        placeholder.className = 'fo-cell-placeholder';
+                        boardEl.appendChild(placeholder);
+                    } else {
+                        // 菱形区域内的格子
+                        const cell = document.createElement('button');
+                        cell.className = 'fo-cell';
+                        if (grid[r][c] === 1) cell.classList.add('on');
+                        const key = r+','+c;
+                        if (hintMode && hintSet.has(key) && !clickedHints.has(key)) {
+                            cell.classList.add('hint');
+                        }
+                        cell.setAttribute('data-r', String(r));
+                        cell.setAttribute('data-c', String(c));
+                        boardEl.appendChild(cell);
+                    }
+                }
+            }
+            moveCountEl.textContent = String(moveCount);
+            undoBtn.disabled = undoStack.length === 0;
+            statusText.textContent = '';
+        }
+
+        function onBoardClick(e){
+            const target = e.target;
+            if(!(target instanceof HTMLElement)) return;
+            if(!target.classList.contains('fo-cell')) return;
+            const r = parseInt(target.getAttribute('data-r'), 10);
+            const c = parseInt(target.getAttribute('data-c'), 10);
+            if (isCustomizing){
+                if (grid[r][c] !== null) {
+                    grid[r][c] = grid[r][c] ^ 1;
+                    renderBoard();
+                }
+                return;
+            }
+            applyFlipDiamond(r, c, true);
+            if (hintMode) {
+                const key = r+','+c;
+                clickedHints.add(key);
+                renderBoard();
+            }
+        }
+
+        function applyFlipDiamond(r, c, recordHistory){
+            const snapshot = deepClone(grid);
+            // 标准十字翻转：自身 + 上下左右相邻
+            const deltas = [[0,0],[-1,0],[1,0],[0,-1],[0,1]];
+            for (const [dr,dc] of deltas){
+                const rr = r + dr;
+                const cc = c + dc;
+                // 只翻转在菱形内的格子
+                if (isInDiamond(rr, cc, diamondSize)) {
+                    grid[rr][cc] = grid[rr][cc] ^ 1;
+                }
+            }
+            moveCount++;
+            if (recordHistory) undoStack.push(snapshot);
+            renderBoard();
+            if (isAllOn()) showSuccessModal();
+        }
+
+        function isAllOn(){
+            for (let r = 0; r < diamondSize; r++){
+                for (let c = 0; c < diamondSize; c++){
+                    if (grid[r][c] !== null && grid[r][c] !== 1) return false;
+                }
+            }
+            return true;
+        }
+
+        function deepClone(mat){ return mat.map(row=>row.slice()); }
+
+        function undoMove(){
+            if (undoStack.length === 0) return;
+            const prev = undoStack.pop();
+            grid = prev;
+            moveCount = Math.max(0, moveCount-1);
+            renderBoard();
+        }
+
+        function switchLevel(nextIndex){
+            cancelSuccessTimer();
+            if (isCustomizing) return;
+            if (nextIndex < 0) nextIndex = 0;
+            if (nextIndex >= TOTAL_LEVELS) nextIndex = TOTAL_LEVELS - 1;
+            currentLevelIndex = nextIndex;
+            levelSelect.value = String(currentLevelIndex);
+            generateLevel(currentLevelIndex, false);
+        }
+
+        function generateLevel(levelIndex){
+            cancelSuccessTimer();
+            if (isCustomizing) return;
+            exitHintMode();
+            const config = levelConfigs[levelIndex];
+            diamondSize = clamp(config.size, 3, 21);
+            if (sizeInput) sizeInput.value = String(diamondSize);
+
+            if (initialStates[levelIndex]){
+                grid = deepClone(initialStates[levelIndex]);
+                diamondSize = grid.length;
+                if (sizeInput) sizeInput.value = String(diamondSize);
+            } else {
+                if (config.mode === 'allOff') {
+                    grid = createDiamondMatrix(diamondSize, 0);
+                } else {
+                    const result = generateRandomInitialDiamond(diamondSize, config.moves);
+                    grid = result.grid;
+                }
+                initialStates[levelIndex] = deepClone(grid);
+            }
+
+            moveCount = 0;
+            undoStack = [];
+            renderBoard();
+        }
+
+        function enterCustomizeMode(){
+            if (isCustomizing) return;
+            isCustomizing = true;
+            if (sizeInput) { 
+                sizeInput.disabled = false;
+            }
+            if (customDoneBtn) customDoneBtn.style.display = '';
+            moveCount = 0; undoStack = [];
+            renderBoard();
+        }
+        function finishCustomizeMode(){
+            if (!isCustomizing) return;
+            isCustomizing = false;
+            initialStates[currentLevelIndex] = deepClone(grid);
+            if (sizeInput) sizeInput.disabled = true;
+            if (customDoneBtn) customDoneBtn.style.display = 'none';
+            levelConfigs[currentLevelIndex].size = clamp(grid.length, 3, 21);
+            renderBoard();
+        }
+
+        function onSizeInputChange(){
+            if (!isCustomizing) return;
+            const newSize = parseInt(sizeInput.value || '0', 10) || 3;
+            // 确保是奇数
+            const oddSize = newSize % 2 === 0 ? newSize + 1 : newSize;
+            const clampedSize = clamp(oddSize, 3, 21);
+            if (clampedSize !== diamondSize){
+                diamondSize = clampedSize;
+                sizeInput.value = String(diamondSize);
+                grid = createDiamondMatrix(diamondSize, 0);
+                moveCount = 0; undoStack = [];
+                renderBoard();
+            }
+        }
+
+        function toggleHint(){
+            if (isCustomizing) return;
+            if (hintMode) { exitHintMode(); } else { enterHintMode(); }
+        }
+        function enterHintMode(){
+            try {
+                // 转换矩阵格式为求解器期望的格式
+                const solverMatrix = convertGridToSolverMatrix(grid, diamondSize);
+                const k = diamondSizeToK(diamondSize);
+                
+                // 创建求解器实例并求解
+                const solver = new DiamondLightsOutSolver(k, solverMatrix, { maxEnumBits: 22 });
+                const result = solver.solve();
+                
+                if (result && result.flips) {
+                    // 将求解结果转换为提示集合，需要进行坐标转换
+                    const gridFlips = result.flips.map(([solverRow, solverCol]) => {
+                        const [gridRow, gridCol] = solverCoordsToGridCoords(solverRow, solverCol, diamondSize);
+                        console.log(`求解器坐标 (${solverRow},${solverCol}) -> 网格坐标 (${gridRow},${gridCol})`);
+                        return gridRow + ',' + gridCol;
+                    });
+                    console.log('求解器返回的翻转位置:', result.flips);
+                    console.log('转换后的网格坐标:', gridFlips);
+                    hintSet = new Set(gridFlips);
+                    clickedHints.clear();
+                    hintMode = true;
+                    if (hintBtn) hintBtn.textContent = '隐藏提示';
+                    renderBoard();
+                    statusText.textContent = `最少需要 ${result.steps} 步`;
+                } else {
+                    // 无解情况
+                    hintSet = new Set();
+                    clickedHints.clear();
+                    hintMode = true;
+                    if (hintBtn) hintBtn.textContent = '隐藏提示';
+                    renderBoard();
+                    statusText.textContent = '此关卡无解';
+                }
+            } catch (err) {
+                console.error('求解失败:', err);
+                hintSet = new Set();
+                clickedHints.clear();
+                hintMode = true;
+                if (hintBtn) hintBtn.textContent = '隐藏提示';
+                renderBoard();
+                statusText.textContent = '求解失败: ' + err.message;
+            }
+        }
+        function exitHintMode(){
+            hintMode = false;
+            hintSet = new Set();
+            clickedHints.clear();
+            if (hintBtn) hintBtn.textContent = '提示';
+            statusText.textContent = '';
+            renderBoard();
+        }
+
+        function generateRandomInitialDiamond(size, moves){
+            const g = createDiamondMatrix(size, 1);  // 从全亮开始
+            const used = new Set();
+            const area = getDiamondArea(size);
+            let steps = Math.max(1, Math.min(area, moves|0));
+            
+            while (steps-- > 0){
+                let rr, cc, key, guard=0;
+                do {
+                    rr = Math.floor(Math.random() * size);
+                    cc = Math.floor(Math.random() * size);
+                    key = rr+':'+cc; guard++;
+                    if (guard > 8) break;
+                } while (used.has(key) || !isInDiamond(rr, cc, size));
+                
+                if (isInDiamond(rr, cc, size)) {
+                    used.add(key);
+                    // 标准十字翻转：自身 + 上下左右相邻
+                    const deltas = [[0,0],[-1,0],[1,0],[0,-1],[0,1]];
+                    for (const [dr,dc] of deltas){
+                        const nr = rr + dr, nc = cc + dc;
+                        if (isInDiamond(nr, nc, size)) {
+                            g[nr][nc] ^= 1;
+                        }
+                    }
+                }
+            }
+            
+            // 保证不是全亮
+            let allOn = true;
+            outer: for (let i = 0; i < size; i++){
+                for (let j = 0; j < size; j++) {
+                    if (g[i][j] !== null && g[i][j] !== 1) { 
+                        allOn = false; 
+                        break outer; 
+                    }
+                }
+            }
+            if (allOn){
+                // 使用标准翻转确保不是全亮，找中心位置翻转
+                const center = Math.floor(size / 2);
+                const deltas = [[0,0],[-1,0],[1,0],[0,-1],[0,1]];
+                for (const [dr,dc] of deltas){
+                    const nr = center + dr, nc = center + dc;
+                    if (isInDiamond(nr, nc, size)) {
+                        g[nr][nc] ^= 1;
+                    }
+                }
+            }
+            return { grid: g };
+        }
+
+        function showSuccessModal(){
+            if (successTimer){ clearTimeout(successTimer); successTimer=null; }
+            const modal = document.createElement('div');
+            modal.className = 'success-modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>通关成功</h3>
+                    <p>5 秒后自动进入下一关…</p>
+                    <div class="modal-buttons">
+                        <button class="btn btn-primary" id="nextNow">立即下一关</button>
+                        <button class="btn btn-secondary" id="closeModal">关闭</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            const cleanup = () => { if (modal && modal.parentNode) modal.parentNode.removeChild(modal); };
+            modal.addEventListener('click', (e)=>{ if (e.target === modal) cleanup(); });
+            modal.querySelector('#closeModal').addEventListener('click', cleanup);
+            modal.querySelector('#nextNow').addEventListener('click', ()=>{ cleanup(); switchLevel(currentLevelIndex+1); });
+            successTimer = setTimeout(()=>{ cleanup(); switchLevel(currentLevelIndex+1); }, 5000);
+        }
+
+        function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+        function cancelSuccessTimer(){ if (successTimer){ clearTimeout(successTimer); successTimer=null; } const m=document.querySelector('.success-modal'); if (m&&m.parentNode) m.parentNode.removeChild(m); }
+    })();
+    </script>
+</body>
+</html>
