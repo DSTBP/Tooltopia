@@ -64,7 +64,7 @@
         </section>
     </div>
 
-    <script src="assets/js/solve.js"></script>
+    <script src="assets/js/solve-litonly.js"></script>
     <script>
     (function(){
         const boardEl = document.getElementById('board');
@@ -85,7 +85,8 @@
         let successTimer = null;
         let isCustomizing = false;
         let hintMode = false;
-        let hintPlan = null;
+        let hintSteps = [];
+        let hintStepIndex = 0;
         let clickedHints = new Set();
 
         const baseSizes = [
@@ -180,8 +181,11 @@
                     const cell = document.createElement('button');
                     cell.className = 'fo-cell';
                     if (grid[r][c] === 1) cell.classList.add('on');
-                    if (hintMode && hintPlan && hintPlan[r] && hintPlan[r][c] === 1) {
-                        const key = r+','+c; if (!clickedHints.has(key)) cell.classList.add('hint');
+                    if (hintMode && hintSteps.length > 0 && hintStepIndex < hintSteps.length) {
+                        const [hintR, hintC] = hintSteps[hintStepIndex];
+                        if (r === hintR && c === hintC) {
+                            cell.classList.add('hint');
+                        }
                     }
                     cell.setAttribute('data-r', String(r));
                     cell.setAttribute('data-c', String(c));
@@ -207,8 +211,17 @@
             // 仅熄灭格可按
             if (grid[r][c] !== 0) return;
             applyFlip(r, c, true);
-            if (hintMode && hintPlan && hintPlan[r] && hintPlan[r][c] === 1) {
-                const key = r+','+c; clickedHints.add(key);
+            if (hintMode && hintSteps.length > 0 && hintStepIndex < hintSteps.length) {
+                const [hintR, hintC] = hintSteps[hintStepIndex];
+                if (r === hintR && c === hintC) {
+                    hintStepIndex++;
+                    if (hintStepIndex < hintSteps.length) {
+                        statusText.textContent = `仅熄灭可按解法需要 ${hintSteps.length} 步 (当前第 ${hintStepIndex + 1} 步)`;
+                    } else {
+                        statusText.textContent = `仅熄灭可按解法需要 ${hintSteps.length} 步 (已完成所有提示步骤)`;
+                    }
+                    renderBoard(); // 更新提示显示
+                }
             }
         }
 
@@ -287,20 +300,34 @@
                 const solverInput = grid.map(row => row.map(cell => cell === 1 ? 0 : 1));
                 const solver = new BinaryMatrixSolver(solverInput);
                 const [minFlips, firstRowPath] = solver.solve();
+                
                 if (solver.hasSolution){
-                    hintPlan = solver.fullPlan;
-                    hintMode = true; clickedHints.clear();
+                    // 使用专门的"仅熄灭可按"求解器获取步骤序列
+                    const litOnlyMoves = solver.convertToLitOnlyPlan(solver.fullPlan);
+                    hintSteps = litOnlyMoves;
+                    hintStepIndex = 0;
+                    hintMode = true;
+                    clickedHints.clear();
                     if(hintBtn) hintBtn.textContent='隐藏提示';
                     renderBoard();
-                    statusText.textContent = `最少需要 ${minFlips} 步`;
+                    statusText.textContent = `仅熄灭可按解法需要 ${litOnlyMoves.length} 步 (当前第 ${hintStepIndex + 1} 步)`;
                 } else {
                     statusText.textContent = '此关卡无解';
                 }
             } catch (err) {
+                console.error('求解失败:', err);
                 statusText.textContent = '求解失败: ' + err.message;
             }
         }
-        function exitHintMode(){ hintMode=false; hintPlan=null; clickedHints.clear(); if(hintBtn) hintBtn.textContent='提示'; statusText.textContent=''; renderBoard(); }
+        function exitHintMode(){ 
+            hintMode=false; 
+            hintSteps=[]; 
+            hintStepIndex=0; 
+            clickedHints.clear(); 
+            if(hintBtn) hintBtn.textContent='提示'; 
+            statusText.textContent=''; 
+            renderBoard(); 
+        }
 
         function showSuccessModal(){
             if (successTimer){ clearTimeout(successTimer); successTimer=null; }
