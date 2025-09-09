@@ -1,0 +1,805 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Flight Out - 点灯多面体版</title>
+    <link rel="icon" href="favicon.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        .polyhedron-container {
+            perspective: 1200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 500px;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .polyhedron {
+            position: relative;
+            transform-style: preserve-3d;
+            cursor: grab;
+            user-select: none;
+            transition: transform 0.1s ease;
+        }
+        
+        .polyhedron:active {
+            cursor: grabbing;
+        }
+        
+        .polyhedron-hint {
+            color: #666;
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+        
+        .dimension-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .polyhedron-face {
+            position: absolute;
+            border: 2px solid #333;
+            background: rgba(255, 255, 255, 0.9);
+            display: grid;
+            gap: 2px;
+            padding: 5px;
+            box-sizing: border-box;
+        }
+        
+        /* 多面体面的位置将通过JavaScript动态计算 */
+        .polyhedron-face.front { transform: rotateY(0deg) translateZ(var(--depth)); }
+        .polyhedron-face.back { transform: rotateY(180deg) translateZ(var(--depth)); }
+        .polyhedron-face.right { transform: rotateY(90deg) translateZ(var(--width)); }
+        .polyhedron-face.left { transform: rotateY(-90deg) translateZ(var(--width)); }
+        .polyhedron-face.top { transform: rotateX(90deg) translateZ(var(--height)); }
+        .polyhedron-face.bottom { transform: rotateX(-90deg) translateZ(var(--height)); }
+        
+        .cube-cell {
+            background: #f0f0f0;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .cube-cell.on {
+            background: #ffeb3b;
+            box-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+        }
+        
+        .cube-cell.hint-highlight {
+            background: #ff9800;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .face-label {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="fo-container">
+        <header class="fo-header">
+            <h1>Flight Out - 点灯多面体版</h1>
+            <p class="fo-sub">3D多面体点灯游戏，支持可变维度长方体（l×m×n）</p>
+        </header>
+
+        <section class="fo-panel">
+            <div class="fo-left">
+                <div class="fo-controls">
+                    <div class="fo-row">
+                        <label>关卡
+                            <select id="levelSelect"></select>
+                        </label>
+                        <button id="prevLevel" class="fo-btn">上一关</button>
+                        <button id="nextLevel" class="fo-btn">下一关</button>
+                    </div>
+                    <div class="fo-row dimension-controls">
+                        <label>长 <input type="number" id="lengthInput" min="2" max="6" value="3" disabled></label>
+                        <label>宽 <input type="number" id="widthInput" min="2" max="6" value="3" disabled></label>
+                        <label>高 <input type="number" id="heightInput" min="2" max="6" value="3" disabled></label>
+                        <span class="polyhedron-hint">（l×m×n 长方体）</span>
+                    </div>
+                    <div class="fo-row">
+                        <button id="reset" class="fo-btn">重开本关</button>
+                        <button id="undo" class="fo-btn" disabled>撤销</button>
+                        <button id="hint" class="fo-btn">提示</button>
+                        <button id="resetView" class="fo-btn">重置视角</button>
+                    </div>
+                    <div class="fo-row">
+                        <button id="customize" class="fo-btn">自定义</button>
+                        <button id="customDone" class="fo-btn fo-primary" style="display:none;">完成</button>
+                        <a href="variant.html" class="fo-btn" id="variantBtn" style="margin-left: 8px;">返回中心</a>
+                    </div>
+                    <div class="fo-stats">
+                        <span>步数：<b id="moveCount">0</b></span>
+                        <span>目标：全亮</span>
+                        <span id="statusText"></span>
+                    </div>
+                </div>
+
+                <div class="fo-help">
+                    <details open>
+                        <summary>如何游玩 / 规则说明</summary>
+                        <ul>
+                            <li>多面体（长方体）有6个面，每个面是对应维度的矩形格子</li>
+                            <li>点击一个格子会翻转自身与4个邻居（固定邻居数）</li>
+                            <li>邻居包括：同面上下左右 + 跨面相邻格子</li>
+                            <li>目标是将多面体中所有灯全部点亮</li>
+                            <li>拖拽多面体可旋转视角查看不同面</li>
+                            <li>可自定义长方体维度（l×m×n）与初始状态</li>
+                        </ul>
+                    </details>
+                </div>
+            </div>
+
+            <div class="fo-board-wrap">
+                <div class="cube-container">
+                    <div id="cube" class="cube">
+                        <div class="cube-face front" data-face="2">
+                            <div class="face-label">前面</div>
+                        </div>
+                        <div class="cube-face back" data-face="4">
+                            <div class="face-label">后面</div>
+                        </div>
+                        <div class="cube-face right" data-face="3">
+                            <div class="face-label">右面</div>
+                        </div>
+                        <div class="cube-face left" data-face="1">
+                            <div class="face-label">左面</div>
+                        </div>
+                        <div class="cube-face top" data-face="0">
+                            <div class="face-label">上面</div>
+                        </div>
+                        <div class="cube-face bottom" data-face="5">
+                            <div class="face-label">下面</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="assets/js/solve-cube.js"></script>
+    <script>
+    (function(){
+        const cubeEl = document.getElementById('cube');
+        const levelSelect = document.getElementById('levelSelect');
+        const prevLevelBtn = document.getElementById('prevLevel');
+        const nextLevelBtn = document.getElementById('nextLevel');
+        const lengthInput = document.getElementById('lengthInput');
+        const widthInput = document.getElementById('widthInput');
+        const heightInput = document.getElementById('heightInput');
+        const resetBtn = document.getElementById('reset');
+        const undoBtn = document.getElementById('undo');
+        const customizeBtn = document.getElementById('customize');
+        const customDoneBtn = document.getElementById('customDone');
+        const hintBtn = document.getElementById('hint');
+        const moveCountEl = document.getElementById('moveCount');
+        const statusText = document.getElementById('statusText');
+        const resetViewBtn = document.getElementById('resetView');
+
+        let TOTAL_LEVELS;
+        let successTimer = null;
+        let isCustomizing = false;
+        let hintMode = false;
+        let hintSet = new Set();
+        let clickedHints = new Set();
+        let cubeRotation = { x: 0, y: 0 };
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let dragThreshold = 5; // 拖拽阈值，超过此像素距离才认为是拖拽
+        let hasMoved = false;
+
+        // 多面体维度配置（长×宽×高）
+        const polyhedronConfigs = [
+            // 小尺寸长方体
+            {l: 2, m: 2, n: 2}, {l: 2, m: 2, n: 3}, {l: 2, m: 3, n: 3},
+            {l: 3, m: 3, n: 3}, {l: 3, m: 3, n: 4}, {l: 3, m: 4, n: 4},
+            // 中等尺寸
+            {l: 4, m: 4, n: 4}, {l: 3, m: 4, n: 5}, {l: 4, m: 4, n: 5},
+            // 不规则长方体
+            {l: 2, m: 3, n: 5}, {l: 3, m: 2, n: 4}, {l: 2, m: 4, n: 3}
+        ];
+        
+        const levelConfigs = [];
+        // 为每个配置创建2个关卡
+        for (const config of polyhedronConfigs) {
+            // 全灭模式
+            levelConfigs.push({ l: config.l, m: config.m, n: config.n, moves: 0, mode: 'allOff' });
+            
+            // 随机模式
+            const totalCells = 2 * (config.l * config.m + config.l * config.n + config.m * config.n);
+            const moves = Math.max(1, Math.min(totalCells, Math.round(totalCells * 0.15)));
+            levelConfigs.push({ l: config.l, m: config.m, n: config.n, moves, mode: 'random' });
+        }
+        TOTAL_LEVELS = levelConfigs.length;
+
+        let currentLevelIndex = 0;
+        let polyLength = levelConfigs[0].l;
+        let polyWidth = levelConfigs[0].m;
+        let polyHeight = levelConfigs[0].n;
+        let polyhedron = createPolyhedron(polyLength, polyWidth, polyHeight, 0);
+        let moveCount = 0;
+        let undoStack = [];
+        const initialStates = Array(TOTAL_LEVELS).fill(null);
+        
+        // 多面体几何函数
+        function createPolyhedron(length, width, height, fill = 0) {
+            // 创建长方体的6个面
+            // 面0: 前面 (width × height)
+            // 面1: 后面 (width × height) 
+            // 面2: 右面 (length × height)
+            // 面3: 左面 (length × height)
+            // 面4: 上面 (length × width)
+            // 面5: 下面 (length × width)
+            return [
+                Array.from({length: height}, () => Array(width).fill(fill)),  // 前面
+                Array.from({length: height}, () => Array(width).fill(fill)),  // 后面
+                Array.from({length: height}, () => Array(length).fill(fill)), // 右面
+                Array.from({length: height}, () => Array(length).fill(fill)), // 左面
+                Array.from({length: width}, () => Array(length).fill(fill)),  // 上面
+                Array.from({length: width}, () => Array(length).fill(fill))   // 下面
+            ];
+        }
+
+        init();
+
+        function init(){
+            for (let i = 0; i < TOTAL_LEVELS; i++) {
+                const opt = document.createElement('option');
+                opt.value = String(i);
+                opt.textContent = `第 ${i + 1} 关`;
+                levelSelect.appendChild(opt);
+            }
+            levelSelect.value = String(currentLevelIndex);
+
+            // 立方体点击事件现在通过拖拽系统处理
+            prevLevelBtn.addEventListener('click', () => switchLevel(currentLevelIndex - 1));
+            nextLevelBtn.addEventListener('click', () => switchLevel(currentLevelIndex + 1));
+            levelSelect.addEventListener('change', () => switchLevel(parseInt(levelSelect.value, 10)));
+            resetBtn.addEventListener('click', () => generateLevel(currentLevelIndex));
+            undoBtn.addEventListener('click', undoMove);
+
+            if (customizeBtn) customizeBtn.addEventListener('click', enterCustomizeMode);
+            if (customDoneBtn) customDoneBtn.addEventListener('click', finishCustomizeMode);
+            if (hintBtn) hintBtn.addEventListener('click', toggleHint);
+
+            if (lengthInput) lengthInput.addEventListener('input', onDimensionInputChange);
+            if (widthInput) widthInput.addEventListener('input', onDimensionInputChange);
+            if (heightInput) heightInput.addEventListener('input', onDimensionInputChange);
+            
+            // 立方体拖拽旋转控制
+            if (resetViewBtn) resetViewBtn.addEventListener('click', resetView);
+            setupCubeDrag();
+
+            generateLevel(0);
+        }
+
+        // createCube 函数已被 createPolyhedron 替代
+        
+        function getFaceDimensions(face) {
+            // 返回每个面的 [行数, 列数]
+            switch(face) {
+                case 0: case 1: // 前面、后面 (width × height)
+                    return [polyHeight, polyWidth];
+                case 2: case 3: // 右面、左面 (length × height)  
+                    return [polyHeight, polyLength];
+                case 4: case 5: // 上面、下面 (length × width)
+                    return [polyWidth, polyLength];
+                default:
+                    return [polyHeight, polyWidth];
+            }
+        }
+
+        function renderPolyhedron(){
+            // 清空所有面的内容
+            const faces = cubeEl.querySelectorAll('.cube-face');
+            faces.forEach(face => {
+                face.innerHTML = '';
+                const faceLabel = document.createElement('div');
+                faceLabel.className = 'face-label';
+                faceLabel.textContent = getFaceName(parseInt(face.dataset.face));
+                face.appendChild(faceLabel);
+            });
+
+            // 为每个面渲染格子 - 考虑不同面的不同尺寸
+            for (let face = 0; face < 6; face++) {
+                const faceEl = cubeEl.querySelector(`[data-face="${face}"]`);
+                const [rows, cols] = getFaceDimensions(face);
+                faceEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+                faceEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+                
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const cell = document.createElement('button');
+                        cell.className = 'cube-cell';
+                        if (polyhedron[face][r][c] === 1) cell.classList.add('on');
+                        
+                        const key = `${face},${r},${c}`;
+                        if (hintMode && hintSet.has(key) && !clickedHints.has(key)) {
+                            cell.classList.add('hint-highlight');
+                        }
+                        
+                        cell.setAttribute('data-face', String(face));
+                        cell.setAttribute('data-r', String(r));
+                        cell.setAttribute('data-c', String(c));
+                        faceEl.appendChild(cell);
+                    }
+                }
+            }
+            
+            moveCountEl.textContent = String(moveCount);
+            undoBtn.disabled = undoStack.length === 0;
+            // 只在非提示模式下清空状态文本
+            if (!hintMode) {
+                statusText.textContent = '';
+            }
+        }
+
+        function getFaceName(faceIndex) {
+            const names = ['上面', '左面', '前面', '右面', '后面', '下面'];
+            return names[faceIndex] || '未知';
+        }
+
+        function onCubeClick(e){
+            const target = e.target;
+            if(!(target instanceof HTMLElement)) return;
+            if(!target.classList.contains('cube-cell')) return;
+            
+            const face = parseInt(target.getAttribute('data-face'), 10);
+            const r = parseInt(target.getAttribute('data-r'), 10);
+            const c = parseInt(target.getAttribute('data-c'), 10);
+            
+            if (isCustomizing){
+                polyhedron[face][r][c] = polyhedron[face][r][c] ^ 1;
+                renderPolyhedron();
+                return;
+            }
+            
+            applyPolyhedronFlip(face, r, c, true);
+            if (hintMode) {
+                const key = `${face},${r},${c}`;
+                clickedHints.add(key);
+                renderPolyhedron();
+            }
+        }
+
+        function applyPolyhedronFlip(face, r, c, recordHistory){
+            const snapshot = deepClonePolyhedron(polyhedron);
+            
+            // 获取所有需要翻转的格子（自身+4个邻居）
+            const neighbors = getPolyhedronNeighbors(face, r, c);
+            
+            for (const [f, row, col] of neighbors) {
+                polyhedron[f][row][col] = polyhedron[f][row][col] ^ 1;
+            }
+            
+            moveCount++;
+            if (recordHistory) undoStack.push(snapshot);
+            renderPolyhedron();
+            if (isAllOn()) showSuccessModal();
+        }
+
+        function getPolyhedronNeighbors(face, r, c) {
+            const neighbors = [[face, r, c]]; // 自身
+            const [faceRows, faceCols] = getFaceDimensions(face);
+            
+            // 面内邻居（上下左右）
+            if (r > 0) neighbors.push([face, r - 1, c]);
+            if (r < faceRows - 1) neighbors.push([face, r + 1, c]);
+            if (c > 0) neighbors.push([face, r, c - 1]);
+            if (c < faceCols - 1) neighbors.push([face, r, c + 1]);
+            
+            // 跨面邻居暂时简化 - 只处理面内邻居以确保游戏一致性
+            // 在长方体中实现正确的跨面邻居需要更复杂的几何计算
+            
+            return neighbors;
+        }
+
+        function isAllOn(){
+            for (let face = 0; face < 6; face++) {
+                const [faceRows, faceCols] = getFaceDimensions(face);
+                for (let r = 0; r < faceRows; r++) {
+                    for (let c = 0; c < faceCols; c++) {
+                        if (polyhedron[face][r][c] !== 1) return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function deepClonePolyhedron(poly) {
+            return poly.map(face => face.map(row => row.slice()));
+        }
+
+        function undoMove(){
+            if (undoStack.length === 0) return;
+            const prev = undoStack.pop();
+            polyhedron = prev;
+            moveCount = Math.max(0, moveCount-1);
+            renderPolyhedron();
+        }
+
+        function switchLevel(nextIndex){
+            cancelSuccessTimer();
+            if (isCustomizing) return;
+            if (nextIndex < 0) nextIndex = 0;
+            if (nextIndex >= TOTAL_LEVELS) nextIndex = TOTAL_LEVELS - 1;
+            currentLevelIndex = nextIndex;
+            levelSelect.value = String(currentLevelIndex);
+            generateLevel(currentLevelIndex);
+        }
+
+        function generateLevel(levelIndex){
+            cancelSuccessTimer();
+            if (isCustomizing) return;
+            exitHintMode();
+            const config = levelConfigs[levelIndex];
+            
+            // 更新多面体维度
+            polyLength = clamp(config.l, 2, 6);
+            polyWidth = clamp(config.m, 2, 6);
+            polyHeight = clamp(config.n, 2, 6);
+            
+            // 检查是否需要重新生成多面体
+            if (initialStates[levelIndex]) {
+                // 使用保存的状态
+                polyhedron = deepClonePolyhedron(initialStates[levelIndex]);
+            } else {
+                // 重新生成多面体
+                if (config.mode === 'allOff') {
+                    polyhedron = createPolyhedron(polyLength, polyWidth, polyHeight, 0);
+                } else {
+                    const result = generateRandomInitialPolyhedron(polyLength, polyWidth, polyHeight, config.moves);
+                    polyhedron = result.polyhedron;
+                }
+                initialStates[levelIndex] = deepClonePolyhedron(polyhedron);
+            }
+            
+            // 更新输入框显示
+            if (lengthInput) lengthInput.value = String(polyLength);
+            if (widthInput) widthInput.value = String(polyWidth);
+            if (heightInput) heightInput.value = String(polyHeight);
+            moveCount = 0;
+            undoStack = [];
+            renderPolyhedron();
+        }
+        
+        function generateRandomInitialPolyhedron(length, width, height, moves) {
+            const poly = createPolyhedron(length, width, height, 1); // 从全亮开始
+            const used = new Set();
+            let steps = Math.max(1, moves || 1);
+            
+            while (steps-- > 0) {
+                // 随机选择一个面和位置
+                let face, r, c, key, guard = 0;
+                do {
+                    face = Math.floor(Math.random() * 6);
+                    const [faceRows, faceCols] = getFaceDimensions(face);
+                    r = Math.floor(Math.random() * faceRows);
+                    c = Math.floor(Math.random() * faceCols);
+                    key = `${face}:${r}:${c}`;
+                    guard++;
+                    if (guard > 20) break; // 防止死循环
+                } while (used.has(key));
+                
+                used.add(key);
+                
+                // 应用翻转（不记录历史）
+                const neighbors = getPolyhedronNeighbors(face, r, c);
+                for (const [f, row, col] of neighbors) {
+                    poly[f][row][col] ^= 1;
+                }
+            }
+            
+            return { polyhedron: poly };
+        }
+
+        function enterCustomizeMode(){
+            if (isCustomizing) return;
+            isCustomizing = true;
+            if (lengthInput) { lengthInput.disabled = false; }
+            if (widthInput) { widthInput.disabled = false; }
+            if (heightInput) { heightInput.disabled = false; }
+            if (customDoneBtn) customDoneBtn.style.display = '';
+            moveCount = 0; undoStack = [];
+            renderPolyhedron();
+        }
+        function finishCustomizeMode(){
+            if (!isCustomizing) return;
+            isCustomizing = false;
+            initialStates[currentLevelIndex] = deepClonePolyhedron(polyhedron);
+            if (lengthInput) lengthInput.disabled = true;
+            if (widthInput) widthInput.disabled = true;
+            if (heightInput) heightInput.disabled = true;
+            if (customDoneBtn) customDoneBtn.style.display = 'none';
+            levelConfigs[currentLevelIndex].l = clamp(polyLength, 2, 6);
+            levelConfigs[currentLevelIndex].m = clamp(polyWidth, 2, 6);
+            levelConfigs[currentLevelIndex].n = clamp(polyHeight, 2, 6);
+            renderPolyhedron();
+        }
+
+        function onDimensionInputChange(){
+            if (!isCustomizing) return;
+            const newLength = clamp(parseInt(lengthInput.value||'0',10)||0, 2, 6);
+            const newWidth = clamp(parseInt(widthInput.value||'0',10)||0, 2, 6);
+            const newHeight = clamp(parseInt(heightInput.value||'0',10)||0, 2, 6);
+            
+            if (newLength !== polyLength || newWidth !== polyWidth || newHeight !== polyHeight){
+                polyLength = newLength;
+                polyWidth = newWidth;
+                polyHeight = newHeight;
+                polyhedron = createPolyhedron(polyLength, polyWidth, polyHeight, 0);
+                moveCount = 0; undoStack = [];
+                renderPolyhedron();
+            }
+        }
+
+        function toggleHint(){
+            if (isCustomizing) return;
+            if (hintMode) { exitHintMode(); } else { enterHintMode(); }
+        }
+        function enterHintMode(){
+            try {
+                // 将游戏状态转换为求解器期望的格式：灯亮=0，灯灭=1
+                const solverInput = cube.map(face => 
+                    face.map(row => row.map(cell => cell === 1 ? 0 : 1))
+                );
+                const solver = new LightsOutCubeSolver(solverInput);
+                const [minFlips, solution] = solver.solve();
+                
+                if (!solver.hasSolution) {
+                    statusText.textContent = '此初始状态无解';
+                    return;
+                }
+                
+                // 将解决方案转换为提示集合
+                hintSet = new Set();
+                for (let face = 0; face < 6; face++) {
+                    for (let r = 0; r < cubeSize; r++) {
+                        for (let c = 0; c < cubeSize; c++) {
+                            if (solution[face][r][c] === 1) {
+                                hintSet.add(`${face},${r},${c}`);
+                            }
+                        }
+                    }
+                }
+                
+                clickedHints.clear();
+                hintMode = true;
+                if (hintBtn) hintBtn.textContent = '隐藏提示';
+                renderCube();
+                statusText.textContent = `最少需要 ${minFlips} 步`;
+            } catch (err) {
+                statusText.textContent = '求解失败: ' + err.message;
+            }
+        }
+        function exitHintMode(){
+            hintMode = false;
+            hintSet = new Set();
+            clickedHints.clear();
+            if (hintBtn) hintBtn.textContent = '提示';
+            statusText.textContent = '';
+            renderCube();
+        }
+
+        function generateRandomInitialCube(size, moves){
+            const cube = createCube(size, 1); // 全亮开始
+            const used = new Set();
+            let steps = Math.max(1, Math.min(6 * size * size, moves|0));
+            
+            while (steps-- > 0){
+                let face, r, c, key, guard=0;
+                do {
+                    face = Math.floor(Math.random() * 6);
+                    r = Math.floor(Math.random() * size);
+                    c = Math.floor(Math.random() * size);
+                    key = `${face}:${r}:${c}`; guard++;
+                    if (guard > 8) break;
+                } while (used.has(key));
+                used.add(key);
+                
+                // 应用翻转
+                const neighbors = getCubeNeighbors(face, r, c);
+                for (const [f, row, col] of neighbors) {
+                    cube[f][row][col] = cube[f][row][col] ^ 1;
+                }
+            }
+            
+            // 保证不是全亮
+            let allOn = true;
+            outer: for (let f = 0; f < 6; f++) {
+                for (let i = 0; i < size; i++) {
+                    for (let j = 0; j < size; j++) {
+                        if (cube[f][i][j] !== 1) { allOn = false; break outer; }
+                    }
+                }
+            }
+            if (allOn) {
+                const neighbors = getCubeNeighbors(0, 0, 0);
+                for (const [f, row, col] of neighbors) {
+                    cube[f][row][col] = cube[f][row][col] ^ 1;
+                }
+            }
+            return { cube: cube };
+        }
+
+        function setupCubeDrag() {
+            // 为立方体和所有格子添加事件监听器
+            cubeEl.addEventListener('mousedown', onMouseDown);
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+            
+            // 触摸设备支持
+            cubeEl.addEventListener('touchstart', onTouchStart, { passive: false });
+            document.addEventListener('touchmove', onTouchMove, { passive: false });
+            document.addEventListener('touchend', onTouchEnd);
+        }
+
+        function onMouseDown(e) {
+            // 记录初始位置和状态
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            hasMoved = false;
+            isDragging = false;
+            
+            // 如果是格子，需要特殊处理
+            if (e.target.classList.contains('cube-cell')) {
+                // 为格子点击设置延迟，等待判断是否为拖拽
+                setTimeout(() => {
+                    if (!hasMoved && !isDragging) {
+                        // 如果没有移动，执行格子点击
+                        onCubeClick(e);
+                    }
+                }, 100); // 增加延迟时间，确保拖拽判断完成
+            }
+            
+            e.preventDefault();
+        }
+
+        function onMouseMove(e) {
+            // 只有在鼠标按下时才检测移动
+            if (lastMouseX === 0 && lastMouseY === 0) return;
+            
+            const deltaX = e.clientX - lastMouseX;
+            const deltaY = e.clientY - lastMouseY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            // 如果移动距离超过阈值，开始拖拽
+            if (distance > dragThreshold && !isDragging) {
+                isDragging = true;
+                hasMoved = true;
+            }
+            
+            if (isDragging) {
+                // 根据鼠标移动更新旋转角度
+                cubeRotation.y += deltaX * 0.5; // 水平移动控制Y轴旋转
+                cubeRotation.x -= deltaY * 0.5; // 垂直移动控制X轴旋转
+                
+                // 限制X轴旋转范围，避免过度旋转
+                cubeRotation.x = Math.max(-90, Math.min(90, cubeRotation.x));
+                
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                
+                updateCubeTransform();
+            }
+        }
+
+        function onMouseUp(e) {
+            isDragging = false;
+            hasMoved = false;
+            lastMouseX = 0;
+            lastMouseY = 0;
+        }
+
+        function onTouchStart(e) {
+            const touch = e.touches[0];
+            lastMouseX = touch.clientX;
+            lastMouseY = touch.clientY;
+            hasMoved = false;
+            isDragging = false;
+            
+            // 如果是格子，需要特殊处理
+            if (e.target.classList.contains('cube-cell')) {
+                // 为格子点击设置延迟，等待判断是否为拖拽
+                setTimeout(() => {
+                    if (!hasMoved && !isDragging) {
+                        // 如果没有移动，执行格子点击
+                        onCubeClick(e);
+                    }
+                }, 100); // 增加延迟时间，确保拖拽判断完成
+            }
+            
+            e.preventDefault();
+        }
+
+        function onTouchMove(e) {
+            // 只有在触摸开始时才检测移动
+            if (lastMouseX === 0 && lastMouseY === 0) return;
+            
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - lastMouseX;
+            const deltaY = touch.clientY - lastMouseY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            // 如果移动距离超过阈值，开始拖拽
+            if (distance > dragThreshold && !isDragging) {
+                isDragging = true;
+                hasMoved = true;
+            }
+            
+            if (isDragging) {
+                cubeRotation.y += deltaX * 0.5;
+                cubeRotation.x -= deltaY * 0.5;
+                cubeRotation.x = Math.max(-90, Math.min(90, cubeRotation.x));
+                
+                lastMouseX = touch.clientX;
+                lastMouseY = touch.clientY;
+                
+                updateCubeTransform();
+            }
+            
+            e.preventDefault();
+        }
+
+        function onTouchEnd(e) {
+            isDragging = false;
+            hasMoved = false;
+            lastMouseX = 0;
+            lastMouseY = 0;
+        }
+
+        function resetView() {
+            cubeRotation = { x: 0, y: 0 };
+            updateCubeTransform();
+        }
+
+        function updateCubeTransform() {
+            cubeEl.style.transform = `rotateX(${cubeRotation.x}deg) rotateY(${cubeRotation.y}deg)`;
+        }
+
+        function showSuccessModal(){
+            if (successTimer){ clearTimeout(successTimer); successTimer=null; }
+            const modal = document.createElement('div');
+            modal.className = 'success-modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>立方体点亮成功！</h3>
+                    <p>5 秒后自动进入下一关…</p>
+                    <div class="modal-buttons">
+                        <button class="btn btn-primary" id="nextNow">立即下一关</button>
+                        <button class="btn btn-secondary" id="closeModal">关闭</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            const cleanup = () => { if (modal && modal.parentNode) modal.parentNode.removeChild(modal); };
+            modal.addEventListener('click', (e)=>{ if (e.target === modal) cleanup(); });
+            modal.querySelector('#closeModal').addEventListener('click', cleanup);
+            modal.querySelector('#nextNow').addEventListener('click', ()=>{ cleanup(); switchLevel(currentLevelIndex+1); });
+            successTimer = setTimeout(()=>{ cleanup(); switchLevel(currentLevelIndex+1); }, 5000);
+        }
+
+        function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+        function cancelSuccessTimer(){ if (successTimer){ clearTimeout(successTimer); successTimer=null; } const m=document.querySelector('.success-modal'); if (m&&m.parentNode) m.parentNode.removeChild(m); }
+    })();
+    </script>
+</body>
+</html>
