@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Lights Out - 异形图块</title>
+    <link rel="icon" href="favicon.png">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* 语言选择器统一样式 - 使用更强的选择器 */
+        #translate,
+        #translate .translate_selectLanguage_tag,
+        .translate_selectLanguage_tag,
+        div[id="translate"],
+        div[id="translate"] .translate_selectLanguage_tag {
+            position: fixed !important;
+            top: 20px !important;
+            right: 20px !important;
+            z-index: 9999 !important;
+            background: rgba(255, 255, 255, 0.15) !important;
+            color: white !important;
+            padding: 0 !important;
+            border-radius: 20px !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            backdrop-filter: blur(10px) !important;
+            cursor: pointer !important;
+            font-size: 0.9rem !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+            transition: all 0.3s ease !important;
+            display: inline-block !important;
+            margin: 0 !important;
+            min-width: 120px !important;
+            height: 36px !important;
+            overflow: visible !important;
+        }
+        
+        #translate:hover,
+        #translate .translate_selectLanguage_tag:hover,
+        .translate_selectLanguage_tag:hover,
+        div[id="translate"]:hover,
+        div[id="translate"] .translate_selectLanguage_tag:hover {
+            background: rgba(255, 255, 255, 0.25) !important;
+            transform: translateY(-1px) !important;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+        }
+        
+        #translate select,
+        #translate .translate_selectLanguage_tag select,
+        .translate_selectLanguage_tag select,
+        div[id="translate"] select,
+        div[id="translate"] .translate_selectLanguage_tag select {
+            background: transparent !important;
+            border: none !important;
+            color: white !important;
+            font-size: 0.9rem !important;
+            font-family: inherit !important;
+            cursor: pointer !important;
+            outline: none !important;
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            width: 100% !important;
+            height: 100% !important;
+            padding: 8px 16px !important;
+            margin: 0 !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            opacity: 1 !important;
+        }
+        
+        #translate select option,
+        #translate .translate_selectLanguage_tag select option,
+        .translate_selectLanguage_tag select option,
+        div[id="translate"] select option,
+        div[id="translate"] .translate_selectLanguage_tag select option {
+            background: white !important;
+            color: #333 !important;
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            #translate,
+            #translate .translate_selectLanguage_tag,
+            .translate_selectLanguage_tag,
+            div[id="translate"],
+            div[id="translate"] .translate_selectLanguage_tag {
+                top: 10px !important;
+                right: 10px !important;
+                min-width: 100px !important;
+                height: 32px !important;
+                font-size: 0.8rem !important;
+            }
+            
+            #translate select,
+            #translate .translate_selectLanguage_tag select,
+            .translate_selectLanguage_tag select,
+            div[id="translate"] select,
+            div[id="translate"] .translate_selectLanguage_tag select {
+                padding: 6px 12px !important;
+                font-size: 0.8rem !important;
+            }
+        }
+        
+        /* 仅本页：提示数字样式 */
+        .fo-cell.hint-num {
+            color: #1f2d3d;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+        }
+        
+        /* 异形图块颜色样式 - 低饱和度配色 */
+        .fo-cell.alien-red {
+            background: linear-gradient(145deg, #f76565, #f76565) !important;
+            color: #2c2c2c !important;
+            border-color: #f76565 !important;
+        }
+        
+        .fo-cell.alien-green {
+            background: linear-gradient(145deg, #a8d8a8, #99c799) !important;
+            color: #2c2c2c !important;
+            border-color: #99c799 !important;
+        }
+        
+        .fo-cell.alien-blue {
+            background: linear-gradient(145deg, #a8c8e8, #99b8d6) !important;
+            color: #2c2c2c !important;
+            border-color: #99b8d6 !important;
+        }
+        
+        .fo-cell.alien-purple {
+            background: linear-gradient(145deg, #c084a1, #a8708a) !important;
+            color: white !important;
+            border-color: #a8708a !important;
+        }
+        
+        .fo-cell.alien-red:hover {
+            background: linear-gradient(145deg, #f0b8b8, #e8a8a8) !important;
+            transform: scale(1.05) !important;
+        }
+        
+        .fo-cell.alien-green:hover {
+            background: linear-gradient(145deg, #b8e8b8, #a8d8a8) !important;
+            transform: scale(1.05) !important;
+        }
+        
+        .fo-cell.alien-blue:hover {
+            background: linear-gradient(145deg, #b8d8f0, #a8c8e8) !important;
+            transform: scale(1.05) !important;
+        }
+        
+        .fo-cell.alien-purple:hover {
+            background: linear-gradient(145deg, #d094b1, #c084a1) !important;
+            transform: scale(1.05) !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="fo-container">
+        <header class="fo-header">
+            <h1>Lights Out - 异形图块</h1>
+            <p class="fo-sub">点击矩阵中的任意方块，同一行和同一列的所有方块将按红、绿、蓝、紫的顺序循环变色</p>
+        </header>
+
+        <section class="fo-panel">
+            <div class="fo-left">
+                <div class="fo-controls">
+                    <div class="fo-row">
+                        <label>关卡
+                            <select id="levelSelect"></select>
+                        </label>
+                        <button id="prevLevel" class="fo-btn">上一关</button>
+                        <button id="nextLevel" class="fo-btn">下一关</button>
+                    </div>
+                    <div class="fo-row">
+                        <label>行 <input type="number" id="rowsInput" min="2" max="100" value="5" disabled></label>
+                        <label>列 <input type="number" id="colsInput" min="2" max="100" value="5" disabled></label>
+                    </div>
+                    <div class="fo-row">
+                        <button id="reset" class="fo-btn">重开本关</button>
+                        <button id="undo" class="fo-btn" disabled>撤销</button>
+                        <button id="hint" class="fo-btn">提示</button>
+                    </div>
+                    <div class="fo-row">
+                        <button id="customize" class="fo-btn">自定义</button>
+                        <button id="customDone" class="fo-btn fo-primary" style="display:none;">完成</button>
+                        <a href="variant.html" class="fo-btn" id="variantBtn" style="margin-left: 8px;">返回中心</a>
+                    </div>
+                    <div class="fo-stats">
+                        <span>步数：<b id="moveCount">0</b></span>
+                        <span id="targetText">目标：全紫</span>
+                        <span id="minStepsWrap" style="display:none;">最少需要 <b id="minSteps">-</b> 步</span>
+                        <span id="statusText"></span>
+                    </div>
+                </div>
+
+                <div class="fo-help">
+                    <details open>
+                        <summary>如何游玩 / 规则说明</summary>
+                        <ul>
+                            <li>点击矩阵中的任意方块，同一行和同一列的所有方块都会变色</li>
+                            <li>颜色按红→绿→蓝→紫的顺序循环（mod 4）</li>
+                            <li>游戏从 2x3 开始逐步增大尺寸，每个尺寸有三关</li>
+                            <li>第一关：随机→全蓝，第二关：随机→全绿，第三关：随机→全紫</li>
+                            <li>可自定义盘面尺寸与初始状态</li>
+                        </ul>
+                    </details>
+                </div>
+            </div>
+
+            <div class="fo-board-wrap">
+                <div id="board" class="fo-board" aria-label="lights-grid" role="grid"></div>
+            </div>
+        </section>
+    </div>
+
+    <script src="assets/js/solve-alien.js"></script>
+    <script>
+    (function(){
+        const boardEl = document.getElementById('board');
+        const levelSelect = document.getElementById('levelSelect');
+        const prevLevelBtn = document.getElementById('prevLevel');
+        const nextLevelBtn = document.getElementById('nextLevel');
+        const rowsInput = document.getElementById('rowsInput');
+        const colsInput = document.getElementById('colsInput');
+        const resetBtn = document.getElementById('reset');
+        const undoBtn = document.getElementById('undo');
+        const customizeBtn = document.getElementById('customize');
+        const customDoneBtn = document.getElementById('customDone');
+        const hintBtn = document.getElementById('hint');
+        const moveCountEl = document.getElementById('moveCount');
+        const minStepsEl = document.getElementById('minSteps');
+        const minStepsWrap = document.getElementById('minStepsWrap');
+        const statusText = document.getElementById('statusText');
+
+        let TOTAL_LEVELS;
+        let successTimer = null;
+        let isCustomizing = false;
+        let hintMode = false;
+        // key => remaining presses needed (1..3)
+        let hintCounts = new Map();
+
+        // 异形图块游戏的尺寸配置（从2x3开始）
+        const baseSizes = [
+            [2,3], [3,3], [3,4], [4,4], [4,5],
+            [5,5], [5,6], [6,6], [6,7], [7,7],
+            [7,8], [8,8], [8,9], [9,9], [10,10],
+            [10,11], [11,11], [12,12], [12,13], [13,13],
+            [13,14], [14,14], [14,15], [15,15], [15,16],
+            [16,16], [16,17], [17,17], [17,18], [18,18],
+            [18,19], [19,19], [19,20], [20,20], [20,21],
+            [21,21], [21,22], [22,22], [22,23], [23,23]
+        ];
+        
+        // 穿插特殊尺寸到常规关卡中
+        const specialSizes = [
+            // 行列相差2的3关
+            [3,5], [4,6], [5,7],
+            // 行列相差3的6关
+            [3,6], [4,7], [5,8], [6,9], [7,10], [8,11],
+            // 行列相差4的6关
+            [3,7], [4,8], [5,9], [6,10], [7,11], [8,12]
+        ];
+        
+        // 将特殊尺寸穿插到基础尺寸中
+        const finalSizes = [];
+        let specialIndex = 0;
+        for (let i = 0; i < baseSizes.length; i++) {
+            finalSizes.push(baseSizes[i]);
+            // 每5个常规关卡后插入1个特殊关卡
+            if ((i + 1) % 5 === 0 && specialIndex < specialSizes.length) {
+                finalSizes.push(specialSizes[specialIndex]);
+                specialIndex++;
+            }
+        }
+        const alienSizes = finalSizes;
+        
+        const levelConfigs = [];
+        for (const [r, c] of alienSizes) {
+            const rows = r;
+            const cols = c;
+            // 每个尺寸三关：
+            // 第一关：可解随机状态 → 全蓝(2)
+            levelConfigs.push({ rows, cols, mode: 'solvableRandom', target: 2 });
+            // 第二关：可解随机状态 → 全绿(1) 
+            levelConfigs.push({ rows, cols, mode: 'solvableRandom', target: 1 });
+            // 第三关：可解随机状态 → 全紫(3)
+            levelConfigs.push({ rows, cols, mode: 'solvableRandom', target: 3 });
+        }
+        TOTAL_LEVELS = levelConfigs.length; // 每个尺寸3关，共 (40+15) * 3 = 165 关
+
+        let currentLevelIndex = 0;
+        let rows = levelConfigs[0].rows;
+        let cols = levelConfigs[0].cols;
+        let grid = createMatrix(rows, cols, 0);
+        let moveCount = 0;
+        let undoStack = [];
+        const initialStates = Array(TOTAL_LEVELS).fill(null);
+
+        init();
+
+        function init(){
+            for (let i = 0; i < TOTAL_LEVELS; i++) {
+                const opt = document.createElement('option');
+                opt.value = String(i);
+                opt.textContent = `第 ${i + 1} 关`;
+                levelSelect.appendChild(opt);
+            }
+            levelSelect.value = String(currentLevelIndex);
+
+            boardEl.addEventListener('click', onBoardClick);
+            prevLevelBtn.addEventListener('click', () => switchLevel(currentLevelIndex - 1));
+            nextLevelBtn.addEventListener('click', () => switchLevel(currentLevelIndex + 1));
+            levelSelect.addEventListener('change', () => switchLevel(parseInt(levelSelect.value, 10)));
+            resetBtn.addEventListener('click', () => generateLevel(currentLevelIndex, false));
+            undoBtn.addEventListener('click', undoMove);
+
+            if (customizeBtn) customizeBtn.addEventListener('click', enterCustomizeMode);
+            if (customDoneBtn) customDoneBtn.addEventListener('click', finishCustomizeMode);
+            if (hintBtn) hintBtn.addEventListener('click', toggleHint);
+
+            if (rowsInput) rowsInput.addEventListener('input', onSizeInputChange);
+            if (colsInput) colsInput.addEventListener('input', onSizeInputChange);
+
+            generateLevel(0, false);
+        }
+
+        function createMatrix(r, c, fill = 0){
+            return Array.from({ length: r }, () => Array.from({ length: c }, () => fill));
+        }
+
+        function renderBoard(){
+            boardEl.innerHTML = '';
+            boardEl.style.setProperty('--rows', String(rows));
+            boardEl.style.setProperty('--cols', String(cols));
+            for(let r=0;r<rows;r++){
+                for(let c=0;c<cols;c++){
+                    const cell = document.createElement('button');
+                    cell.className = 'fo-cell';
+                    
+                    // 添加颜色类名：0=红, 1=绿, 2=蓝, 3=紫
+                    const colorClasses = ['alien-red', 'alien-green', 'alien-blue', 'alien-purple'];
+                    cell.classList.add(colorClasses[grid[r][c]]);
+                    
+                    if (hintMode) {
+                        const key = r+','+c;
+                        if (hintCounts.has(key)) {
+                            cell.classList.add('hint-num');
+                            const remain = hintCounts.get(key);
+                            cell.textContent = String(remain);
+                        }
+                    }
+                    cell.setAttribute('data-r', String(r));
+                    cell.setAttribute('data-c', String(c));
+                    boardEl.appendChild(cell);
+                }
+            }
+            moveCountEl.textContent = String(moveCount);
+            undoBtn.disabled = undoStack.length === 0;
+            statusText.textContent = '';
+        }
+
+        function onBoardClick(e){
+            const target = e.target;
+            if(!(target instanceof HTMLElement)) return;
+            if(!target.classList.contains('fo-cell')) return;
+            const r = parseInt(target.getAttribute('data-r'), 10);
+            const c = parseInt(target.getAttribute('data-c'), 10);
+            if (isCustomizing){
+                grid[r][c] = (grid[r][c] + 1) % 4; // 4色循环
+                renderBoard();
+                return;
+            }
+            const before = deepClone(grid);
+            applyAlienFlip(r, c, true);
+            if (hintMode) {
+                // 检查哪些格子被改变了
+                const changed = new Set();
+                for(let i=0;i<rows;i++){
+                    for(let j=0;j<cols;j++){
+                        if (before[i][j] !== grid[i][j]) changed.add(i+','+j);
+                    }
+                }
+                
+                // 计算期望改变的格子（整行+整列）
+                const expected = new Set();
+                // 整行
+                for (let cc = 0; cc < cols; cc++) {
+                    expected.add(r+','+cc);
+                }
+                // 整列（不重复点击位置）
+                for (let rr = 0; rr < rows; rr++) {
+                    if (rr !== r) {
+                        expected.add(rr+','+c);
+                    }
+                }
+                
+                // 验证是否是直接点击
+                let isDirectClick = true;
+                for (const key of expected){ 
+                    if (!changed.has(key)) { 
+                        isDirectClick = false; 
+                        break; 
+                    } 
+                }
+                if (isDirectClick && changed.size !== expected.size) isDirectClick = false;
+
+                if (isDirectClick) {
+                    // 仅减少"被点击的那个格子"的提示数字；周围受影响的格子不减少
+                    const k = r+','+c;
+                    if (hintCounts.has(k)) {
+                        let v = hintCounts.get(k) - 1;
+                        if (v <= 0) hintCounts.delete(k); 
+                        else hintCounts.set(k, v);
+                    }
+                }
+                renderBoard();
+            }
+        }
+
+        function applyAlienFlip(r, c, recordHistory){
+            const snapshot = deepClone(grid);
+            
+            // 异形图块翻转：整行和整列都变色（红→绿→蓝→紫）
+            // 整行变色
+            for (let cc = 0; cc < cols; cc++) {
+                grid[r][cc] = (grid[r][cc] + 1) % 4;
+            }
+            // 整列变色（不重复变更点击位置）
+            for (let rr = 0; rr < rows; rr++) {
+                if (rr !== r) { // 避免重复变更点击位置
+                    grid[rr][c] = (grid[rr][c] + 1) % 4;
+                }
+            }
+            
+            moveCount++;
+            if (recordHistory) undoStack.push(snapshot);
+            renderBoard();
+            if (isTargetComplete()) showSuccessModal();
+        }
+
+        function isTargetComplete(){
+            const config = levelConfigs[currentLevelIndex];
+            const targetColor = config.target;
+            for (let r=0;r<rows;r++){
+                for (let c=0;c<cols;c++){
+                    if (grid[r][c] !== targetColor) return false;
+                }
+            }
+            return true;
+        }
+
+        function deepClone(mat){ return mat.map(row=>row.slice()); }
+
+        function undoMove(){
+            if (undoStack.length === 0) return;
+            const prev = undoStack.pop();
+            grid = prev;
+            moveCount = Math.max(0, moveCount-1);
+            renderBoard();
+        }
+
+        function switchLevel(nextIndex){
+            cancelSuccessTimer();
+            if (isCustomizing) return;
+            if (hintMode) exitHintMode();
+            if (nextIndex < 0) nextIndex = 0;
+            if (nextIndex >= TOTAL_LEVELS) nextIndex = TOTAL_LEVELS - 1;
+            currentLevelIndex = nextIndex;
+            levelSelect.value = String(currentLevelIndex);
+            generateLevel(currentLevelIndex, false);
+        }
+
+        function generateLevel(levelIndex){
+            cancelSuccessTimer();
+            if (isCustomizing) return;
+            exitHintMode();
+            const config = levelConfigs[levelIndex];
+            rows = config.rows;
+            cols = config.cols;
+            if (rowsInput) rowsInput.value = String(rows);
+            if (colsInput) colsInput.value = String(cols);
+            
+            // 更新目标显示
+            const targetColors = ['红', '绿', '蓝', '紫'];
+            const targetText = document.getElementById('targetText');
+            if (targetText) {
+                targetText.textContent = `目标：全${targetColors[config.target]}`;
+            }
+
+            if (initialStates[levelIndex]){
+                grid = deepClone(initialStates[levelIndex]);
+            } else {
+                if (config.mode === 'solvableRandom') {
+                    // 生成可解的随机初始状态
+                    grid = generateSolvableAlienInitial(rows, cols, config.target);
+                } else {
+                    // 其他模式（如自定义）
+                    grid = generateRandomAlienInitial(rows, cols);
+                }
+                initialStates[levelIndex] = deepClone(grid);
+            }
+
+            moveCount = 0;
+            undoStack = [];
+            renderBoard();
+            if (minStepsWrap) { minStepsWrap.style.display = 'none'; }
+            
+            // 控制台打印初始矩阵（以目标颜色为0的格式）
+            const targetColor = config.target;
+            const transformedMatrix = grid.map(row => 
+                row.map(cell => (cell - targetColor + 4) % 4)
+            );
+            
+            // 格式化为字符串形式
+            const matrixStr = '[\n' + 
+                transformedMatrix.map(row => 
+                    '        [' + row.join(', ') + ']'
+                ).join(',\n') + 
+                '\n    ]';
+            
+            console.log(`第 ${levelIndex + 1} 关初始矩阵 (${rows}x${cols}, 目标：全${targetColors[config.target]}):`);
+            console.log(matrixStr);
+        }
+
+        function enterCustomizeMode(){
+            if (isCustomizing) return;
+            isCustomizing = true;
+            if (rowsInput) { rowsInput.disabled = false; rowsInput.max = '100'; }
+            if (colsInput) { colsInput.disabled = false; colsInput.max = '100'; }
+            if (customDoneBtn) customDoneBtn.style.display = '';
+            moveCount = 0; undoStack = [];
+            renderBoard();
+        }
+        function finishCustomizeMode(){
+            if (!isCustomizing) return;
+            isCustomizing = false;
+            initialStates[currentLevelIndex] = deepClone(grid);
+            if (rowsInput) rowsInput.disabled = true;
+            if (colsInput) colsInput.disabled = true;
+            if (customDoneBtn) customDoneBtn.style.display = 'none';
+            levelConfigs[currentLevelIndex].rows = clamp(grid.length, 2, 100);
+            levelConfigs[currentLevelIndex].cols = clamp(grid[0]?.length || 0, 2, 100);
+            renderBoard();
+        }
+
+        function onSizeInputChange(){
+            if (!isCustomizing) return;
+            const rVal = clamp(parseInt(rowsInput.value||'0',10)||0, 2, 100);
+            const cVal = clamp(parseInt(colsInput.value||'0',10)||0, 2, 100);
+            if (rVal !== rows || cVal !== cols){
+                rows = rVal; cols = cVal;
+                grid = createMatrix(rows, cols, 0);
+                moveCount = 0; undoStack = [];
+                renderBoard();
+            }
+        }
+
+        function toggleHint(){
+            if (isCustomizing) return;
+            if (hintMode) { exitHintMode(); } else { enterHintMode(); }
+        }
+        function enterHintMode(){
+            try {
+                // 获取当前关卡的目标颜色
+                const config = levelConfigs[currentLevelIndex];
+                const targetColor = config.target;
+                
+                // 将当前状态转换为以目标状态为0的求解格式
+                // 转换公式：newValue = (currentValue - target + 4) % 4
+                const transformedGrid = grid.map(row => 
+                    row.map(cell => (cell - targetColor + 4) % 4)
+                );
+                
+                // 使用异形图块求解器（最新API）
+                const solver = new AlienTilesSolver(transformedGrid, 4);
+                const [flips, info] = solver.solve();
+                
+                if (!flips) {
+                    // 无解：显示"此初始状态无解"，不生成数字提示
+                    hintCounts = new Map();
+                    if (minStepsWrap) {
+                        minStepsWrap.textContent = info || '此初始状态无解';
+                        minStepsWrap.style.display = '';
+                    }
+                    hintMode = true;
+                    if (hintBtn) hintBtn.textContent = '隐藏提示';
+                    renderBoard();
+                    return;
+                }
+                
+                // 将解法转换为提示格式（flips是二维数组）
+                hintCounts = new Map();
+                let totalSteps = 0;
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        const times = flips[r][c] % 4;
+                        if (times > 0) {
+                            hintCounts.set(r+','+c, times);
+                            totalSteps += times;
+                        }
+                    }
+                }
+                
+                // 进入提示时显示"最少需要 X 步"
+                if (minStepsWrap) {
+                    // 重建模板，确保无解后恢复结构
+                    minStepsWrap.innerHTML = '最少需要 <b id="minSteps"></b> 步';
+                    const el = document.getElementById('minSteps');
+                    if (el) el.textContent = String(totalSteps);
+                    minStepsWrap.style.display = '';
+                }
+                
+                hintMode = true;
+                if (hintBtn) hintBtn.textContent = '隐藏提示';
+                renderBoard();
+            } catch (err) {
+                console.error('异形图块求解失败:', err);
+                statusText.textContent = '求解失败: ' + err.message;
+                hintCounts = new Map();
+            }
+        }
+        function exitHintMode(){
+            hintMode = false;
+            hintCounts = new Map();
+            if (hintBtn) hintBtn.textContent = '提示';
+            if (minStepsWrap) { minStepsWrap.style.display = 'none'; }
+            renderBoard();
+        }
+
+        function generateSolvableAlienInitial(r, c, target){
+            // 从目标状态开始，进行随机翻转生成可解状态
+            const g = createMatrix(r, c, target); // 全目标色
+            
+            // 随机进行一些翻转操作
+            const numFlips = Math.min(r * c, Math.max(5, Math.floor(r * c * 0.3)));
+            for (let i = 0; i < numFlips; i++) {
+                const rr = Math.floor(Math.random() * r);
+                const cc = Math.floor(Math.random() * c);
+                
+                // 应用异形图块翻转：整行和整列
+                for (let j = 0; j < c; j++) {
+                    g[rr][j] = (g[rr][j] + 1) % 4;
+                }
+                for (let j = 0; j < r; j++) {
+                    if (j !== rr) { // 避免重复翻转
+                        g[j][cc] = (g[j][cc] + 1) % 4;
+                    }
+                }
+            }
+            
+            return g;
+        }
+
+        function generateRandomAlienInitial(r, c){
+            // 生成随机的4色矩阵
+            const g = createMatrix(r, c, 0);
+            for (let i = 0; i < r; i++) {
+                for (let j = 0; j < c; j++) {
+                    g[i][j] = Math.floor(Math.random() * 4); // 0-3 随机颜色
+                }
+            }
+            return g;
+        }
+
+        function showSuccessModal(){
+            if (successTimer){ clearTimeout(successTimer); successTimer=null; }
+            const modal = document.createElement('div');
+            modal.className = 'success-modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>通关成功</h3>
+                    <p>5 秒后自动进入下一关…</p>
+                    <div class="modal-buttons">
+                        <button class="btn btn-primary" id="nextNow">立即下一关</button>
+                        <button class="btn btn-secondary" id="closeModal">关闭</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            const cleanup = () => { if (modal && modal.parentNode) modal.parentNode.removeChild(modal); };
+            modal.addEventListener('click', (e)=>{ if (e.target === modal) cleanup(); });
+            modal.querySelector('#closeModal').addEventListener('click', cleanup);
+            modal.querySelector('#nextNow').addEventListener('click', ()=>{ cleanup(); switchLevel(currentLevelIndex+1); });
+            successTimer = setTimeout(()=>{ cleanup(); switchLevel(currentLevelIndex+1); }, 5000);
+        }
+
+        function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+        function cancelSuccessTimer(){ if (successTimer){ clearTimeout(successTimer); successTimer=null; } const m=document.querySelector('.success-modal'); if (m&&m.parentNode) m.parentNode.removeChild(m); }
+    })();
+    </script>
+
+    <!-- translate.js 多语言翻译功能 -->
+    <script src="assets/js/translate.js"></script>
+    <script>
+        // 设置翻译服务
+        translate.service.use('client.edge')
+        // 设置默认翻译目标语种为中文简体
+        translate.language.setDefaultTo('chinese_simplified')
+        // 设置本地语种为中文简体
+        translate.language.setLocal('chinese_simplified')
+        // 开启页面变化监控，对变化部分进行自动翻译
+        translate.listener.start()
+        // 显示语言选择器
+        translate.selectLanguageTag.show = true
+        // 自动识别用户语言
+        translate.setAutoDiscriminateLocalLanguage()
+        // 跳过不需要翻译的元素
+        translate.ignore.class.push('no-translate')
+        
+        // 强制应用样式的函数
+        function forceLanguageSelectorStyle() {
+            // 查找所有可能的语言选择器元素
+            const selectors = [
+                '#translate',
+                '.translate_selectLanguage_tag',
+                '[id="translate"]',
+                'div[id="translate"]'
+            ]
+            
+            selectors.forEach(selector => {
+                const elements = document.querySelectorAll(selector)
+                elements.forEach(element => {
+                    if (element) {
+                        // 强制设置样式
+                        element.style.setProperty('position', 'fixed', 'important')
+                        element.style.setProperty('top', '20px', 'important')
+                        element.style.setProperty('right', '20px', 'important')
+                        element.style.setProperty('z-index', '9999', 'important')
+                        element.style.setProperty('background', 'rgba(255, 255, 255, 0.15)', 'important')
+                        element.style.setProperty('color', 'white', 'important')
+                        element.style.setProperty('padding', '0', 'important')
+                        element.style.setProperty('border-radius', '20px', 'important')
+                        element.style.setProperty('border', '1px solid rgba(255, 255, 255, 0.3)', 'important')
+                        element.style.setProperty('backdrop-filter', 'blur(10px)', 'important')
+                        element.style.setProperty('cursor', 'pointer', 'important')
+                        element.style.setProperty('font-size', '0.9rem', 'important')
+                        element.style.setProperty('font-family', "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 'important')
+                        element.style.setProperty('box-shadow', '0 4px 12px rgba(0, 0, 0, 0.15)', 'important')
+                        element.style.setProperty('transition', 'all 0.3s ease', 'important')
+                        element.style.setProperty('display', 'inline-block', 'important')
+                        element.style.setProperty('margin', '0', 'important')
+                        element.style.setProperty('min-width', '120px', 'important')
+                        element.style.setProperty('height', '36px', 'important')
+                        element.style.setProperty('overflow', 'visible', 'important')
+                        
+                        // 为select元素设置样式
+                        const selectElement = element.querySelector('select')
+                        if (selectElement) {
+                            selectElement.style.setProperty('background', 'transparent', 'important')
+                            selectElement.style.setProperty('border', 'none', 'important')
+                            selectElement.style.setProperty('color', 'white', 'important')
+                            selectElement.style.setProperty('font-size', '0.9rem', 'important')
+                            selectElement.style.setProperty('cursor', 'pointer', 'important')
+                            selectElement.style.setProperty('outline', 'none', 'important')
+                            selectElement.style.setProperty('width', '100%', 'important')
+                            selectElement.style.setProperty('height', '100%', 'important')
+                            selectElement.style.setProperty('padding', '8px 16px', 'important')
+                            selectElement.style.setProperty('margin', '0', 'important')
+                            selectElement.style.setProperty('position', 'absolute', 'important')
+                            selectElement.style.setProperty('top', '0', 'important')
+                            selectElement.style.setProperty('left', '0', 'important')
+                            selectElement.style.setProperty('opacity', '1', 'important')
+                            selectElement.style.setProperty('appearance', 'none', 'important')
+                            selectElement.style.setProperty('-webkit-appearance', 'none', 'important')
+                            selectElement.style.setProperty('-moz-appearance', 'none', 'important')
+                            
+                            // 为select的option元素设置样式
+                            const options = selectElement.querySelectorAll('option')
+                            options.forEach(option => {
+                                option.style.setProperty('background', 'white', 'important')
+                                option.style.setProperty('color', '#333', 'important')
+                            })
+                        }
+                    }
+                })
+            })
+        }
+        
+        // 页面加载完成后执行翻译
+        document.addEventListener('DOMContentLoaded', function() {
+            translate.execute()
+            
+            // 延迟执行以确保DOM完全加载
+            setTimeout(function() {
+                translate.execute()
+                forceLanguageSelectorStyle()
+            }, 500)
+            
+            // 多次检查确保样式生效
+            setTimeout(function() {
+                forceLanguageSelectorStyle()
+            }, 1000)
+            
+            setTimeout(function() {
+                forceLanguageSelectorStyle()
+            }, 2000)
+            
+            // 定期检查语言选择器样式
+            setInterval(forceLanguageSelectorStyle, 3000)
+            
+            // 监听DOM变化，当新元素添加时应用样式
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.type === 'childList') {
+                        setTimeout(forceLanguageSelectorStyle, 100)
+                    }
+                })
+            })
+            
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            })
+        })
+    </script>
+</body>
+</html>
