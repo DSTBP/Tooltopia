@@ -92,7 +92,6 @@ Weyl sequence 定义为 {nα mod 1}，其中：
 - **性能优化**：移动端性能优化和电池优化
 - **布局适配**：针对不同设备尺寸的布局优化
 
-详细说明请查看 [MOBILE_OPTIMIZATION.md](MOBILE_OPTIMIZATION.md)
 
 ## 许可证
 
@@ -100,4 +99,4 @@ MIT License
 
 ## 作者
 
-作曲: Skye Kothari 
+作曲: DSTBP

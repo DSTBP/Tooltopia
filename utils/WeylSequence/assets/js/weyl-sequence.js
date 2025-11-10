@@ -122,6 +122,12 @@ class WeylSequenceVisualizer {
         document.getElementById('speedInput').addEventListener('input', (e) => {
             this.speed = parseInt(e.target.value);
             document.getElementById('speedValue').textContent = this.speed + 'ms';
+            // 如果动画正在运行，立即应用新的速度
+            if (this.isRunning && this.animationId) {
+                clearTimeout(this.animationId);
+                this.animationId = null;
+                this.animate();
+            }
         });
         
         // 响应式resize事件处理
