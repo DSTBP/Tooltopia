@@ -1,0 +1,1003 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-attachment: fixed;
+    background-size: 100% 100%;
+    min-height: 100vh;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 40px;
+    color: white;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.description {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.mobile-tips {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    max-width: 600px;
+    margin: 10px auto 0;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.visualization-container {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.track-container {
+    flex: 1;
+    min-width: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#trackCanvas {
+    width: 600px;
+    height: 600px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    /* 确保Canvas尺寸不会因为DPR或其他因素变化 */
+    max-width: 600px;
+    max-height: 600px;
+    min-width: 600px;
+    min-height: 600px;
+}
+
+.track-info {
+    margin-top: 20px;
+    display: flex;
+    gap: 30px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 20px;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.info-item {
+    text-align: center;
+    color: white;
+}
+
+.info-item .label {
+    display: block;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-bottom: 5px;
+}
+
+.info-item span:last-child {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.controls {
+    flex: 0 0 300px;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    height: fit-content;
+}
+
+.control-group {
+    margin-bottom: 20px;
+}
+
+.control-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+}
+
+.control-group input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.control-group input[type="number"]:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.control-group input[type="range"] {
+    width: 100%;
+    margin: 10px 0;
+}
+
+#speedValue {
+    display: inline-block;
+    margin-left: 10px;
+    font-weight: 600;
+    color: #667eea;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    flex: 1;
+    min-width: 80px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #f8f9fa;
+    color: #6c757d;
+    border: 2px solid #e9ecef;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #e9ecef;
+    transform: translateY(-2px);
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.explanation {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.explanation h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: #333;
+    font-size: 1.8rem;
+}
+
+.explanation-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.explanation-item {
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border-left: 4px solid #667eea;
+}
+
+.explanation-item h3 {
+    color: #667eea;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.explanation-item p {
+    color: #666;
+    line-height: 1.6;
+}
+
+/* 基础响应式设计 */
+@media (max-width: 1200px) {
+    .container {
+        max-width: 95%;
+        padding: 15px;
+    }
+    
+    .visualization-container {
+        gap: 20px;
+    }
+    
+    #trackCanvas {
+        width: 500px;
+        height: 500px;
+        max-width: 500px;
+        max-height: 500px;
+        min-width: 500px;
+        min-height: 500px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .container {
+        max-width: 98%;
+        padding: 12px;
+    }
+    
+    header h1 {
+        font-size: 2.2rem;
+    }
+    
+    .description {
+        font-size: 1rem;
+    }
+    
+    #trackCanvas {
+        width: 450px;
+        height: 450px;
+        max-width: 450px;
+        max-height: 450px;
+        min-width: 450px;
+        min-height: 450px;
+    }
+    
+    .controls {
+        flex: 0 0 280px;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .mobile-tips {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        margin: 8px auto 0;
+    }
+    
+    .visualization-container {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .track-container {
+        min-width: auto;
+        order: 2;
+    }
+    
+    .controls {
+        flex: none;
+        order: 1;
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+    
+    #trackCanvas {
+        width: 350px;
+        height: 350px;
+        max-width: 350px;
+        max-height: 350px;
+        min-width: 350px;
+        min-height: 350px;
+    }
+    
+    .track-info {
+        flex-direction: column;
+        gap: 15px;
+        padding: 15px;
+    }
+    
+    .control-buttons {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.95rem;
+        min-width: 70px;
+    }
+    
+    .explanation-content {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .explanation {
+        padding: 20px;
+    }
+    
+    .explanation h2 {
+        font-size: 1.6rem;
+    }
+    
+    .explanation-item {
+        padding: 15px;
+    }
+    
+    .explanation-item h3 {
+        font-size: 1.1rem;
+    }
+    
+    .explanation-item p {
+        font-size: 0.95rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+    
+    header {
+        margin-bottom: 25px;
+    }
+    
+    header h1 {
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+    }
+    
+    .description {
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    
+    #trackCanvas {
+        width: 300px;
+        height: 300px;
+        max-width: 300px;
+        max-height: 300px;
+        min-width: 300px;
+        min-height: 300px;
+    }
+    
+    .track-info {
+        padding: 12px;
+        gap: 12px;
+    }
+    
+    .info-item .label {
+        font-size: 0.8rem;
+    }
+    
+    .info-item span:last-child {
+        font-size: 1.1rem;
+    }
+    
+    .controls {
+        padding: 15px;
+    }
+    
+    .control-group {
+        margin-bottom: 15px;
+    }
+    
+    .control-group label {
+        font-size: 0.9rem;
+        margin-bottom: 6px;
+    }
+    
+    .control-group input[type="number"] {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+    
+    .btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+        min-width: 60px;
+    }
+    
+    .explanation {
+        padding: 15px;
+    }
+    
+    .explanation h2 {
+        font-size: 1.4rem;
+        margin-bottom: 20px;
+    }
+    
+    .explanation-item {
+        padding: 12px;
+    }
+    
+    .explanation-item h3 {
+        font-size: 1rem;
+    }
+    
+    .explanation-item p {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 360px) {
+    header h1 {
+        font-size: 1.6rem;
+    }
+    
+    .description {
+        font-size: 0.85rem;
+    }
+    
+    #trackCanvas {
+        width: 280px;
+        height: 280px;
+        max-width: 280px;
+        max-height: 280px;
+        min-width: 280px;
+        min-height: 280px;
+    }
+    
+    .controls {
+        padding: 12px;
+    }
+    
+    .btn {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        min-width: 50px;
+    }
+}
+
+/* 触摸设备优化 */
+@media (hover: none) and (pointer: coarse) {
+    .btn {
+        min-height: 44px; /* 触摸友好的最小高度 */
+        touch-action: manipulation; /* 优化触摸响应 */
+    }
+    
+    .control-group input[type="range"] {
+        min-height: 44px;
+        touch-action: pan-x; /* 只允许水平滑动 */
+    }
+    
+    .control-group input[type="number"] {
+        min-height: 44px;
+        font-size: 16px; /* 防止iOS缩放 */
+    }
+    
+    /* 增加触摸区域 */
+    .track-info {
+        padding: 20px;
+    }
+    
+    .info-item {
+        padding: 10px;
+        min-height: 44px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    /* 触摸友好的预设按钮 */
+    .preset-btn {
+        min-height: 44px;
+        min-width: 60px;
+    }
+    
+    /* 触摸友好的Canvas */
+    #trackCanvas {
+        touch-action: manipulation;
+        cursor: pointer;
+    }
+}
+
+/* 横屏模式优化 */
+@media (orientation: landscape) and (max-height: 600px) {
+    header {
+        margin-bottom: 20px;
+    }
+    
+    header h1 {
+        font-size: 1.8rem;
+        margin-bottom: 8px;
+    }
+    
+    .description {
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+    
+    .visualization-container {
+        margin-bottom: 20px;
+    }
+    
+    .explanation {
+        padding: 15px;
+    }
+    
+    .explanation h2 {
+        font-size: 1.4rem;
+        margin-bottom: 15px;
+    }
+}
+
+/* 重复点弹窗样式 */
+.duplicate-point-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    max-width: 500px;
+    text-align: center;
+    animation: slideIn 0.3s ease-out;
+    margin: 20px;
+}
+
+.modal-content h3 {
+    color: #667eea;
+    margin-bottom: 15px;
+    font-size: 1.5rem;
+}
+
+.modal-content h4 {
+    color: #333;
+    margin: 20px 0 10px 0;
+    font-size: 1.1rem;
+    text-align: left;
+}
+
+.modal-content p {
+    color: #666;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.duplicate-data {
+    margin: 20px 0;
+    text-align: left;
+}
+
+.data-output {
+    width: 100%;
+    height: 120px;
+    padding: 10px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    background: #f8f9fa;
+    color: #333;
+    resize: vertical;
+    white-space: pre;
+}
+
+.modal-buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.modal-buttons .btn {
+    min-width: 100px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { 
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to { 
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* 弹窗响应式设计 */
+@media (max-width: 768px) {
+    .modal-content {
+        padding: 20px;
+        max-width: 90%;
+        margin: 15px;
+    }
+    
+    .modal-content h3 {
+        font-size: 1.3rem;
+    }
+    
+    .modal-content p {
+        font-size: 0.95rem;
+    }
+    
+    /* 移动端弹窗优化 */
+    .duplicate-data {
+        margin: 15px 0;
+    }
+    
+    .data-output {
+        height: 100px;
+        font-size: 0.8rem;
+    }
+    
+    .modal-buttons .btn {
+        min-height: 44px;
+        padding: 12px 20px;
+    }
+}
+
+/* 移动端性能优化 */
+@media (max-width: 768px) {
+    /* 减少阴影和模糊效果以提高性能 */
+    .track-container {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+    
+    #trackCanvas {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(5px);
+    }
+    
+    .controls {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+    
+    .explanation {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+}
+
+/* 平板设备优化 */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .visualization-container {
+        gap: 25px;
+    }
+    
+    .track-container {
+        min-width: 500px;
+    }
+    
+    .controls {
+        flex: 0 0 320px;
+        padding: 30px;
+    }
+    
+    .preset-buttons {
+        gap: 10px;
+    }
+    
+    .preset-btn {
+        padding: 10px 18px;
+        font-size: 1rem;
+    }
+}
+
+/* 横屏手机优化 */
+@media (max-width: 768px) and (orientation: landscape) {
+    header {
+        margin-bottom: 15px;
+    }
+    
+    header h1 {
+        font-size: 1.6rem;
+        margin-bottom: 8px;
+    }
+    
+    .description {
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+    
+    .visualization-container {
+        flex-direction: row;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .track-container {
+        order: 1;
+        flex: 1;
+    }
+    
+    .controls {
+        order: 2;
+        flex: 0 0 250px;
+        max-width: none;
+        margin: 0;
+    }
+    
+    #trackCanvas {
+        width: 280px;
+        height: 280px;
+        max-width: 280px;
+        max-height: 280px;
+        min-width: 280px;
+        min-height: 280px;
+    }
+    
+    .explanation {
+        display: none; /* 横屏时隐藏说明部分以节省空间 */
+    }
+}
+
+/* 高DPI屏幕优化 */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    #trackCanvas {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+} 
+
+/* ========== Lights Out 点灯游戏样式 ========== */
+.fo-container {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 24px 8px 24px 8px; /* 左侧只留一点缝 */
+}
+
+.fo-header {
+    text-align: center;
+    color: #fff;
+    margin-bottom: 16px;
+}
+
+.fo-header h1 {
+    font-size: 2rem;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+
+.fo-sub {
+    opacity: .9;
+}
+
+.fo-panel {
+    display: grid;
+    grid-template-columns: max-content 1fr; /* 左侧按内容自适应宽度 */
+    align-items: start;
+    gap: 16px;
+}
+
+.fo-left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.fo-controls {
+    background: rgba(255,255,255,.95);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+}
+
+.fo-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 10px;
+    flex-wrap: wrap; /* 允许换行，避免内容戳出左侧框 */
+}
+
+.fo-row label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    color: #444;
+}
+
+.fo-row input[type="number"],
+.fo-row select {
+    padding: 8px 10px;
+    border: 2px solid #e1e5e9;
+    border-radius: 8px;
+    background: #fff;
+}
+
+.fo-btn {
+    padding: 10px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #f1f3f5;
+    color: #444;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease, background .2s;
+    text-decoration: none; /* 作为链接使用时去下划线 */
+    display: inline-block; /* 统一按钮盒模型 */
+}
+
+/* 统一超链接按钮的字体大小，避免与 <button> 呈现不一致 */
+a.fo-btn {
+    font-size: 0.83rem;
+}
+
+.fo-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0,0,0,.12);
+    text-decoration: none; /* 悬停也不显示下划线 */
+}
+
+.fo-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+}
+
+/* 自定义完成按钮：淡紫色渐变 */
+#customDone.fo-btn,
+button#customDone.fo-btn {
+    background: linear-gradient(135deg, #a99fe8 0%, #c2b6f3 100%);
+    color: #fff;
+}
+#customDone.fo-btn:hover:not(:disabled),
+button#customDone.fo-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(169, 159, 232, 0.45);
+}
+
+.fo-stats {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    color: #333;
+}
+
+.fo-board-wrap {
+    background: transparent;
+    padding: 8px; /* 棋盘四周留缝，与左侧布局一致 */
+    box-shadow: none;
+    display: flex;
+    justify-content: center; /* 让矩阵在右侧区域水平居中 */
+    align-items: center; /* 垂直居中（当右侧区域有足够高度时）*/
+}
+
+.fo-board {
+    --rows: 5;
+    --cols: 5;
+    --cell: 40px;
+    display: grid;
+    grid-template-rows: repeat(var(--rows), var(--cell));
+    grid-template-columns: repeat(var(--cols), var(--cell));
+    gap: 2px;
+}
+
+.fo-cell {
+    width: var(--cell);
+    height: var(--cell);
+    border-radius: 10px;
+    background: #e9ecef;
+    border: none;
+    font-weight: 800;
+    color: #495057;
+    box-shadow: 0 2px 0 #cfd4da inset;
+    transition: transform .1s ease, background .15s ease, box-shadow .15s ease, color .15s ease;
+}
+
+.fo-cell.on {
+    background: #ffd43b;
+    color: #8a5e00;
+    box-shadow: 0 2px 0 #e6b800 inset, 0 0 18px rgba(255, 212, 59, .6);
+}
+
+.fo-cell.hint {
+    background: #ff6b9d;
+    color: #fff;
+    box-shadow: 0 2px 0 #e91e63 inset, 0 0 18px rgba(255, 107, 157, .6);
+    animation: hintPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes hintPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.fo-cell:active {
+    transform: scale(.98);
+}
+
+.fo-help details {
+    margin-top: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(255,255,255,.94));
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: 0 10px 28px rgba(0,0,0,.12);
+    border: 1px solid rgba(102, 126, 234, 0.15);
+}
+
+/* 展开说明，移除折叠箭头默认样式影响可读性 */
+.fo-help details[open] > summary {
+    list-style: none;
+}
+.fo-help summary {
+    font-weight: 700;
+    color: #5b6cee;
+    margin-bottom: 10px;
+}
+.fo-help ul li {
+    margin: 6px 0 6px 18px;
+    list-style: disc;
+    color: #555;
+}
+
+/* 成功弹窗样式（与现有 modal 风格保持一致） */
+.success-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    animation: fadeIn .25s ease-in;
+}
+.success-modal .modal-content {
+    background: #fff;
+    border-radius: 16px;
+    padding: 26px 22px;
+    width: min(92vw, 480px);
+    box-shadow: 0 14px 44px rgba(0,0,0,.25);
+    text-align: center;
+}
+.success-modal h3 { color: #667eea; margin-bottom: 10px; }
+.success-modal p { color: #666; margin: 8px 0 16px; }
+
+@media (max-width: 900px) {
+    .fo-panel {
+        grid-template-columns: 1fr;
+    }
+    .fo-board {
+        justify-content: center;
+    }
+}
