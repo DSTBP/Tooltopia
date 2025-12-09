@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>计算 A⁺ - MachineLearningCalculator</title>
+    <!-- KaTeX for Math Rendering (CDN) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        body { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff }
+        .container { max-width:1100px;margin:32px auto;padding:20px }
+        .panel { background: rgba(255,255,255,0.97); color:#111; padding:18px;border-radius:12px }
+        textarea { width:100%; min-height:120px; font-family: monospace; font-size:14px }
+        pre.out { background:#f4f6fb;padding:12px;border-radius:8px;overflow:auto }
+        .grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px }
+        .small { font-size:0.95rem;color:#555 }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h1 style="color:white">计算 A⁺</h1>
+            <div>
+                <a href="../more.html" style="color:white;text-decoration:underline;margin-right:12px">返回更多</a>
+                <a href="../index.html" style="color:white;text-decoration:underline">返回计算器</a>
+            </div>
+        </div>
+
+        <div class="panel">
+            <p class="small">输入矩阵 A（每行一行，元素空格或逗号分隔）。流程：解析 A → 计算满秩分解 \(A = F\cdot G\) → 计算中间矩阵并展示 → 用公式 \(A^{+} = G^{H} (G G^{H})^{-1} (F^{H} F)^{-1} F^{H}\) 计算 A⁺（对实数矩阵即转置代替共轭转置）。</p>
+            <div style="margin-bottom:8px">
+                <label>矩阵 A：</label>
+                <textarea id="matrixA">2 4 1 1
+1 2 -1 2
+-1 -2 -2 1</textarea>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+                <button id="compute" class="btn-calc" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:10px 14px">计算 A⁺</button>
+                <button id="loadSample" class="btn-calc">载入示例</button>
+            </div>
+
+            <div class="grid">
+                <div>
+                    <h3>步骤 1 — 满秩分解 \(F\)：</h3>
+                    <pre id="outF" class="out">-</pre>
+                    <h3>步骤 2 — 满秩分解 \(G\)：</h3>
+                    <pre id="outG" class="out">-</pre>
+                </div>
+                <div>
+                    <h3>步骤 3 — 中间矩阵</h3>
+                    <div class="small">\(F^{H}F\)：</div>
+                    <pre id="outFHF" class="out">-</pre>
+                    <div class="small">\((F^{H}F)^{-1}\)：</div>
+                    <pre id="outFHFinv" class="out">-</pre>
+                    <div class="small">\(GG^{H}\)：</div>
+                    <pre id="outGGH" class="out">-</pre>
+                    <div class="small">\((GG^{H})^{-1}\)：</div>
+                    <pre id="outGGHinv" class="out">-</pre>
+                </div>
+            </div>
+
+            <div style="margin-top:12px">
+                <h3>最终结果 A⁺：</h3>
+                <pre id="outAplus" class="out">-</pre>
+            </div>
+        </div>
+    </div>
+
+        <script>
+            window.MathJax = {
+                tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
+                svg: { fontCache: 'global' }
+            };
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+        <script>
+            // Try to render any static LaTeX in the document: prefer KaTeX auto-render, fallback to MathJax
+            (function(){
+                function tryRender(){
+                    try {
+                        if (window.renderMathInElement) {
+                            renderMathInElement(document.body, {
+                                delimiters: [
+                                    {left: '$$', right: '$$', display: true},
+                                    {left: '\\[', right: '\\]', display: true},
+                                    {left: '\\(', right: '\\)', display: false}
+                                ],
+                                throwOnError: false
+                            });
+                            return;
+                        }
+                    } catch(e){ console.warn('KaTeX render failed', e); }
+                    if (window.MathJax && MathJax.typesetPromise) {
+                        MathJax.typesetPromise();
+                    }
+                }
+                if (document.readyState === 'complete' || document.readyState === 'interactive') tryRender();
+                else document.addEventListener('DOMContentLoaded', tryRender);
+            })();
+        </script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+        <script src="../assets/js/pseudoinverse.js"></script>
+</body>
+</html>

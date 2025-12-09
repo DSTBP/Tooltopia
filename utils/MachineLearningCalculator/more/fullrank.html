@@ -1,0 +1,87 @@
+<!--
+ * @Description: 
+ * @Author: DSTBP
+ * @Date: 2025-12-09 15:44:19
+ * @LastEditTime: 2025-12-09 17:56:00
+ * @LastEditors: DSTBP
+-->
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>矩阵满秩分解 - MachineLearningCalculator</title>
+    <!-- KaTeX for Math Rendering (CDN) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        body { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff }
+        .container { max-width:1100px;margin:32px auto;padding:20px }
+        .panel { background: rgba(255,255,255,0.97); color:#111; padding:18px;border-radius:12px }
+        textarea { width:100%; min-height:140px; font-family: monospace; font-size:14px }
+        pre.out { background:#f4f6fb;padding:12px;border-radius:8px;overflow:auto }
+        .row { display:flex;gap:12px }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h1 style="color:white">矩阵满秩分解 \(A = F \cdot G\)</h1>
+            <div>
+                <a href="../more.html" style="color:white;text-decoration:underline;margin-right:12px">返回更多</a>
+                <a href="../index.html" style="color:white;text-decoration:underline">返回计算器</a>
+            </div>
+        </div>
+
+        <div class="panel">
+            <p>输入矩阵 \(A\)，每行一行，元素用空格或逗号分隔。示例已经预置。点击“分解”将在下方显示 \(F\) 与 \(G\)。</p>
+            <div style="margin-bottom:10px">
+                <label>矩阵 A：</label>
+                <textarea id="matrixA">2 4 1 1
+1 2 -1 2
+-1 -2 -2 1</textarea>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+                <button id="decomp" class="btn-calc" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:10px 14px">分解</button>
+                <button id="sample" class="btn-calc">载入示例</button>
+            </div>
+
+            <div>
+                <h3>结果 \(F\)：</h3>
+                <pre id="outF" class="out">-</pre>
+                <h3>结果 \(G\)：</h3>
+                <pre id="outG" class="out">-</pre>
+            </div>
+        </div>
+    </div>
+
+        <script>
+            window.MathJax = {
+                tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
+                svg: { fontCache: 'global' }
+            };
+        </script>
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+        <script>
+            (function(){
+                function tryRender(){
+                    try{
+                        if (window.renderMathInElement) {
+                            renderMathInElement(document.body, {
+                                delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],
+                                throwOnError:false
+                            });
+                            return;
+                        }
+                    } catch(e){ console.warn('KaTeX render failed', e); }
+                    if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+                }
+                if (document.readyState==='complete' || document.readyState==='interactive') tryRender(); else document.addEventListener('DOMContentLoaded', tryRender);
+            })();
+        </script>
+        <script src="../assets/js/math.min.js"></script>
+        <script src="../assets/js/fullrank.js"></script>
+</body>
+</html>
