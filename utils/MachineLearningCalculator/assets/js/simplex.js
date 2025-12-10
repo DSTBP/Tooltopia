@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let d = 2; d <= 20; d++) {
             for (let n = 1; n < d * 10; n++) {
                 if (Math.abs(n / d - absNum) < 1e-9) {
-                    return sign < 0 ? `\\(-\\frac{${n}}{${d}}\\)` : `\\(\\frac{${n}}{${d}}\\)`;
+                    return sign < 0 ? `-\\frac{${n}}{${d}}` : `\\frac{${n}}{${d}}`;
                 }
             }
         }
