@@ -10,13 +10,56 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
-        body { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff }
+        body { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; min-height:100vh; margin:0; padding:0 }
         .container { max-width:1100px;margin:32px auto;padding:20px }
-        .panel { background: rgba(255,255,255,0.97); color:#111; padding:18px;border-radius:12px }
-        textarea { width:100%; min-height:120px; font-family: monospace; font-size:14px }
-        pre.out { background:#f4f6fb;padding:12px;border-radius:8px;overflow:auto }
+        .panel { background: rgba(255,255,255,0.97); color:#111; padding:24px;border-radius:16px;box-shadow: 0 8px 32px rgba(0,0,0,0.1) }
+        textarea { width:100%; min-height:120px; font-family: monospace; font-size:14px; padding:10px; border:2px solid #e5e7eb; border-radius:8px; transition: border-color 0.2s }
+        textarea:focus { outline:none; border-color:#667eea }
+        pre.out { background:#f8fafc;padding:14px;border-radius:10px;overflow:auto;border:1px solid #e5e7eb }
         .grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px }
         .small { font-size:0.95rem;color:#555 }
+
+        .btn-calc {
+            padding: 11px 22px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+
+        .btn-calc:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-calc:active {
+            transform: translateY(0);
+        }
+
+        #compute {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        #compute:hover {
+            filter: brightness(1.1);
+        }
+
+        #loadSample {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 9px 20px;
+        }
+
+        #loadSample:hover {
+            background: #f0f4ff;
+            border-color: #5568d3;
+            color: #5568d3;
+        }
     </style>
 </head>
 <body>
@@ -37,8 +80,8 @@
 1 2 -1 2
 -1 -2 -2 1</textarea>
             </div>
-            <div style="display:flex;gap:8px;margin-bottom:12px">
-                <button id="compute" class="btn-calc" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;padding:10px 14px">计算 A⁺</button>
+            <div style="display:flex;gap:12px;margin-bottom:12px">
+                <button id="compute" class="btn-calc">计算 A⁺</button>
                 <button id="loadSample" class="btn-calc">载入示例</button>
             </div>
 

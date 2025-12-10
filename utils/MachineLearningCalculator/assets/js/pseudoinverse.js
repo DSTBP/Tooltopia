@@ -42,39 +42,109 @@ document.addEventListener('DOMContentLoaded', () => {
         return { n: h, d: k, str: `${h}/${k}`, isInt: false };
     }
 
-    function gcd(a, b) { if (!b) return a; return gcd(b, a % b); }
+    function gcd(a, b) {
+        a = Math.abs(a); b = Math.abs(b);
+        if (!b) return a;
+        return gcd(b, a % b);
+    }
+
+    function lcm(a, b) {
+        if (a === 0 || b === 0) return 0;
+        return Math.abs(a * b) / gcd(a, b);
+    }
 
     // produce LaTeX for matrix with common-denominator factoring
+    // Extracts all fractions so the matrix contains only integers
     function matrixToLatex(mat) {
         try {
             const A = mat.toArray();
-            const objs = A.map(r => r.map(v => {
+            // Convert all elements to fraction form {n, d}
+            const fractions = A.map(r => r.map(v => {
                 if (v && typeof v === 'object' && v.s !== undefined && v.n !== undefined && v.d !== undefined) {
-                    const sign = v.s === -1 ? -1 : 1; const nn = sign * v.n;
-                    return { n: nn, d: v.d, latex: v.d === 1 ? `${nn}` : `\\tfrac{${nn}}{${v.d}}`, isInt: v.d === 1 };
+                    const sign = v.s === -1 ? -1 : 1;
+                    return { n: sign * v.n, d: v.d };
                 }
-                if (Math.abs(v - Math.round(v)) < 1e-12) return { n: Math.round(v), d: 1, latex: `${Math.round(v)}`, isInt: true };
+                if (Math.abs(v - Math.round(v)) < 1e-12) {
+                    return { n: Math.round(v), d: 1 };
+                }
                 const fr = approxFractionObj(Number(v));
-                return { n: fr.n, d: fr.d, latex: fr.d === 1 ? `${fr.n}` : `\\tfrac{${fr.n}}{${fr.d}}`, isInt: fr.isInt };
+                return { n: fr.n, d: fr.d };
             }));
 
-            const denomCount = Object.create(null); let total = 0;
-            objs.forEach(row => row.forEach(o => { total++; if (o.d !== 1 && isFinite(o.d)) denomCount[o.d] = (denomCount[o.d] || 0) + 1; }));
-            let bestD = null, bestCount = 0;
-            for (const d in denomCount) { if (denomCount[d] > bestCount) { bestCount = denomCount[d]; bestD = Number(d); } }
+            // Check if all elements are already integers
+            const allIntegers = fractions.every(row => row.every(fr => fr.d === 1));
 
-            if (bestD !== null && bestCount > total / 2) {
-                const D = bestD;
-                const inner = objs.map(r => r.map(o => {
-                    const p = o.n * D; const q = o.d; const g = gcd(Math.abs(p), Math.abs(q));
-                    const sp = p / g; const sq = q / g; return sq === 1 ? `${sp}` : `\\tfrac{${sp}}{${sq}}`;
+            if (allIntegers) {
+                // Find GCD of all integer values
+                let commonGCD = 0;
+                fractions.forEach(row => row.forEach(fr => {
+                    if (fr.n !== 0) {
+                        commonGCD = gcd(commonGCD, Math.abs(fr.n));
+                    }
                 }));
-                const innerLatex = '\\begin{bmatrix}' + inner.map(r => r.join(' & ')).join('\\\\') + '\\end{bmatrix}';
-                return `\\displaystyle \\frac{1}{${D}} ${innerLatex}`;
+
+                if (commonGCD === 0) commonGCD = 1;
+
+                if (commonGCD > 1) {
+                    const matrixIntegers = fractions.map(r => r.map(fr => fr.n / commonGCD));
+                    const innerLatex = '\\begin{bmatrix}' +
+                        matrixIntegers.map(r => r.join(' & ')).join('\\\\') +
+                        '\\end{bmatrix}';
+                    return `\\displaystyle ${commonGCD} ${innerLatex}`;
+                }
+
+                const innerLatex = '\\begin{bmatrix}' +
+                    fractions.map(r => r.map(fr => fr.n).join(' & ')).join('\\\\') +
+                    '\\end{bmatrix}';
+                return '\\displaystyle ' + innerLatex;
             }
 
-            return '\\displaystyle ' + '\\begin{bmatrix}' + objs.map(r => r.map(c => c.latex).join(' & ')).join('\\\\') + '\\end{bmatrix}';
-        } catch (e) { return String(mat); }
+            // Calculate LCM of all denominators
+            let commonDenom = 1;
+            fractions.forEach(row => row.forEach(fr => {
+                if (isFinite(fr.d) && fr.d !== 0) {
+                    commonDenom = lcm(commonDenom, fr.d);
+                }
+            }));
+
+            // Multiply all elements by commonDenom to get integers
+            const integers = fractions.map(r => r.map(fr => {
+                return Math.round(fr.n * (commonDenom / fr.d));
+            }));
+
+            // Calculate GCD of all integers
+            let commonGCD = 0;
+            integers.forEach(row => row.forEach(val => {
+                if (val !== 0) {
+                    commonGCD = gcd(commonGCD, Math.abs(val));
+                }
+            }));
+
+            if (commonGCD === 0) commonGCD = 1;
+
+            // Simplify the fraction commonGCD/commonDenom
+            const g = gcd(commonGCD, commonDenom);
+            const finalNum = commonGCD / g;
+            const finalDenom = commonDenom / g;
+
+            // Matrix with integers only
+            const matrixIntegers = integers.map(r => r.map(val => val / commonGCD));
+
+            const innerLatex = '\\begin{bmatrix}' +
+                matrixIntegers.map(r => r.join(' & ')).join('\\\\') +
+                '\\end{bmatrix}';
+
+            if (finalDenom === 1) {
+                if (finalNum === 1) {
+                    return '\\displaystyle ' + innerLatex;
+                }
+                return `\\displaystyle ${finalNum} ${innerLatex}`;
+            }
+            return `\\displaystyle \\frac{${finalNum}}{${finalDenom}} ${innerLatex}`;
+        } catch (e) {
+            console.error('matrixToLatex error:', e);
+            return String(mat);
+        }
     }
 
     // Render LaTeX using KaTeX auto-render if available, otherwise fallback to MathJax

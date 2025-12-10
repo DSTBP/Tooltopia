@@ -13,11 +13,52 @@
     <title>更多功能 - MachineLearningCalculator</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        body { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff }
+        body { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; min-height:100vh; margin:0; padding:0 }
         .container { max-width:1000px;margin:40px auto;padding:24px }
-        .panel { background: rgba(255,255,255,0.95); color:#111; padding:18px;border-radius:12px }
-        .options { display:flex;gap:12px;flex-wrap:wrap }
-        .opt-btn { padding:12px 18px;border-radius:10px;background:#f6f8ff;border:1px solid #e6eefc;cursor:pointer;text-decoration:none;color:#222;font-weight:700 }
+        .panel { background: rgba(255,255,255,0.95); color:#111; padding:24px;border-radius:16px;box-shadow: 0 8px 32px rgba(0,0,0,0.1) }
+        .options { display:flex;gap:16px;flex-wrap:wrap }
+
+        .opt-btn {
+            display: inline-block;
+            padding: 14px 28px;
+            border-radius: 10px;
+            background: white;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            color: #667eea;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .opt-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.35);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .opt-btn:active {
+            transform: translateY(0) scale(0.98);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .opt-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+            background: #f0f0f0;
+            color: #999;
+            box-shadow: none;
+        }
+
+        .opt-btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+            background: #f0f0f0;
+            color: #999;
+        }
     </style>
 </head>
 <body>
@@ -31,9 +72,9 @@
             <div class="options">
                 <a class="opt-btn" href="more/fullrank.html">矩阵满秩分解 A = F · G</a>
                 <a class="opt-btn" href="more/pseudoinverse.html">计算 A⁺</a>
-                <button class="opt-btn" disabled>（占位）功能3</button>
-                <button class="opt-btn" disabled>（占位）功能3</button>
+                <a class="opt-btn" href="more/simplex.html">单纯形法求解线性规划</a>
                 <button class="opt-btn" disabled>（占位）功能4</button>
+                <button class="opt-btn" disabled>（占位）功能5</button>
             </div>
         </div>
     </div>
