@@ -45,9 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return num.toFixed(3);
     }
 
-    function fractionString(num) {
-        if (Math.abs(num) < 1e-10) return '0';
-        if (Math.abs(num - Math.round(num)) < 1e-10) return Math.round(num).toString();
+    function fractionString(num, wrapMath = false) {
+        if (Math.abs(num) < 1e-10) return wrapMath ? '\\(0\\)' : '0';
+        if (Math.abs(num - Math.round(num)) < 1e-10) {
+            const val = Math.round(num).toString();
+            return wrapMath ? `\\(${val}\\)` : val;
+        }
 
         // Try to find simple fraction
         const sign = num < 0 ? -1 : 1;
@@ -56,18 +59,30 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let d = 2; d <= 20; d++) {
             for (let n = 1; n < d * 10; n++) {
                 if (Math.abs(n / d - absNum) < 1e-9) {
-                    return sign < 0 ? `-\\frac{${n}}{${d}}` : `\\frac{${n}}{${d}}`;
+                    const frac = sign < 0 ? `-\\frac{${n}}{${d}}` : `\\frac{${n}}{${d}}`;
+                    return wrapMath ? `\\(${frac}\\)` : frac;
                 }
             }
         }
 
-        return formatNumber(num);
+        const val = formatNumber(num);
+        return wrapMath ? `\\(${val}\\)` : val;
     }
 
-    function createTableau(tableau, basicVars, iteration, pivotRow = -1, pivotCol = -1) {
+    function createTableau(tableau, basicVars, iteration, cOriginal, n, pivotRow = -1, pivotCol = -1) {
         const numRows = tableau.length;
         const numCols = tableau[0].length;
         const numVars = numCols - 1; // Last column is RHS
+
+        // Helper to get coefficient for display (using original coefficients)
+        function getCoeffDisplay(varIndex, isSlack) {
+            if (isSlack) return '(0)';
+            if (varIndex < cOriginal.length) {
+                const coeff = cOriginal[varIndex];
+                return `(${formatNumber(coeff)})`;
+            }
+            return '';
+        }
 
         let html = '<div class="tableau">';
         html += `<p style="font-weight:600; margin-bottom:8px">单纯形表 ${iteration}：</p>`;
@@ -76,9 +91,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Header row
         html += '<tr><th>基变量</th>';
         for (let j = 0; j < numVars; j++) {
-            const varName = j < numVars - basicVars.length ? `x<sub>${j + 1}</sub>` : `s<sub>${j - (numVars - basicVars.length) + 1}</sub>`;
+            let varName, coeffDisplay;
+            if (j < n) {
+                varName = `x<sub>${j + 1}</sub>`;
+                coeffDisplay = getCoeffDisplay(j, false);
+            } else {
+                varName = `s<sub>${j - n + 1}</sub>`;
+                coeffDisplay = '(0)';
+            }
             const className = (j === pivotCol) ? 'pivot-col' : '';
-            html += `<th class="${className}">${varName}</th>`;
+            html += `<th class="${className}">${varName}${coeffDisplay}</th>`;
         }
         html += '<th>RHS</th></tr>';
 
@@ -86,10 +108,20 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < numRows - 1; i++) {
             const rowClass = (i === pivotRow) ? 'pivot-row' : '';
             html += `<tr class="${rowClass}">`;
-            html += `<td style="font-weight:600">${basicVars[i]}</td>`;
+
+            // Add coefficient display for basic variable (using original coefficients)
+            const basicVar = basicVars[i];
+            const xMatch = basicVar.match(/x<sub>(\d+)<\/sub>/);
+            let coeffDisplay = '(0)'; // Default for slack variables
+            if (xMatch) {
+                const varIndex = parseInt(xMatch[1]) - 1;
+                coeffDisplay = getCoeffDisplay(varIndex, false);
+            }
+            html += `<td style="font-weight:600">${basicVar}${coeffDisplay}</td>`;
+
             for (let j = 0; j < numCols; j++) {
                 const cellClass = (i === pivotRow && j === pivotCol) ? 'pivot-cell' : '';
-                html += `<td class="${cellClass}">${fractionString(tableau[i][j])}</td>`;
+                html += `<td class="${cellClass}">${fractionString(tableau[i][j], true)}</td>`;
             }
             html += '</tr>';
         }
@@ -99,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
         html += '<td style="font-weight:600">z</td>';
         for (let j = 0; j < numCols; j++) {
             const cellClass = (j === pivotCol) ? 'pivot-col' : '';
-            html += `<td class="${cellClass}" style="font-weight:600">${fractionString(tableau[numRows - 1][j])}</td>`;
+            html += `<td class="${cellClass}" style="font-weight:600">${fractionString(tableau[numRows - 1][j], true)}</td>`;
         }
         html += '</tr>';
 
@@ -132,6 +164,43 @@ document.addEventListener('DOMContentLoaded', () => {
         const n = c.length;    // Number of variables
         let output = '';
 
+        // Helper function to get objective coefficient for a variable
+        function getObjectiveCoeff(varName, cOriginal) {
+            const xMatch = varName.match(/x<sub>(\d+)<\/sub>/);
+            if (xMatch) {
+                const varIndex = parseInt(xMatch[1]) - 1;
+                return cOriginal[varIndex];
+            }
+            // Slack variables have coefficient 0
+            return 0;
+        }
+
+        // Helper function to recalculate z-row based on current basis
+        function recalculateZRow(tableau, basicVars, cOriginal, n, m) {
+            const totalVars = tableau[0].length - 1;
+            const zRow = tableau[m];
+
+            // Calculate z_j = Σ(c_B_i * a_ij) for each column j
+            for (let j = 0; j <= totalVars; j++) {
+                let sum = 0;
+                for (let i = 0; i < m; i++) {
+                    const cB = getObjectiveCoeff(basicVars[i], cOriginal);
+                    sum += cB * tableau[i][j];
+                }
+
+                // For variable columns, subtract the original objective coefficient
+                if (j < n) {
+                    zRow[j] = sum - cOriginal[j];
+                } else if (j < totalVars) {
+                    // Slack variables have objective coefficient 0
+                    zRow[j] = sum;
+                } else {
+                    // RHS column (objective value)
+                    zRow[j] = sum;
+                }
+            }
+        }
+
         // Step 1: Display original problem
         output += '<div class="panel step-section">';
         output += '<div class="step-title">步骤 1：原始问题</div>';
@@ -150,7 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const sign = aij >= 0 ? (j === 0 ? '' : '+') : '';
                 return `${sign}${formatNumber(aij)}x_{${j + 1}}`;
             }).join(' ');
-            output += ` &${inequalities[i]} ${formatNumber(b[i])}\\\\`;
+            // Convert inequality symbols to LaTeX
+            let ineqSymbol = inequalities[i];
+            if (ineqSymbol === '<=') ineqSymbol = '\\le';
+            else if (ineqSymbol === '>=') ineqSymbol = '\\ge';
+            else if (ineqSymbol === '=') ineqSymbol = '=';
+            output += ` &${ineqSymbol} ${formatNumber(b[i])}\\\\`;
         }
         output += 'x_i &\\geq 0, \\forall i';
         output += '\\end{aligned}\\]</p>';
@@ -234,13 +308,8 @@ document.addEventListener('DOMContentLoaded', () => {
         output += '<div class="panel step-section">';
         output += '<div class="step-title">步骤 3：构建初始单纯形表</div>';
 
-        // Convert to max if min
-        let cObj = c.slice();
-        if (isMin) {
-            cObj = cObj.map(x => -x);
-        }
-
         // Build tableau: [A | I | b; -c | 0 | 0]
+        // Note: We don't convert to max, we use original coefficients
         const tableau = [];
         const totalVars = n + m; // original vars + slack vars
 
@@ -256,10 +325,10 @@ document.addEventListener('DOMContentLoaded', () => {
             tableau.push(row);
         }
 
-        // Z row (objective)
+        // Z row (objective) - using original coefficients
         const zRow = [];
         for (let j = 0; j < n; j++) {
-            zRow.push(-cObj[j]);
+            zRow.push(-c[j]);  // For min problem: -c[j] gives the reduced cost
         }
         for (let j = 0; j < m; j++) {
             zRow.push(0);
@@ -273,7 +342,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         output += '<p>初始基变量为松弛变量。</p>';
-        output += createTableau(tableau, basicVars, 0);
+        output += createTableau(tableau, basicVars, 0, c, n);
         output += '</div>';
 
         // Step 4: Simplex iterations
@@ -281,23 +350,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxIterations = 20;
 
         while (iteration <= maxIterations) {
-            // Find entering variable (most negative in z-row)
+            // Find entering variable (most positive in z-row for min problem)
             const zRow = tableau[m];
             let enteringCol = -1;
-            let minValue = 0;
+            let maxValue = 0;
 
             for (let j = 0; j < totalVars; j++) {
-                if (zRow[j] < minValue) {
-                    minValue = zRow[j];
+                if (zRow[j] > maxValue) {
+                    maxValue = zRow[j];
                     enteringCol = j;
                 }
             }
 
-            // Optimal solution found
+            // Optimal solution found (all reduced costs are negative)
             if (enteringCol === -1) {
                 output += '<div class="panel step-section">';
                 output += '<div class="step-title">✓ 找到最优解</div>';
-                output += '<p>所有目标函数系数均非负，达到最优解。</p>';
+                output += '<p>所有检验数均为负数，达到最优解。</p>';
                 output += '</div>';
                 break;
             }
@@ -306,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
             output += `<div class="step-title">步骤 ${3 + iteration}：迭代 ${iteration}</div>`;
 
             const enteringVarName = enteringCol < n ? `x<sub>${enteringCol + 1}</sub>` : `s<sub>${enteringCol - n + 1}</sub>`;
-            output += `<p><strong>进基变量：</strong>${enteringVarName} (列 ${enteringCol + 1}，系数 ${fractionString(zRow[enteringCol])})</p>`;
+            output += `<p><strong>进基变量：</strong>${enteringVarName} (列 ${enteringCol + 1}，系数 ${fractionString(zRow[enteringCol], true)})</p>`;
 
             // Find leaving variable (minimum ratio test)
             let leavingRow = -1;
@@ -328,10 +397,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             }
 
-            output += `<p><strong>出基变量：</strong>${basicVars[leavingRow]} (行 ${leavingRow + 1}，比值 ${fractionString(minRatio)})</p>`;
-            output += `<p><strong>主元：</strong>位于行 ${leavingRow + 1}，列 ${enteringCol + 1}，值为 ${fractionString(tableau[leavingRow][enteringCol])}</p>`;
+            output += `<p><strong>出基变量：</strong>${basicVars[leavingRow]} (行 ${leavingRow + 1}，比值 ${fractionString(minRatio, true)})</p>`;
+            output += `<p><strong>主元：</strong>位于行 ${leavingRow + 1}，列 ${enteringCol + 1}，值为 ${fractionString(tableau[leavingRow][enteringCol], true)}</p>`;
 
-            output += createTableau(tableau, basicVars, iteration, leavingRow, enteringCol);
+            output += createTableau(tableau, basicVars, iteration, c, n, leavingRow, enteringCol);
 
             // Pivot operation
             const pivotElement = tableau[leavingRow][enteringCol];
@@ -341,8 +410,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 tableau[leavingRow][j] /= pivotElement;
             }
 
-            // Eliminate other rows
-            for (let i = 0; i <= m; i++) {
+            // Eliminate other rows (except z-row, we'll recalculate it)
+            for (let i = 0; i < m; i++) {
                 if (i === leavingRow) continue;
                 const factor = tableau[i][enteringCol];
                 for (let j = 0; j <= totalVars; j++) {
@@ -353,8 +422,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update basic variables
             basicVars[leavingRow] = enteringVarName;
 
+            // Recalculate z-row based on new basis
+            recalculateZRow(tableau, basicVars, c, n, m);
+
             output += '<p><strong>主元行操作：</strong>将主元行除以主元值</p>';
             output += '<p><strong>消元操作：</strong>使用主元行消去其他行的进基变量列元素</p>';
+            output += '<p><strong>计算z行：</strong>根据新的基变量计算检验数 z<sub>j</sub> - c<sub>j</sub></p>';
 
             output += '</div>';
 
@@ -370,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Step 5: Display final solution
         output += '<div class="panel step-section">';
         output += '<div class="step-title">最终单纯形表</div>';
-        output += createTableau(tableau, basicVars, '最终');
+        output += createTableau(tableau, basicVars, '最终', c, n);
         output += '</div>';
 
         // Extract solution
@@ -395,7 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         output += '</p>';
 
-        const optimalValue = isMin ? -tableau[m][totalVars] : tableau[m][totalVars];
+        const optimalValue = isMin ? tableau[m][totalVars] : tableau[m][totalVars];
         output += `<p style="margin-top:12px"><strong>最优值：</strong> \\(z^* = ${fractionString(optimalValue)}\\)</p>`;
 
         output += '</div>';
