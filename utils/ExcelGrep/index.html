@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <title>表格筛选检索工具 - ExcelGrep</title>
+    <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>表格筛选检索工具</h1>
+            <p class="subtitle">支持 Excel、CSV、Markdown 表格的多列条件搜索</p>
+        </div>
+
+        <!-- 步骤1: 上传/输入表格 -->
+        <div class="section" id="step1">
+            <h2>步骤 1: 上传或输入表格数据</h2>
+            <div class="upload-area">
+                <div class="file-upload">
+                    <label for="fileInput" class="file-label">
+                        <span class="upload-icon">📁</span>
+                        选择文件 (Excel, CSV)
+                    </label>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+                    <div id="fileName" class="file-name"></div>
+                </div>
+                <div class="divider">或</div>
+                <div class="text-input">
+                    <textarea id="textInput" placeholder="直接粘贴表格数据...&#10;&#10;支持格式：&#10;1. Markdown 表格 (| 列1 | 列2 | 列3 |)&#10;2. 制表符分隔 (Tab键分隔)&#10;3. 逗号分隔 (CSV格式)"></textarea>
+                </div>
+            </div>
+            <button id="loadTableBtn" class="btn btn-primary">载入表格</button>
+        </div>
+
+        <!-- 步骤2: 预览表格 -->
+        <div class="section" id="step2" style="display: none;">
+            <h2>步骤 2: 表格预览</h2>
+            <div id="tablePreview" class="table-preview"></div>
+            <button id="continueBtn" class="btn btn-primary">继续设置搜索条件</button>
+        </div>
+
+        <!-- 步骤3: 配置搜索条件 -->
+        <div class="section" id="step3" style="display: none;">
+            <h2>步骤 3: 配置搜索条件</h2>
+            <div class="search-config">
+                <div class="logic-type">
+                    <label>匹配逻辑：</label>
+                    <label class="radio-option">
+                        <input type="radio" name="logic" value="and" checked>
+                        <span>所有条件都满足（且）</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="logic" value="or">
+                        <span>满足任一条件（或）</span>
+                    </label>
+                </div>
+                <div id="searchConditions" class="search-conditions"></div>
+                <button id="addConditionBtn" class="btn btn-secondary">+ 添加搜索条件</button>
+            </div>
+            <button id="searchBtn" class="btn btn-success">开始搜索</button>
+        </div>
+
+        <!-- 步骤4: 搜索结果 -->
+        <div class="section" id="step4" style="display: none;">
+            <h2>步骤 4: 搜索结果</h2>
+            <div id="searchResults" class="search-results"></div>
+            <div class="export-area" style="display: none;">
+                <h3>导出结果</h3>
+                <div class="export-buttons">
+                    <button id="exportExcelBtn" class="btn btn-primary">导出为 Excel</button>
+                    <button id="exportCsvBtn" class="btn btn-primary">导出为 CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入必要的库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="./assets/js/script.js"></script>
+</body>
+</html> 
