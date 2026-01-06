@@ -72,6 +72,8 @@
 
 - ✅ **Calculator**: Machine learning calculator with advanced matrix operations.
 
+- ✅ **Localize Resources**: Download and localize external resources (CSS, JS, fonts, images) from HTML pages.
+
 ## 📂 Direct Tool Access
 
 Each utility can be accessed directly via its HTML file:
@@ -87,6 +89,7 @@ Each utility can be accessed directly via its HTML file:
 | Lights Out | `utils/LightsOut/index.html` |
 | SRT2TXT | `utils/SRT2TXT/index.html` |
 | Calculator | `utils/MachineLearningCalculator/index.html` |
+| Localize Resources | `utils/LocalizeResources/index.html` |
 
 ## 🌐 Deployment
 

@@ -72,6 +72,8 @@
 
 - ✅ **计算器**：机器学习计算器，支持高级矩阵运算。
 
+- ✅ **资源本地化**：下载并本地化 HTML 页面中的外部资源（CSS、JS、字体、图片）。
+
 ## 📂 直接访问工具
 
 每个工具可通过其 HTML 文件直接访问：
@@ -87,6 +89,7 @@
 | 点灯游戏 | `utils/LightsOut/index.html` |
 | 字幕转换 | `utils/SRT2TXT/index.html` |
 | 计算器 | `utils/MachineLearningCalculator/index.html` |
+| 资源本地化 | `utils/LocalizeResources/index.html` |
 
 ## 🌐 部署方式
 
