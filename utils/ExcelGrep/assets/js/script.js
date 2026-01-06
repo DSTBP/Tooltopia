@@ -157,19 +157,234 @@ function loadExcelFile(file) {
     });
 }
 
-// 加载 CSV 文件
+// 检测文本编码质量（检测乱码）
+function detectEncodingQuality(text) {
+    if (!text || text.length === 0) return { badChars: 999, chineseRatio: 0, quality: false };
+
+    // 检测常见的乱码特征
+    const garbledPatterns = [
+        /[\ufffd]/g, // 替换字符 �
+        /[锟斤拷]/g,  // 典型的UTF-8被误读为GBK的乱码
+        /[\u0000-\u0008\u000b-\u000c\u000e-\u001f]/g // 控制字符
+    ];
+
+    let badChars = 0;
+    for (let pattern of garbledPatterns) {
+        const matches = text.match(pattern);
+        if (matches) {
+            badChars += matches.length;
+        }
+    }
+
+    // 计算中文字符比例（用于判断是否成功解码中文）
+    const chineseChars = text.match(/[\u4e00-\u9fa5]/g);
+    const totalChars = text.length;
+    const chineseRatio = chineseChars ? chineseChars.length / totalChars : 0;
+
+    // 检测是否有可读的ASCII或中文
+    const hasReadableContent = /[a-zA-Z0-9\u4e00-\u9fa5]/.test(text);
+
+    return {
+        badChars: badChars,
+        chineseRatio: chineseRatio,
+        quality: badChars === 0 && hasReadableContent
+    };
+}
+
+// 使用GBK编码表手动解码（简化版本，支持常用汉字）
+function decodeGBK(bytes) {
+    const uint8Array = new Uint8Array(bytes);
+    let result = '';
+    let i = 0;
+
+    while (i < uint8Array.length) {
+        const byte = uint8Array[i];
+
+        // ASCII范围
+        if (byte < 0x80) {
+            result += String.fromCharCode(byte);
+            i++;
+        }
+        // GBK双字节
+        else if (i + 1 < uint8Array.length) {
+            const byte2 = uint8Array[i + 1];
+            const code = (byte << 8) | byte2;
+
+            // 尝试使用浏览器的TextDecoder（如果支持GBK）
+            try {
+                const decoder = new TextDecoder('gbk');
+                const chunk = decoder.decode(new Uint8Array([byte, byte2]));
+                if (chunk && chunk !== '�') {
+                    result += chunk;
+                    i += 2;
+                    continue;
+                }
+            } catch (e) {
+                // GBK不支持，继续尝试其他方法
+            }
+
+            // 如果TextDecoder不支持，使用fallback
+            // 这里简化处理：将双字节序列保留
+            result += String.fromCharCode(byte) + String.fromCharCode(byte2);
+            i += 2;
+        } else {
+            result += String.fromCharCode(byte);
+            i++;
+        }
+    }
+
+    return result;
+}
+
+// 尝试使用指定编码解码
+function tryDecode(arrayBuffer, encoding) {
+    try {
+        let text = '';
+
+        // 特殊处理GBK
+        if (encoding.toLowerCase() === 'gbk' || encoding.toLowerCase() === 'gb2312') {
+            // 首先尝试使用TextDecoder
+            try {
+                const decoder = new TextDecoder(encoding, { fatal: false });
+                text = decoder.decode(arrayBuffer);
+            } catch (e) {
+                console.log(`TextDecoder不支持${encoding}，尝试手动解码`);
+                text = decodeGBK(arrayBuffer);
+            }
+        } else {
+            // 其他编码使用TextDecoder
+            const decoder = new TextDecoder(encoding, { fatal: false });
+            text = decoder.decode(arrayBuffer);
+        }
+
+        const quality = detectEncodingQuality(text);
+        console.log(`${encoding} 编码质量:`, quality);
+        return { text, quality: quality.quality, badChars: quality.badChars, chineseRatio: quality.chineseRatio };
+    } catch (error) {
+        console.log(`${encoding} 解码失败:`, error.message);
+        return null;
+    }
+}
+
+// 自动检测编码
+function autoDetectEncoding(arrayBuffer) {
+    // 使用jschardet检测编码
+    if (typeof jschardet !== 'undefined') {
+        try {
+            const uint8Array = new Uint8Array(arrayBuffer);
+            const detected = jschardet.detect(uint8Array);
+            console.log('jschardet检测结果:', detected);
+
+            if (detected && detected.encoding) {
+                let encoding = detected.encoding.toLowerCase();
+                // 映射编码名称
+                if (encoding === 'gb2312' || encoding === 'gb18030') {
+                    encoding = 'gbk';
+                }
+                if (detected.confidence > 0.7) {
+                    return encoding;
+                }
+            }
+        } catch (e) {
+            console.log('jschardet检测失败:', e);
+        }
+    }
+
+    return null;
+}
+
+// 加载 CSV 文件（支持多种编码）
 function loadCsvFile(file) {
     return new Promise((resolve, reject) => {
-        Papa.parse(file, {
-            complete: function(results) {
-                tableData = results.data.filter(row => row.some(cell => cell.trim() !== ''));
-                console.log('CSV加载成功，共', tableData.length, '行');
-                resolve();
-            },
-            error: function(error) {
-                reject(new Error('CSV文件解析失败: ' + error.message));
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            try {
+                const arrayBuffer = e.target.result;
+                let bestText = '';
+                let bestEncoding = 'utf-8';
+
+                // 获取用户选择的编码
+                const selectedEncoding = document.getElementById('encodingSelect')?.value || 'auto';
+
+                if (selectedEncoding !== 'auto') {
+                    // 用户手动选择了编码
+                    console.log(`使用用户选择的编码: ${selectedEncoding}`);
+                    const result = tryDecode(arrayBuffer, selectedEncoding);
+                    if (result && result.text) {
+                        bestText = result.text;
+                        bestEncoding = selectedEncoding;
+                        console.log(`编码质量评估:`, result);
+                    } else {
+                        throw new Error(`无法使用 ${selectedEncoding} 编码解析文件`);
+                    }
+                } else {
+                    // 自动检测编码
+                    console.log('自动检测编码...');
+
+                    // 首先尝试jschardet自动检测
+                    const detectedEncoding = autoDetectEncoding(arrayBuffer);
+                    let encodings = ['utf-8', 'gbk', 'gb2312', 'big5', 'shift-jis', 'windows-1252'];
+
+                    // 如果检测到编码，优先尝试
+                    if (detectedEncoding) {
+                        encodings = [detectedEncoding, ...encodings.filter(e => e !== detectedEncoding)];
+                    }
+
+                    const results = [];
+
+                    // 尝试所有编码
+                    for (let encoding of encodings) {
+                        const result = tryDecode(arrayBuffer, encoding);
+                        if (result) {
+                            results.push({ encoding, ...result });
+                        }
+                    }
+
+                    // 选择质量最好的结果
+                    if (results.length > 0) {
+                        // 排序：优先选择quality为true的，然后按乱码字符数量、中文比例排序
+                        results.sort((a, b) => {
+                            if (a.quality !== b.quality) return b.quality - a.quality;
+                            if (a.badChars !== b.badChars) return a.badChars - b.badChars;
+                            return b.chineseRatio - a.chineseRatio;
+                        });
+
+                        bestText = results[0].text;
+                        bestEncoding = results[0].encoding;
+                        console.log(`自动选择编码: ${bestEncoding}`, results[0]);
+                    } else {
+                        throw new Error('无法检测文件编码');
+                    }
+                }
+
+                // 使用 PapaParse 解析文本
+                Papa.parse(bestText, {
+                    complete: function(results) {
+                        tableData = results.data.filter(row => row.some(cell => cell.trim() !== ''));
+                        console.log(`CSV加载成功 (${bestEncoding})，共`, tableData.length, '行');
+
+                        // 显示编码信息给用户
+                        if (tableData.length > 0) {
+                            const preview = tableData[0].join(', ').substring(0, 100);
+                            console.log('数据预览:', preview);
+                        }
+
+                        resolve();
+                    },
+                    error: function(error) {
+                        reject(new Error('CSV文件解析失败: ' + error.message));
+                    },
+                    skipEmptyLines: true
+                });
+            } catch (error) {
+                console.error('CSV读取错误:', error);
+                reject(new Error('CSV文件读取失败: ' + error.message));
             }
-        });
+        };
+
+        reader.onerror = () => reject(new Error('读取CSV文件失败'));
+        reader.readAsArrayBuffer(file);
     });
 }
 
