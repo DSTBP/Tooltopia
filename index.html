@@ -1,3 +1,10 @@
+<!--
+ * @Description: 
+ * @Author: DSTBP
+ * @Date: 2026-01-06 20:38:30
+ * @LastEditTime: 2026-01-06 20:39:58
+ * @LastEditors: DSTBP
+-->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -6,7 +13,6 @@
     <meta name="theme-color" content="#1a1a2e">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="format-detection" content="telephone=no">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <title>Tooltopia - 工具集合</title>
     <link rel="stylesheet" href="assets/css/style.css">
@@ -16,47 +22,47 @@
     <div class="container">
         <h1>Welcome to Tooltopia</h1>
         <div class="cards-container">
-            <div class="card" style="animation-delay: 0.2s;">
+            <div class="card">
                 <h2>CSC Formatter</h2>
                 <p>一个用于格式化和美化特定 CSC 源代码的在线工具</p>
                 <a href="utils/CSCSourceFormatter/index.html" class="button">进入</a>
             </div>
-            <div class="card" style="animation-delay: 0.4s;">
+            <div class="card">
                 <h2>Text Grep</h2>
                 <p>一个批量文本搜索工具</p>
                 <a href="utils/TextGrep/index.html" class="button">进入</a>
             </div>
-            <div class="card" style="animation-delay: 0.4s;">
+            <div class="card">
                 <h2>Excel Grep</h2>
                 <p>一个多列表格搜索工具</p>
                 <a href="utils/ExcelGrep/index.html" class="button">进入</a>
             </div>
-            <div class="card" style="animation-delay: 0.6s;">
+            <div class="card">
                 <h2>Linear Algebra</h2>
                 <p>一个交互式工具，用于可视化线性代数的学习</p>
                 <a href="utils/LinearAlgebra/index.html" class="button">进入</a>
             </div>
-            <div class="card" style="animation-delay: 0.6s;">
+            <div class="card">
                 <h2>Weyl Sequence</h2>
                 <p>一个交互式工具，用于可视化 Weyl Sequence 的轨迹</p>
                 <a href="utils/WeylSequence/index.html" class="button">进入</a>
             </div>
-            <div class="card" style="animation-delay: 0.6s;">
+            <div class="card">
                 <h2>Flight Out</h2>
                 <p>点灯游戏及其升级版</p>
                 <a href="utils/LightsOut/index.html" class="button">进入</a>
             </div>
-            <div class="card" style="animation-delay: 0.6s;">
+            <div class="card">
                 <h2>SRT2TXT</h2>
                 <p>将 SRT 字幕文件转换为纯文本</p>
                 <a href="utils/SRT2TXT/index.html" class="button">进入</a>
             </div>
-            <div class="card" style="animation-delay: 0.6s;">
+            <div class="card">
                 <h2>Calculator</h2>
                 <p>自用计算器</p>
                 <a href="utils/MachineLearningCalculator/index.html" class="button">进入</a>
             </div>
-            <div class="card" style="animation-delay: 0.6s;">
+            <div class="card">
                 <h2>Localize Resources</h2>
                 <p>将 HTML 页面中的外部资源本地化</p>
                 <a href="utils/LocalizeResources/index.html" class="button">进入</a>
@@ -65,71 +71,6 @@
     </div>
 
     <script src="assets/js/particles.min.js"></script>
-    <script>
-        // 检测设备类型
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const isTablet = /iPad|Android(?=.*\bMobile\b)(?=.*\bSafari\b)/i.test(navigator.userAgent);
-        
-        // 根据设备类型调整粒子配置
-        const particleConfig = {
-            "particles": {
-                "number": { 
-                    "value": isMobile ? 40 : (isTablet ? 60 : 80), 
-                    "density": { "enable": true, "value_area": 800 } 
-                },
-                "color": { "value": "#ffffff" },
-                "shape": { 
-                    "type": "circle", 
-                    "stroke": { "width": 0, "color": "#000000" }, 
-                    "polygon": { "nb_sides": 5 } 
-                },
-                "opacity": { 
-                    "value": 0.5, 
-                    "random": false, 
-                    "anim": { "enable": false, "speed": 1, "opacity_min": 0.1, "sync": false } 
-                },
-                "size": { 
-                    "value": isMobile ? 2 : 3, 
-                    "random": true, 
-                    "anim": { "enable": false, "speed": 40, "size_min": 0.1, "sync": false } 
-                },
-                "line_linked": { 
-                    "enable": !isMobile, 
-                    "distance": 150, 
-                    "color": "#ffffff", 
-                    "opacity": 0.4, 
-                    "width": 1 
-                },
-                "move": { 
-                    "enable": true, 
-                    "speed": isMobile ? 1 : 2, 
-                    "direction": "none", 
-                    "random": false, 
-                    "straight": false, 
-                    "out_mode": "out", 
-                    "bounce": false, 
-                    "attract": { "enable": false, "rotateX": 600, "rotateY": 1200 } 
-                }
-            },
-            "interactivity": {
-                "detect_on": "canvas",
-                "events": { 
-                    "onhover": { "enable": !isMobile, "mode": "repulse" }, 
-                    "onclick": { "enable": true, "mode": "push" }, 
-                    "resize": true 
-                },
-                "modes": { 
-                    "grab": { "distance": 400, "line_linked": { "opacity": 1 } }, 
-                    "bubble": { "distance": 400, "size": 40, "duration": 2, "opacity": 8, "speed": 3 }, 
-                    "repulse": { "distance": 200, "duration": 0.4 }, 
-                    "push": { "particles_nb": isMobile ? 2 : 4 }, 
-                    "remove": { "particles_nb": 2 } 
-                }
-            },
-            "retina_detect": true
-        };
-        
-        particlesJS('particles-js', particleConfig);
-    </script>
+    <script src="assets/js/main.js"></script>
 </body>
 </html>
