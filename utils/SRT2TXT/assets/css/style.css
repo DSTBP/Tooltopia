@@ -1,3 +1,5 @@
+@import url(https://fonts.googleapis.com/css?family=Righteous);
+
 * {
     margin: 0;
     padding: 0;
@@ -5,11 +7,50 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background:
+        radial-gradient(at 50% 0, transparent, #080808),
+        repeating-conic-gradient(
+            hsla(0, 0%, 0%, .235) 0% 25%,
+            transparent 0% 50%
+        ) 0 0 / 0.375em 0.375em,
+        #3b3b3b;
     min-height: 100vh;
+    padding: 20px;
     color: #333;
     line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 移除网格线背景 wrapper，不再需要 */
+#background-wrapper {
+    display: none;
+}
+
+.page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    position: relative;
+    z-index: 2;
+}
+
+.back-btn {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    color: hsl(0 0% 85%);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    font-size: 1rem;
+}
+
+.back-btn:hover {
+    color: hsl(0 0% 100%);
 }
 
 .container {
@@ -21,32 +62,56 @@ body {
 header {
     text-align: center;
     margin-bottom: 40px;
-    color: white;
 }
 
 header h1 {
-    font-size: 2.5rem;
-    margin-bottom: 15px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    display: inline-block;
+    color: hsl(0 0% 90%);
+    font-family: 'Righteous', 'Microsoft YaHei', serif;
+    font-size: 3.5em;
+    text-shadow: .03em .03em 0 hsla(230,40%,50%,1);
+    position: relative;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+
+header h1::after {
+    content: attr(data-shadow);
+    position: absolute;
+    top: .06em;
+    left: .06em;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    text-shadow: none;
+    background-image: linear-gradient(
+        45deg,
+        transparent 45%,
+        hsla(48,20%,90%,1) 45%,
+        hsla(48,20%,90%,1) 55%,
+        transparent 0
+    );
+    background-size: .05em .05em;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    white-space: nowrap;
+    animation: shad-anim 60s linear infinite;
+}
+
+@keyframes shad-anim {
+    0% { background-position: 0 0; }
+    100% { background-position: 100% -100%; }
 }
 
 .description {
-    font-size: 1.1rem;
-    opacity: 0.9;
+    font-size: 1rem;
+    color: hsl(0 0% 75%);
     max-width: 800px;
     margin: 0 auto;
-}
-
-.mobile-tips {
-    font-size: 0.9rem;
-    opacity: 0.8;
-    max-width: 600px;
-    margin: 10px auto 0;
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .main-container {
@@ -64,16 +129,18 @@ header h1 {
 
 .input-card,
 .output-card {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px) saturate(1.2);
+    border-radius: 16px;
     padding: 25px;
-    border-radius: 15px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .input-card h2,
 .output-header h2 {
     font-size: 1.5rem;
-    color: #333;
+    color: hsl(0 0% 95%);
     margin-bottom: 20px;
 }
 
@@ -90,7 +157,7 @@ header h1 {
     display: flex;
     gap: 15px;
     font-size: 0.9rem;
-    color: #667eea;
+    color: hsl(0 0% 80%);
     font-weight: 600;
 }
 
@@ -98,14 +165,14 @@ header h1 {
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
-    border-bottom: 2px solid #e9ecef;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 .tab-btn {
     padding: 10px 20px;
     border: none;
     background: transparent;
-    color: #6c757d;
+    color: hsl(0 0% 70%);
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
@@ -115,12 +182,12 @@ header h1 {
 }
 
 .tab-btn:hover {
-    color: #667eea;
+    color: hsl(0 0% 90%);
 }
 
 .tab-btn.active {
-    color: #667eea;
-    border-bottom-color: #667eea;
+    color: hsl(0 0% 95%);
+    border-bottom-color: hsl(0 0% 80%);
 }
 
 .tab-content {
@@ -132,23 +199,23 @@ header h1 {
 }
 
 .file-upload-area {
-    border: 3px dashed #e1e5e9;
+    border: 3px dashed rgba(255, 255, 255, 0.2);
     border-radius: 12px;
     padding: 40px 20px;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s;
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.03);
 }
 
 .file-upload-area:hover {
-    border-color: #667eea;
-    background: #f0f4ff;
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .file-upload-area.drag-over {
-    border-color: #667eea;
-    background: #e8edff;
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.08);
     transform: scale(1.02);
 }
 
@@ -159,20 +226,20 @@ header h1 {
 
 .upload-text {
     font-size: 1.1rem;
-    color: #333;
+    color: hsl(0 0% 90%);
     margin-bottom: 8px;
     font-weight: 600;
 }
 
 .upload-hint {
     font-size: 0.9rem;
-    color: #6c757d;
+    color: hsl(0 0% 70%);
 }
 
 .file-name {
     display: block;
     margin-top: 15px;
-    color: #667eea;
+    color: hsl(122 40% 70%);
     font-weight: 600;
     font-size: 0.95rem;
 }
@@ -182,17 +249,24 @@ header h1 {
     min-height: 400px;
     height: 400px;
     padding: 15px;
-    border: 2px solid #e1e5e9;
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
     font-size: 1rem;
     font-family: 'Courier New', monospace;
     resize: vertical;
     transition: border-color 0.3s;
+    background: rgba(255, 255, 255, 0.05);
+    color: hsl(0 0% 95%);
+}
+
+.paste-input::placeholder {
+    color: hsl(0 0% 60%);
 }
 
 .paste-input:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .format-options {
@@ -201,7 +275,7 @@ header h1 {
     gap: 15px;
     margin-bottom: 15px;
     padding: 15px;
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.03);
     border-radius: 8px;
 }
 
@@ -214,7 +288,7 @@ header h1 {
     display: flex;
     gap: 20px;
     padding-top: 15px;
-    border-top: 1px solid #e1e5e9;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .format-option {
@@ -223,23 +297,23 @@ header h1 {
     gap: 8px;
     cursor: pointer;
     font-weight: 600;
-    color: #555;
+    color: hsl(0 0% 80%);
     transition: color 0.3s;
 }
 
 .format-option:hover {
-    color: #667eea;
+    color: hsl(0 0% 95%);
 }
 
 .format-option input[type="radio"] {
     width: 18px;
     height: 18px;
     cursor: pointer;
-    accent-color: #667eea;
+    accent-color: hsl(0 0% 80%);
 }
 
 .format-option input[type="radio"]:checked + span {
-    color: #667eea;
+    color: hsl(0 0% 95%);
 }
 
 .output-text {
@@ -247,18 +321,18 @@ header h1 {
     min-height: 400px;
     height: 400px;
     padding: 15px;
-    border: 2px solid #e1e5e9;
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
     font-size: 1rem;
     font-family: 'Courier New', monospace;
     resize: vertical;
-    background: #f8f9fa;
-    color: #333;
+    background: rgba(0, 0, 0, 0.3);
+    color: hsl(0 0% 90%);
 }
 
 .output-text:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .output-buttons {
@@ -269,55 +343,73 @@ header h1 {
 }
 
 .btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
+    -webkit-tap-highlight-color: #0000;
     cursor: pointer;
-    transition: all 0.3s;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    background: #0000;
+    border: 1px solid #0000;
+    position: relative;
+    color: white;
+    transition-property: translate, scale;
+    transition-duration: 0.1s;
+    transition-timing-function: ease-out;
+    font-weight: 500;
     flex: 1;
     min-width: 120px;
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+.btn:active:not(:disabled) {
+    scale: 0.98;
+    translate: 0 1px;
 }
 
-.btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+.btn::before,
+.btn::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
 }
 
-.btn-secondary {
-    background: #f8f9fa;
-    color: #6c757d;
-    border: 2px solid #e9ecef;
+.btn::before {
+    z-index: -1;
+    background: linear-gradient(
+        hsl(0 0% 100% / 0.18),
+        hsl(0 0% 4% / 0.7)
+    );
+    backdrop-filter: saturate(2) contrast(1) blur(10px);
 }
 
-.btn-secondary:hover:not(:disabled) {
-    background: #e9ecef;
-    transform: translateY(-2px);
+.btn::after {
+    box-shadow: 0 0 1px 0.8px hsl(0 0% 100% / 0.8) inset;
+    mask: linear-gradient(-35deg, #ffffff80, #ffffff30 30% 60%, #fff);
+}
+
+.btn:hover:not(:disabled) {
+    scale: 1.02;
 }
 
 .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    transform: none !important;
 }
 
 .explanation {
-    background: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px) saturate(1.2);
+    border-radius: 16px;
     padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .explanation h2 {
     text-align: center;
     margin-bottom: 25px;
-    color: #333;
+    color: hsl(0 0% 95%);
     font-size: 1.8rem;
 }
 
@@ -329,19 +421,19 @@ header h1 {
 
 .explanation-item {
     padding: 20px;
-    background: #f8f9fa;
+    background: rgba(255, 255, 255, 0.03);
     border-radius: 10px;
-    border-left: 4px solid #667eea;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .explanation-item h3 {
-    color: #667eea;
+    color: hsl(0 0% 90%);
     margin-bottom: 10px;
     font-size: 1.2rem;
 }
 
 .explanation-item p {
-    color: #666;
+    color: hsl(0 0% 80%);
     line-height: 1.6;
 }
 
@@ -357,7 +449,7 @@ header h1 {
     opacity: 0;
     transform: translateX(100%);
     transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .notification.show {
@@ -376,234 +468,103 @@ header h1 {
 }
 
 /* 响应式设计 */
-@media (max-width: 1200px) {
-    .container {
-        max-width: 95%;
-        padding: 15px;
-    }
-    
-    .main-container {
-        gap: 20px;
-    }
-}
-
-@media (max-width: 1024px) {
-    .container {
-        max-width: 98%;
-        padding: 12px;
-    }
-    
-    header h1 {
-        font-size: 2.2rem;
-    }
-    
-    .description {
-        font-size: 1rem;
-    }
-}
-
 @media (max-width: 768px) {
-    .mobile-tips {
-        font-size: 0.8rem;
-        padding: 6px 12px;
-        margin: 8px auto 0;
+    body {
+        padding: 10px;
     }
-    
+
+    header h1 {
+        font-size: 2em;
+    }
+
     .main-container {
         flex-direction: column;
         gap: 20px;
     }
-    
+
     .input-section,
     .output-section {
         width: 100%;
     }
-    
+
     .output-header {
         flex-direction: column;
         align-items: flex-start;
     }
-    
+
     .output-buttons {
         flex-direction: column;
     }
-    
+
     .btn {
         width: 100%;
     }
-    
+
     .explanation-content {
         grid-template-columns: 1fr;
         gap: 20px;
     }
-    
-    .explanation {
-        padding: 20px;
-    }
-    
-    .explanation h2 {
-        font-size: 1.6rem;
-    }
-    
-    .explanation-item {
-        padding: 15px;
-    }
-    
-    .explanation-item h3 {
-        font-size: 1.1rem;
-    }
-    
-    .explanation-item p {
-        font-size: 0.95rem;
-    }
-    
+
     .notification {
         right: 10px;
         left: 10px;
         transform: translateY(-100%);
     }
-    
+
     .notification.show {
         transform: translateY(0);
     }
 }
 
 @media (max-width: 480px) {
-    .container {
-        padding: 10px;
-    }
-    
-    header {
-        margin-bottom: 25px;
-    }
-    
     header h1 {
-        font-size: 1.8rem;
-        margin-bottom: 10px;
+        font-size: 1.5rem;
     }
-    
-    .description {
-        font-size: 0.9rem;
-        line-height: 1.5;
-    }
-    
+
     .input-card,
     .output-card {
         padding: 15px;
     }
-    
-    .input-card h2,
-    .output-header h2 {
-        font-size: 1.3rem;
-    }
-    
+
     .tab-btn {
         padding: 8px 16px;
         font-size: 0.9rem;
     }
-    
+
     .paste-input,
     .output-text {
         min-height: 300px;
         height: 300px;
         font-size: 0.9rem;
     }
-    
-    .format-options {
-        flex-direction: column;
-        gap: 12px;
-        padding: 12px;
-    }
-    
+
     .format-group {
         flex-direction: column;
         gap: 12px;
     }
-    
+
     .separator-options {
         flex-direction: column;
         gap: 12px;
-        padding-top: 12px;
-    }
-    
-    .btn {
-        padding: 10px 20px;
-        font-size: 0.95rem;
-    }
-    
-    .explanation {
-        padding: 15px;
-    }
-    
-    .explanation h2 {
-        font-size: 1.4rem;
-        margin-bottom: 20px;
-    }
-    
-    .explanation-item {
-        padding: 12px;
-    }
-    
-    .explanation-item h3 {
-        font-size: 1rem;
-    }
-    
-    .explanation-item p {
-        font-size: 0.9rem;
     }
 }
 
-/* 触摸设备优化 */
-@media (hover: none) and (pointer: coarse) {
-    .btn {
-        min-height: 44px;
-        touch-action: manipulation;
-    }
-    
-    .tab-btn {
-        min-height: 44px;
-        touch-action: manipulation;
-    }
-    
-    .file-upload-area {
-        min-height: 200px;
-        touch-action: manipulation;
-    }
-    
-    .paste-input,
-    .output-text {
-        min-height: 250px;
-        height: 250px;
-        font-size: 16px;
-    }
+/* 滚动条样式 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
 
-/* 横屏模式优化 */
-@media (orientation: landscape) and (max-height: 600px) {
-    header {
-        margin-bottom: 20px;
-    }
-    
-    header h1 {
-        font-size: 1.8rem;
-        margin-bottom: 8px;
-    }
-    
-    .description {
-        font-size: 0.9rem;
-        margin-bottom: 15px;
-    }
-    
-    .main-container {
-        margin-bottom: 20px;
-    }
-    
-    .explanation {
-        padding: 15px;
-    }
-    
-    .explanation h2 {
-        font-size: 1.4rem;
-        margin-bottom: 15px;
-    }
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
 }

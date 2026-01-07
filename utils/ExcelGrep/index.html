@@ -26,13 +26,14 @@
             <h2>步骤 1: 上传或输入表格数据</h2>
             <div class="upload-area">
                 <div class="file-upload">
-                    <label for="fileInput" class="file-label">
-                        <span class="upload-icon">📁</span>
-                        选择文件 (Excel, CSV)
-                    </label>
-                    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
-                    <div id="fileName" class="file-name"></div>
-                    <div style="margin-top: 10px;">
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+                        <div class="upload-icon">📁</div>
+                        <p class="upload-text">点击选择 Excel 或 CSV 文件，或拖拽文件到此处</p>
+                        <p class="upload-hint">支持 .xlsx, .xls, .csv 格式文件</p>
+                        <span id="fileName" class="file-name"></span>
+                    </div>
+                    <div style="margin-top: 15px;">
                         <label for="encodingSelect" style="font-size: 14px; color: hsl(0 0% 90%);">CSV编码格式：</label>
                         <select id="encodingSelect" style="padding: 5px; margin-left: 5px;">
                             <option value="auto">自动检测</option>

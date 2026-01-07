@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,13 +12,16 @@
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>SRT 转 TXT 工具</h1>
-            <p class="description">
-                将 SRT 字幕文件转换为纯文本格式，提取所有字幕内容。<br>
-            </p>
-        </header>
+    <div id="background-wrapper"></div>
+    <div class="page-container">
+        <a href="../../index.html" class="back-btn">← 返回首页</a>
+        <div class="container">
+            <header>
+                <h1 data-shadow='SRT 转 TXT 工具'>SRT 转 TXT 工具</h1>
+                <p class="description">
+                    将 SRT 字幕文件转换为纯文本格式，提取所有字幕内容。
+                </p>
+            </header>
 
         <div class="main-container">
             <div class="input-section">
@@ -109,6 +112,7 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 
     <script src="assets/js/srt2txt.js"></script>

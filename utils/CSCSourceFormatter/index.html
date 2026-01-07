@@ -1,3 +1,10 @@
+<!--
+ * @Description: 
+ * @Author: DSTBP
+ * @Date: 2026-01-07 20:49:41
+ * @LastEditTime: 2026-01-07 20:51:29
+ * @LastEditors: DSTBP
+-->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -7,6 +14,19 @@
     <title>软著文件生成工具</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
         .container {
             text-align: center;
             padding: 2rem;
@@ -23,7 +43,7 @@
 
         .description {
             margin-top: 1rem;
-            color: #999;
+            color: hsl(0 0% 70%);
             font-size: 0.9rem;
             position: relative;
             z-index: 2;
@@ -32,13 +52,17 @@
 </head>
 <body>
     <div id="background-wrapper"></div>
-    <div class="container">
-        <h1 data-shadow='软著文件生成工具'>软著文件生成工具</h1>
-        <div class="button-container">
-            <a href="init.html" class="btn">初始化文档</a>
-            <a href="fillinCode.html" class="btn">生成源代码文档</a>
+    <div class="page-container">
+        <div class="header">
+            <h1 data-shadow='软著文件生成工具'>软著文件生成工具</h1>
         </div>
-        <p class="description">选择功能开始使用</p>
+        <div class="container">
+            <div class="button-container">
+                <a href="init.html" class="btn">初始化文档</a>
+                <a href="fillinCode.html" class="btn">生成源代码文档</a>
+            </div>
+            <p class="description">选择功能开始使用</p>
+        </div>
     </div>
 </body>
 </html>

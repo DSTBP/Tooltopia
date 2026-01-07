@@ -25,15 +25,60 @@ function checkDependencies() {
 // 页面加载完成后检查依赖
 window.addEventListener('load', function() {
     checkDependencies();
+    initUploadArea();
 });
 
-// 文件输入监听
-document.getElementById('fileInput').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        document.getElementById('fileName').textContent = `已选择: ${file.name}`;
-    }
-});
+// 初始化上传区域
+function initUploadArea() {
+    const fileInput = document.getElementById('fileInput');
+    const fileUploadArea = document.getElementById('fileUploadArea');
+
+    // 点击上传区域触发文件选择
+    fileUploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
+    // 文件选择
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            document.getElementById('fileName').textContent = `已选择: ${file.name}`;
+        }
+    });
+
+    // 拖拽上传
+    fileUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileUploadArea.classList.add('drag-over');
+    });
+
+    fileUploadArea.addEventListener('dragleave', () => {
+        fileUploadArea.classList.remove('drag-over');
+    });
+
+    fileUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileUploadArea.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0];
+            const validExtensions = ['.txt', '.docx', '.pdf'];
+            const isValid = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+            if (isValid) {
+                // 将文件设置到 input 元素
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+
+                document.getElementById('fileName').textContent = `已选择: ${file.name}`;
+            } else {
+                alert('请选择 TXT、DOCX 或 PDF 文件');
+            }
+        }
+    });
+}
 
 // 载入文本按钮
 document.getElementById('loadTextBtn').addEventListener('click', async function() {

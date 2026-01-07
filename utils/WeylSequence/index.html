@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,17 +12,16 @@
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Weyl Sequence 可视化</h1>
-            <p class="description">
-                在圆形跑道上，一个点每次向前走固定长度 α（α 不是跑道长度的整数倍）。<br>
-                因为 α 是无理数，点永远不会刚好走回原来的位置，轨迹会在跑道上均匀填满。
-            </p>
-            <p class="mobile-tips">
-                📱 移动端提示：点击Canvas开始/暂停，双击重置，上下滑动调节速度
-            </p>
-        </header>
+    <div id="background-wrapper"></div>
+    <div class="page-container">
+        <a href="../../index.html" class="back-btn">← 返回首页</a>
+        <div class="header">
+            <h1 data-shadow='Weyl Sequence Visualization'>Weyl Sequence Visualization</h1>
+            <p class="subtitle">在圆形跑道上，一个点每次向前走固定长度 α（α 不是跑道长度的整数倍）。因为 α 是无理数，点永远不会刚好走回原来的位置，轨迹会在跑道上均匀填满。</p>
+            <p class="mobile-tips">📱 移动端提示：点击Canvas开始/暂停，双击重置，上下滑动调节速度</p>
+        </div>
+
+        <div class="container">
 
         <div class="visualization-container">
             <div class="track-container">
@@ -62,7 +61,7 @@
             </div>
         </div>
 
-        <div class="explanation">
+        <div class="section explanation">
             <h2>Weyl Sequence 原理</h2>
             <div class="explanation-content">
                 <div class="explanation-item">
@@ -79,6 +78,7 @@
                 </div>
             </div>
         </div>
+    </div>
     </div>
 
     <script src="assets/js/weyl-sequence.js"></script>

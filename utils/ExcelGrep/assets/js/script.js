@@ -33,11 +33,52 @@ function checkDependencies() {
 
 // 初始化事件监听器
 function initEventListeners() {
+    const fileInput = document.getElementById('fileInput');
+    const fileUploadArea = document.getElementById('fileUploadArea');
+
+    // 点击上传区域触发文件选择
+    fileUploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
+
     // 文件选择
-    document.getElementById('fileInput').addEventListener('change', function(e) {
+    fileInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (file) {
             document.getElementById('fileName').textContent = `已选择: ${file.name}`;
+        }
+    });
+
+    // 拖拽上传
+    fileUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileUploadArea.classList.add('drag-over');
+    });
+
+    fileUploadArea.addEventListener('dragleave', () => {
+        fileUploadArea.classList.remove('drag-over');
+    });
+
+    fileUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileUploadArea.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0];
+            const validExtensions = ['.xlsx', '.xls', '.csv'];
+            const isValid = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+            if (isValid) {
+                // 将文件设置到 input 元素
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+
+                document.getElementById('fileName').textContent = `已选择: ${file.name}`;
+            } else {
+                alert('请选择 Excel (.xlsx, .xls) 或 CSV 文件');
+            }
         }
     });
 
@@ -494,6 +535,10 @@ function showStep2() {
 
 // 显示步骤3 - 搜索配置
 function showStep3() {
+    // 清空之前的搜索条件（防止载入新文件时保留旧条件）
+    document.getElementById('searchConditions').innerHTML = '';
+    conditionCounter = 0; // 重置计数器
+
     document.getElementById('step3').style.display = 'block';
     document.getElementById('step3').scrollIntoView({ behavior: 'smooth' });
 }

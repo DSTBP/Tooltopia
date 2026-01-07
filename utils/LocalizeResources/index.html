@@ -12,23 +12,27 @@
     <link rel="stylesheet" href="./assets/css/style.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔽 资源本地化工具</h1>
-            <p class="subtitle">将 HTML 页面中的外部资源（CSS、JS、字体、图片）本地化</p>
-        </div>
+    <div id="background-wrapper"></div>
+    <div class="page-container">
+        <a href="../../index.html" class="back-btn">← 返回首页</a>
+        <div class="container">
+            <div class="header">
+                <h1 data-shadow='资源本地化工具'>资源本地化工具</h1>
+                <p class="subtitle">将 HTML 页面中的外部资源（CSS、JS、字体、图片）本地化</p>
+            </div>
 
         <!-- 步骤1: 上传HTML文件 -->
         <div class="section" id="step1">
             <h2>步骤 1: 上传 HTML 文件</h2>
             <div class="upload-area">
                 <div class="file-upload">
-                    <label for="htmlInput" class="file-label">
-                        <span class="upload-icon">📄</span>
-                        选择 HTML 文件
-                    </label>
-                    <input type="file" id="htmlInput" accept=".html,.htm" style="display: none;">
-                    <div id="fileName" class="file-name"></div>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <input type="file" id="htmlInput" accept=".html,.htm" style="display: none;">
+                        <div class="upload-icon">📄</div>
+                        <p class="upload-text">点击选择 HTML 文件，或拖拽文件到此处</p>
+                        <p class="upload-hint">支持 .html, .htm 格式文件</p>
+                        <span id="fileName" class="file-name"></span>
+                    </div>
                 </div>
             </div>
             <button id="analyzeBtn" class="btn btn-primary" disabled>分析资源</button>
@@ -71,6 +75,8 @@
             </div>
             <div id="logOutput" class="log-output"></div>
         </div>
+    </div>
+    </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>

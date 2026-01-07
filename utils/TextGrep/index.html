@@ -12,22 +12,28 @@
     <link rel="stylesheet" href="./assets/css/style.css">
 </head>
 <body>
-    <div class="container">
+    <div id="background-wrapper"></div>
+    <div class="page-container">
+        <a href="../../index.html" class="back-btn">← 返回首页</a>
         <div class="header">
-            <h1>文本搜索工具</h1>
+            <h1 data-shadow='文本搜索工具'>文本搜索工具</h1>
+            <p class="subtitle">多格式文本文件的快速搜索与定位</p>
         </div>
+
+        <div class="container">
 
         <!-- 步骤1: 上传/输入文本 -->
         <div class="section" id="step1">
             <h2>步骤 1: 上传或输入文本</h2>
             <div class="upload-area">
                 <div class="file-upload">
-                    <label for="fileInput" class="file-label">
-                        <span class="upload-icon">📁</span>
-                        选择文件 (TXT, Word, PDF)
-                    </label>
-                    <input type="file" id="fileInput" accept=".txt,.doc,.docx,.pdf" style="display: none;">
-                    <div id="fileName" class="file-name"></div>
+                    <div class="file-upload-area" id="fileUploadArea">
+                        <input type="file" id="fileInput" accept=".txt,.doc,.docx,.pdf" style="display: none;">
+                        <div class="upload-icon">📁</div>
+                        <p class="upload-text">点击选择文本文件，或拖拽文件到此处</p>
+                        <p class="upload-hint">支持 .txt, .docx, .pdf 格式文件</p>
+                        <span id="fileName" class="file-name"></span>
+                    </div>
                 </div>
                 <div class="divider">和/或</div>
                 <div class="text-input">
@@ -72,6 +78,7 @@
             </div>
             <div id="searchResults" class="search-results"></div>
         </div>
+    </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>

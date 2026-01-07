@@ -12,9 +12,54 @@ class ResourceLocalizer {
     }
 
     initEventListeners() {
-        document.getElementById('htmlInput').addEventListener('change', (e) => this.handleFileUpload(e));
+        const fileInput = document.getElementById('htmlInput');
+        const fileUploadArea = document.getElementById('fileUploadArea');
+
+        // 点击上传区域触发文件选择
+        fileUploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // 文件选择事件
+        fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+
         document.getElementById('analyzeBtn').addEventListener('click', () => this.analyzeResources());
         document.getElementById('downloadBtn').addEventListener('click', () => this.downloadResources());
+
+        // 拖拽上传功能
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('drag-over');
+        });
+
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('drag-over');
+        });
+
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                const validExtensions = ['.html', '.htm'];
+                const isValid = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+                if (isValid) {
+                    // 将文件设置到 input 元素
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    fileInput.files = dt.files;
+
+                    // 触发 change 事件
+                    const event = new Event('change', { bubbles: true });
+                    fileInput.dispatchEvent(event);
+                } else {
+                    alert('请选择 HTML (.html, .htm) 文件');
+                }
+            }
+        });
     }
 
     handleFileUpload(event) {
