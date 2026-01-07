@@ -1,16 +1,13 @@
-<!--
- * @Description: 
- * @Author: DSTBP
- * @Date: 2025-12-09 15:44:19
- * @LastEditTime: 2025-12-11 12:34:34
- * @LastEditors: DSTBP
--->
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="icon" href="../favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <link rel="icon" type="image/png" sizes="64x64" href="../favicon.png">
     <title>矩阵满秩分解 - MachineLearningCalculator</title>
     <!-- KaTeX for Math Rendering (CDN) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" crossorigin="anonymous">
@@ -18,114 +15,172 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
-        body { background: linear-gradient(135deg,#667eea 0%,#764ba2 100%); color:#fff; min-height:100vh; margin:0; padding:0 }
-        .container { max-width:1100px;margin:32px auto;padding:20px }
-        .panel { background: rgba(255,255,255,0.97); color:#111; padding:24px;border-radius:16px;box-shadow: 0 8px 32px rgba(0,0,0,0.1) }
-        textarea { width:100%; min-height:140px; font-family: monospace; font-size:14px; padding:10px; border:2px solid #e5e7eb; border-radius:8px; transition: border-color 0.2s }
-        textarea:focus { outline:none; border-color:#667eea }
-        pre.out { background:#f8fafc;padding:14px;border-radius:10px;overflow:auto;border:1px solid #e5e7eb }
-        .row { display:flex;gap:12px }
+        .matrix-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px) saturate(1.2);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
 
-        .btn-calc {
-            padding: 11px 22px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
+        .matrix-panel p {
+            color: hsl(0 0% 85%);
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .matrix-panel label {
+            display: block;
+            color: hsl(0 0% 90%);
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            margin-bottom: 10px;
+            font-size: 1rem;
         }
 
-        .btn-calc:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        .matrix-input {
+            width: 100%;
+            min-height: 140px;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            color: hsl(0 0% 95%);
+            transition: all 0.3s;
+            resize: vertical;
         }
 
-        .btn-calc:active {
-            transform: translateY(0);
+        .matrix-input::placeholder {
+            color: hsl(0 0% 60%);
         }
 
-        #decomp {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .matrix-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.4);
         }
 
-        #decomp:hover {
-            filter: brightness(1.1);
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin: 20px 0;
+            flex-wrap: wrap;
         }
 
-        #sample {
-            background: white;
-            color: #667eea;
-            border: 2px solid #667eea;
-            padding: 9px 20px;
+        .result-section {
+            margin-top: 25px;
         }
 
-        #sample:hover {
-            background: #f0f4ff;
-            border-color: #5568d3;
-            color: #5568d3;
+        .result-section h3 {
+            color: hsl(0 0% 95%);
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .result-output {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: auto;
+            color: hsl(0 0% 90%);
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            min-height: 60px;
+            margin-bottom: 20px;
+        }
+
+        .navigation-links {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 1rem;
+        }
+
+        .navigation-links a {
+            color: hsl(0 0% 85%);
+            text-decoration: none;
+            transition: color 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .navigation-links a:hover {
+            color: hsl(0 0% 100%);
+        }
+
+        @media screen and (max-width: 768px) {
+            .button-group {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <h1 style="color:white">矩阵满秩分解 \(A = F \cdot G\)</h1>
-            <div>
-                <a href="../more.html" style="color:white;text-decoration:underline;margin-right:12px">返回更多</a>
-                <a href="../index.html" style="color:white;text-decoration:underline">返回计算器</a>
-            </div>
+    <div id="background-wrapper"></div>
+    <div class="page-container">
+        <div class="navigation-links">
+            <a href="../more.html">← 返回更多</a>
+            <span style="color: hsl(0 0% 60%)">|</span>
+            <a href="../index.html">返回计算器</a>
+        </div>
+        <div class="header">
+            <h1 data-shadow='矩阵满秩分解'>矩阵满秩分解</h1>
+            <p class="subtitle">将矩阵分解为 A = F · G 的形式</p>
         </div>
 
-        <div class="panel">
-            <p>输入矩阵 \(A\)，每行一行，元素用空格或逗号分隔。示例已经预置。点击“分解”将在下方显示 \(F\) 与 \(G\)。</p>
-            <div style="margin-bottom:10px">
-                <label>矩阵 A：</label>
-                <textarea id="matrixA">2 4 1 1
+        <div class="container">
+            <div class="matrix-panel">
+                <p>输入矩阵 \(A\)，每行一行，元素用空格或逗号分隔。点击"分解"将在下方显示 \(F\) 与 \(G\)。</p>
+                <div>
+                    <label>矩阵 A：</label>
+                    <textarea id="matrixA" class="matrix-input">2 4 1 1
 1 2 -1 2
 -1 -2 -2 1</textarea>
-            </div>
-            <div style="display:flex;gap:12px;margin-bottom:12px">
-                <button id="decomp" class="btn-calc">分解</button>
-                <button id="sample" class="btn-calc">载入示例</button>
-            </div>
+                </div>
+                <div class="button-group">
+                    <button id="decomp" class="btn btn-primary">分解</button>
+                    <button id="sample" class="btn btn-secondary">载入示例</button>
+                </div>
 
-            <div>
-                <h3>结果 \(F\)：</h3>
-                <pre id="outF" class="out">-</pre>
-                <h3>结果 \(G\)：</h3>
-                <pre id="outG" class="out">-</pre>
+                <div class="result-section">
+                    <h3>结果 \(F\)：</h3>
+                    <pre id="outF" class="result-output">-</pre>
+                    <h3>结果 \(G\)：</h3>
+                    <pre id="outG" class="result-output">-</pre>
+                </div>
             </div>
         </div>
     </div>
 
-        <script>
-            window.MathJax = {
-                tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
-                svg: { fontCache: 'global' }
-            };
-        </script>
-        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-        <script>
-            (function(){
-                function tryRender(){
-                    try{
-                        if (window.renderMathInElement) {
-                            renderMathInElement(document.body, {
-                                delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],
-                                throwOnError:false
-                            });
-                            return;
-                        }
-                    } catch(e){ console.warn('KaTeX render failed', e); }
-                    if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
-                }
-                if (document.readyState==='complete' || document.readyState==='interactive') tryRender(); else document.addEventListener('DOMContentLoaded', tryRender);
-            })();
-        </script>
-        <script src="../assets/js/math.min.js"></script>
-        <script src="../assets/js/fullrank.js"></script>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script>
+        (function(){
+            function tryRender(){
+                try{
+                    if (window.renderMathInElement) {
+                        renderMathInElement(document.body, {
+                            delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],
+                            throwOnError:false
+                        });
+                        return;
+                    }
+                } catch(e){ console.warn('KaTeX render failed', e); }
+                if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+            }
+            if (document.readyState==='complete' || document.readyState==='interactive') tryRender(); else document.addEventListener('DOMContentLoaded', tryRender);
+        })();
+    </script>
+    <script src="../assets/js/math.min.js"></script>
+    <script src="../assets/js/fullrank.js"></script>
 </body>
 </html>

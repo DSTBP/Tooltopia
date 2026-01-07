@@ -1,134 +1,123 @@
-<!--
- * @Description: 
- * @Author: DSTBP
- * @Date: 2025-09-04 16:00:52
- * @LastEditTime: 2025-09-13 22:22:00
--->
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>计算器 - MachineLearningCalculator</title>
-    <link rel="icon" href="favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <title>科学计算器 - MachineLearningCalculator</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-    /* 轻量覆盖：调整内容容器样式以适配计算器 */
-    .container { max-width: 1200px; margin: 48px auto; padding: 36px; }
-    .calc-grid { display: grid; grid-template-columns: 1fr 420px; gap: 28px; align-items:start; }
-    .calculator { background: rgba(255,255,255,0.98); padding: 22px; border-radius: 14px; box-shadow: 0 12px 30px rgba(0,0,0,.14); }
-    .display { background:#ffffff;color:#0b1220;padding:16px;border-radius:10px;font-family: 'Courier New', monospace;font-size:1.6rem;min-height:80px;border:1px solid #e6eef8; }
-    .buttons { margin-top:16px; display:grid; grid-template-columns: repeat(6,1fr); gap:12px; }
-    .btn-calc { padding:14px;border-radius:10px;border:1px solid #e6eefc;background:#fbfdff;font-weight:700;cursor:pointer;font-size:1rem }
-    .btn-op { background:linear-gradient(135deg,#667eea,#764ba2); color:white }
-    .side-panel { background: rgba(255,255,255,0.95); padding: 18px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
-    .field { margin-bottom:12px } .field label{display:block;font-weight:600;margin-bottom:6px}
-    .history { max-height:300px; overflow:auto; background:#f4f6fb;padding:8px;border-radius:8px }
-    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1 style="color:white">计算器</h1>
-            <p class="description">支持：加减乘除、^、log、sqrt、三角函数、模运算、分数、π、方程求解、符号求导、上下取整、阶乘、单位转换与自定义小数位</p>
+    <div id="background-wrapper"></div>
+    <div class="page-container">
+        <a href="../../index.html" class="back-btn">← 返回首页</a>
+        <div class="header">
+            <h1 data-shadow='科学计算器'>科学计算器</h1>
+            <p class="subtitle">支持加减乘除、幂运算、三角函数、对数、求导、方程求解、单位转换</p>
+            <br><br><br>
         </header>
 
-        <main class="calc-grid">
-            <section class="calculator">
-                <div id="display" class="display" contenteditable="true" spellcheck="false">0</div>
-                <div style="margin-top:8px;display:flex;gap:8px;">
-                    <button id="evalBtn" class="btn-calc btn-op" style="flex:1">= 计算</button>
-                    <button id="clearBtn" class="btn-calc" style="width:90px">清除</button>
-                    <button id="backBtn" class="btn-calc">退格</button>
-                </div>
-
-                <div class="buttons" style="margin-top:12px">
-                    <!-- 行1 -->
-                    <button class="btn-calc" data-val="7">7</button>
-                    <button class="btn-calc" data-val="8">8</button>
-                    <button class="btn-calc" data-val="9">9</button>
-                    <button class="btn-calc btn-op" data-val="/">÷</button>
-                    <button class="btn-calc btn-op" data-fn="sqrt">√</button>
-                    <button class="btn-calc btn-op" data-fn="pow">^</button>
-
-                    <!-- 行2 -->
-                    <button class="btn-calc" data-val="4">4</button>
-                    <button class="btn-calc" data-val="5">5</button>
-                    <button class="btn-calc" data-val="6">6</button>
-                    <button class="btn-calc btn-op" data-val="*">×</button>
-                    <button class="btn-calc btn-op" data-fn="pi">π</button>
-                    <button class="btn-calc btn-op" data-fn="fact">n!</button>
-
-                    <!-- 行3 -->
-                    <button class="btn-calc" data-val="1">1</button>
-                    <button class="btn-calc" data-val="2">2</button>
-                    <button class="btn-calc" data-val="3">3</button>
-                    <button class="btn-calc btn-op" data-val="-">−</button>
-                    <button class="btn-calc btn-op" data-fn="mod">mod</button>
-                    <button class="btn-calc btn-op" data-fn="percent">%</button>
-
-                    <!-- 行4 -->
-                    <button class="btn-calc" data-val="0">0</button>
-                    <button class="btn-calc" data-val=".">.</button>
-                    <button class="btn-calc" data-val="(">(</button>
-                    <button class="btn-calc" data-val=")">)</button>
-                    <button class="btn-calc btn-op" data-val="+">+</button>
-                    <button class="btn-calc btn-op" data-fn="ans">Ans</button>
-
-                    <!-- 行5 高级函数 -->
-                    <button class="btn-calc" data-fn="sin">sin</button>
-                    <button class="btn-calc" data-fn="cos">cos</button>
-                    <button class="btn-calc" data-fn="tan">tan</button>
-                    <button class="btn-calc" data-fn="log">log</button>
-                    <button class="btn-calc" data-fn="ln">ln</button>
-                    <button class="btn-calc" data-fn="sqrt2">sqrt</button>
-                </div>
-
-                <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
-                    <button id="deriveBtn" class="btn-calc">求导</button>
-                    <button id="solveBtn" class="btn-calc">求解 (单变量)</button>
-                    <input id="solveVar" placeholder="变量 (默认 x)" style="width:80px;padding:6px;border-radius:6px;border:1px solid #e1e5e9" />
-                    <input id="solveGuess" placeholder="初始值" style="width:90px;padding:6px;border-radius:6px;border:1px solid #e1e5e9" />
-                </div>
-            </section>
-
-            <aside class="side-panel">
-                <div class="field">
-                    <label>设置</label>
-                    <div style="display:flex;gap:8px;align-items:center">
-                        <label style="font-weight:600">小数位</label>
-                        <input id="precision" type="number" min="0" max="20" value="6" style="width:80px;padding:6px;border-radius:6px;border:1px solid #e1e5e9" />
-                        <label style="font-weight:600">角度</label>
-                        <select id="angleMode" style="padding:6px;border-radius:6px;border:1px solid #e1e5e9">
-                            <option value="rad">弧度</option>
-                            <option value="deg">角度</option>
-                        </select>
+        <div class="container">
+            <div class="calc-grid">
+                <section class="calculator">
+                    <div id="display" class="display" contenteditable="true" spellcheck="false">0</div>
+                    <div class="action-buttons">
+                        <button id="evalBtn" class="btn btn-primary">= 计算</button>
+                        <button id="clearBtn" class="btn btn-secondary">清除</button>
+                        <button id="backBtn" class="btn btn-secondary">退格</button>
                     </div>
-                </div>
 
-                <div class="field">
-                    <label>单位转换（示例）</label>
-                    <input id="unitInput" placeholder="10 cm to m" style="width:100%;padding:8px;border-radius:6px;border:1px solid #e1e5e9" />
-                    <button id="convertBtn" class="btn-calc" style="margin-top:8px">转换</button>
-                    <div id="unitResult" style="margin-top:8px;color:#333"></div>
-                </div>
+                    <div class="buttons">
+                        <!-- 行1 -->
+                        <button class="btn-calc" data-val="7">7</button>
+                        <button class="btn-calc" data-val="8">8</button>
+                        <button class="btn-calc" data-val="9">9</button>
+                        <button class="btn-calc btn-op" data-val="/">÷</button>
+                        <button class="btn-calc btn-op" data-fn="sqrt">√</button>
+                        <button class="btn-calc btn-op" data-fn="pow">^</button>
 
-                <div class="field">
-                    <label>历史记录</label>
-                    <div id="history" class="history"></div>
-                </div>
+                        <!-- 行2 -->
+                        <button class="btn-calc" data-val="4">4</button>
+                        <button class="btn-calc" data-val="5">5</button>
+                        <button class="btn-calc" data-val="6">6</button>
+                        <button class="btn-calc btn-op" data-val="*">×</button>
+                        <button class="btn-calc btn-op" data-fn="pi">π</button>
+                        <button class="btn-calc btn-op" data-fn="fact">n!</button>
 
-                <div class="field">
-                    <label>说明</label>
-                    <div style="color:#444;font-size:0.95rem;line-height:1.4">支持表达式输入（例如 <code>2*(3+sin(pi/4))</code>），使用小写函数名。求导使用符号计算（Algebrite），方程求解为单变量数值求解。</div>
-                </div>
-                <div class="field" style="margin-top:8px">
-                    <label>更多功能</label>
-                    <a href="more.html" class="btn-calc" style="display:inline-block;padding:8px 12px;border-radius:8px;text-decoration:none;color:#fff;background:linear-gradient(135deg,#667eea,#764ba2)">更多</a>
-                </div>
-            </aside>
-        </main>
+                        <!-- 行3 -->
+                        <button class="btn-calc" data-val="1">1</button>
+                        <button class="btn-calc" data-val="2">2</button>
+                        <button class="btn-calc" data-val="3">3</button>
+                        <button class="btn-calc btn-op" data-val="-">−</button>
+                        <button class="btn-calc btn-op" data-fn="mod">mod</button>
+                        <button class="btn-calc btn-op" data-fn="percent">%</button>
 
+                        <!-- 行4 -->
+                        <button class="btn-calc" data-val="0">0</button>
+                        <button class="btn-calc" data-val=".">.</button>
+                        <button class="btn-calc" data-val="(">(</button>
+                        <button class="btn-calc" data-val=")">)</button>
+                        <button class="btn-calc btn-op" data-val="+">+</button>
+                        <button class="btn-calc btn-op" data-fn="ans">Ans</button>
+
+                        <!-- 行5 高级函数 -->
+                        <button class="btn-calc" data-fn="sin">sin</button>
+                        <button class="btn-calc" data-fn="cos">cos</button>
+                        <button class="btn-calc" data-fn="tan">tan</button>
+                        <button class="btn-calc" data-fn="log">log</button>
+                        <button class="btn-calc" data-fn="ln">ln</button>
+                        <button class="btn-calc" data-fn="sqrt2">sqrt</button>
+                    </div>
+
+                    <div class="advanced-controls">
+                        <button id="deriveBtn" class="btn btn-secondary">求导</button>
+                        <button id="solveBtn" class="btn btn-secondary">求解</button>
+                        <input id="solveVar" placeholder="变量 (默认 x)" class="input-field" />
+                        <input id="solveGuess" placeholder="初始值" class="input-field" />
+                    </div>
+                </section>
+
+                <aside class="side-panel">
+                    <div class="field">
+                        <label>设置</label>
+                        <div class="settings-row">
+                            <label>小数位</label>
+                            <input id="precision" type="number" min="0" max="20" value="6" class="input-field small" />
+                            <label>角度</label>
+                            <select id="angleMode" class="input-field small">
+                                <option value="rad">弧度</option>
+                                <option value="deg">角度</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label>单位转换</label>
+                        <input id="unitInput" placeholder="10 cm to m" class="input-field" />
+                        <button id="convertBtn" class="btn btn-secondary">转换</button>
+                        <div id="unitResult" class="result-text"></div>
+                    </div>
+
+                    <div class="field">
+                        <label>历史记录</label>
+                        <div id="history" class="history"></div>
+                    </div>
+
+                    <div class="field">
+                        <label>说明</label>
+                        <div class="info-text">支持表达式输入（例如 <code>2*(3+sin(pi/4))</code>），使用小写函数名。求导使用符号计算（Algebrite），方程求解为单变量数值求解。</div>
+                    </div>
+                    <div class="field">
+                        <label>更多功能</label>
+                        <a href="more.html" class="btn btn-primary">查看更多</a>
+                    </div>
+                </aside>
+            </div>
+        </div>
     </div>
 
     <!-- 引入 math.js（数值/单位/分数）、Algebrite（符号运算）以及本地逻辑脚本 -->
@@ -137,5 +126,3 @@
     <script src="assets/js/calculator.js"></script>
 </body>
 </html>
-
-

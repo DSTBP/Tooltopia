@@ -9,122 +9,20 @@
 <html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#3b3b3b">
     <title>Lights Out - 变体中心</title>
     <link rel="icon" href="favicon.png">
     <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-    .variant-container { max-width: 1000px; margin: 0 auto; padding: 24px 12px; }
-    .variant-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
-    .variant-card { background: rgba(255,255,255,.95); border-radius: 12px; padding: 18px; box-shadow: 0 8px 24px rgba(0,0,0,.12); display: flex; flex-direction: column; gap: 10px; }
-    .variant-card h3 { margin: 0; color: #667eea; }
-    .variant-card p { color: #555; flex: 1; }
-    .top-actions { display: flex; justify-content: center; margin-bottom: 18px; }
-    .top-actions a { text-decoration: none; }
-    /* 仅本页：进入按钮悬停时才高亮 */
-    .variant-card .fo-btn:hover { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
-    
-    /* 语言选择器统一样式 - 使用更强的选择器 */
-    #translate,
-    #translate .translate_selectLanguage_tag,
-    .translate_selectLanguage_tag,
-    div[id="translate"],
-    div[id="translate"] .translate_selectLanguage_tag {
-        position: fixed !important;
-        top: 20px !important;
-        right: 20px !important;
-        z-index: 9999 !important;
-        background: rgba(255, 255, 255, 0.15) !important;
-        color: white !important;
-        padding: 0 !important;
-        border-radius: 20px !important;
-        border: 1px solid rgba(255, 255, 255, 0.3) !important;
-        backdrop-filter: blur(10px) !important;
-        cursor: pointer !important;
-        font-size: 0.9rem !important;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-        transition: all 0.3s ease !important;
-        display: inline-block !important;
-        margin: 0 !important;
-        min-width: 120px !important;
-        height: 36px !important;
-        overflow: visible !important;
-    }
-    
-    #translate:hover,
-    #translate .translate_selectLanguage_tag:hover,
-    .translate_selectLanguage_tag:hover,
-    div[id="translate"]:hover,
-    div[id="translate"] .translate_selectLanguage_tag:hover {
-        background: rgba(255, 255, 255, 0.25) !important;
-        transform: translateY(-1px) !important;
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
-    }
-    
-    #translate select,
-    #translate .translate_selectLanguage_tag select,
-    .translate_selectLanguage_tag select,
-    div[id="translate"] select,
-    div[id="translate"] .translate_selectLanguage_tag select {
-        background: transparent !important;
-        border: none !important;
-        color: white !important;
-        font-size: 0.9rem !important;
-        font-family: inherit !important;
-        cursor: pointer !important;
-        outline: none !important;
-        appearance: none !important;
-        -webkit-appearance: none !important;
-        -moz-appearance: none !important;
-        width: 100% !important;
-        height: 100% !important;
-        padding: 8px 16px !important;
-        margin: 0 !important;
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        opacity: 1 !important;
-    }
-    
-    #translate select option,
-    #translate .translate_selectLanguage_tag select option,
-    .translate_selectLanguage_tag select option,
-    div[id="translate"] select option,
-    div[id="translate"] .translate_selectLanguage_tag select option {
-        background: white !important;
-        color: #333 !important;
-    }
-    
-    /* 移动端适配 */
-    @media (max-width: 768px) {
-        #translate,
-        #translate .translate_selectLanguage_tag,
-        .translate_selectLanguage_tag,
-        div[id="translate"],
-        div[id="translate"] .translate_selectLanguage_tag {
-            top: 10px !important;
-            right: 10px !important;
-            min-width: 100px !important;
-            height: 32px !important;
-            font-size: 0.8rem !important;
-        }
-        
-        #translate select,
-        #translate .translate_selectLanguage_tag select,
-        .translate_selectLanguage_tag select,
-        div[id="translate"] select,
-        div[id="translate"] .translate_selectLanguage_tag select {
-            padding: 6px 12px !important;
-            font-size: 0.8rem !important;
-        }
-    }
-    </style>
-    </head>
+</head>
 <body>
+    <a href="../../index.html" class="return-home">← 返回主页</a>
+
     <div class="variant-container">
         <header class="fo-header">
-            <h1>Lights Out - 变体中心</h1>
+            <h1 data-shadow="Lights Out - 变体中心">Lights Out - 变体中心</h1>
             <p class="fo-sub">选择一个玩法变体进入</p>
         </header>
 
@@ -210,10 +108,6 @@
             </article>
         </section>
     </div>
-
-    <script>
-    // 可在此扩展：统计或动态加载变体清单
-    </script>
 
     <!-- translate.js 多语言翻译功能 -->
     <script src="assets/js/translate.js"></script>

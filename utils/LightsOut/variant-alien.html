@@ -2,165 +2,20 @@
 <html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#3b3b3b">
     <title>Lights Out - 异形图块</title>
     <link rel="icon" href="favicon.png">
     <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-        /* 语言选择器统一样式 - 使用更强的选择器 */
-        #translate,
-        #translate .translate_selectLanguage_tag,
-        .translate_selectLanguage_tag,
-        div[id="translate"],
-        div[id="translate"] .translate_selectLanguage_tag {
-            position: fixed !important;
-            top: 20px !important;
-            right: 20px !important;
-            z-index: 9999 !important;
-            background: rgba(255, 255, 255, 0.15) !important;
-            color: white !important;
-            padding: 0 !important;
-            border-radius: 20px !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
-            backdrop-filter: blur(10px) !important;
-            cursor: pointer !important;
-            font-size: 0.9rem !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-            transition: all 0.3s ease !important;
-            display: inline-block !important;
-            margin: 0 !important;
-            min-width: 120px !important;
-            height: 36px !important;
-            overflow: visible !important;
-        }
-        
-        #translate:hover,
-        #translate .translate_selectLanguage_tag:hover,
-        .translate_selectLanguage_tag:hover,
-        div[id="translate"]:hover,
-        div[id="translate"] .translate_selectLanguage_tag:hover {
-            background: rgba(255, 255, 255, 0.25) !important;
-            transform: translateY(-1px) !important;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
-        }
-        
-        #translate select,
-        #translate .translate_selectLanguage_tag select,
-        .translate_selectLanguage_tag select,
-        div[id="translate"] select,
-        div[id="translate"] .translate_selectLanguage_tag select {
-            background: transparent !important;
-            border: none !important;
-            color: white !important;
-            font-size: 0.9rem !important;
-            font-family: inherit !important;
-            cursor: pointer !important;
-            outline: none !important;
-            appearance: none !important;
-            -webkit-appearance: none !important;
-            -moz-appearance: none !important;
-            width: 100% !important;
-            height: 100% !important;
-            padding: 8px 16px !important;
-            margin: 0 !important;
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            opacity: 1 !important;
-        }
-        
-        #translate select option,
-        #translate .translate_selectLanguage_tag select option,
-        .translate_selectLanguage_tag select option,
-        div[id="translate"] select option,
-        div[id="translate"] .translate_selectLanguage_tag select option {
-            background: white !important;
-            color: #333 !important;
-        }
-        
-        /* 移动端适配 */
-        @media (max-width: 768px) {
-            #translate,
-            #translate .translate_selectLanguage_tag,
-            .translate_selectLanguage_tag,
-            div[id="translate"],
-            div[id="translate"] .translate_selectLanguage_tag {
-                top: 10px !important;
-                right: 10px !important;
-                min-width: 100px !important;
-                height: 32px !important;
-                font-size: 0.8rem !important;
-            }
-            
-            #translate select,
-            #translate .translate_selectLanguage_tag select,
-            .translate_selectLanguage_tag select,
-            div[id="translate"] select,
-            div[id="translate"] .translate_selectLanguage_tag select {
-                padding: 6px 12px !important;
-                font-size: 0.8rem !important;
-            }
-        }
-        
-        /* 仅本页：提示数字样式 */
-        .fo-cell.hint-num {
-            color: #1f2d3d;
-            font-weight: 700;
-            font-size: 0.95rem;
-            text-shadow: 0 1px 0 rgba(255,255,255,0.6);
-        }
-        
-        /* 异形图块颜色样式 - 低饱和度配色 */
-        .fo-cell.alien-red {
-            background: linear-gradient(145deg, #f76565, #f76565) !important;
-            color: #2c2c2c !important;
-            border-color: #f76565 !important;
-        }
-        
-        .fo-cell.alien-green {
-            background: linear-gradient(145deg, #a8d8a8, #99c799) !important;
-            color: #2c2c2c !important;
-            border-color: #99c799 !important;
-        }
-        
-        .fo-cell.alien-blue {
-            background: linear-gradient(145deg, #a8c8e8, #99b8d6) !important;
-            color: #2c2c2c !important;
-            border-color: #99b8d6 !important;
-        }
-        
-        .fo-cell.alien-purple {
-            background: linear-gradient(145deg, #c084a1, #a8708a) !important;
-            color: white !important;
-            border-color: #a8708a !important;
-        }
-        
-        .fo-cell.alien-red:hover {
-            background: linear-gradient(145deg, #f0b8b8, #e8a8a8) !important;
-            transform: scale(1.05) !important;
-        }
-        
-        .fo-cell.alien-green:hover {
-            background: linear-gradient(145deg, #b8e8b8, #a8d8a8) !important;
-            transform: scale(1.05) !important;
-        }
-        
-        .fo-cell.alien-blue:hover {
-            background: linear-gradient(145deg, #b8d8f0, #a8c8e8) !important;
-            transform: scale(1.05) !important;
-        }
-        
-        .fo-cell.alien-purple:hover {
-            background: linear-gradient(145deg, #d094b1, #c084a1) !important;
-            transform: scale(1.05) !important;
-        }
-    </style>
 </head>
 <body>
+    <a href="variant.html" class="return-home">← 返回变体中心</a>
+
     <div class="fo-container">
         <header class="fo-header">
-            <h1>Lights Out - 异形图块</h1>
+            <h1 data-shadow="Lights Out - 异形图块">Lights Out - 异形图块</h1>
             <p class="fo-sub">点击矩阵中的任意方块，同一行和同一列的所有方块将按红、绿、蓝、紫的顺序循环变色</p>
         </header>
 
