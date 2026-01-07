@@ -1,10 +1,3 @@
-<!--
- * @Description: 
- * @Author: DSTBP
- * @Date: 2026-01-06 20:38:30
- * @LastEditTime: 2026-01-06 20:39:58
- * @LastEditors: DSTBP
--->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -18,59 +11,123 @@
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
-    <div id="particles-js"></div>
+    <div id="background-wrapper">
+        <canvas id="background-canvas"></canvas>
+    </div>
     <div class="container">
-        <h1>Welcome to Tooltopia</h1>
+        <h1 data-shadow='Welcome to Tooltopia'>Welcome to Tooltopia</h1>
         <div class="cards-container">
-            <div class="card">
-                <h2>CSC Formatter</h2>
-                <p>一个用于格式化和美化特定 CSC 源代码的在线工具</p>
-                <a href="utils/CSCSourceFormatter/index.html" class="button">进入</a>
+            <div class="card" style="--active-color: #60a5fa">
+                <pixel-canvas data-gap="5" data-speed="30" data-colors="#bfdbfe, #60a5fa, #2563eb"></pixel-canvas>
+                <div class="card-content">
+                    <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor">
+                        <path d="M67.84,92.61,25.37,128l42.47,35.39a6,6,0,1,1-7.68,9.22l-48-40a6,6,0,0,1,0-9.22l48-40a6,6,0,0,1,7.68,9.22Zm176,30.78-48-40a6,6,0,1,0-7.68,9.22L230.63,128l-42.47,35.39a6,6,0,1,0,7.68,9.22l48-40a6,6,0,0,0,0-9.22Zm-81.79-89A6,6,0,0,0,154.36,38l-64,176A6,6,0,0,0,94,221.64a6.15,6.15,0,0,0,2,.36,6,6,0,0,0,5.64-3.95l64-176A6,6,0,0,0,162.05,34.36Z"></path>
+                    </svg>
+                    <h2>CSC Formatter</h2>
+                    <p>一个用于格式化和美化特定 CSC 源代码的在线工具</p>
+                </div>
+                <a href="utils/CSCSourceFormatter/index.html">进入 CSC Formatter</a>
             </div>
-            <div class="card">
-                <h2>Text Grep</h2>
-                <p>一个批量文本搜索工具</p>
-                <a href="utils/TextGrep/index.html" class="button">进入</a>
+
+            <div class="card" style="--active-color: #4ade80">
+                <pixel-canvas data-gap="6" data-speed="35" data-colors="#bbf7d0, #4ade80, #16a34a"></pixel-canvas>
+                <div class="card-content">
+                    <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor">
+                        <path d="M232.49,215.51,185,168a92.12,92.12,0,1,0-17,17l47.53,47.54a12,12,0,0,0,17-17ZM44,112a68,68,0,1,1,68,68A68.07,68.07,0,0,1,44,112Z"></path>
+                    </svg>
+                    <h2>Text Grep</h2>
+                    <p>一个批量文本搜索工具</p>
+                </div>
+                <a href="utils/TextGrep/index.html">进入 Text Grep</a>
             </div>
-            <div class="card">
-                <h2>Excel Grep</h2>
-                <p>一个多列表格搜索工具</p>
-                <a href="utils/ExcelGrep/index.html" class="button">进入</a>
+
+            <div class="card" style="--active-color: #22d3ee">
+                <pixel-canvas data-gap="5" data-speed="28" data-colors="#a5f3fc, #22d3ee, #0891b2"></pixel-canvas>
+                <div class="card-content">
+                    <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="currentColor">
+                        <path d="M959.825022 384.002258V191.939717C959.825022 121.2479 902.517291 63.940169 831.825474 63.940169H191.939717C121.2479 63.940169 63.940169 121.2479 63.940169 191.939717v639.885757C63.940169 902.517291 121.2479 959.825022 191.939717 959.825022h639.885757c70.691817 0 127.999548-57.307731 127.999548-127.999548V384.002258zM146.66502 146.66502a63.737872 63.737872 0 0 1 45.336109-18.784682h639.997742A63.961844 63.961844 0 0 1 895.884854 192.001129V320.062089H127.880338V192.001129A63.737872 63.737872 0 0 1 146.66502 146.66502z m269.1267 461.308451v-223.971213h192.181751v223.971213h-192.181751z m192.181751 63.940169v223.971214h-192.181751v-223.971214h192.181751z m-256.12192-63.940169H127.880338v-223.971213h223.971213v223.971213z m-205.186531 269.235073a63.466939 63.466939 0 0 1-18.784682-45.209673V671.91364h223.971213v223.971214H192.001129a63.625887 63.625887 0 0 1-45.336109-18.67631z m749.219834-45.209673A63.763159 63.763159 0 0 1 831.998871 895.884854H671.91364v-223.971214h223.971214v160.085231z m0-224.0254h-223.971214v-223.971213h223.971214v223.971213z"></path>
+                    </svg>
+                    <h2>Excel Grep</h2>
+                    <p>一个多列表格搜索工具</p>
+                </div>
+                <a href="utils/ExcelGrep/index.html">进入 Excel Grep</a>
             </div>
-            <div class="card">
-                <h2>Linear Algebra</h2>
-                <p>一个交互式工具，用于可视化线性代数的学习</p>
-                <a href="utils/LinearAlgebra/index.html" class="button">进入</a>
+
+            <div class="card" style="--active-color: #a78bfa">
+                <pixel-canvas data-gap="4" data-speed="25" data-colors="#ddd6fe, #a78bfa, #7c3aed"></pixel-canvas>
+                <div class="card-content">
+                    <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="currentColor">
+                        <path d="M192 224h128v128H192z m0 448h128v128H192z m0-224h128v128H192z m-64-288h64V96H64v832h128v-64h-64z m576 64h128v128H704z m0 224h128v128H704z m128-288h64v704h-64v64h128V96H832z m-384 64h128v128H448z m256 448h128v128H704zM448 448h128v128H448z m0 224h128v128H448z"></path>
+                    </svg>
+                    <h2>Linear Algebra</h2>
+                    <p>一个交互式工具，用于可视化线性代数的学习</p>
+                </div>
+                <a href="utils/LinearAlgebra/index.html">进入 Linear Algebra</a>
             </div>
-            <div class="card">
-                <h2>Weyl Sequence</h2>
-                <p>一个交互式工具，用于可视化 Weyl Sequence 的轨迹</p>
-                <a href="utils/WeylSequence/index.html" class="button">进入</a>
+
+            <div class="card" style="--active-color: #f472b6">
+                <pixel-canvas data-gap="7" data-speed="32" data-colors="#fbcfe8, #f472b6, #db2777"></pixel-canvas>
+                <div class="card-content">
+                    <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="currentColor">
+                        <path d="M1023.989763 487.627457a467.65441 467.65441 0 0 1-153.560075 343.782616 141.979085 141.979085 0 0 1 7.294104 46.323956A146.713854 146.713854 0 0 1 731.457821 1023.744067a144.73037 144.73037 0 0 1-126.751045-75.564354 265.019095 265.019095 0 0 1-43.892588 2.431368 462.151841 462.151841 0 0 1-419.346969-268.15428 145.178254 145.178254 0 0 1-34.103134-285.237838A462.983624 462.983624 0 0 1 560.814188 24.387899a393.433707 393.433707 0 0 1 119.456942 17.083558A138.0761 138.0761 0 0 1 780.469078 0.010237a146.713854 146.713854 0 0 1 146.265971 146.265971 141.979085 141.979085 0 0 1-7.294104 46.323956 463.239558 463.239558 0 0 1 104.548818 295.027293z m-243.520685-195.021295a146.713854 146.713854 0 0 1-146.521904-146.329954 142.235019 142.235019 0 0 1 14.65219-63.407514 346.150001 346.150001 0 0 0-87.785176-9.725471A415.891868 415.891868 0 0 0 158.486793 390.30876a146.265971 146.265971 0 0 1 31.991683 285.237838A419.858837 419.858837 0 0 0 560.814188 902.175674a100.005998 100.005998 0 0 0 26.80903-2.431368c0-7.294104-2.431368-14.65219-2.431368-21.946293a145.882071 145.882071 0 0 1 260.860176-90.216544 406.486314 406.486314 0 0 0 129.246396-299.890029 422.930038 422.930038 0 0 0-83.178373-248.703337 146.074021 146.074021 0 0 1-111.650971 53.618059z"></path>
+                    </svg>
+                    <h2>Weyl Sequence</h2>
+                    <p>一个交互式工具，用于可视化 Weyl Sequence 的轨迹</p>
+                </div>
+                <a href="utils/WeylSequence/index.html">进入 Weyl Sequence</a>
             </div>
-            <div class="card">
-                <h2>Flight Out</h2>
-                <p>点灯游戏及其升级版</p>
-                <a href="utils/LightsOut/index.html" class="button">进入</a>
+
+            <div class="card" style="--active-color: #fde047">
+                <pixel-canvas data-gap="6" data-speed="40" data-colors="#fef08a, #fde047, #eab308"></pixel-canvas>
+                <div class="card-content">
+                    <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor">
+                        <path d="M180,232a12,12,0,0,1-12,12H88a12,12,0,0,1,0-24h80A12,12,0,0,1,180,232Zm40-128a91.51,91.51,0,0,1-35.17,72.35A12.26,12.26,0,0,0,180,186v2a20,20,0,0,1-20,20H96a20,20,0,0,1-20-20v-2a12,12,0,0,0-4.7-9.51A91.57,91.57,0,0,1,36,104.52C35.73,54.69,76,13.2,125.79,12A92,92,0,0,1,220,104Zm-24,0a68,68,0,0,0-69.65-68C89.56,36.89,59.8,67.55,60,104.38A67.71,67.71,0,0,0,86.32,160.5,35.87,35.87,0,0,1,100,186v2h56v-2a36.21,36.21,0,0,1,13.58-25.39A67.68,67.68,0,0,0,196,104Zm-20.07-5.32a48.5,48.5,0,0,0-31.91-40,12,12,0,0,0-8,22.62,24.31,24.31,0,0,1,16,20.06,12,12,0,0,0,11.95,10.69,11.39,11.39,0,0,0,1.32-.07A12,12,0,0,0,175.93,98.68Z"></path>
+                    </svg>
+                    <h2>Flight Out</h2>
+                    <p>点灯游戏及其升级版</p>
+                </div>
+                <a href="utils/LightsOut/index.html">进入 Flight Out</a>
             </div>
-            <div class="card">
-                <h2>SRT2TXT</h2>
-                <p>将 SRT 字幕文件转换为纯文本</p>
-                <a href="utils/SRT2TXT/index.html" class="button">进入</a>
+
+            <div class="card" style="--active-color: #fb923c">
+                <pixel-canvas data-gap="5" data-speed="30" data-colors="#fed7aa, #fb923c, #ea580c"></pixel-canvas>
+                <div class="card-content">
+                    <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor">
+                        <path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-40-64a8,8,0,0,1-8,8H104a8,8,0,0,1,0-16h48A8,8,0,0,1,160,152Zm0-32a8,8,0,0,1-8,8H104a8,8,0,0,1,0-16h48A8,8,0,0,1,160,120Z"></path>
+                    </svg>
+                    <h2>SRT2TXT</h2>
+                    <p>将 SRT 字幕文件转换为纯文本</p>
+                </div>
+                <a href="utils/SRT2TXT/index.html">进入 SRT2TXT</a>
             </div>
-            <div class="card">
-                <h2>Calculator</h2>
-                <p>自用计算器</p>
-                <a href="utils/MachineLearningCalculator/index.html" class="button">进入</a>
+
+            <div class="card" style="--active-color: #f87171">
+                <pixel-canvas data-gap="4" data-speed="35" data-colors="#fecaca, #f87171, #dc2626"></pixel-canvas>
+                <div class="card-content">
+                    <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor">
+                        <path d="M200,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V40A16,16,0,0,0,200,24Zm0,192H56V40H200ZM100,76A12,12,0,1,1,88,64,12,12,0,0,1,100,76Zm40,0a12,12,0,1,1-12-12A12,12,0,0,1,140,76Zm40,0a12,12,0,1,1-12-12A12,12,0,0,1,180,76ZM100,116a12,12,0,1,1-12-12A12,12,0,0,1,100,116Zm40,0a12,12,0,1,1-12-12A12,12,0,0,1,140,116Zm40,0a12,12,0,1,1-12-12A12,12,0,0,1,180,116ZM88,144a12,12,0,1,1,12-12A12,12,0,0,1,88,144Zm40,0a12,12,0,1,1,12-12A12,12,0,0,1,128,144Zm40,0a12,12,0,1,1,12-12A12,12,0,0,1,168,144ZM100,180a12,12,0,1,1-12-12A12,12,0,0,1,100,180Zm40,0a12,12,0,1,1-12-12A12,12,0,0,1,140,180Zm40,0a12,12,0,1,1-12-12A12,12,0,0,1,180,180Z"></path>
+                    </svg>
+                    <h2>Calculator</h2>
+                    <p>自用计算器</p>
+                </div>
+                <a href="utils/MachineLearningCalculator/index.html">进入 Calculator</a>
             </div>
-            <div class="card">
-                <h2>Localize Resources</h2>
-                <p>将 HTML 页面中的外部资源本地化</p>
-                <a href="utils/LocalizeResources/index.html" class="button">进入</a>
+
+            <div class="card" style="--active-color: #818cf8">
+                <pixel-canvas data-gap="6" data-speed="28" data-colors="#c7d2fe, #818cf8, #4f46e5"></pixel-canvas>
+                <div class="card-content">
+                    <svg class="card-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" fill="currentColor">
+                        <path d="M128,20A108,108,0,1,0,236,128,108.12,108.12,0,0,0,128,20Zm0,192a84,84,0,1,1,84-84A84.09,84.09,0,0,1,128,212Zm60-84a60.07,60.07,0,0,1-60,60,12,12,0,0,1,0-24,36,36,0,1,0-36-36,12,12,0,0,1-24,0,60,60,0,1,1,120,0Z"></path>
+                    </svg>
+                    <h2>Localize Resources</h2>
+                    <p>将 HTML 页面中的外部资源本地化</p>
+                </div>
+                <a href="utils/LocalizeResources/index.html">进入 Localize Resources</a>
             </div>
         </div>
     </div>
 
-    <script src="assets/js/particles.min.js"></script>
-    <script src="assets/js/main.js"></script>
+    <script src="assets/js/background.js"></script>
+    <script src="assets/js/pixel-canvas.js"></script>
 </body>
 </html>

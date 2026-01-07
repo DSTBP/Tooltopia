@@ -66,23 +66,26 @@ function showInfo(message) {
 document.addEventListener('DOMContentLoaded', async function () {
     const savedFormData = sessionStorage.getItem('wordFormData');
     const docStatusDisplay = document.getElementById('docStatusDisplay');
-    
+
     if (savedFormData) {
         try {
             currentFormData = JSON.parse(savedFormData);
             docStatusDisplay.textContent = '已成功加载初始化文档';
-            docStatusDisplay.style.backgroundColor = '#e8f5e9';
-            docStatusDisplay.style.color = '#2e7d32';
+            docStatusDisplay.style.backgroundColor = 'rgba(76, 175, 80, 0.15)';
+            docStatusDisplay.style.color = 'hsl(122 40% 70%)';
+            docStatusDisplay.style.border = '1px solid rgba(76, 175, 80, 0.3)';
         } catch (error) {
             docStatusDisplay.textContent = '未能正确解析初始化文档';
-            docStatusDisplay.style.backgroundColor = '#ffebee';
-            docStatusDisplay.style.color = '#c62828';
+            docStatusDisplay.style.backgroundColor = 'rgba(244, 67, 54, 0.15)';
+            docStatusDisplay.style.color = 'hsl(4 80% 70%)';
+            docStatusDisplay.style.border = '1px solid rgba(244, 67, 54, 0.3)';
             currentFormData = null;
         }
     } else {
         docStatusDisplay.textContent = '未找到初始化文档，将采用新建文档策略';
-        docStatusDisplay.style.backgroundColor = '#e3f2fd';
-        docStatusDisplay.style.color = '#1565c0';
+        docStatusDisplay.style.backgroundColor = 'rgba(255, 193, 7, 0.15)';
+        docStatusDisplay.style.color = 'hsl(45 100% 70%)';
+        docStatusDisplay.style.border = '1px solid rgba(255, 193, 7, 0.3)';
         currentFormData = null;
     }
 });

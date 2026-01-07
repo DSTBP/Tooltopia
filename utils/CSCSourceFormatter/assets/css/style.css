@@ -1,3 +1,5 @@
+@import url(https://fonts.googleapis.com/css?family=Righteous);
+
 /* 基础样式 */
 * {
     margin: 0;
@@ -6,8 +8,8 @@
 }
 
 :root {
-    --primary-color: #3498db; /* Blue */
-    --accent-color: #2ecc71; /* Green */
+    --primary-color: #3498db; 
+    --accent-color: #2ecc71; 
     --text-color: #333;
     --light-bg: #f5f7fa;
     --card-bg: #fff;
@@ -22,105 +24,147 @@
 }
 
 body {
-    font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+    font-family: "Righteous", "Microsoft YaHei", "微软雅黑", sans-serif;
     line-height: 1.6;
     color: var(--text-color);
-    background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle), var(--gradient-end));
+    background: linear-gradient(#434343, #282828);
     min-height: 100vh;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden; /* 防止大标题导致横向滚动 */
 }
 
-body::before {
-    content: '';
-    position: absolute;
+/* 背景包装器 - 网格线效果 */
+#background-wrapper {
+    position: fixed;
+    width: 100%;
+    height: 100%;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
     z-index: -1;
-    opacity: 0.7;
+    background-color: transparent;
+    background-image: linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent),
+                      linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, .05) 25%, rgba(255, 255, 255, .05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, .05) 75%, rgba(255, 255, 255, .05) 76%, transparent 77%, transparent);
+    background-size: 50px 50px;
+    overflow: hidden;
 }
 
 .container {
     max-width: 1400px;
     margin: 0 auto;
     padding: 2rem;
+    position: relative;
+    z-index: 2;
+    width: 100%;
 }
 
+/* --- 标题样式 --- */
 h1 {
-    text-align: center;
-    color: var(--primary-color);
-    margin-bottom: 2rem;
-    font-size: 2.2rem;
-    font-weight: 600;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: inline-block;
+    color: hsl(0 0% 90%);
+    font-family: 'Righteous', 'Microsoft YaHei', serif;
+    font-size: 5em; /* 采用 style.css 的超大字号 */
+    text-shadow: .03em .03em 0 hsla(230,40%,50%,1); /* 采用 style.css 的阴影色 */
     position: relative;
-    padding-bottom: 0.5rem;
+    line-height: 1.2;
+    margin-bottom: 2rem;
+    margin-top: 0.5rem;
+    width: 100%;
+    text-align: center;
 }
 
 h1::after {
-    content: '';
+    content: attr(data-shadow);
     position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80px;
-    height: 3px;
-    background-color: var(--primary-color);
-    border-radius: 3px;
+    top: .06em;
+    left: .06em;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    text-shadow: none;
+    background-image: linear-gradient(
+        45deg,
+        transparent 45%,
+        hsla(48,20%,90%,1) 45%, /* 采用 style.css 的米白色条纹 */
+        hsla(48,20%,90%,1) 55%,
+        transparent 0
+    );
+    background-size: .08em .08em;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    white-space: nowrap;
+    animation: shad-anim 60s linear infinite;
 }
 
-/* 表单样式 */
+h2, h3 {
+    color: hsl(0 0% 90%);
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+h2 {
+    font-size: 1.5rem;
+}
+
+h3 {
+    font-size: 1.2rem;
+}
+
+@keyframes shad-anim {
+    0% { background-position: 0 0; }
+    100% { background-position: 100% -100%; }
+}
+
+/* --- 表单与区块样式 --- */
 form {
     padding: 2rem;
     border-radius: var(--border-radius);
 }
 
-/* 两栏布局 */
 .main-content {
     display: flex;
     gap: var(--spacing);
     margin-bottom: var(--spacing);
 }
 
-.left-column {
+.left-column, .right-column {
     flex: 1;
     min-width: 0;
 }
 
-.right-column {
-    flex: 1;
-    min-width: 0;
-}
-
-/* 区块样式 */
 .section {
-    background: var(--card-bg);
-    border-radius: var(--border-radius);
-    padding: var(--spacing);
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px) saturate(1.2);
+    border-radius: 16px;
+    padding: 2rem;
     margin-bottom: var(--spacing);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-light);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    animation: fadeIn 0.5s ease-out forwards;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
 }
 
 .section:hover {
-    transform: translateY(-10px);
-    box-shadow: var(--shadow-medium);
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.15);
 }
 
 .section-title {
-    font-size: 1.2rem;
-    color: var(--primary-color);
-    margin-bottom: var(--spacing);
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--primary-color);
+    font-size: 1.3rem;
+    color: hsl(0 0% 95%);
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    font-weight: 600;
 }
 
-/* 表单组件样式 */
 .form-group {
     margin-bottom: 1.2rem;
 }
@@ -128,62 +172,68 @@ form {
 label {
     display: block;
     margin-bottom: 0.5rem;
-    color: var(--text-color);
+    color: hsl(0 0% 85%);
     font-weight: 500;
+    font-size: 0.95rem;
 }
 
 input[type="text"],
 input[type="number"],
-select {
+select,
+textarea {
     width: 100%;
-    padding: 0.8rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
     font-size: 1rem;
-    transition: all 0.3s ease-in-out;
-    background-color: #fcfcfc;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.05);
+    color: hsl(0 0% 95%);
+    backdrop-filter: blur(10px);
+}
+
+input[type="text"]::placeholder,
+textarea::placeholder {
+    color: hsl(0 0% 60%);
 }
 
 input[type="text"]:focus,
 input[type="number"]:focus,
-select:focus {
-    border-color: var(--primary-color);
+select:focus,
+textarea:focus {
+    border-color: rgba(255, 255, 255, 0.3);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
 }
 
-/* 页边距网格 */
-.margins-grid {
+select option {
+    background: #2a2a2a;
+    color: white;
+}
+
+.margins-grid, .font-settings {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
 }
 
-/* 字体设置组 */
-.font-settings {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-}
-
-/* 页眉页脚设置 */
 .header-footer-settings {
-    background: #f8fafc;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
     padding: 1.5rem;
-    border-radius: 6px;
+    border-radius: 12px;
     margin-bottom: 1.5rem;
-    border: 1px dashed var(--border-color);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .settings-title {
     font-size: 1.1rem;
-    color: var(--primary-color);
+    color: hsl(0 0% 90%);
     margin-bottom: 1rem;
-    font-weight: 500;
+    font-weight: 600;
 }
 
-/* 复选框组 */
 .checkbox-group {
     display: flex;
     gap: 1.5rem;
@@ -194,201 +244,138 @@ select:focus {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    cursor: pointer;
 }
 
 .checkbox-item input[type="checkbox"] {
     width: 18px;
     height: 18px;
     cursor: pointer;
-    accent-color: var(--primary-color);
+    accent-color: hsl(0 0% 80%);
 }
 
 .checkbox-item label {
     margin: 0;
     cursor: pointer;
+    color: hsl(0 0% 85%);
 }
 
-.back-btn {
-    display: inline-block;
-    margin-bottom: 1rem;
-    color: #3498db;
-    text-decoration: none;
-}
-
-.back-btn:hover {
-    text-decoration: underline;
-}
-
-/* 页码设置 */
-.page-number-settings {
-    background: #f8fafc;
-    padding: 1.5rem;
-    border-radius: 6px;
-    border: 1px dashed var(--border-color);
-}
-
-/* 按钮样式 */
 .form-actions {
     text-align: center;
     margin-top: 2rem;
 }
 
-button {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 1rem 2rem;
-    border: none;
-    border-radius: 4px;
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
+.back-btn {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    color: hsl(0 0% 85%);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    font-size: 1rem;
 }
 
-button:hover {
-    background-color: #2980b9;
-    transform: translateY(-2px);
+.back-btn:hover {
+    color: hsl(0 0% 100%);
 }
 
-/* 响应式设计 */
-@media (max-width: 1200px) {
-    .container {
-        padding: 1.5rem;
-    }
+.page-number-settings {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-@media (max-width: 1024px) {
-    .main-content {
-        flex-direction: column;
-    }
-    
-    .margins-grid,
-    .font-settings {
-        grid-template-columns: 1fr;
-    }
-    
-    h1 {
-        font-size: 2rem;
-    }
-    
-    .section-title {
-        font-size: 1.1rem;
-    }
-}
-
-@media (max-width: 768px) {
-    .container {
-        padding: 1rem;
-    }
-    
-    form {
-        padding: 1rem;
-    }
-    
-    .section {
-        padding: 1rem;
-    }
-    
-    .form-group {
-        margin-bottom: 1rem;
-    }
-    
-    label {
-        font-size: 0.95rem;
-    }
-    
-    input[type="text"],
-    input[type="number"],
-    select {
-        padding: 0.7rem;
-        font-size: 0.9rem;
-    }
-    
-    button {
-        padding: 0.8rem 1.5rem;
-        font-size: 1rem;
-    }
-
-    .checkbox-group {
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    .header-footer-settings, .page-number-settings {
-        padding: 1rem;
-    }
-}
-
-@media (max-width: 480px) {
-    h1 {
-        font-size: 1.8rem;
-    }
-    
-    .section-title {
-        font-size: 1rem;
-    }
-    
-    .form-group {
-        margin-bottom: 0.8rem;
-    }
-    
-    input[type="text"],
-    input[type="number"],
-    select {
-        font-size: 0.85rem;
-    }
-
-    button {
-        width: 100%;
-    }
-}
-
-/* 必填项标记 */
 .required::after {
     content: "*";
-    color: #e74c3c;
+    color: hsl(10 80% 70%);
     margin-left: 4px;
 }
 
-/* 禁用状态样式 */
-select option:disabled {
-    color: #95a5a6;
-    background-color: #f5f5f5;
+button, .btn {
+    -webkit-tap-highlight-color: #0000;
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+    background: #0000;
+    border: 1px solid #0000;
+    position: relative;
+    color: white;
+    transition-property: translate, scale;
+    transition-duration: 0.1s;
+    transition-timing-function: ease-out;
+    text-decoration: none;
+    display: inline-block;
 }
 
-/* 输入框占位符样式 */
-::placeholder {
-    color: #95a5a6;
+button:active, .btn:active {
+    scale: 0.98;
+    translate: 0 1px;
 }
 
-/* 数字输入框箭头样式 */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-    opacity: 1;
-    height: 2em;
+button::before,
+button::after,
+.btn::before,
+.btn::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
 }
 
-/* 动画 */
+button::before,
+.btn::before {
+    z-index: -1;
+    background: linear-gradient(
+        hsl(0 0% 100% / 0.18),
+        hsl(0 0% 4% / 0.7)
+    );
+    backdrop-filter: saturate(2) contrast(1) blur(10px);
+}
+
+button::after,
+.btn::after {
+    box-shadow: 0 0 1px 0.8px hsl(0 0% 100% / 0.8) inset;
+    mask: linear-gradient(-35deg, #ffffff80, #ffffff30 30% 60%, #fff);
+}
+
+button:hover,
+.btn:hover {
+    scale: 1.02;
+}
+
+/* --- 响应式设计 (针对大标题进行了优化) --- */
+@media (max-width: 1200px) {
+    h1 { font-size: 5em; }
+}
+
+@media (max-width: 1024px) {
+    .main-content { flex-direction: column; }
+    h1 { font-size: 4em; }
+    .margins-grid, .font-settings { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+    h1 { font-size: 3em; }
+    .container { padding: 1rem; }
+    form, .section { padding: 1rem; }
+    .checkbox-group { flex-direction: column; gap: 1rem; }
+}
+
+@media (max-width: 480px) {
+    h1 { font-size: 2.2em; }
+    button { width: 100%; }
+}
+
+/* 其他功能性样式 */
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* fillinCode 页面特定样式 */
-.fillinCode-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 2rem;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
 .fillinCode-file-input-wrapper {
     position: relative;
     display: inline-block;
@@ -407,31 +394,127 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .fillinCode-file-input-trigger {
     display: block;
-    padding: 0.8rem;
-    background: #f8f9fa;
-    border: 2px dashed #ddd;
-    border-radius: 5px;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
     text-align: center;
-    color: #666;
+    color: hsl(0 0% 85%);
     transition: all 0.3s;
+    cursor: pointer;
 }
 
 .fillinCode-file-input-wrapper:hover .fillinCode-file-input-trigger {
-    border-color: #3498db;
-    color: #3498db;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 .fillinCode-file-name {
     margin-top: 0.5rem;
     font-size: 0.9rem;
-    color: #666;
+    color: hsl(0 0% 75%);
+}
+
+.back-to-tree-link {
+    display: block;
+    margin-bottom: 15px;
+    color: hsl(0 0% 85%);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.back-to-tree-link:hover {
+    color: hsl(0 0% 100%);
+}
+
+#displayFileName {
+    margin-bottom: 10px;
+    color: hsl(0 0% 90%);
+}
+
+#displayFileCode {
+    display: block;
+    margin: 0;
+    padding: 15px;
+    white-space: pre;
+    overflow-x: auto;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.6;
+    color: hsl(0 0% 90%);
+    box-sizing: border-box;
+}
+
+.directory-item, .file-item {
+    padding: 5px 10px;
+    margin: 2px 0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-radius: 6px;
+}
+
+.directory-item:hover, .file-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.directory-item {
+    color: hsl(0 0% 90%);
+    font-weight: 600;
+}
+
+.file-item {
+    color: hsl(0 0% 80%);
+}
+
+.folder-icon, .file-icon {
+    margin-right: 5px;
+}
+
+.required-field::after {
+    content: '*';
+    color: hsl(10 80% 70%);
+    margin-left: 4px;
+}
+
+#docStatusDisplay {
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+#processingStatus {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#progressInfo {
+    margin-top: 1rem;
+    color: hsl(0 0% 85%);
+    line-height: 1.8;
+}
+
+#fileContentDisplay {
+    margin-top: 2rem;
 }
 
 #fileTree {
     margin-top: 2rem;
     padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     max-height: 400px;
     overflow-y: auto;
 }
@@ -439,15 +522,16 @@ input[type="number"]::-webkit-outer-spin-button {
 .tree-item {
     margin-left: 1.5rem;
     position: relative;
+    color: hsl(0 0% 85%);
 }
 
 .tree-item::before {
     content: "├─";
     position: absolute;
     left: -1.5rem;
-    color: #666;
+    color: hsl(0 0% 70%);
 }
 
 .tree-item:last-child::before {
     content: "└─";
-} 
+}

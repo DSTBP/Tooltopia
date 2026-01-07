@@ -12,14 +12,17 @@
     <link rel="stylesheet" href="./assets/css/style.css">
 </head>
 <body>
-    <div class="container">
+    <div id="background-wrapper"></div>
+    <div class="page-container">
+        <a href="../../index.html" class="back-btn">← 返回首页</a>
         <div class="header">
-            <h1>表格筛选检索工具</h1>
+            <h1 data-shadow='表格筛选检索工具'>表格筛选检索工具</h1>
             <p class="subtitle">支持 Excel、CSV、Markdown 表格的多列条件搜索</p>
         </div>
 
-        <!-- 步骤1: 上传/输入表格 -->
-        <div class="section" id="step1">
+        <div class="container">
+            <!-- 步骤1: 上传/输入表格 -->
+            <div class="section" id="step1">
             <h2>步骤 1: 上传或输入表格数据</h2>
             <div class="upload-area">
                 <div class="file-upload">
@@ -30,7 +33,7 @@
                     <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
                     <div id="fileName" class="file-name"></div>
                     <div style="margin-top: 10px;">
-                        <label for="encodingSelect" style="font-size: 14px;">CSV编码格式：</label>
+                        <label for="encodingSelect" style="font-size: 14px; color: hsl(0 0% 90%);">CSV编码格式：</label>
                         <select id="encodingSelect" style="padding: 5px; margin-left: 5px;">
                             <option value="auto">自动检测</option>
                             <option value="utf-8">UTF-8</option>

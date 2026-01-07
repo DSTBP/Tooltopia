@@ -5,41 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <title>软著文件生成工具</title>
+    <link rel="stylesheet" href="assets/css/style.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --gradient-start: #e0f2f7;
-            --gradient-middle: #c5e1ee;
-            --gradient-end: #a9d4e5;
-        }
-
-        body {
-            font-family: 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-middle), var(--gradient-end));
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #333;
-            position: relative;
-            overflow: hidden;
-        }
-
-        #particles-js {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-
         .container {
             text-align: center;
             padding: 2rem;
@@ -47,61 +14,16 @@
             z-index: 2;
         }
 
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 2rem;
-            color: #3498db;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            position: relative;
-            padding-bottom: 0.5rem;
-        }
-
-        h1::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80px;
-            height: 3px;
-            background-color: #3498db;
-            border-radius: 3px;
-        }
-
         .button-container {
             display: flex;
             gap: 2rem;
             margin-top: 2rem;
-        }
-
-        .btn {
-            padding: 1rem 2rem;
-            font-size: 1.2rem;
-            font-family: "微软雅黑", "Microsoft YaHei", sans-serif;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            color: #3498db;
-            background: linear-gradient(45deg, #E0F7FA, #81D4FA);
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
-            position: relative;
-            z-index: 2;
-        }
-
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
-        }
-
-        .btn:active {
-            transform: translateY(1px);
+            justify-content: center;
         }
 
         .description {
             margin-top: 1rem;
-            color: #666;
+            color: #999;
             font-size: 0.9rem;
             position: relative;
             z-index: 2;
@@ -109,16 +31,14 @@
     </style>
 </head>
 <body>
-    <div id="particles-js"></div>
+    <div id="background-wrapper"></div>
     <div class="container">
-        <h1>软著文件生成工具</h1>
+        <h1 data-shadow='软著文件生成工具'>软著文件生成工具</h1>
         <div class="button-container">
             <a href="init.html" class="btn">初始化文档</a>
             <a href="fillinCode.html" class="btn">生成源代码文档</a>
         </div>
         <p class="description">选择功能开始使用</p>
     </div>
-    <script src="assets/js/particles.min.js"></script>
-    <script src="assets/js/particle.js"></script>
 </body>
 </html>
