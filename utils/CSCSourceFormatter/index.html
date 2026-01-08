@@ -13,6 +13,15 @@
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <title>软著文件生成工具</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <script>
+        // 在 head 中立即执行，确保在 body 渲染前应用主题
+        (function() {
+            const savedTheme = localStorage.getItem('tooltopia-theme');
+            if (savedTheme === 'day') {
+                document.documentElement.classList.add('day-init');
+            }
+        })();
+    </script>
     <style>
         .page-container {
             max-width: 1200px;
@@ -51,6 +60,14 @@
     </style>
 </head>
 <body>
+    <!-- 日夜切换器 -->
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+
     <div id="background-wrapper"></div>
     <div class="page-container">
         <div class="header">
@@ -64,5 +81,6 @@
             <p class="description">选择功能开始使用</p>
         </div>
     </div>
+    <script src="assets/js/theme-toggle.js"></script>
 </body>
 </html>

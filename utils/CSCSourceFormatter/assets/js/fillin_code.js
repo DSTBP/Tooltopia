@@ -10,6 +10,54 @@ let processedDocument = null;
 // 存储文档生成所用的 formData
 let currentFormData = null;
 
+// 存储当前文档状态类型
+let currentDocStatus = null; // 可能的值: 'success', 'error', 'warning'
+
+// 更新文档状态显示的颜色（根据主题）
+function updateDocStatusColor() {
+    const docStatusDisplay = document.getElementById('docStatusDisplay');
+    if (!docStatusDisplay || !currentDocStatus) return;
+
+    const isDayMode = document.body.classList.contains('day-mode');
+
+    if (currentDocStatus === 'success') {
+        // 成功状态：绿色
+        if (isDayMode) {
+            docStatusDisplay.style.backgroundColor = 'rgba(34, 197, 94, 0.15)';
+            docStatusDisplay.style.color = '#15803d';
+            docStatusDisplay.style.border = '1px solid rgba(34, 197, 94, 0.3)';
+        } else {
+            docStatusDisplay.style.backgroundColor = 'rgba(76, 175, 80, 0.15)';
+            docStatusDisplay.style.color = 'hsl(122 40% 70%)';
+            docStatusDisplay.style.border = '1px solid rgba(76, 175, 80, 0.3)';
+        }
+    } else if (currentDocStatus === 'error') {
+        // 错误状态：红色
+        if (isDayMode) {
+            docStatusDisplay.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
+            docStatusDisplay.style.color = '#b91c1c';
+            docStatusDisplay.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        } else {
+            docStatusDisplay.style.backgroundColor = 'rgba(244, 67, 54, 0.15)';
+            docStatusDisplay.style.color = 'hsl(4 80% 70%)';
+            docStatusDisplay.style.border = '1px solid rgba(244, 67, 54, 0.3)';
+        }
+    } else if (currentDocStatus === 'warning') {
+        // 警告状态：黄色
+        if (isDayMode) {
+            // 日间模式：使用深黄色，更明显
+            docStatusDisplay.style.backgroundColor = 'rgba(217, 119, 6, 0.15)';
+            docStatusDisplay.style.color = '#b45309';
+            docStatusDisplay.style.border = '2px solid #d97706';
+        } else {
+            // 夜间模式：使用原有的亮黄色
+            docStatusDisplay.style.backgroundColor = 'rgba(255, 193, 7, 0.15)';
+            docStatusDisplay.style.color = 'hsl(45 100% 70%)';
+            docStatusDisplay.style.border = '1px solid rgba(255, 193, 7, 0.3)';
+        }
+    }
+}
+
 // 显示错误信息
 function showError(message) {
     const div = document.createElement('div');
@@ -71,22 +119,28 @@ document.addEventListener('DOMContentLoaded', async function () {
         try {
             currentFormData = JSON.parse(savedFormData);
             docStatusDisplay.textContent = '已成功加载初始化文档';
-            docStatusDisplay.style.backgroundColor = 'rgba(76, 175, 80, 0.15)';
-            docStatusDisplay.style.color = 'hsl(122 40% 70%)';
-            docStatusDisplay.style.border = '1px solid rgba(76, 175, 80, 0.3)';
+            currentDocStatus = 'success';
         } catch (error) {
             docStatusDisplay.textContent = '未能正确解析初始化文档';
-            docStatusDisplay.style.backgroundColor = 'rgba(244, 67, 54, 0.15)';
-            docStatusDisplay.style.color = 'hsl(4 80% 70%)';
-            docStatusDisplay.style.border = '1px solid rgba(244, 67, 54, 0.3)';
+            currentDocStatus = 'error';
             currentFormData = null;
         }
     } else {
         docStatusDisplay.textContent = '未找到初始化文档，将采用新建文档策略';
-        docStatusDisplay.style.backgroundColor = 'rgba(255, 193, 7, 0.15)';
-        docStatusDisplay.style.color = 'hsl(45 100% 70%)';
-        docStatusDisplay.style.border = '1px solid rgba(255, 193, 7, 0.3)';
+        currentDocStatus = 'warning';
         currentFormData = null;
+    }
+
+    // 应用初始颜色
+    updateDocStatusColor();
+
+    // 监听主题切换
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('change', function() {
+            // 延迟一点，确保 body.day-mode 已经被设置
+            setTimeout(updateDocStatusColor, 10);
+        });
     }
 });
 

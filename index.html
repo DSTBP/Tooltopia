@@ -11,6 +11,14 @@
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
+    <!-- 日夜切换器 -->
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+
     <div id="background-wrapper">
         <canvas id="background-canvas"></canvas>
     </div>
@@ -115,6 +123,7 @@
         </div>
     </div>
 
+    <script src="assets/js/theme-toggle.js"></script>
     <script src="assets/js/background.js"></script>
     <script src="assets/js/pixel-canvas.js"></script>
 </body>

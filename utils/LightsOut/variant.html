@@ -2,8 +2,8 @@
  * @Description: 
  * @Author: DSTBP
  * @Date: 2025-09-04 16:00:52
- * @LastEditTime: 2025-09-13 22:22:00
- * @LastEditors: error: error: git config user.name & please set dead value or install git && error: git config user.email & please set dead value or install git & please set dead value or install git
+ * @LastEditTime: 2026-01-08 13:35:55
+ * @LastEditors: DSTBP
 -->
 <!doctype html>
 <html lang="zh-CN">
@@ -16,8 +16,25 @@
     <title>Lights Out - 变体中心</title>
     <link rel="icon" href="favicon.png">
     <link rel="stylesheet" href="assets/css/style.css">
+    <script>
+        // 在 head 中立即执行，确保在 body 渲染前应用主题
+        (function() {
+            const savedTheme = localStorage.getItem('tooltopia-theme');
+            if (savedTheme === 'day') {
+                document.documentElement.classList.add('day-init');
+            }
+        })();
+    </script>
 </head>
 <body>
+    <!-- 日夜切换器 -->
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+
     <a href="../../index.html" class="return-home">← 返回主页</a>
 
     <div class="variant-container">
@@ -31,7 +48,7 @@
         <section class="variant-grid">
             <article class="variant-card">
                 <h3>标准版</h3>
-                <p>经典十字翻转，点击翻转自身与上下左右相邻格，推荐从这里开始。</p>
+                <p>经典十字翻转，点击翻转自身与上下左右相邻格，推荐从这里开始。</p
                 <a class="fo-btn" href="index.html">进入</a>
             </article>
 
@@ -111,6 +128,8 @@
 
     <!-- translate.js 多语言翻译功能 -->
     <script src="assets/js/translate.js"></script>
+    <!-- 同步标题阴影（用于翻译后保持效果） -->
+    <script src="assets/js/sync-title-shadow.js"></script>
     <script>
         // 设置翻译服务
         translate.service.use('client.edge')
@@ -233,6 +252,7 @@
             })
         })
     </script>
+    <script src="assets/js/theme-toggle.js"></script>
 </body>
 </html>
 

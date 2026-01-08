@@ -9,6 +9,96 @@
   --primary: #e94560;
   --ease-out: cubic-bezier(0.5, 1, 0.89, 1);
   --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+
+  /* 夜间模式颜色 */
+  --night-bg: #0a0a0a;
+  --night-fg: #e0e0e0;
+  --night-surface: #1a1a1a;
+  --night-card-bg: rgba(20, 20, 20, 0.6);
+  --night-card-border: rgba(255, 255, 255, 0.08);
+
+  /* 日间模式颜色 */
+  --day-bg: #f0f4f8;
+  --day-fg: #1a202c;
+  --day-surface: #ffffff;
+  --day-card-bg: rgba(255, 255, 255, 0.8);
+  --day-card-border: rgba(0, 0, 0, 0.08);
+}
+
+/* 日间模式 */
+body.day-mode {
+  --bg: var(--day-bg);
+  --fg: var(--day-fg);
+  --surface-1: var(--day-surface);
+  --surface-2: #f7fafc;
+  --surface-3: #edf2f7;
+}
+
+body.day-mode #background-wrapper {
+  background-color: rgb(248, 248, 248);
+  background-image: url(../image/day-background.png);
+  background-size: auto;
+  background-repeat: repeat;
+}
+
+body.day-mode .card {
+  background: hsla(0, 0%, 100%, 0.35);
+  border-color: rgba(200, 200, 200, 0.4);
+  border-radius: 10px;
+  box-shadow: 5px 3px 30px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+body.day-mode .card::before {
+  content: "";
+  position: absolute;
+  inset: -35px;
+  background: url(../image/day-background.png);
+  background-size: auto;
+  background-repeat: repeat;
+  filter: blur(20px);
+  z-index: -1;
+}
+
+body.day-mode .card::after {
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.4), transparent 65%);
+}
+
+body.day-mode .card-icon {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+body.day-mode .card h2 {
+  color: rgba(0, 0, 0, 0.9);
+}
+
+body.day-mode .card p {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+body.day-mode .card:where(:hover, :focus-within) p {
+  color: rgba(0, 0, 0, 0.8);
+}
+
+body.day-mode .card:where(:hover, :focus-within) {
+  background: hsla(0, 0%, 100%, 0.6);
+  border-color: var(--active-color, var(--primary));
+  transform: translateY(-4px);
+  box-shadow: 0 8px 35px rgba(0, 0, 0, 0.2);
+}
+
+body.day-mode .card:where(:hover, :focus-within)::before {
+  opacity: 0;
+}
+
+body.day-mode .card:where(:hover, :focus-within)::after {
+  opacity: 1;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.6), transparent 65%);
+}
+
+body.day-mode h1 {
+  color: #2d3748;
+  text-shadow: .03em .03em 0 hsla(200, 60%, 60%, 1);
 }
 
 * {
@@ -60,7 +150,7 @@ h1 {
   display: inline-block;
   color: white;
   font-family: 'Righteous', serif;
-  font-size: 6em; 
+  font-size: 6em;
   text-shadow: .03em .03em 0 hsla(230,40%,50%,1);
   /* 关键修改：添加相对定位，使伪元素相对于 h1 定位 */
   position: relative;
@@ -73,7 +163,7 @@ h1:after {
   content: attr(data-shadow);
   position: absolute;
   /* 确保伪元素覆盖整个 h1 区域 */
-  top: .06em; 
+  top: .06em;
   left: .06em;
   width: 100%;
   height: 100%;
@@ -91,7 +181,7 @@ h1:after {
   -webkit-background-clip: text;
   background-clip: text; /* 增加标准属性 */
   -webkit-text-fill-color: transparent;
-  
+
   /* 确保文字对齐 */
   display: flex;
   justify-content: center;
@@ -375,5 +465,199 @@ h1:after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===== 日夜切换器样式 ===== */
+.theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  user-select: none;
+  /* 使用 transform scale 缩小整体，保持内部比例一致 */
+  transform: scale(0.64);
+  transform-origin: top right;
+}
+
+.theme-toggle__checkbox {
+  display: none;
+}
+
+.theme-toggle__btn {
+  display: block;
+  position: relative;
+  width: 125px;
+  height: 70px;
+  border-radius: 70px;
+  border: 5px solid #1c1c1c;
+  background-color: #3c4145;
+  cursor: pointer;
+  transition: all 350ms ease-in;
+}
+
+/* 切换按钮（月亮/太阳）*/
+.theme-toggle__btn::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 5px solid #e3e3c7;
+  transition: all 250ms ease-in;
+}
+
+/* 云朵（日间模式时显示）*/
+.theme-toggle__btn::after {
+  content: '';
+  position: absolute;
+  top: 62%;
+  left: 39px;
+  z-index: 10;
+  width: 9.2px;
+  height: 9.2px;
+  opacity: 0;
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow:
+    #fff 0 0,
+    #fff 2.5px 0,
+    #fff 5px 0,
+    #fff 7.5px 0,
+    #fff 9px 0,
+    #fff 11.5px 0,
+    #fff 13px 0,
+    #fff 17px -1px 0 1px,
+    #fff 13px -6px 0 -2px,
+    #fff 6px -6px 0 1px,
+    #d3d3d3 0 0 0 3.5px,
+    #d3d3d3 5px 0 0 3.5px,
+    #d3d3d3 9px 0 0 3.5px,
+    #d3d3d3 13px 0 0 3.5px,
+    #d3d3d3 17px -1px 0 4.5px,
+    #d3d3d3 13px -6px 0 1px,
+    #d3d3d3 6px -6px 0 4.5px;
+  transition: opacity 100ms ease-in;
+}
+
+/* 星星 */
+.theme-toggle__feature {
+  display: block;
+  position: absolute;
+  top: 9px;
+  left: 52.5%;
+  z-index: 20;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #fff;
+  box-shadow:
+    rgba(255,255,255,0.1) 30px -3px 0 0,
+    rgba(255,255,255,0.1) 12px 10px 0 -1px,
+    #fff 38px 18px 0 1px,
+    rgba(255,255,255,0.1) 32px 34px 0 0,
+    #fff 20px 24px 0 -1.5px,
+    rgba(255,255,255,0.1) 5px 38px 0 1px;
+  animation: starry_star 5s ease-in-out infinite;
+}
+
+.theme-toggle__feature::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -25px;
+  width: 15px;
+  height: 15px;
+  background-color: #fff;
+  border-radius: 50%;
+  border: 4px solid #e3e3c7;
+  box-shadow:
+    #e3e3c7 -28px 0 0 -3px,
+    #e3e3c7 -8px 24px 0 -2px;
+  transform-origin: -6px 130%;
+  transition: all 250ms ease-in;
+}
+
+@keyframes starry_star {
+  50% {
+    background-color: rgba(255,255,255,0.1);
+    box-shadow:
+      #fff 30px -3px 0 0,
+      #fff 12px 10px 0 -1px,
+      rgba(255,255,255,0.1) 38px 18px 0 1px,
+      #fff 32px 34px 0 0,
+      rgba(255,255,255,0.1) 20px 24px 0 -1.5px,
+      #fff 5px 38px 0 1px;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  55% {
+    transform: scale(1.1);
+  }
+  75% {
+    transform: scale(.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 选中状态（日间模式）*/
+.theme-toggle__checkbox:checked + .theme-toggle__btn {
+  background-color: #9ee3fb;
+  border: 5px solid #86c3d7;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn::before {
+  left: 57px;
+  background-color: #ffdf6d;
+  border: 5px solid #e1c348;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn::after {
+  opacity: 1;
+  animation-name: bounceIn;
+  animation-duration: 0.60s;
+  animation-delay: 0.10s;
+  animation-fill-mode: backwards;
+  animation-timing-function: ease-in-out;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn .theme-toggle__feature {
+  opacity: 0;
+  box-shadow:
+    rgba(255,255,255,0.1) 30px -3px 0 -4px,
+    rgba(255,255,255,0.1) 12px 10px 0 -5px,
+    #fff 38px 18px 0 -3px,
+    rgba(255,255,255,0.1) 32px 34px 0 -4px,
+    #fff 20px 24px 0 -5.5px,
+    rgba(255,255,255,0.1) 5px 38px 0 -3px;
+  animation: none;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn .theme-toggle__feature::before {
+  left: 25px;
+  transform: rotate(70deg);
+}
+
+/* 响应式 - 移动端 */
+@media (max-width: 768px) {
+  .theme-toggle {
+    top: 10px;
+    right: 10px;
+    transform: scale(0.58);
   }
 }

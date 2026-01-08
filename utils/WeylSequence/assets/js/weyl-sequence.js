@@ -138,7 +138,16 @@ class WeylSequenceVisualizer {
                 this.handleResize();
             }, 250);
         });
-        
+
+        // 监听主题切换，重新绘制表盘以更新颜色
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('change', () => {
+                this.drawTrack();
+                this.redrawAllPoints();
+            });
+        }
+
         // 添加触摸手势支持
         this.setupGestureSupport();
     }
@@ -170,35 +179,44 @@ class WeylSequenceVisualizer {
     
     drawTrack() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        
+
+        // 检测日间/夜间模式
+        const isDayMode = document.body.classList.contains('day-mode');
+        const trackStroke = isDayMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)';
+        const centerFill = isDayMode ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.8)';
+
         this.ctx.beginPath();
         this.ctx.arc(this.centerX, this.centerY, this.radius, 0, 2 * Math.PI);
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
         this.ctx.fill();
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        this.ctx.strokeStyle = trackStroke;
         this.ctx.lineWidth = 2;
         this.ctx.stroke();
-        
+
         this.drawTrackMarkers();
-        
+
         this.ctx.beginPath();
         this.ctx.arc(this.centerX, this.centerY, 3, 0, 2 * Math.PI);
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        this.ctx.fillStyle = centerFill;
         this.ctx.fill();
     }
     
     drawTrackMarkers() {
+        // 检测日间/夜间模式
+        const isDayMode = document.body.classList.contains('day-mode');
+        const markerStroke = isDayMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(255, 255, 255, 0.4)';
+
         for (let i = 0; i < 12; i++) {
             const angle = (i * Math.PI) / 6;
             const startX = this.centerX + (this.radius - 15) * Math.cos(angle);
             const startY = this.centerY + (this.radius - 15) * Math.sin(angle);
             const endX = this.centerX + this.radius * Math.cos(angle);
             const endY = this.centerY + this.radius * Math.sin(angle);
-            
+
             this.ctx.beginPath();
             this.ctx.moveTo(startX, startY);
             this.ctx.lineTo(endX, endY);
-            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            this.ctx.strokeStyle = markerStroke;
             this.ctx.lineWidth = 2;
             this.ctx.stroke();
         }
@@ -346,11 +364,15 @@ class WeylSequenceVisualizer {
     }
     
     drawPoint(x, y, color) {
+        // 检测日间/夜间模式
+        const isDayMode = document.body.classList.contains('day-mode');
+        const pointStroke = isDayMode ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.8)';
+
         this.ctx.beginPath();
         this.ctx.arc(x, y, 6, 0, 2 * Math.PI);
         this.ctx.fillStyle = color;
         this.ctx.fill();
-        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+        this.ctx.strokeStyle = pointStroke;
         this.ctx.lineWidth = 2;
         this.ctx.stroke();
     }
@@ -475,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
             display: block;
             margin-bottom: 10px;
             font-weight: 600;
-            color: #555;
+            color: hsl(0 0% 85%);
         }
         .preset-buttons {
             display: flex;
@@ -487,6 +509,10 @@ document.addEventListener('DOMContentLoaded', () => {
             font-size: 0.9rem;
             min-width: auto;
             flex: none;
+        }
+        /* 日间模式下的预设α值标签 */
+        body.day-mode .preset-alphas label {
+            color: #1a202c;
         }
     `;
     document.head.appendChild(style);

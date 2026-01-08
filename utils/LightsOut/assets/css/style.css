@@ -30,41 +30,46 @@ body {
 }
 
 .header h1 {
-    font-family: 'Righteous', cursive;
-    font-size: clamp(2rem, 5vw, 3rem);
-    color: hsl(0 0% 95%);
-    margin-bottom: 0.8rem;
-    position: relative;
     display: inline-block;
+    color: hsl(0 0% 90%);
+    font-family: 'Righteous', 'Microsoft YaHei', serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    text-shadow: .03em .03em 0 hsla(230,40%,50%,1);
+    position: relative;
+    line-height: 1.2;
+    margin-bottom: 0.8rem;
 }
 
-.header h1[data-shadow]::before,
-.header h1[data-shadow]::after {
+.header h1::after {
     content: attr(data-shadow);
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: .06em;
+    left: .06em;
+    width: 100%;
+    height: 100%;
     z-index: -1;
     text-shadow: none;
-    background: linear-gradient(45deg, transparent 45%, white 50%, transparent 55%);
-    background-clip: text;
+    background-image: linear-gradient(
+        45deg,
+        transparent 45%,
+        hsla(48,20%,90%,1) 45%,
+        hsla(48,20%,90%,1) 55%,
+        transparent 0
+    );
+    background-size: .05em .05em;
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-size: 250%;
-    animation: stripe-slide 3s infinite linear;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    white-space: nowrap;
+    animation: shad-anim 60s linear infinite;
 }
 
-.header h1[data-shadow]::before {
-    z-index: -2;
-    background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%);
-    filter: blur(6px);
-    background-size: 250%;
-}
-
-@keyframes stripe-slide {
-    0% { background-position: 0% 0%; }
-    100% { background-position: 200% 0%; }
+@keyframes shad-anim {
+    0% { background-position: 0 0; }
+    100% { background-position: 100% -100%; }
 }
 
 .description {
@@ -101,28 +106,54 @@ body {
 
 /* ===== 按钮统一样式 ===== */
 .btn {
-    padding: 0.7rem 1.4rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px) saturate(1.2);
-    color: hsl(0 0% 90%);
+    -webkit-tap-highlight-color: #0000;
     cursor: pointer;
+    border-radius: 12px;
+    padding: 0.7rem 1.4rem;
     font-size: 0.95rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #0000;
+    border: 1px solid #0000;
+    position: relative;
+    color: white;
+    transition-property: translate, scale;
+    transition-duration: 0.1s;
+    transition-timing-function: ease-out;
     text-decoration: none;
     display: inline-block;
     font-family: inherit;
-}
-
-.btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
+    font-weight: 500;
 }
 
 .btn:active:not(:disabled) {
-    transform: translateY(0);
+    scale: 0.98;
+    translate: 0 1px;
+}
+
+.btn::before,
+.btn::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.btn::before {
+    z-index: -1;
+    background: linear-gradient(
+        hsl(0 0% 100% / 0.18),
+        hsl(0 0% 4% / 0.7)
+    );
+    backdrop-filter: saturate(2) contrast(1) blur(10px);
+}
+
+.btn::after {
+    box-shadow: 0 0 1px 0.8px hsl(0 0% 100% / 0.8) inset;
+    mask: linear-gradient(-35deg, #ffffff80, #ffffff30 30% 60%, #fff);
+}
+
+.btn:hover:not(:disabled) {
+    scale: 1.02;
 }
 
 .btn:disabled {
@@ -130,24 +161,30 @@ body {
     cursor: not-allowed;
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.8), rgba(118, 75, 162, 0.8));
-    border-color: rgba(102, 126, 234, 0.3);
-    color: white;
+.btn-primary::before {
+    background: linear-gradient(135deg, rgba(134, 239, 172, 0.9), rgba(74, 222, 128, 0.9));
+}
+
+.btn-primary:hover:not(:disabled)::before {
+    background: linear-gradient(135deg, rgba(134, 239, 172, 1), rgba(74, 222, 128, 1));
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.95), rgba(118, 75, 162, 0.95));
-    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 20px rgba(74, 222, 128, 0.4);
 }
 
-.btn-secondary {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
+.btn-secondary::before {
+    background: linear-gradient(
+        hsl(0 0% 100% / 0.12),
+        hsl(0 0% 4% / 0.5)
+    );
 }
 
-.btn-secondary:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
+.btn-secondary:hover:not(:disabled)::before {
+    background: linear-gradient(
+        hsl(0 0% 100% / 0.18),
+        hsl(0 0% 4% / 0.65)
+    );
 }
 
 /* ===== Lights Out 游戏面板样式 ===== */
@@ -165,35 +202,41 @@ body {
 }
 
 .fo-header h1 {
-    font-family: 'Righteous', cursive;
-    font-size: clamp(2rem, 5vw, 2.8rem);
-    margin-bottom: 0.5rem;
-    position: relative;
     display: inline-block;
+    color: hsl(0 0% 90%);
+    font-family: 'Righteous', 'Microsoft YaHei', serif;
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    text-shadow: .03em .03em 0 hsla(230,40%,50%,1);
+    position: relative;
+    line-height: 1.2;
+    margin-bottom: 0.5rem;
 }
 
-.fo-header h1[data-shadow]::before,
-.fo-header h1[data-shadow]::after {
+.fo-header h1::after {
     content: attr(data-shadow);
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    top: .06em;
+    left: .06em;
+    width: 100%;
+    height: 100%;
     z-index: -1;
     text-shadow: none;
-    background: linear-gradient(45deg, transparent 45%, white 50%, transparent 55%);
-    background-clip: text;
+    background-image: linear-gradient(
+        45deg,
+        transparent 45%,
+        hsla(48,20%,90%,1) 45%,
+        hsla(48,20%,90%,1) 55%,
+        transparent 0
+    );
+    background-size: .05em .05em;
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
-    background-size: 250%;
-    animation: stripe-slide 3s infinite linear;
-}
-
-.fo-header h1[data-shadow]::before {
-    z-index: -2;
-    background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.4) 50%, transparent 60%);
-    filter: blur(6px);
-    background-size: 250%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    white-space: nowrap;
+    animation: shad-anim 60s linear infinite;
 }
 
 .fo-sub {
@@ -256,6 +299,12 @@ body {
     transition: all 0.3s;
 }
 
+.fo-row select option {
+    background: #1e1e1e;
+    color: hsl(0 0% 95%);
+    padding: 8px;
+}
+
 .fo-row input[type="number"]:focus,
 .fo-row select:focus {
     border-color: rgba(102, 126, 234, 0.5);
@@ -263,24 +312,54 @@ body {
 }
 
 .fo-btn {
-    padding: 0.6rem 1rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px) saturate(1.2);
-    color: hsl(0 0% 90%);
+    -webkit-tap-highlight-color: #0000;
     cursor: pointer;
+    border-radius: 12px;
+    padding: 0.6rem 1rem;
     font-size: 0.9rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: #0000;
+    border: 1px solid #0000;
+    position: relative;
+    color: white;
+    transition-property: translate, scale;
+    transition-duration: 0.1s;
+    transition-timing-function: ease-out;
     text-decoration: none;
     display: inline-block;
     font-family: inherit;
+    font-weight: 500;
+}
+
+.fo-btn:active:not(:disabled) {
+    scale: 0.98;
+    translate: 0 1px;
+}
+
+.fo-btn::before,
+.fo-btn::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.fo-btn::before {
+    z-index: -1;
+    background: linear-gradient(
+        hsl(0 0% 100% / 0.18),
+        hsl(0 0% 4% / 0.7)
+    );
+    backdrop-filter: saturate(2) contrast(1) blur(10px);
+}
+
+.fo-btn::after {
+    box-shadow: 0 0 1px 0.8px hsl(0 0% 100% / 0.8) inset;
+    mask: linear-gradient(-35deg, #ffffff80, #ffffff30 30% 60%, #fff);
 }
 
 .fo-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
+    scale: 1.02;
 }
 
 .fo-btn:disabled {
@@ -700,4 +779,459 @@ div[id="translate"] .translate_selectLanguage_tag select option {
         padding: 6px 12px !important;
         font-size: 0.8rem !important;
     }
+}
+
+/* ===== 日间模式样式 ===== */
+/* 页面初始加载时的日间模式支持 - 只为关键元素添加以避免CSS冗余 */
+html.day-init body,
+body.day-mode {
+    background: #f0f4f8;
+    background-image: url(../../../../assets/image/day-background.png);
+    background-size: auto;
+    background-repeat: repeat;
+    background-attachment: fixed;
+}
+
+html.day-init .fo-header h1,
+html.day-init .header h1,
+body.day-mode .fo-header h1,
+body.day-mode .header h1 {
+    color: #2d3748;
+    text-shadow: .03em .03em 0 hsla(200, 60%, 60%, 1);
+}
+
+html.day-init .return-home,
+body.day-mode .return-home {
+    color: #4a5568;
+    background: rgba(255, 255, 255, 0.6);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+html.day-init .return-home:hover,
+body.day-mode .return-home:hover {
+    color: #1a202c;
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+html.day-init .fo-controls,
+html.day-init .fo-help,
+html.day-init .variant-card,
+body.day-mode .fo-controls,
+body.day-mode .fo-help,
+body.day-mode .variant-card {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* 以下样式只使用 body.day-mode，由 JS 在加载后应用 */
+body.day-mode {
+    color: #2d3748;
+}
+
+body.day-mode .fo-header h1,
+body.day-mode .header h1 {
+    color: #2d3748;
+    text-shadow: .03em .03em 0 hsla(200, 60%, 60%, 1);
+}
+
+body.day-mode .fo-sub,
+body.day-mode .description {
+    color: #4a5568;
+}
+
+body.day-mode .return-home {
+    color: #4a5568;
+    background: rgba(255, 255, 255, 0.6);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.day-mode .return-home:hover {
+    color: #1a202c;
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+body.day-mode .fo-controls,
+body.day-mode .fo-help {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.day-mode .fo-row label {
+    color: #2d3748;
+}
+
+body.day-mode .fo-row input[type="number"],
+body.day-mode .fo-row select {
+    background: rgba(255, 255, 255, 0.7);
+    color: #1a202c;
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+body.day-mode .fo-row input[type="number"]:focus,
+body.day-mode .fo-row select:focus {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(59, 130, 246, 0.5);
+}
+
+body.day-mode .fo-row select option {
+    background: #ffffff;
+    color: #1a202c;
+}
+
+body.day-mode .btn,
+body.day-mode .fo-btn {
+    color: #1a202c;
+}
+
+body.day-mode .btn::before,
+body.day-mode .fo-btn::before {
+    background: linear-gradient(
+        hsl(0 0% 100% / 0.5),
+        hsl(0 0% 90% / 0.5)
+    );
+}
+
+body.day-mode .fo-stats {
+    color: #4a5568;
+}
+
+body.day-mode .fo-stats b {
+    color: #1a202c;
+}
+
+/* 日间模式下未点亮的格子样式 - 更明显的边框和背景 */
+body.day-mode .fo-cell {
+    background: rgba(255, 255, 255, 0.8);
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    color: #4a5568;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+body.day-mode .fo-cell:hover {
+    border-color: rgba(0, 0, 0, 0.5);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* 日间模式下点亮的格子 - 保持和夜间一样的发光效果 */
+body.day-mode .fo-cell.on {
+    background: linear-gradient(135deg, rgba(255, 212, 59, 0.9), rgba(255, 193, 7, 0.9));
+    color: hsl(40 100% 30%);
+    border-color: rgba(255, 212, 59, 0.5);
+    box-shadow: 0 0 20px rgba(255, 212, 59, 0.4);
+}
+
+/* 日间模式下提示格子 - 保持和夜间一样的效果 */
+body.day-mode .fo-cell.hint {
+    background: linear-gradient(135deg, rgba(255, 107, 157, 0.9), rgba(233, 30, 99, 0.9));
+    color: white;
+    border-color: rgba(255, 107, 157, 0.5);
+    box-shadow: 0 0 20px rgba(255, 107, 157, 0.4);
+}
+
+body.day-mode .fo-help details {
+    color: #4a5568;
+}
+
+body.day-mode .fo-help summary {
+    color: #1a202c;
+}
+
+body.day-mode .variant-card {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.day-mode .variant-card:hover {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(0, 0, 0, 0.15);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+body.day-mode .variant-card h3 {
+    color: #1a202c;
+}
+
+body.day-mode .variant-card p {
+    color: #4a5568;
+}
+
+body.day-mode .success-modal .modal-content {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.day-mode .success-modal h3 {
+    color: #1a202c;
+}
+
+body.day-mode .success-modal p {
+    color: #4a5568;
+}
+
+body.day-mode .hint-num {
+    color: #1a202c;
+}
+
+/* 日间模式下的语言切换器 - 更明显的样式 */
+body.day-mode #translate,
+body.day-mode #translate .translate_selectLanguage_tag,
+body.day-mode .translate_selectLanguage_tag,
+body.day-mode div[id="translate"],
+body.day-mode div[id="translate"] .translate_selectLanguage_tag {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border: 2px solid rgba(0, 0, 0, 0.2) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+body.day-mode #translate:hover,
+body.day-mode #translate .translate_selectLanguage_tag:hover,
+body.day-mode .translate_selectLanguage_tag:hover,
+body.day-mode div[id="translate"]:hover,
+body.day-mode div[id="translate"] .translate_selectLanguage_tag:hover {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border-color: rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+body.day-mode #translate select,
+body.day-mode #translate .translate_selectLanguage_tag select,
+body.day-mode .translate_selectLanguage_tag select,
+body.day-mode div[id="translate"] select,
+body.day-mode div[id="translate"] .translate_selectLanguage_tag select {
+    color: #1a202c !important;
+}
+
+body.day-mode #translate select option,
+body.day-mode #translate .translate_selectLanguage_tag select option,
+body.day-mode .translate_selectLanguage_tag select option,
+body.day-mode div[id="translate"] select option,
+body.day-mode div[id="translate"] .translate_selectLanguage_tag select option {
+    background: #ffffff !important;
+    color: #1a202c !important;
+}
+
+/* 日间模式下的异形图块颜色 - 保持和夜间一致 */
+body.day-mode .alien-red {
+    background: linear-gradient(145deg, rgba(247, 101, 101, 0.9), rgba(247, 101, 101, 0.8)) !important;
+    color: hsl(0 0% 20%) !important;
+    border-color: rgba(247, 101, 101, 0.5) !important;
+}
+
+body.day-mode .alien-green {
+    background: linear-gradient(145deg, rgba(168, 216, 168, 0.9), rgba(153, 199, 153, 0.8)) !important;
+    color: hsl(0 0% 20%) !important;
+    border-color: rgba(153, 199, 153, 0.5) !important;
+}
+
+body.day-mode .alien-blue {
+    background: linear-gradient(145deg, rgba(168, 200, 232, 0.9), rgba(153, 184, 214, 0.8)) !important;
+    color: hsl(0 0% 20%) !important;
+    border-color: rgba(153, 184, 214, 0.5) !important;
+}
+
+body.day-mode .alien-purple {
+    background: linear-gradient(145deg, rgba(192, 132, 161, 0.9), rgba(168, 112, 138, 0.8)) !important;
+    color: white !important;
+    border-color: rgba(168, 112, 138, 0.5) !important;
+}
+
+/* ===== 日夜切换器样式 ===== */
+.theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 160px; /* 调整位置避免与语言切换器重叠 */
+  z-index: 1000;
+  user-select: none;
+  transform: scale(0.64);
+  transform-origin: top right;
+}
+
+.theme-toggle__checkbox {
+  display: none;
+}
+
+.theme-toggle__btn {
+  display: block;
+  position: relative;
+  width: 125px;
+  height: 70px;
+  border-radius: 70px;
+  border: 5px solid #1c1c1c;
+  background-color: #3c4145;
+  cursor: pointer;
+  transition: all 350ms ease-in;
+}
+
+/* 禁用初始加载时的动画 */
+.theme-toggle__btn.no-transition,
+.theme-toggle__btn.no-transition::before,
+.theme-toggle__btn.no-transition::after,
+.theme-toggle__btn.no-transition .theme-toggle__feature,
+.theme-toggle__btn.no-transition .theme-toggle__feature::before {
+  transition: none !important;
+  animation: none !important;
+}
+
+.theme-toggle__btn::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 5px solid #e3e3c7;
+  transition: all 250ms ease-in;
+}
+
+.theme-toggle__btn::after {
+  content: '';
+  position: absolute;
+  top: 62%;
+  left: 39px;
+  z-index: 10;
+  width: 9.2px;
+  height: 9.2px;
+  opacity: 0;
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow:
+    #fff 0 0,
+    #fff 2.5px 0,
+    #fff 5px 0,
+    #fff 7.5px 0,
+    #fff 9px 0,
+    #fff 11.5px 0,
+    #fff 13px 0,
+    #fff 17px -1px 0 1px,
+    #fff 13px -6px 0 -2px,
+    #fff 6px -6px 0 1px,
+    #d3d3d3 0 0 0 3.5px,
+    #d3d3d3 5px 0 0 3.5px,
+    #d3d3d3 9px 0 0 3.5px,
+    #d3d3d3 13px 0 0 3.5px,
+    #d3d3d3 17px -1px 0 4.5px,
+    #d3d3d3 13px -6px 0 1px,
+    #d3d3d3 6px -6px 0 4.5px;
+  transition: opacity 100ms ease-in;
+}
+
+.theme-toggle__feature {
+  display: block;
+  position: absolute;
+  top: 9px;
+  left: 52.5%;
+  z-index: 20;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #fff;
+  box-shadow:
+    rgba(255,255,255,0.1) 30px -3px 0 0,
+    rgba(255,255,255,0.1) 12px 10px 0 -1px,
+    #fff 38px 18px 0 1px,
+    rgba(255,255,255,0.1) 32px 34px 0 0,
+    #fff 20px 24px 0 -1.5px,
+    rgba(255,255,255,0.1) 5px 38px 0 1px;
+  animation: starry_star 5s ease-in-out infinite;
+}
+
+.theme-toggle__feature::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -25px;
+  width: 15px;
+  height: 15px;
+  background-color: #fff;
+  border-radius: 50%;
+  border: 4px solid #e3e3c7;
+  box-shadow:
+    #e3e3c7 -28px 0 0 -3px,
+    #e3e3c7 -8px 24px 0 -2px;
+  transform-origin: -6px 130%;
+  transition: all 250ms ease-in;
+}
+
+@keyframes starry_star {
+  50% {
+    background-color: rgba(255,255,255,0.1);
+    box-shadow:
+      #fff 30px -3px 0 0,
+      #fff 12px 10px 0 -1px,
+      rgba(255,255,255,0.1) 38px 18px 0 1px,
+      #fff 32px 34px 0 0,
+      rgba(255,255,255,0.1) 20px 24px 0 -1.5px,
+      #fff 5px 38px 0 1px;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  55% {
+    transform: scale(1.1);
+  }
+  75% {
+    transform: scale(.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn {
+  background-color: #9ee3fb;
+  border: 5px solid #86c3d7;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn::before {
+  left: 57px;
+  background-color: #ffdf6d;
+  border: 5px solid #e1c348;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn::after {
+  opacity: 1;
+  animation-name: bounceIn;
+  animation-duration: 0.60s;
+  animation-delay: 0.10s;
+  animation-fill-mode: backwards;
+  animation-timing-function: ease-in-out;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn .theme-toggle__feature {
+  opacity: 0;
+  box-shadow:
+    rgba(255,255,255,0.1) 30px -3px 0 -4px,
+    rgba(255,255,255,0.1) 12px 10px 0 -5px,
+    #fff 38px 18px 0 -3px,
+    rgba(255,255,255,0.1) 32px 34px 0 -4px,
+    #fff 20px 24px 0 -5.5px,
+    rgba(255,255,255,0.1) 5px 38px 0 -3px;
+  animation: none;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn .theme-toggle__feature::before {
+  left: 25px;
+  transform: rotate(70deg);
+}
+
+@media (max-width: 768px) {
+  .theme-toggle {
+    top: 10px;
+    right: 140px; /* 移动端也要调整位置避免重叠 */
+    transform: scale(0.58);
+  }
 }

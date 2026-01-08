@@ -12,6 +12,20 @@
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
+<script>
+    // 在 body 内容渲染前立即执行，避免闪烁
+    if (localStorage.getItem('tooltopia-theme') === 'day') {
+        document.body.classList.add('day-mode');
+    }
+</script>
+    <!-- 日夜切换器 -->
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+
     <div id="background-wrapper"></div>
     <div class="page-container">
         <a href="index.html" class="back-btn">← 返回计算器</a>
@@ -106,6 +120,31 @@
                 padding: 25px;
             }
         }
+
+        /* 日间模式样式 */
+        body.day-mode .feature-card {
+            background: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 5px 3px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        body.day-mode .feature-card:hover:not(.disabled) {
+            border-color: rgba(0, 0, 0, 0.25);
+            box-shadow: 5px 5px 35px rgba(0, 0, 0, 0.15);
+        }
+
+        body.day-mode .feature-card h3 {
+            color: #2d3748;
+        }
+
+        body.day-mode .feature-card p {
+            color: #4a5568;
+        }
+
+        body.day-mode .feature-card.disabled {
+            opacity: 0.6;
+        }
     </style>
+    <script src="assets/js/theme-toggle.js"></script>
 </body>
 </html>

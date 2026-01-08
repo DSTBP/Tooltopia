@@ -234,9 +234,133 @@
                 min-width: 50px;
             }
         }
+
+        /* 日间模式样式 */
+        body.day-mode .simplex-panel {
+            background: rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 5px 3px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        body.day-mode .simplex-panel > p {
+            color: #4a5568;
+        }
+
+        body.day-mode .input-group label,
+        body.day-mode .radio-group label {
+            color: #2d3748;
+        }
+
+        body.day-mode .input-group textarea {
+            background: rgba(255, 255, 255, 0.7);
+            color: #1a202c;
+            border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        body.day-mode .input-group textarea::placeholder {
+            color: #718096;
+        }
+
+        body.day-mode .input-group textarea:focus {
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(0, 0, 0, 0.25);
+        }
+
+        body.day-mode .small-text {
+            color: #718096;
+        }
+
+        body.day-mode .tableau {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        body.day-mode .tableau table {
+            border-color: rgba(0, 0, 0, 0.2);
+            color: #1a202c;
+        }
+
+        body.day-mode .tableau th {
+            background: rgba(59, 130, 246, 0.25) !important;
+            color: #1e40af !important;
+            border-color: rgba(0, 0, 0, 0.2);
+            font-weight: 700;
+        }
+
+        body.day-mode .tableau td {
+            color: #1a202c;
+            border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        body.day-mode .tableau tr:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        body.day-mode .pivot-cell {
+            background: rgba(251, 191, 36, 0.5) !important;
+            color: #92400e !important;
+            font-weight: 800;
+        }
+
+        body.day-mode .pivot-row {
+            background: rgba(251, 191, 36, 0.15) !important;
+        }
+
+        body.day-mode .pivot-col {
+            background: rgba(251, 191, 36, 0.15) !important;
+        }
+
+        body.day-mode #output {
+            background: rgba(255, 255, 255, 0.8);
+            color: #1a202c;
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        body.day-mode #output,
+        body.day-mode #output * {
+            color: #1a202c !important;
+        }
+
+        body.day-mode #output .step-title {
+            color: #1e40af !important;
+            font-weight: 700;
+        }
+
+        body.day-mode .result-box {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: rgba(59, 130, 246, 0.6);
+            color: #1e40af;
+        }
+
+        body.day-mode .result-box strong {
+            color: #1e3a8a;
+            font-weight: 700;
+        }
+
+        body.day-mode .navigation-links a {
+            color: #4a5568;
+        }
+
+        body.day-mode .navigation-links a:hover {
+            color: #1a202c;
+        }
     </style>
 </head>
 <body>
+<script>
+    // 在 body 内容渲染前立即执行，避免闪烁
+    if (localStorage.getItem('tooltopia-theme') === 'day') {
+        document.body.classList.add('day-mode');
+    }
+</script>
+    <!-- 日夜切换器 -->
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+
     <div id="background-wrapper"></div>
     <div class="page-container">
         <div class="navigation-links">
@@ -325,5 +449,6 @@
         })();
     </script>
     <script src="../assets/js/simplex.js"></script>
+    <script src="../assets/js/theme-toggle.js"></script>
 </body>
 </html>

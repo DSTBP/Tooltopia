@@ -6,6 +6,14 @@
     <title>Lights Out - 递减矩阵版</title>
     <link rel="icon" href="favicon.png">
     <link rel="stylesheet" href="assets/css/style.css">
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('tooltopia-theme');
+            if (savedTheme === 'day') {
+                document.documentElement.classList.add('day-init');
+            }
+        })();
+    </script>
     <style>
     /* 仅本页：提示高亮样式 */
     .fo-cell.hint-highlight {
@@ -112,9 +120,17 @@
     </style>
 </head>
 <body>
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+    <a href="../../index.html" class="return-home">← 返回主页</a>
+
     <div class="fo-container">
         <header class="fo-header">
-            <h1>Lights Out - 递减矩阵版</h1>
+            <h1 data-shadow="Lights Out - 递减矩阵版">Lights Out - 递减矩阵版</h1>
             <p class="fo-sub">每个格子都有数字，点击使自身及上下左右数字减1，目标将所有数字降为0</p>
         </header>
 
@@ -538,6 +554,8 @@
 
     <!-- translate.js 多语言翻译功能 -->
     <script src="assets/js/translate.js"></script>
+    <!-- 同步标题阴影（用于翻译后保持效果） -->
+    <script src="assets/js/sync-title-shadow.js"></script>
     <script>
         // 设置翻译服务
         translate.service.use('client.edge')
@@ -660,5 +678,6 @@
             })
         })
     </script>
+    <script src="assets/js/theme-toggle.js"></script>
 </body>
 </html>

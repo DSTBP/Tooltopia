@@ -12,6 +12,20 @@
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
+<script>
+    // 在 body 内容渲染前立即执行，避免闪烁
+    if (localStorage.getItem('tooltopia-theme') === 'day') {
+        document.body.classList.add('day-mode');
+    }
+</script>
+    <!-- 日夜切换器 -->
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+
     <div id="background-wrapper"></div>
     <div class="page-container">
         <a href="../../index.html" class="back-btn">← 返回首页</a>
@@ -123,6 +137,7 @@
     <!-- 引入 math.js（数值/单位/分数）、Algebrite（符号运算）以及本地逻辑脚本 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/algebrite/1.5.0/algebrite.min.js"></script>
+    <script src="assets/js/theme-toggle.js"></script>
     <script src="assets/js/calculator.js"></script>
 </body>
 </html>

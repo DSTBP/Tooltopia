@@ -6,6 +6,14 @@
     <title>Lights Out - 无边界版</title>
     <link rel="icon" href="favicon.png">
     <link rel="stylesheet" href="assets/css/style.css">
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('tooltopia-theme');
+            if (savedTheme === 'day') {
+                document.documentElement.classList.add('day-init');
+            }
+        })();
+    </script>
     <style>
         /* 语言选择器统一样式 - 使用更强的选择器 */
         #translate,
@@ -105,9 +113,17 @@
     </style>
 </head>
 <body>
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+    <a href="../../index.html" class="return-home">← 返回主页</a>
+
     <div class="fo-container">
         <header class="fo-header">
-            <h1>Lights Out - 无边界版</h1>
+            <h1 data-shadow="Lights Out - 无边界版">Lights Out - 无边界版</h1>
             <p class="fo-sub">边界循环（上下左右首尾相接）的点灯玩法</p>
         </header>
 
@@ -508,6 +524,8 @@
 
     <!-- translate.js 多语言翻译功能 -->
     <script src="assets/js/translate.js"></script>
+    <!-- 同步标题阴影（用于翻译后保持效果） -->
+    <script src="assets/js/sync-title-shadow.js"></script>
     <script>
         // 设置翻译服务
         translate.service.use('client.edge')
@@ -630,6 +648,7 @@
             })
         })
     </script>
+    <script src="assets/js/theme-toggle.js"></script>
 </body>
 </html>
 

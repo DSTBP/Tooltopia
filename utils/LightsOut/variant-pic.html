@@ -6,6 +6,14 @@
     <title>Lights Out - 图片旋转版</title>
     <link rel="icon" href="favicon.png">
     <link rel="stylesheet" href="assets/css/style.css">
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('tooltopia-theme');
+            if (savedTheme === 'day') {
+                document.documentElement.classList.add('day-init');
+            }
+        })();
+    </script>
     <style>
     /* 本页样式：为每个格子放置图片切片，并显示提示数字 */
     .fo-board { --cell: 56px; }
@@ -153,9 +161,17 @@
     </script>
 </head>
 <body>
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+    <a href="../../index.html" class="return-home">← 返回主页</a>
+
     <div class="fo-container">
         <header class="fo-header">
-            <h1>Lights Out - 图片旋转版</h1>
+            <h1 data-shadow="Lights Out - 图片旋转版">Lights Out - 图片旋转版</h1>
             <p class="fo-sub">点击某格会使“自身+上下左右”顺时针旋转 90°。共 4 种状态，旋转 4 次回到初始。</p>
         </header>
 
@@ -689,6 +705,8 @@
 
     <!-- translate.js 多语言翻译功能 -->
     <script src="assets/js/translate.js"></script>
+    <!-- 同步标题阴影（用于翻译后保持效果） -->
+    <script src="assets/js/sync-title-shadow.js"></script>
     <script>
         // 设置翻译服务
         translate.service.use('client.edge')
@@ -811,5 +829,6 @@
             })
         })
     </script>
+    <script src="assets/js/theme-toggle.js"></script>
 </body>
 </html>
