@@ -11,6 +11,12 @@
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
+<script>
+    // 在 body 内容渲染前立即执行，避免闪烁
+    if (localStorage.getItem('tooltopia-theme') === 'day') {
+        document.body.classList.add('day-mode');
+    }
+</script>
     <!-- 日夜切换器 -->
     <div class="theme-toggle">
         <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">

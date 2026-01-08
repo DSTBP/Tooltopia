@@ -362,6 +362,18 @@ h1:after {
     padding-top: 60px;
   }
 
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  /* 修复标题阴影错位 */
+  h1::after {
+    top: 0.06em;
+    left: 0.06em;
+    background-size: 0.05em 0.05em;
+  }
+
   .cards-container {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.8rem;
@@ -387,6 +399,43 @@ h1:after {
   }
 }
 
+/* 超小屏幕优化（< 375px）*/
+@media (max-width: 374px) {
+  h1 {
+    font-size: 2rem;
+  }
+
+  /* 调整超小屏幕的阴影 */
+  h1::after {
+    top: 0.08em;
+    left: 0.08em;
+    background-size: 0.06em 0.06em;
+  }
+
+  .cards-container {
+    gap: 0.6rem;
+    padding: 0 0.5rem;
+  }
+
+  .card-content {
+    padding: 0.8rem;
+    gap: 0.3rem;
+  }
+
+  .card-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .card h2 {
+    font-size: 0.85rem;
+  }
+
+  .card p {
+    font-size: 0.6rem;
+  }
+}
+
 @media (min-width: 769px) and (max-width: 1024px) {
   .cards-container {
     grid-template-columns: repeat(3, 1fr);
@@ -409,6 +458,13 @@ h1:after {
   h1 {
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
+  }
+
+  /* 横屏模式阴影调整 */
+  h1::after {
+    top: 0.1em;
+    left: 0.1em;
+    background-size: 0.07em 0.07em;
   }
 
   .cards-container {
