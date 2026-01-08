@@ -226,6 +226,12 @@ body {
     color: white;
 }
 
+/* CSV编码格式 label 样式增强 */
+.file-upload label {
+    color: hsl(0 0% 90%);
+    font-weight: 500;
+}
+
 .divider {
     text-align: center;
     color: hsl(0 0% 70%);
