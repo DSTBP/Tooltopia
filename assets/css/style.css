@@ -76,6 +76,11 @@ body.day-mode .card p {
   color: rgba(0, 0, 0, 0.6);
 }
 
+body.day-mode .card:where(:hover, :focus-within) .card-icon,
+body.day-mode .card:where(:hover, :focus-within) h2 {
+  color: var(--active-color, var(--primary));
+}
+
 body.day-mode .card:where(:hover, :focus-within) p {
   color: rgba(0, 0, 0, 0.8);
 }
