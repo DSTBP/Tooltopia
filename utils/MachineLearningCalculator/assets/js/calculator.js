@@ -16,6 +16,26 @@ document.addEventListener('DOMContentLoaded', () => {
     const unitResult = document.getElementById('unitResult');
 
     let lastAns = 0;
+    const FN_INSERTS = Object.freeze({
+        sqrt: 'sqrt(',
+        sqrt2: 'sqrt(',
+        pow: '^',
+        pi: 'pi',
+        fact: '!',
+        mod: ' mod ',
+        percent: '/100',
+        ans: 'ans',
+        sin: 'sin(',
+        cos: 'cos(',
+        tan: 'tan(',
+        log: 'log(',
+        ln: 'ln('
+    });
+    const SYMBOL_REPLACEMENTS = [
+        [/Ã·/g, '/'], [/÷/g, '/'],
+        [/Ã—/g, '*'], [/×/g, '*'],
+        [/âˆ?/g, '-'], [/−/g, '-'], [/–/g, '-'], [/—/g, '-'], [/﹣/g, '-']
+    ];
 
     // wrapper math functions to honor degree/radian setting
     function makeScope() {
@@ -45,8 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // append token to display at end
     function appendToDisplay(token) {
-        if (getDisplay() === '0') setDisplay(token);
-        else setDisplay(getDisplay() + token);
+        const current = getDisplay();
+        setDisplay(current === '0' ? token : current + token);
     }
 
     // button clicks
@@ -58,30 +78,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 appendToDisplay(val);
                 return;
             }
-            if (fn) {
-                handleFn(fn);
+            if (fn && FN_INSERTS[fn]) {
+                appendToDisplay(FN_INSERTS[fn]);
             }
         });
     });
-
-    function handleFn(fn) {
-        switch(fn) {
-            case 'sqrt': appendToDisplay('sqrt('); break;
-            case 'sqrt2': appendToDisplay('sqrt('); break;
-            case 'pow': appendToDisplay('^'); break;
-            case 'pi': appendToDisplay('pi'); break;
-            case 'fact': appendToDisplay('!'); break;
-            case 'mod': appendToDisplay(' mod '); break;
-            case 'percent': appendToDisplay('/100'); break;
-            case 'ans': appendToDisplay('ans'); break;
-            case 'sin': appendToDisplay('sin('); break;
-            case 'cos': appendToDisplay('cos('); break;
-            case 'tan': appendToDisplay('tan('); break;
-            case 'log': appendToDisplay('log('); break;
-            case 'ln': appendToDisplay('ln('); break;
-            default: break;
-        }
-    }
 
     clearBtn.addEventListener('click', () => setDisplay('0'));
     backBtn.addEventListener('click', () => {
@@ -91,11 +92,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // sanitize user-friendly characters
     function normalizeExpr(expr) {
-        return expr.replace(/÷/g, '/').replace(/×/g, '*').replace(/−/g, '-')
-                   .replace(/\s+mod\s+/g, ' mod ')
-                   .replace(/\^/g, '^')
-                   .replace(/(\d)!/g, 'factorial($1)')
-                   .replace(/!/g, 'factorial');
+        let normalized = expr;
+        SYMBOL_REPLACEMENTS.forEach(([pattern, replacement]) => {
+            normalized = normalized.replace(pattern, replacement);
+        });
+        normalized = normalized.replace(/\s+mod\s+/gi, ' mod ');
+        normalized = normalized.replace(/(\d+(?:\.\d+)?)!/g, (_, n) => `factorial(${n})`);
+        return normalized.replace(/!/g, 'factorial');
     }
 
     function formatNumber(val) {

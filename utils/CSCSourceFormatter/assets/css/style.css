@@ -57,6 +57,42 @@ body {
     width: 100%;
 }
 
+/* Landing page layout */
+body.landing-page .page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    position: relative;
+    z-index: 2;
+}
+
+body.landing-page .header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+body.landing-page .landing-container {
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+    z-index: 2;
+}
+
+.button-container {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+    justify-content: center;
+}
+
+.description {
+    margin-top: 1rem;
+    color: hsl(0 0% 70%);
+    font-size: 0.9rem;
+    position: relative;
+    z-index: 2;
+}
+
 /* --- 标题样式 --- */
 h1 {
     display: inline-block;
@@ -256,6 +292,12 @@ select option {
     color: hsl(0 0% 85%);
 }
 
+#firstPageContent {
+    width: 100%;
+    min-height: 200px;
+    white-space: pre-wrap;
+}
+
 .form-actions {
     text-align: center;
     margin-top: 2rem;
@@ -280,6 +322,12 @@ select option {
     padding: 1.5rem;
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#headerTextGroup,
+#footerTextGroup,
+#pageNumberAlignmentGroup {
+    display: none;
 }
 
 .required::after {
@@ -340,6 +388,10 @@ button::after,
 button:hover,
 .btn:hover {
     scale: 1.02;
+}
+
+.btn + .btn {
+    margin-left: 10px;
 }
 
 /* --- 响应式设计 (针对大标题进行了优化) --- */
@@ -444,6 +496,11 @@ button:hover,
     line-height: 1.6;
     color: hsl(0 0% 90%);
     box-sizing: border-box;
+}
+
+#fileContentDisplay,
+#processingStatus {
+    display: none;
 }
 
 .directory-item, .file-item {

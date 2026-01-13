@@ -6,15 +6,7 @@
     <link rel="icon" type="image/png" sizes="64x64" href="facvion.png">
     <link rel="stylesheet" href="assets/css/style.css">
     <title>源代码生成工具</title>
-    <script>
-        // 在 head 中立即执行，确保在 body 渲染前应用主题
-        (function() {
-            const savedTheme = localStorage.getItem('tooltopia-theme');
-            if (savedTheme === 'day') {
-                document.documentElement.classList.add('day-init');
-            }
-        })();
-    </script>
+    <script src="assets/js/theme-init.js"></script>
 </head>
 <body>
     <!-- 日夜切换器 -->
@@ -57,19 +49,19 @@
 
             <div class="form-actions">
                 <button class="btn" onclick="scanProject()">扫描项目</button>
-                <button class="btn" onclick="getCode()" style="margin-left: 10px;">获取代码</button>
-                <button class="btn" onclick="downloadDocument()" style="margin-left: 10px;">下载处理后文档</button>
+                <button class="btn" onclick="getCode()">获取代码</button>
+                <button class="btn" onclick="downloadDocument()">下载处理后文档</button>
             </div>
 
             <div id="fileTree"></div>
 
-            <div id="fileContentDisplay" style="display: none;">
+            <div id="fileContentDisplay">
                 <a href="#" class="back-to-tree-link" onclick="backToFileTree(); return false;">← 返回目录树</a>
                 <h2 id="displayFileName"></h2>
                 <pre id="displayFileCode"></pre>
             </div>
 
-            <div id="processingStatus" style="display: none;">
+            <div id="processingStatus">
                 <h3>处理进度</h3>
                 <div id="progressInfo"></div>
             </div>
@@ -80,23 +72,6 @@
     <script src="assets/js/fillin_code.js"></script>
     <script src="https://unpkg.com/docx@9.5.0/dist/index.umd.cjs"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.4/FileSaver.js"></script>
-    <script>
-        function updateFileName(input, displayId) {
-            const display = document.getElementById(displayId);
-            if (input.files && input.files.length > 0) {
-                if (input.webkitdirectory) {
-                    // 如果是文件夹选择器
-                    const path = input.files[0].webkitRelativePath;
-                    const folderName = path.split('/')[0];
-                    display.textContent = `已选择文件夹: ${folderName}`;
-                } else {
-                    // 如果是文件选择器
-                    display.textContent = `已选择文件: ${input.files[0].name}`;
-                }
-            } else {
-                display.textContent = '';
-            }
-        }
-    </script>
+    
 </body>
 </html>

@@ -13,6 +13,25 @@ let currentFormData = null;
 // 存储当前文档状态类型
 let currentDocStatus = null; // 可能的值: 'success', 'error', 'warning'
 
+// ????/?????????
+window.updateFileName = function updateFileName(input, displayId) {
+    const display = document.getElementById(displayId);
+    if (!display || !input || !input.files) return;
+
+    if (input.files.length > 0) {
+        if (input.webkitdirectory) {
+            const path = input.files[0].webkitRelativePath;
+            const folderName = path.split('/')[0];
+            display.textContent = `??????: ${folderName}`;
+        } else {
+            display.textContent = `?????: ${input.files[0].name}`;
+        }
+    } else {
+        display.textContent = '';
+    }
+};
+
+
 // 更新文档状态显示的颜色（根据主题）
 function updateDocStatusColor() {
     const docStatusDisplay = document.getElementById('docStatusDisplay');

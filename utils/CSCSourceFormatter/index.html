@@ -13,53 +13,9 @@
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <title>软著文件生成工具</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <script>
-        // 在 head 中立即执行，确保在 body 渲染前应用主题
-        (function() {
-            const savedTheme = localStorage.getItem('tooltopia-theme');
-            if (savedTheme === 'day') {
-                document.documentElement.classList.add('day-init');
-            }
-        })();
-    </script>
-    <style>
-        .page-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-            position: relative;
-            z-index: 2;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .container {
-            text-align: center;
-            padding: 2rem;
-            position: relative;
-            z-index: 2;
-        }
-
-        .button-container {
-            display: flex;
-            gap: 2rem;
-            margin-top: 2rem;
-            justify-content: center;
-        }
-
-        .description {
-            margin-top: 1rem;
-            color: hsl(0 0% 70%);
-            font-size: 0.9rem;
-            position: relative;
-            z-index: 2;
-        }
-    </style>
+    <script src="assets/js/theme-init.js"></script>
 </head>
-<body>
+<body class="landing-page">
     <!-- 日夜切换器 -->
     <div class="theme-toggle">
         <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
@@ -73,7 +29,7 @@
         <div class="header">
             <h1 data-shadow='软著文件生成工具'>软著文件生成工具</h1>
         </div>
-        <div class="container">
+        <div class="landing-container">
             <div class="button-container">
                 <a href="init.html" class="btn">初始化文档</a>
                 <a href="fillinCode.html" class="btn">生成源代码文档</a>

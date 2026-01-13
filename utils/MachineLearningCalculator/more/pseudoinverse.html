@@ -12,6 +12,7 @@
     <!-- KaTeX for Math Rendering (CDN) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js" crossorigin="anonymous"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
@@ -274,7 +275,7 @@
             if (document.readyState==='complete' || document.readyState==='interactive') tryRender(); else document.addEventListener('DOMContentLoaded', tryRender);
         })();
     </script>
-    <script src="../assets/js/math.min.js"></script>
+    <script src="../assets/js/matrix-utils.js"></script>
     <script src="../assets/js/pseudoinverse.js"></script>
     <script src="../assets/js/theme-toggle.js"></script>
 </body>
