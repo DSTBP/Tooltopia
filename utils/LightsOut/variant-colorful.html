@@ -6,14 +6,8 @@
     <title>Lights Out - 彩色版</title>
     <link rel="icon" href="favicon.png">
     <link rel="stylesheet" href="assets/css/style.css">
-    <script>
-        (function() {
-            const savedTheme = localStorage.getItem('tooltopia-theme');
-            if (savedTheme === 'day') {
-                document.documentElement.classList.add('day-init');
-            }
-        })();
-    </script>
+    
+    <script src="assets/js/theme-init.js"></script>
     <style>
     /* 仅本页：提示数字样式 */
     .fo-cell.hint-num {
@@ -157,13 +151,13 @@
                     </div>
                     <div class="fo-row">
                         <button id="customize" class="fo-btn">自定义</button>
-                        <button id="customDone" class="fo-btn fo-primary" style="display:none;">完成</button>
-                        <a href="variant.html" class="fo-btn" id="variantBtn" style="margin-left: 8px;">返回中心</a>
+                        <button id="customDone" class="fo-btn fo-primary is-hidden">完成</button>
+                        <a href="variant.html" class="fo-btn" id="variantBtn">返回中心</a>
                     </div>
                     <div class="fo-stats">
                         <span>步数：<b id="moveCount">0</b></span>
                         <span>目标：全(K-1)</span>
-                        <span id="minStepsWrap" style="display:none;">最少需要 <b id="minSteps">-</b> 步</span>
+                        <span id="minStepsWrap" class="is-hidden">最少需要 <b id="minSteps">-</b> 步</span>
                         <span id="statusText"></span>
                     </div>
                 </div>
@@ -425,7 +419,7 @@
                 initialStates[levelIndex] = { grid: deepClone(grid), colorCount };
             }
             moveCount=0; undoStack=[]; renderBoard();
-            if (minStepsWrap) { minStepsWrap.style.display = 'none'; }
+            if (minStepsWrap) { minStepsWrap.classList.add('is-hidden'); }
         }
 
         function toggleHint(){
@@ -443,7 +437,7 @@
                     hintCounts = new Map();
                     if (minStepsWrap) {
                         minStepsWrap.textContent = '此初始状态无解';
-                        minStepsWrap.style.display = '';
+                        minStepsWrap.classList.remove('is-hidden');
                     }
                     hintMode = true;
                     if (hintBtn) hintBtn.textContent = '隐藏提示';
@@ -468,7 +462,7 @@
                     minStepsWrap.innerHTML = '最少需要 <b id="minSteps"></b> 步';
                     const el = document.getElementById('minSteps');
                     if (el) el.textContent = String(min);
-                    minStepsWrap.style.display = '';
+                    minStepsWrap.classList.remove('is-hidden');
                 }
                 hintMode = true;
                 if (hintBtn) hintBtn.textContent = '隐藏提示';
@@ -482,7 +476,7 @@
             hintMode = false;
             hintCounts = new Map();
             if (hintBtn) hintBtn.textContent = '提示';
-            if (minStepsWrap) { minStepsWrap.style.display = 'none'; }
+            if (minStepsWrap) { minStepsWrap.classList.add('is-hidden'); }
             renderBoard();
         }
 
@@ -502,8 +496,8 @@
             return g;
         }
 
-        function enterCustomizeMode(){ if(isCustomizing) return; isCustomizing=true; if(rowsInput){rowsInput.disabled=false; rowsInput.max='100';} if(colsInput){colsInput.disabled=false; colsInput.max='100';} if(colorInput){colorInput.disabled=false; colorInput.max='8';} if(customDoneBtn) customDoneBtn.style.display=''; moveCount=0; undoStack=[]; renderBoard(); }
-        function finishCustomizeMode(){ if(!isCustomizing) return; isCustomizing=false; if(rowsInput) rowsInput.disabled=true; if(colsInput) colsInput.disabled=true; if(colorInput) colorInput.disabled=true; if(customDoneBtn) customDoneBtn.style.display='none'; initialStates[currentLevelIndex] = { grid: deepClone(grid), colorCount }; renderBoard(); }
+        function enterCustomizeMode(){ if(isCustomizing) return; isCustomizing=true; if(rowsInput){rowsInput.disabled=false; rowsInput.max='100';} if(colsInput){colsInput.disabled=false; colsInput.max='100';} if(colorInput){colorInput.disabled=false; colorInput.max='8';} if(customDoneBtn) customDoneBtn.classList.remove('is-hidden'); moveCount=0; undoStack=[]; renderBoard(); }
+        function finishCustomizeMode(){ if(!isCustomizing) return; isCustomizing=false; if(rowsInput) rowsInput.disabled=true; if(colsInput) colsInput.disabled=true; if(colorInput) colorInput.disabled=true; if(customDoneBtn) customDoneBtn.classList.add('is-hidden'); initialStates[currentLevelIndex] = { grid: deepClone(grid), colorCount }; renderBoard(); }
         function onSizeInputChange(){ if(!isCustomizing) return; const rVal=clamp(parseInt(rowsInput.value||'0',10)||0,2,100); const cVal=clamp(parseInt(colsInput.value||'0',10)||0,2,100); if(rVal!==rows||cVal!==cols){ rows=rVal; cols=cVal; grid=createMatrix(rows, cols, 0); moveCount=0; undoStack=[]; renderBoard(); } }
         function onColorInputChange(){ if(!isCustomizing) return; const k = clamp(parseInt(colorInput.value||'0',10)||0, 2, 8); if (k!==colorCount){ colorCount=k; // 正规化当前 grid
                 for(let i=0;i<rows;i++) for(let j=0;j<cols;j++) grid[i][j]%=colorCount; renderBoard(); } }
@@ -555,128 +549,8 @@
     <script src="assets/js/translate.js"></script>
     <!-- 同步标题阴影（用于翻译后保持效果） -->
     <script src="assets/js/sync-title-shadow.js"></script>
-    <script>
-        // 设置翻译服务
-        translate.service.use('client.edge')
-        // 设置默认翻译目标语种为中文简体
-        translate.language.setDefaultTo('chinese_simplified')
-        // 设置本地语种为中文简体
-        translate.language.setLocal('chinese_simplified')
-        // 开启页面变化监控，对变化部分进行自动翻译
-        translate.listener.start()
-        // 显示语言选择器
-        translate.selectLanguageTag.show = true
-        // 自动识别用户语言
-        translate.setAutoDiscriminateLocalLanguage()
-        // 跳过不需要翻译的元素
-        translate.ignore.class.push('no-translate')
-        
-        // 强制应用样式的函数
-        function forceLanguageSelectorStyle() {
-            // 查找所有可能的语言选择器元素
-            const selectors = [
-                '#translate',
-                '.translate_selectLanguage_tag',
-                '[id="translate"]',
-                'div[id="translate"]'
-            ]
-            
-            selectors.forEach(selector => {
-                const elements = document.querySelectorAll(selector)
-                elements.forEach(element => {
-                    if (element) {
-                        // 强制设置样式
-                        element.style.setProperty('position', 'fixed', 'important')
-                        element.style.setProperty('top', '20px', 'important')
-                        element.style.setProperty('right', '20px', 'important')
-                        element.style.setProperty('z-index', '9999', 'important')
-                        element.style.setProperty('background', 'rgba(255, 255, 255, 0.15)', 'important')
-                        element.style.setProperty('color', 'white', 'important')
-                        element.style.setProperty('padding', '0', 'important')
-                        element.style.setProperty('border-radius', '20px', 'important')
-                        element.style.setProperty('border', '1px solid rgba(255, 255, 255, 0.3)', 'important')
-                        element.style.setProperty('backdrop-filter', 'blur(10px)', 'important')
-                        element.style.setProperty('cursor', 'pointer', 'important')
-                        element.style.setProperty('font-size', '0.9rem', 'important')
-                        element.style.setProperty('font-family', "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 'important')
-                        element.style.setProperty('box-shadow', '0 4px 12px rgba(0, 0, 0, 0.15)', 'important')
-                        element.style.setProperty('transition', 'all 0.3s ease', 'important')
-                        element.style.setProperty('display', 'inline-block', 'important')
-                        element.style.setProperty('margin', '0', 'important')
-                        element.style.setProperty('min-width', '120px', 'important')
-                        element.style.setProperty('height', '36px', 'important')
-                        element.style.setProperty('overflow', 'visible', 'important')
-                        
-                        // 为select元素设置样式
-                        const selectElement = element.querySelector('select')
-                        if (selectElement) {
-                            selectElement.style.setProperty('background', 'transparent', 'important')
-                            selectElement.style.setProperty('border', 'none', 'important')
-                            selectElement.style.setProperty('color', 'white', 'important')
-                            selectElement.style.setProperty('font-size', '0.9rem', 'important')
-                            selectElement.style.setProperty('cursor', 'pointer', 'important')
-                            selectElement.style.setProperty('outline', 'none', 'important')
-                            selectElement.style.setProperty('width', '100%', 'important')
-                            selectElement.style.setProperty('height', '100%', 'important')
-                            selectElement.style.setProperty('padding', '8px 16px', 'important')
-                            selectElement.style.setProperty('margin', '0', 'important')
-                            selectElement.style.setProperty('position', 'absolute', 'important')
-                            selectElement.style.setProperty('top', '0', 'important')
-                            selectElement.style.setProperty('left', '0', 'important')
-                            selectElement.style.setProperty('opacity', '1', 'important')
-                            selectElement.style.setProperty('appearance', 'none', 'important')
-                            selectElement.style.setProperty('-webkit-appearance', 'none', 'important')
-                            selectElement.style.setProperty('-moz-appearance', 'none', 'important')
-                            
-                            // 为select的option元素设置样式
-                            const options = selectElement.querySelectorAll('option')
-                            options.forEach(option => {
-                                option.style.setProperty('background', 'white', 'important')
-                                option.style.setProperty('color', '#333', 'important')
-                            })
-                        }
-                    }
-                })
-            })
-        }
-        
-        // 页面加载完成后执行翻译
-        document.addEventListener('DOMContentLoaded', function() {
-            translate.execute()
-            
-            // 延迟执行以确保DOM完全加载
-            setTimeout(function() {
-                translate.execute()
-                forceLanguageSelectorStyle()
-            }, 500)
-            
-            // 多次检查确保样式生效
-            setTimeout(function() {
-                forceLanguageSelectorStyle()
-            }, 1000)
-            
-            setTimeout(function() {
-                forceLanguageSelectorStyle()
-            }, 2000)
-            
-            // 定期检查语言选择器样式
-            setInterval(forceLanguageSelectorStyle, 3000)
-            
-            // 监听DOM变化，当新元素添加时应用样式
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.type === 'childList') {
-                        setTimeout(forceLanguageSelectorStyle, 100)
-                    }
-                })
-            })
-            
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            })
-        })
-    </script>
+    
+    <script src="assets/js/translate-init.js"></script>
     <script src="assets/js/theme-toggle.js"></script>
 </body>
 </html>

@@ -5,8 +5,6 @@
     const nextLevelBtn = document.getElementById('nextLevel');
     const rowsInput = document.getElementById('rowsInput');
     const colsInput = document.getElementById('colsInput');
-    const applySizeBtn = document.getElementById('applySize');
-    const shuffleBtn = document.getElementById('shuffle');
     const resetBtn = document.getElementById('reset');
     const undoBtn = document.getElementById('undo');
     const customizeBtn = document.getElementById('customize');
@@ -285,7 +283,7 @@
             colsInput.max = '100';
         }
         // 显示“完成”按钮
-        if (customDoneBtn) customDoneBtn.style.display = '';
+        if (customDoneBtn) customDoneBtn.classList.remove('is-hidden');
         // 自定义开始时，重置步数与撤销
         moveCount = 0;
         undoStack = [];
@@ -301,7 +299,7 @@
         if (rowsInput) rowsInput.disabled = true;
         if (colsInput) colsInput.disabled = true;
         // 隐藏“完成”按钮
-        if (customDoneBtn) customDoneBtn.style.display = 'none';
+        if (customDoneBtn) customDoneBtn.classList.add('is-hidden');
         // 同步关卡配置的尺寸，确保切关返回时基础尺寸合理
         levelConfigs[currentLevelIndex].rows = clamp(grid.length, 2, 100);
         levelConfigs[currentLevelIndex].cols = clamp(grid[0]?.length || 0, 2, 100);

@@ -330,6 +330,14 @@ body {
     font-weight: 500;
 }
 
+.is-hidden {
+    display: none !important;
+}
+
+.fo-controls #variantBtn {
+    margin-left: 8px;
+}
+
 .fo-btn:active:not(:disabled) {
     scale: 0.98;
     translate: 0 1px;

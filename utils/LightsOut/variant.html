@@ -16,15 +16,8 @@
     <title>Lights Out - 变体中心</title>
     <link rel="icon" href="favicon.png">
     <link rel="stylesheet" href="assets/css/style.css">
-    <script>
-        // 在 head 中立即执行，确保在 body 渲染前应用主题
-        (function() {
-            const savedTheme = localStorage.getItem('tooltopia-theme');
-            if (savedTheme === 'day') {
-                document.documentElement.classList.add('day-init');
-            }
-        })();
-    </script>
+    
+    <script src="assets/js/theme-init.js"></script>
 </head>
 <body>
     <!-- 日夜切换器 -->
@@ -130,128 +123,8 @@
     <script src="assets/js/translate.js"></script>
     <!-- 同步标题阴影（用于翻译后保持效果） -->
     <script src="assets/js/sync-title-shadow.js"></script>
-    <script>
-        // 设置翻译服务
-        translate.service.use('client.edge')
-        // 设置默认翻译目标语种为中文简体
-        translate.language.setDefaultTo('chinese_simplified')
-        // 设置本地语种为中文简体
-        translate.language.setLocal('chinese_simplified')
-        // 开启页面变化监控，对变化部分进行自动翻译
-        translate.listener.start()
-        // 显示语言选择器
-        translate.selectLanguageTag.show = true
-        // 自动识别用户语言
-        translate.setAutoDiscriminateLocalLanguage()
-        // 跳过不需要翻译的元素
-        translate.ignore.class.push('no-translate')
-        
-        // 强制应用样式的函数
-        function forceLanguageSelectorStyle() {
-            // 查找所有可能的语言选择器元素
-            const selectors = [
-                '#translate',
-                '.translate_selectLanguage_tag',
-                '[id="translate"]',
-                'div[id="translate"]'
-            ]
-            
-            selectors.forEach(selector => {
-                const elements = document.querySelectorAll(selector)
-                elements.forEach(element => {
-                    if (element) {
-                        // 强制设置样式
-                        element.style.setProperty('position', 'fixed', 'important')
-                        element.style.setProperty('top', '20px', 'important')
-                        element.style.setProperty('right', '20px', 'important')
-                        element.style.setProperty('z-index', '9999', 'important')
-                        element.style.setProperty('background', 'rgba(255, 255, 255, 0.15)', 'important')
-                        element.style.setProperty('color', 'white', 'important')
-                        element.style.setProperty('padding', '0', 'important')
-                        element.style.setProperty('border-radius', '20px', 'important')
-                        element.style.setProperty('border', '1px solid rgba(255, 255, 255, 0.3)', 'important')
-                        element.style.setProperty('backdrop-filter', 'blur(10px)', 'important')
-                        element.style.setProperty('cursor', 'pointer', 'important')
-                        element.style.setProperty('font-size', '0.9rem', 'important')
-                        element.style.setProperty('font-family', "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 'important')
-                        element.style.setProperty('box-shadow', '0 4px 12px rgba(0, 0, 0, 0.15)', 'important')
-                        element.style.setProperty('transition', 'all 0.3s ease', 'important')
-                        element.style.setProperty('display', 'inline-block', 'important')
-                        element.style.setProperty('margin', '0', 'important')
-                        element.style.setProperty('min-width', '120px', 'important')
-                        element.style.setProperty('height', '36px', 'important')
-                        element.style.setProperty('overflow', 'visible', 'important')
-                        
-                        // 为select元素设置样式
-                        const selectElement = element.querySelector('select')
-                        if (selectElement) {
-                            selectElement.style.setProperty('background', 'transparent', 'important')
-                            selectElement.style.setProperty('border', 'none', 'important')
-                            selectElement.style.setProperty('color', 'white', 'important')
-                            selectElement.style.setProperty('font-size', '0.9rem', 'important')
-                            selectElement.style.setProperty('cursor', 'pointer', 'important')
-                            selectElement.style.setProperty('outline', 'none', 'important')
-                            selectElement.style.setProperty('width', '100%', 'important')
-                            selectElement.style.setProperty('height', '100%', 'important')
-                            selectElement.style.setProperty('padding', '8px 16px', 'important')
-                            selectElement.style.setProperty('margin', '0', 'important')
-                            selectElement.style.setProperty('position', 'absolute', 'important')
-                            selectElement.style.setProperty('top', '0', 'important')
-                            selectElement.style.setProperty('left', '0', 'important')
-                            selectElement.style.setProperty('opacity', '1', 'important')
-                            selectElement.style.setProperty('appearance', 'none', 'important')
-                            selectElement.style.setProperty('-webkit-appearance', 'none', 'important')
-                            selectElement.style.setProperty('-moz-appearance', 'none', 'important')
-                            
-                            // 为select的option元素设置样式
-                            const options = selectElement.querySelectorAll('option')
-                            options.forEach(option => {
-                                option.style.setProperty('background', 'white', 'important')
-                                option.style.setProperty('color', '#333', 'important')
-                            })
-                        }
-                    }
-                })
-            })
-        }
-        
-        // 页面加载完成后执行翻译
-        document.addEventListener('DOMContentLoaded', function() {
-            translate.execute()
-            
-            // 延迟执行以确保DOM完全加载
-            setTimeout(function() {
-                translate.execute()
-                forceLanguageSelectorStyle()
-            }, 500)
-            
-            // 多次检查确保样式生效
-            setTimeout(function() {
-                forceLanguageSelectorStyle()
-            }, 1000)
-            
-            setTimeout(function() {
-                forceLanguageSelectorStyle()
-            }, 2000)
-            
-            // 定期检查语言选择器样式
-            setInterval(forceLanguageSelectorStyle, 3000)
-            
-            // 监听DOM变化，当新元素添加时应用样式
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.type === 'childList') {
-                        setTimeout(forceLanguageSelectorStyle, 100)
-                    }
-                })
-            })
-            
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            })
-        })
-    </script>
+    
+    <script src="assets/js/translate-init.js"></script>
     <script src="assets/js/theme-toggle.js"></script>
 </body>
 </html>
