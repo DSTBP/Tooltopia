@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const baseResultEl = document.getElementById('baseResult');
 
     let lastAns = 0;
+    const MAX_HISTORY = 50;
     setDisplay('0', 1, false);
     const FN_INSERTS = Object.freeze({
         root: 'root(',
@@ -62,6 +63,53 @@ document.addEventListener('DOMContentLoaded', () => {
         [/Ã—/g, '*'], [/×/g, '*'],
         [/âˆ?/g, '-'], [/−/g, '-'], [/–/g, '-'], [/—/g, '-'], [/﹣/g, '-']
     ];
+
+    function getPrimeFactorsAbs(value) {
+        let n = Math.abs(value);
+        const factors = [];
+        while (n % 2 === 0) {
+            factors.push(2);
+            n /= 2;
+        }
+        let d = 3;
+        while (d * d <= n) {
+            while (n % d === 0) {
+                factors.push(d);
+                n /= d;
+            }
+            d += 2;
+        }
+        if (n > 1) factors.push(n);
+        return factors;
+    }
+
+    function formatPrimeFactors(factors) {
+        if (!Array.isArray(factors) || factors.length === 0) {
+            return '';
+        }
+        if (factors.length === 1) {
+            return String(factors[0]);
+        }
+        const parts = [];
+        for (let i = 0; i < factors.length; i += 1) {
+            const value = factors[i];
+            if (value === -1) {
+                parts.push('-1');
+                continue;
+            }
+            let count = 1;
+            while (i + count < factors.length && factors[i + count] === value) {
+                count += 1;
+            }
+            if (count > 1) {
+                parts.push(`${value}^${count}`);
+            } else {
+                parts.push(String(value));
+            }
+            i += count - 1;
+        }
+        return parts.join('*');
+    }
 
     // wrapper math functions to honor degree/radian setting
     function makeScope() {
@@ -123,9 +171,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!Number.isInteger(num)) {
                     throw new Error('质因数分解仅支持整数');
                 }
-                if (Math.abs(num) < 2) return [num];
-                const factors = math.primeFactors(Math.abs(num));
-                return num < 0 ? [-1, ...factors] : factors;
+                if (Math.abs(num) < 2) return String(num);
+                const factors = typeof math.primeFactors === 'function'
+                    ? math.primeFactors(Math.abs(num))
+                    : getPrimeFactorsAbs(num);
+                const result = num < 0 ? [-1, ...factors] : factors;
+                return formatPrimeFactors(result);
             },
             pow10: (exponent) => {
                 const x = Number(exponent);
@@ -270,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         item.addEventListener('click', () => setDisplay(expr));
         historyEl.prepend(item);
-        while (historyEl.children.length > 3) {
+        while (historyEl.children.length > MAX_HISTORY) {
             historyEl.removeChild(historyEl.lastElementChild);
         }
         historyEl.scrollTop = 0;

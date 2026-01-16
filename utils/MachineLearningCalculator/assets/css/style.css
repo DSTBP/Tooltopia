@@ -256,14 +256,10 @@ body {
     min-width: 150px;
 }
 
-.converter-panel .unit-row.two-cols {
-    flex-wrap: wrap;
-    gap: 24px;
-}
-
+.converter-panel .unit-row.two-cols,
 .converter-panel .unit-row.select-pair {
-    flex-wrap: wrap;
-    gap: 24px;
+    flex-wrap: nowrap;
+    gap: 12px;
 }
 
 .converter-panel .unit-row.single-input {
@@ -274,8 +270,8 @@ body {
 .converter-panel .unit-row.two-cols select,
 .converter-panel .unit-row.select-pair .input-field,
 .converter-panel .unit-row.select-pair select {
-    min-width: 150px;
-    flex: 1 1 calc(50% - 12px);
+    min-width: 0;
+    flex: 1 1 0;
 }
 /* 计算器按钮 */
 .btn-calc {
