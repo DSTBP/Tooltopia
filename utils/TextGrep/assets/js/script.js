@@ -1,22 +1,23 @@
 // 全局变量
 let sourceText = ''; // 原始文本
 let dataItems = []; // 解析后的数据项
+let lastDownloadItems = []; // 最近一次可下载的结果
 
 // 检查依赖库是否加载
 function checkDependencies() {
     const issues = [];
 
     if (typeof mammoth === 'undefined') {
-        issues.push('Word文档处理库未加载');
+        issues.push('Word 文档处理库未加载');
     }
 
     if (typeof pdfjsLib === 'undefined') {
-        issues.push('PDF处理库未加载');
+        issues.push('PDF 处理库未加载');
     }
 
     if (issues.length > 0) {
         console.warn('依赖库加载问题:', issues.join(', '));
-        console.warn('Word和PDF文件可能无法正常使用，但TXT文件和直接粘贴文本功能正常');
+        console.warn('Word 和 PDF 文件可能无法正常使用，但 TXT 文件和直接粘贴文本功能正常');
     }
 
     return issues.length === 0;
@@ -146,14 +147,14 @@ async function loadFileToText(file) {
         return await readTextFile(file);
     } else if (fileName.endsWith('.docx')) {
         if (typeof mammoth === 'undefined') {
-            throw new Error('Word文档处理库未加载，请检查网络连接');
+            throw new Error('Word 文档处理库未加载，请检查网络连接');
         }
         return await readWordFile(file);
     } else if (fileName.endsWith('.doc')) {
         throw new Error('不支持旧版.doc格式，请使用.docx格式');
     } else if (fileName.endsWith('.pdf')) {
         if (typeof pdfjsLib === 'undefined') {
-            throw new Error('PDF处理库未加载，请检查网络连接');
+            throw new Error('PDF 处理库未加载，请检查网络连接');
         }
         return await readPdfFile(file);
     } else {
@@ -182,7 +183,7 @@ function readTextFile(file) {
                 reject(new Error('文本文件为空'));
                 return;
             }
-            console.log('TXT文件读取成功，文本长度:', text.length);
+            console.log('TXT 文件读取成功，文本长度:', text.length);
             resolve(text);
         };
         reader.onerror = (e) => reject(new Error('读取文本文件失败'));
@@ -200,7 +201,7 @@ function readWordFile(file) {
 
                 // 检查文件是否为空
                 if (arrayBuffer.byteLength === 0) {
-                    reject(new Error('Word文件为空'));
+                    reject(new Error('Word 文件为空'));
                     return;
                 }
 
@@ -208,24 +209,24 @@ function readWordFile(file) {
 
                 // 检查是否成功提取文本
                 if (!result || !result.value) {
-                    reject(new Error('无法从Word文件中提取文本'));
+                    reject(new Error('无法从 Word 文件中提取文本'));
                     return;
                 }
 
                 // 检查提取的文本是否为空
                 if (result.value.trim().length === 0) {
-                    reject(new Error('Word文件中没有找到文本内容'));
+                    reject(new Error('Word 文件中没有找到文本内容'));
                     return;
                 }
 
-                console.log('Word文件读取成功，文本长度:', result.value.length);
+                console.log('Word 文件读取成功，文本长度:', result.value.length);
                 resolve(result.value);
             } catch (error) {
-                console.error('Word文件解析错误:', error);
-                reject(new Error('读取Word文件失败：' + error.message));
+                console.error('Word 文件解析错误:', error);
+                reject(new Error('读取 Word 文件失败：' + error.message));
             }
         };
-        reader.onerror = () => reject(new Error('读取Word文件失败'));
+        reader.onerror = () => reject(new Error('读取 Word 文件失败'));
         reader.readAsArrayBuffer(file);
     });
 }
@@ -237,17 +238,17 @@ async function readPdfFile(file) {
 
         // 检查文件是否为空
         if (arrayBuffer.byteLength === 0) {
-            throw new Error('PDF文件为空');
+            throw new Error('PDF 文件为空');
         }
 
-        console.log('开始解析PDF文件...');
+        console.log('开始解析 PDF 文件...');
         const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
 
         if (!pdf || pdf.numPages === 0) {
-            throw new Error('PDF文件没有页面');
+            throw new Error('PDF 文件没有页面');
         }
 
-        console.log('PDF总页数:', pdf.numPages);
+        console.log('PDF 总页数:', pdf.numPages);
         let fullText = '';
 
         for (let i = 1; i <= pdf.numPages; i++) {
@@ -259,14 +260,14 @@ async function readPdfFile(file) {
 
         // 检查是否提取到文本
         if (fullText.trim().length === 0) {
-            throw new Error('PDF文件中没有找到可提取的文本（可能是扫描版PDF）');
+            throw new Error('PDF 文件中没有找到可提取的文本（可能是扫描版PDF）');
         }
 
-        console.log('PDF文件读取成功，文本长度:', fullText.length);
+        console.log('PDF 文件读取成功，文本长度:', fullText.length);
         return fullText;
     } catch (error) {
-        console.error('PDF读取错误:', error);
-        throw new Error('读取PDF文件失败：' + error.message);
+        console.error('PDF 读取错误:', error);
+        throw new Error('读取 PDF 文件失败：' + error.message);
     }
 }
 
@@ -307,23 +308,57 @@ document.getElementById('parseTextBtn').addEventListener('click', function() {
 // 解析文本
 function parseText(delimiter) {
     // 根据分隔符分割文本
-    dataItems = sourceText.split(delimiter)
+    const parsedItems = sourceText.split(delimiter)
         .map(item => item.trim())
         .filter(item => item.length > 0);
 
+    const dedupResult = deduplicateData(parsedItems);
+    dataItems = dedupResult.items;
+    setDownloadData([]);
+
     // 显示预览
-    showDataPreview();
+    showDataPreview(dedupResult);
 
     // 显示步骤3
     document.getElementById('step3').style.display = 'block';
     document.getElementById('step3').scrollIntoView({ behavior: 'smooth' });
 }
 
+// 去重数据并保存一些统计信息
+function deduplicateData(items) {
+    const seen = new Set();
+    const uniqueItems = [];
+
+    items.forEach(item => {
+        if (!seen.has(item)) {
+            seen.add(item);
+            uniqueItems.push(item);
+        }
+    });
+
+    return {
+        items: uniqueItems,
+        totalSegments: items.length,
+        uniqueSegments: uniqueItems.length,
+        duplicatesRemoved: items.length - uniqueItems.length
+    };
+}
+
 // 显示数据预览
-function showDataPreview() {
+function showDataPreview(stats = null) {
     const previewDiv = document.getElementById('dataPreview');
+    const info = stats || {
+        totalSegments: dataItems.length,
+        uniqueSegments: dataItems.length,
+        duplicatesRemoved: 0
+    };
+
+    const summaryText = info.duplicatesRemoved > 0
+        ? `已解析 ${info.totalSegments} 条数据，去重后保留 ${info.uniqueSegments} 条，去除 ${info.duplicatesRemoved} 条重复项`
+        : `已解析 ${info.uniqueSegments} 条数据`;
+
     previewDiv.innerHTML = `
-        <div class="preview-info">已解析 ${dataItems.length} 条数据，以下是前5条预览：</div>
+        <div class="preview-info">${summaryText}。以下是前5条预览：</div>
         <div class="preview-items">
             ${dataItems.slice(0, 5).map((item, index) => `
                 <div class="preview-item">
@@ -339,7 +374,7 @@ document.getElementById('searchBtn').addEventListener('click', function() {
     const searchText = document.getElementById('searchInput').value.trim();
 
     if (!searchText) {
-        alert('请输入要搜索的内容！');
+        displayAllDataItems();
         return;
     }
 
@@ -388,7 +423,7 @@ function performBatchSearch(searchText) {
         .filter(line => line.length > 0);
 
     if (keywords.length === 0) {
-        alert('请输入要搜索的内容！');
+        displayAllDataItems();
         return;
     }
 
@@ -434,6 +469,15 @@ function escapeForCharClass(string) {
     return string.replace(/[\]\\-]/g, '\\$&');
 }
 
+// 管理下载按钮状态
+function setDownloadData(items) {
+    lastDownloadItems = Array.isArray(items) ? items : [];
+    const downloadBtn = document.getElementById('downloadResultsBtn');
+    if (downloadBtn) {
+        downloadBtn.disabled = lastDownloadItems.length === 0;
+    }
+}
+
 // 显示批量搜索结果
 function displayBatchResults(allResults) {
     const resultsDiv = document.getElementById('searchResults');
@@ -442,6 +486,7 @@ function displayBatchResults(allResults) {
     const totalMatches = allResults.reduce((sum, r) => sum + r.results.length, 0);
 
     if (totalMatches === 0) {
+        setDownloadData([]);
         resultsDiv.innerHTML = `
             <div class="result-header error">
                 未找到任何匹配的数据
@@ -494,6 +539,64 @@ function displayBatchResults(allResults) {
 
     resultsDiv.innerHTML = html;
     resultsDiv.scrollIntoView({ behavior: 'smooth' });
+
+    const seenIndexes = new Set();
+    const flattenedContent = [];
+    allResults.forEach(group => {
+        group.results.forEach(result => {
+            if (!seenIndexes.has(result.index)) {
+                seenIndexes.add(result.index);
+                flattenedContent.push(result.content);
+            }
+        });
+    });
+    setDownloadData(flattenedContent);
+}
+
+// 显示所有去重后的内容
+function displayAllDataItems() {
+    const resultsDiv = document.getElementById('searchResults');
+
+    if (dataItems.length === 0) {
+        setDownloadData([]);
+        resultsDiv.innerHTML = `
+            <div class="result-header error">
+                请先解析并去重数据
+            </div>
+        `;
+        return;
+    }
+
+    const maxDisplayCount = 5;
+    const itemsToShow = dataItems.slice(0, maxDisplayCount);
+    const itemsHtml = itemsToShow.map((item, index) => `
+        <div class="result-item">
+            <div class="result-item-header">
+                <span>数据 #${index + 1}</span>
+                <span>去重内容</span>
+            </div>
+            <div class="result-item-content">
+                ${item}
+            </div>
+        </div>
+    `).join('');
+
+    resultsDiv.innerHTML = `
+        <div class="result-header success">
+            开始搜索，去重后共有 ${dataItems.length} 条数据，默认仅展示前 ${itemsToShow.length} 条，可使用“下载结果”获取全部内容
+        </div>
+        <div class="keyword-group">
+            ${itemsHtml}
+        </div>
+        ${dataItems.length > maxDisplayCount ? `
+            <div class="result-header">
+                为避免一次性展示过多内容，建议通过下载或输入更精确的搜索条件查看剩余数据。
+            </div>
+        ` : ''}
+    `;
+
+    resultsDiv.scrollIntoView({ behavior: 'smooth' });
+    setDownloadData(dataItems.slice());
 }
 
 // 高亮搜索文本（支持标点符号模糊匹配）
@@ -558,6 +661,48 @@ document.querySelectorAll('input[name="delimiter"]').forEach(radio => {
         }
     });
 });
+
+const customDelimiterInput = document.getElementById('customDelimiter');
+if (customDelimiterInput) {
+    customDelimiterInput.addEventListener('focus', () => {
+        const customRadio = document.getElementById('delimiterCustom');
+        if (customRadio && !customRadio.checked) {
+            customRadio.checked = true;
+        }
+    });
+}
+
+// 下载结果
+const downloadBtn = document.getElementById('downloadResultsBtn');
+if (downloadBtn) {
+    downloadBtn.addEventListener('click', downloadResults);
+}
+
+function downloadResults() {
+    if (!lastDownloadItems.length) {
+        alert('暂无可下载内容，请先执行搜索。');
+        return;
+    }
+
+    const formatted = lastDownloadItems.map((item, idx) => {
+        const sanitized = item
+            .replace(/\r?\n/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        return `${idx + 1}.${sanitized}`;
+    });
+
+    const blob = new Blob([formatted.join('\n')], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    link.href = url;
+    link.download = `textgrep-results-${timestamp}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+}
 
 // 配置 PDF.js
 if (typeof pdfjsLib !== 'undefined') {

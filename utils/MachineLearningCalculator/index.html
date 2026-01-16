@@ -31,16 +31,16 @@
         <a href="../../index.html" class="back-btn">← 返回首页</a>
         <div class="header">
             <h1 data-shadow='科学计算器'>科学计算器</h1>
-            <p class="subtitle">支持加减乘除、幂运算、三角函数、对数、求导、方程求解、单位转换</p>
+            <p class="subtitle">支持加减乘除、幂函数、完整三角函数、单位与进制转换</p>
             <br><br><br>
-        </header>
+        </div>
 
         <div class="container">
             <div class="calc-grid">
                 <section class="calculator">
-                    <div id="display" class="display" contenteditable="true" spellcheck="false">0</div>
+                    <textarea id="display" class="display" spellcheck="false">0</textarea>
                     <div class="action-buttons">
-                        <button id="evalBtn" class="btn btn-primary">= 计算</button>
+                        <button id="evalBtn" class="btn btn-primary">计算</button>
                         <button id="clearBtn" class="btn btn-secondary">清除</button>
                         <button id="backBtn" class="btn btn-secondary">退格</button>
                     </div>
@@ -50,70 +50,122 @@
                         <button class="btn-calc" data-val="7">7</button>
                         <button class="btn-calc" data-val="8">8</button>
                         <button class="btn-calc" data-val="9">9</button>
-                        <button class="btn-calc btn-op" data-val="/">÷</button>
-                        <button class="btn-calc btn-op" data-fn="sqrt">√</button>
-                        <button class="btn-calc btn-op" data-fn="pow">^</button>
+                        <button class="btn-calc btn-op" data-val="+"
+                            title="加法：将两个数相加">+</button>
+                        <button class="btn-calc btn-op" data-val="-"
+                            title="减法：第一个数减去第二个数">−</button>
+                        <button class="btn-calc btn-op" data-val="*"
+                            title="乘法：两个数相乘">×</button>
 
                         <!-- 行2 -->
                         <button class="btn-calc" data-val="4">4</button>
                         <button class="btn-calc" data-val="5">5</button>
                         <button class="btn-calc" data-val="6">6</button>
-                        <button class="btn-calc btn-op" data-val="*">×</button>
-                        <button class="btn-calc btn-op" data-fn="pi">π</button>
-                        <button class="btn-calc btn-op" data-fn="fact">n!</button>
+                        <button class="btn-calc btn-op" data-val="/"
+                            title="除法：第一个数除以第二个数">÷</button>
+                        <button class="btn-calc btn-op" data-fn="pow"
+                            title="次方：a^b 表示 a 的 b 次方">^</button>
+                        <button class="btn-calc btn-op" data-fn="mod"
+                            title="取模：返回 a 除以 b 的余数">mod</button>
 
                         <!-- 行3 -->
                         <button class="btn-calc" data-val="1">1</button>
                         <button class="btn-calc" data-val="2">2</button>
                         <button class="btn-calc" data-val="3">3</button>
-                        <button class="btn-calc btn-op" data-val="-">−</button>
-                        <button class="btn-calc btn-op" data-fn="mod">mod</button>
-                        <button class="btn-calc btn-op" data-fn="percent">%</button>
+                        <button class="btn-calc btn-op" data-fn="fact"
+                            title="阶乘：n! 表示 1×2×…×n">n!</button>
+                        <button class="btn-calc btn-op" data-fn="log"
+                            title="可自定义底数的对数，底数来自“对数底”设置">log</button>
+                        <button class="btn-calc btn-op" data-fn="ln"
+                            title="自然对数：以 e 为底的对数">ln</button>
 
                         <!-- 行4 -->
                         <button class="btn-calc" data-val="0">0</button>
                         <button class="btn-calc" data-val=".">.</button>
+                        <button class="btn-calc" data-val=",">,</button>
                         <button class="btn-calc" data-val="(">(</button>
                         <button class="btn-calc" data-val=")">)</button>
-                        <button class="btn-calc btn-op" data-val="+">+</button>
-                        <button class="btn-calc btn-op" data-fn="ans">Ans</button>
+                        <button class="btn-calc btn-op" data-fn="root"
+                            title="自定义 n 次方根：次数由“开方次数”设置">√</button>
 
-                        <!-- 行5 高级函数 -->
-                        <button class="btn-calc" data-fn="sin">sin</button>
-                        <button class="btn-calc" data-fn="cos">cos</button>
-                        <button class="btn-calc" data-fn="tan">tan</button>
-                        <button class="btn-calc" data-fn="log">log</button>
-                        <button class="btn-calc" data-fn="ln">ln</button>
-                        <button class="btn-calc" data-fn="sqrt2">sqrt</button>
+                        <!-- 行5 -->
+                        <button class="btn-calc btn-op" data-fn="abs"
+                            title="绝对值：返回 |x|">| x |</button>
+                        <button class="btn-calc btn-op" data-fn="primeFactors"
+                            title="质因数分解：仅对整数有效">质因数</button>
+                        <button class="btn-calc btn-op" data-fn="floor"
+                            title="向下取整：返回不大于 x 的最大整数">向下取整</button>
+                        <button class="btn-calc btn-op" data-fn="ceil"
+                            title="向上取整：返回不小于 x 的最小整数">向上取整</button>
+                        <button class="btn-calc btn-op" data-fn="percent"
+                            title="百分比：将数字变为百分形式">100%</button>
+                        <button class="btn-calc btn-op" data-fn="pow10"
+                            title="10 的 x 次方：计算 10^x">10^x</button>
                     </div>
 
-                    <div class="advanced-controls">
-                        <button id="deriveBtn" class="btn btn-secondary">求导</button>
-                        <button id="solveBtn" class="btn btn-secondary">求解</button>
-                        <input id="solveVar" placeholder="变量 (默认 x)" class="input-field" />
-                        <input id="solveGuess" placeholder="初始值" class="input-field" />
+                    <div class="function-section">
+                        <div class="section-heading">
+                            <span class="trig-title">三角函数</span>
+                            <small>遵循角度/弧度设置</small>
+                        </div>
+                        <div class="function-grid trig-grid">
+                            <button class="btn-calc btn-op" data-fn="sin" title="正弦：使用当前角度/弧度模式">sin</button>
+                            <button class="btn-calc btn-op" data-fn="cos" title="余弦：使用当前角度/弧度模式">cos</button>
+                            <button class="btn-calc btn-op" data-fn="tan" title="正切：使用当前角度/弧度模式">tan</button>
+                            <button class="btn-calc btn-op" data-fn="cot" title="余切：cot(x)=1/tan(x)">cot</button>
+                            <button class="btn-calc btn-op" data-fn="sec" title="正割：sec(x)=1/cos(x)">sec</button>
+                            <button class="btn-calc btn-op" data-fn="csc" title="余割：csc(x)=1/sin(x)">csc</button>
+                            <button class="btn-calc btn-op" data-fn="asin" title="反正弦：结果受角度模式影响">arcsin</button>
+                            <button class="btn-calc btn-op" data-fn="acos" title="反余弦：结果受角度模式影响">arccos</button>
+                            <button class="btn-calc btn-op" data-fn="atan" title="反正切：结果受角度模式影响">arctan</button>
+                            <button class="btn-calc btn-op" data-fn="sinh" title="双曲正弦函数">sinh</button>
+                            <button class="btn-calc btn-op" data-fn="cosh" title="双曲余弦函数">cosh</button>
+                            <button class="btn-calc btn-op" data-fn="tanh" title="双曲正切函数">tanh</button>
+                            <button class="btn-calc btn-op" data-fn="asinh" title="反双曲正弦函数">arsinh</button>
+                            <button class="btn-calc btn-op" data-fn="acosh" title="反双曲余弦函数">arcosh</button>
+                            <button class="btn-calc btn-op" data-fn="atanh" title="反双曲正切函数">artanh</button>
+                        </div>
                     </div>
                 </section>
 
                 <aside class="side-panel">
                     <div class="field">
                         <label>设置</label>
-                        <div class="settings-row">
-                            <label>小数位</label>
-                            <input id="precision" type="number" min="0" max="20" value="6" class="input-field small" />
-                            <label>角度</label>
-                            <select id="angleMode" class="input-field small">
-                                <option value="rad">弧度</option>
-                                <option value="deg">角度</option>
-                            </select>
+                        <div class="settings-wrapper">
+                            <div class="settings-row">
+                                <div class="setting-item">
+                                    <label>显示</label>
+                                    <select id="displayMode" class="input-field small">
+                                        <option value="decimal">小数</option>
+                                        <option value="fraction">分数</option>
+                                    </select>
+                                </div>
+                                <div class="setting-item">
+                                    <label>小数位</label>
+                                    <input id="precision" type="number" min="0" max="20" value="6" class="input-field small" />
+                                </div>
+                            </div>
+                            <div class="settings-row">
+                                <div class="setting-item">
+                                    <label>角度</label>
+                                    <select id="angleMode" class="input-field small">
+                                        <option value="rad">弧度</option>
+                                        <option value="deg">角度</option>
+                                    </select>
+                                </div>
+                                <div class="setting-item">
+                                    <label>对数底</label>
+                                    <input id="logBase" type="number" step="any" value="10" class="input-field small" />
+                                </div>
+                            </div>
+                            <div class="settings-row">
+                                <div class="setting-item">
+                                    <label>开方次数</label>
+                                    <input id="rootDegree" type="number" min="2" step="1" value="2" class="input-field small" />
+                                </div>
+                                <div class="setting-item setting-spacer"></div>
+                            </div>
                         </div>
-                    </div>
-
-                    <div class="field">
-                        <label>单位转换</label>
-                        <input id="unitInput" placeholder="10 cm to m" class="input-field" />
-                        <button id="convertBtn" class="btn btn-secondary">转换</button>
-                        <div id="unitResult" class="result-text"></div>
                     </div>
 
                     <div class="field">
@@ -123,7 +175,7 @@
 
                     <div class="field">
                         <label>说明</label>
-                        <div class="info-text">支持表达式输入（例如 <code>2*(3+sin(pi/4))</code>），使用小写函数名。求导使用符号计算（Algebrite），方程求解为单变量数值求解。</div>
+                        <div class="info-text">支持表达式输入（例如 <code>2*(3+sin(pi/4))</code>），使用小写函数名。提供完整三角函数集、角度/弧度切换、可视化单位换算以及进制转换工具。</div>
                     </div>
                     <div class="field">
                         <label>更多功能</label>
@@ -131,12 +183,56 @@
                     </div>
                 </aside>
             </div>
+
+            <div class="converter-grid">
+                <section class="converter-panel">
+                    <h2>单位转换</h2>
+                    <p class="panel-desc">支持长度、温度、功率、速度、重量、面积、体积等常见单位。</p>
+                    <div class="unit-row two-cols">
+                        <input id="unitValue" type="number" step="any" placeholder="输入数值" class="input-field" />
+                        <select id="unitCategory" class="input-field">
+                            <option value="length">长度</option>
+                            <option value="temperature">温度</option>
+                            <option value="power">功率</option>
+                            <option value="speed">速度</option>
+                            <option value="weight">重量</option>
+                            <option value="area">面积</option>
+                            <option value="volume">体积</option>
+                        </select>
+                    </div>
+                    <div class="unit-row two-cols">
+                        <select id="unitFrom" class="input-field"></select>
+                        <span class="unit-arrow">→</span>
+                        <select id="unitTo" class="input-field"></select>
+                    </div>
+                    <div class="converter-actions">
+                        <button id="unitConvertBtn" class="btn btn-secondary">转换</button>
+                        <div id="unitResult" class="result-text"></div>
+                    </div>
+                </section>
+
+                <section class="converter-panel">
+                    <h2>进制转换</h2>
+                    <p class="panel-desc">在 2-36 进制间相互转换，支持负数输入。</p>
+                    <div class="unit-row single-input">
+                        <input id="baseValue" placeholder="输入要转换的数值 (整数)" class="input-field" />
+                    </div>
+                    <div class="unit-row two-cols select-pair">
+                        <select id="baseFrom" class="input-field base-select"></select>
+                        <span class="unit-arrow">→</span>
+                        <select id="baseTo" class="input-field base-select"></select>
+                    </div>
+                    <div class="converter-actions">
+                        <button id="baseConvertBtn" class="btn btn-secondary">转换</button>
+                        <div id="baseResult" class="result-text"></div>
+                    </div>
+                </section>
+            </div>
         </div>
     </div>
 
-    <!-- 引入 math.js（数值/单位/分数）、Algebrite（符号运算）以及本地逻辑脚本 -->
+    <!-- 引入 math.js（数值/单位/分数）以及本地逻辑脚本 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/algebrite/1.5.0/algebrite.min.js"></script>
     <script src="assets/js/theme-toggle.js"></script>
     <script src="assets/js/calculator.js"></script>
 </body>

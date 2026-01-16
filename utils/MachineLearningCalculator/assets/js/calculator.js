@@ -7,20 +7,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const historyEl = document.getElementById('history');
     const precisionEl = document.getElementById('precision');
     const angleModeEl = document.getElementById('angleMode');
-    const deriveBtn = document.getElementById('deriveBtn');
-    const solveBtn = document.getElementById('solveBtn');
-    const solveVarEl = document.getElementById('solveVar');
-    const solveGuessEl = document.getElementById('solveGuess');
-    const unitInput = document.getElementById('unitInput');
-    const convertBtn = document.getElementById('convertBtn');
+    const displayModeEl = document.getElementById('displayMode');
+    const logBaseEl = document.getElementById('logBase');
+    const rootDegreeEl = document.getElementById('rootDegree');
+    const unitCategoryEl = document.getElementById('unitCategory');
+    const unitFromEl = document.getElementById('unitFrom');
+    const unitToEl = document.getElementById('unitTo');
+    const unitValueEl = document.getElementById('unitValue');
+    const unitConvertBtn = document.getElementById('unitConvertBtn');
     const unitResult = document.getElementById('unitResult');
+    const baseValueEl = document.getElementById('baseValue');
+    const baseFromEl = document.getElementById('baseFrom');
+    const baseToEl = document.getElementById('baseTo');
+    const baseConvertBtn = document.getElementById('baseConvertBtn');
+    const baseResultEl = document.getElementById('baseResult');
 
     let lastAns = 0;
+    setDisplay('0', 1, false);
     const FN_INSERTS = Object.freeze({
-        sqrt: 'sqrt(',
-        sqrt2: 'sqrt(',
+        root: 'root(',
+        sqrt: 'root(',
         pow: '^',
-        pi: 'pi',
         fact: '!',
         mod: ' mod ',
         percent: '/100',
@@ -28,8 +35,27 @@ document.addEventListener('DOMContentLoaded', () => {
         sin: 'sin(',
         cos: 'cos(',
         tan: 'tan(',
+        cot: 'cot(',
+        sec: 'sec(',
+        csc: 'csc(',
+        asin: 'asin(',
+        acos: 'acos(',
+        atan: 'atan(',
+        sinh: 'sinh(',
+        cosh: 'cosh(',
+        tanh: 'tanh(',
+        asinh: 'asinh(',
+        acosh: 'acosh(',
+        atanh: 'atanh(',
+        logb: 'log(',
         log: 'log(',
-        ln: 'ln('
+        ln: 'ln(',
+        abs: 'abs(',
+        sum: 'sum(',
+        primeFactors: 'primeFactors(',
+        floor: 'floor(',
+        ceil: 'ceil(',
+        pow10: 'pow10('
     });
     const SYMBOL_REPLACEMENTS = [
         [/Ã·/g, '/'], [/÷/g, '/'],
@@ -41,32 +67,111 @@ document.addEventListener('DOMContentLoaded', () => {
     function makeScope() {
         const mode = angleModeEl.value || 'rad';
         const toRad = (x) => mode === 'deg' ? x * Math.PI / 180 : x;
+        const toAngle = (val) => mode === 'deg' ? val * 180 / Math.PI : val;
+        const trigWrap = (fn) => (x) => fn(toRad(x));
+        const invWrap = (fn) => (x) => toAngle(fn(x));
+        const hyperWrap = (fn) => (x) => fn(toRad(x));
+        const hyperInvWrap = (fn) => (x) => mode === 'deg' ? fn(x) * 180 / Math.PI : fn(x);
+        const getValidLogBase = () => {
+            const raw = logBaseEl ? Number(logBaseEl.value) : 10;
+            const base = Number.isFinite(raw) ? raw : 10;
+            if (base <= 0 || base === 1) {
+                throw new Error('对数底需大于 0 且不等于 1');
+            }
+            return base;
+        };
+        const getRootDegree = () => {
+            const raw = rootDegreeEl ? Number(rootDegreeEl.value) : 2;
+            const degree = Number.isFinite(raw) ? raw : 2;
+            if (!Number.isInteger(degree) || degree < 2) {
+                throw new Error('开方次数需为大于等于 2 的整数');
+            }
+            return degree;
+        };
+        const logWithBase = (value) => math.log(value, getValidLogBase());
+        const rootWithDegree = (value) => math.nthRoot(value, getRootDegree());
         return {
-            sin: (x) => Math.sin(toRad(x)),
-            cos: (x) => Math.cos(toRad(x)),
-            tan: (x) => Math.tan(toRad(x)),
-            asin: (x) => mode === 'deg' ? Math.asin(x) * 180 / Math.PI : Math.asin(x),
-            acos: (x) => mode === 'deg' ? Math.acos(x) * 180 / Math.PI : Math.acos(x),
-            atan: (x) => mode === 'deg' ? Math.atan(x) * 180 / Math.PI : Math.atan(x),
+            sin: trigWrap(Math.sin),
+            cos: trigWrap(Math.cos),
+            tan: trigWrap(Math.tan),
+            cot: (x) => 1 / Math.tan(toRad(x)),
+            sec: (x) => 1 / Math.cos(toRad(x)),
+            csc: (x) => 1 / Math.sin(toRad(x)),
+            asin: invWrap(Math.asin),
+            acos: invWrap(Math.acos),
+            atan: invWrap(Math.atan),
+            sinh: hyperWrap(Math.sinh),
+            cosh: hyperWrap(Math.cosh),
+            tanh: hyperWrap(Math.tanh),
+            asinh: hyperInvWrap(Math.asinh),
+            acosh: hyperInvWrap(Math.acosh),
+            atanh: hyperInvWrap(Math.atanh),
+            log: logWithBase,
+            logb: logWithBase,
+            ln: (x) => math.log(x),
+            root: (x) => rootWithDegree(x),
+            floor: (x) => Math.floor(x),
+            ceil: (x) => Math.ceil(x),
             pi: math.pi,
             e: math.e,
             ans: lastAns,
+            primeFactors: (value) => {
+                const num = Number(value);
+                if (!Number.isFinite(num)) {
+                    throw new Error('请输入有限数字');
+                }
+                if (!Number.isInteger(num)) {
+                    throw new Error('质因数分解仅支持整数');
+                }
+                if (Math.abs(num) < 2) return [num];
+                const factors = math.primeFactors(Math.abs(num));
+                return num < 0 ? [-1, ...factors] : factors;
+            },
+            pow10: (exponent) => {
+                const x = Number(exponent);
+                if (!Number.isFinite(x)) {
+                    throw new Error('请输入有限指数');
+                }
+                return Math.pow(10, x);
+            },
             // keep math functions available via math namespace if needed
             math: math
         };
     }
 
     function getDisplay() {
-        return displayEl.innerText.trim();
+        return displayEl.value;
     }
-    function setDisplay(v) {
-        displayEl.innerText = v;
+    function setDisplay(v, caretPos = null, shouldFocus = true) {
+        const value = String(v);
+        displayEl.value = value;
+        const pos = caretPos === null ? value.length : Math.max(0, Math.min(caretPos, value.length));
+        displayEl.setSelectionRange(pos, pos);
+        if (shouldFocus) {
+            displayEl.focus();
+        }
     }
 
-    // append token to display at end
+    function insertText(text, caretOffset = null) {
+        const value = getDisplay();
+        const start = displayEl.selectionStart ?? value.length;
+        const end = displayEl.selectionEnd ?? start;
+        const replaceZero = value === '0' && value.length === 1 && start === end;
+        const before = replaceZero ? '' : value.slice(0, start);
+        const after = replaceZero ? '' : value.slice(end);
+        const next = before + text + after;
+        const insertionStart = before.length;
+        const offset = caretOffset === null ? text.length : caretOffset;
+        setDisplay(next, insertionStart + offset);
+    }
+
+    function insertWithAutoParen(token) {
+        insertText(token + ')', token.length);
+    }
+
+    // append token at caret
     function appendToDisplay(token) {
-        const current = getDisplay();
-        setDisplay(current === '0' ? token : current + token);
+        insertText(token);
     }
 
     // button clicks
@@ -79,15 +184,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             if (fn && FN_INSERTS[fn]) {
-                appendToDisplay(FN_INSERTS[fn]);
+                const snippet = FN_INSERTS[fn];
+                if (snippet.endsWith('(')) {
+                    insertWithAutoParen(snippet);
+                } else {
+                    appendToDisplay(snippet);
+                }
             }
         });
     });
 
-    clearBtn.addEventListener('click', () => setDisplay('0'));
+    clearBtn.addEventListener('click', () => setDisplay('0', 1));
     backBtn.addEventListener('click', () => {
-        const s = getDisplay();
-        if (s.length <= 1) setDisplay('0'); else setDisplay(s.slice(0, -1));
+        const value = getDisplay();
+        const start = displayEl.selectionStart ?? value.length;
+        const end = displayEl.selectionEnd ?? start;
+        if (value.length <= 1) {
+            setDisplay('0', 1);
+            return;
+        }
+        if (start !== end) {
+            const next = value.slice(0, start) + value.slice(end);
+            setDisplay(next, start);
+        } else if (start > 0) {
+            const next = value.slice(0, start - 1) + value.slice(start);
+            setDisplay(next, start - 1);
+        }
     });
 
     // sanitize user-friendly characters
@@ -109,13 +231,49 @@ document.addEventListener('DOMContentLoaded', () => {
         return String(val);
     }
 
+    function getDisplayMode() {
+        return (displayModeEl && displayModeEl.value) || 'decimal';
+    }
+
+    function fractionStringFromValue(value) {
+        try {
+            const frac = math.fraction(value);
+            if (frac && typeof frac.toFraction === 'function') {
+                const text = frac.toFraction(false); // always simple ratio
+                return { text, numeric: Number(frac.valueOf()) };
+            }
+        } catch (e) {
+            // ignore
+        }
+        return null;
+    }
+
+    function formatNumericOutput(value) {
+        const mode = getDisplayMode();
+        if (mode === 'fraction') {
+            const fracResult = fractionStringFromValue(value);
+            if (fracResult) {
+                return fracResult;
+            }
+        }
+        const formatted = formatNumber(value);
+        return { text: formatted, numeric: Number(value) };
+    }
+
     function pushHistory(expr, result) {
-        const div = document.createElement('div');
-        div.style.padding = '6px 8px';
-        div.style.borderBottom = '1px solid #e9eef8';
-        div.innerHTML = `<div style="font-weight:600">${expr}</div><div style="color:#334;height:auto">${result}</div>`;
-        div.addEventListener('click', () => setDisplay(expr));
-        historyEl.prepend(div);
+        if (!historyEl) return;
+        const item = document.createElement('div');
+        item.classList.add('history-item');
+        item.innerHTML = `
+            <div class="history-expression">${expr}</div>
+            <div class="history-result">${result}</div>
+        `;
+        item.addEventListener('click', () => setDisplay(expr));
+        historyEl.prepend(item);
+        while (historyEl.children.length > 3) {
+            historyEl.removeChild(historyEl.lastElementChild);
+        }
+        historyEl.scrollTop = 0;
     }
 
     evalBtn.addEventListener('click', () => {
@@ -133,14 +291,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // If result is a mathjs Fraction or BigNumber, convert to number/string appropriately
             if (math.typeOf(res) === 'Fraction') {
-                // show fraction and decimal
-                const frac = res; // math.Fraction
-                const dec = frac.valueOf();
-                const out = `${frac.toString()} = ${formatNumber(dec)}`;
-                lastAns = dec;
-                pushHistory(expr, out);
-                setDisplay(formatNumber(dec));
-                return;
+                const decimalValue = res.valueOf();
+                if (getDisplayMode() === 'fraction') {
+                    const text = typeof res.toFraction === 'function'
+                        ? res.toFraction(false)
+                        : res.toString();
+                    lastAns = decimalValue;
+                    pushHistory(expr, text);
+                    setDisplay(text);
+                    return;
+                } else {
+                    const { text, numeric } = formatNumericOutput(decimalValue);
+                    lastAns = numeric;
+                    pushHistory(expr, text);
+                    setDisplay(text);
+                    return;
+                }
             }
 
             if (typeof res === 'function') res = res();
@@ -158,20 +324,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // numeric formatting
             if (typeof res === 'number') {
-                lastAns = res;
-                const out = formatNumber(res);
-                // also attempt fraction
-                try {
-                    const f = math.fraction(res);
-                    if (f && f.toString && f.toString() !== String(out)) {
-                        pushHistory(expr, `${out} ≈ ${f.toString()}`);
-                    } else {
-                        pushHistory(expr, out);
-                    }
-                } catch (e) {
-                    pushHistory(expr, out);
-                }
-                setDisplay(out);
+                const { text, numeric } = formatNumericOutput(res);
+                lastAns = numeric;
+                pushHistory(expr, text);
+                setDisplay(text);
                 return;
             }
 
@@ -183,73 +339,188 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 符号求导（使用 Algebrite）
-    deriveBtn.addEventListener('click', () => {
-        const raw = getDisplay();
-        const expr = raw || '0';
-        const variable = (solveVarEl.value && solveVarEl.value.trim()) || 'x';
-        try {
-            // Algebrite 使用 d(expr, x) 或 derivative(expr, x)
-            const cmd = `d(${expr}, ${variable})`;
-            const out = Algebrite.run(cmd).toString();
-            pushHistory(`d(${expr})/d${variable}`, out);
-            setDisplay(out);
-        } catch (e) {
-            setDisplay('求导错误: ' + e.message);
-        }
-    });
+    const UNIT_GROUPS = {
+        length: [
+            { value: 'mm', label: '毫米 (mm)' },
+            { value: 'cm', label: '厘米 (cm)' },
+            { value: 'm', label: '米 (m)' },
+            { value: 'km', label: '千米 (km)' },
+            { value: 'inch', label: '英寸 (in)' },
+            { value: 'ft', label: '英尺 (ft)' },
+            { value: 'yd', label: '码 (yd)' },
+            { value: 'mi', label: '英里 (mi)' }
+        ],
+        temperature: [
+            { value: 'degC', label: '摄氏度 (°C)' },
+            { value: 'degF', label: '华氏度 (°F)' },
+            { value: 'K', label: '开尔文 (K)' }
+        ],
+        power: [
+            { value: 'W', label: '瓦 (W)' },
+            { value: 'kW', label: '千瓦 (kW)' },
+            { value: 'MW', label: '兆瓦 (MW)' },
+            { value: 'hp', label: '马力 (hp)' }
+        ],
+        speed: [
+            { value: 'm/s', label: '米/秒 (m/s)' },
+            { value: 'km/h', label: '千米/时 (km/h)' },
+            { value: 'mi/h', label: '英里/时 (mph)' },
+            { value: 'knot', label: '节 (knot)' }
+        ],
+        weight: [
+            { value: 'g', label: '克 (g)' },
+            { value: 'kg', label: '千克 (kg)' },
+            { value: 'tonne', label: '吨 (t)' },
+            { value: 'lb', label: '磅 (lb)' }
+        ],
+        area: [
+            { value: 'cm^2', label: '平方厘米 (cm²)' },
+            { value: 'm^2', label: '平方米 (m²)' },
+            { value: 'km^2', label: '平方千米 (km²)' },
+            { value: 'hectare', label: '公顷 (ha)' },
+            { value: 'acre', label: '英亩 (acre)' }
+        ],
+        volume: [
+            { value: 'ml', label: '毫升 (ml)' },
+            { value: 'l', label: '升 (L)' },
+            { value: 'm^3', label: '立方米 (m³)' },
+            { value: 'gal', label: '加仑 (gal)' }
+        ]
+    };
 
-    // 单变量数值求解（牛顿法）
-    async function numericSolve(expr, variable='x', guess=0) {
-        const f = (v) => {
-            try { return Number(math.evaluate(expr, { [variable]: v, ans: lastAns })); } catch (e) { throw e; }
-        };
-        const h = 1e-6;
-        let x = Number(guess || 0);
-        for (let i=0;i<80;i++) {
-            const fx = f(x);
-            const dfx = (f(x+h) - f(x-h)) / (2*h);
-            if (!isFinite(fx) || !isFinite(dfx)) throw new Error('函数值或导数非有限');
-            if (Math.abs(fx) < 1e-12) return x;
-            if (Math.abs(dfx) < 1e-12) x = x + (Math.sign(fx) || 1) * 1e-1; else x = x - fx/dfx;
+    function populateUnitOptions(category) {
+        if (!unitFromEl || !unitToEl) return;
+        const options = UNIT_GROUPS[category] || [];
+        unitFromEl.innerHTML = '';
+        unitToEl.innerHTML = '';
+        options.forEach((opt) => {
+            const optionFrom = document.createElement('option');
+            optionFrom.value = opt.value;
+            optionFrom.textContent = opt.label;
+            unitFromEl.appendChild(optionFrom);
+
+            const optionTo = document.createElement('option');
+            optionTo.value = opt.value;
+            optionTo.textContent = opt.label;
+            unitToEl.appendChild(optionTo);
+        });
+        if (options.length > 1) {
+            unitToEl.selectedIndex = 1;
         }
-        throw new Error('未收敛');
     }
 
-    solveBtn.addEventListener('click', async () => {
-        const raw = getDisplay();
-        const expr = raw || '0';
-        const variable = (solveVarEl.value && solveVarEl.value.trim()) || 'x';
-        const guess = Number(solveGuessEl.value) || 0;
-        try {
-            const root = await numericSolve(expr, variable, guess);
-            const out = formatNumber(root);
-            pushHistory(`solve(${expr}, ${variable})`, out);
-            setDisplay(out);
-        } catch (e) {
-            setDisplay('求解失败: ' + e.message);
-        }
-    });
+    if (unitCategoryEl) {
+        populateUnitOptions(unitCategoryEl.value || 'length');
+        unitCategoryEl.addEventListener('change', (e) => {
+            populateUnitOptions(e.target.value);
+            if (unitResult) unitResult.innerText = '';
+        });
+    }
 
-    // 单纯的单位转换（支持 math.unit），输入示例： "10 cm to m"
-    convertBtn.addEventListener('click', () => {
-        const txt = (unitInput.value || '').trim();
-        if (!txt) return unitResult.innerText = '请输入要转换的量，例如：10 cm to m';
-        const parts = txt.split(/\s+to\s+/i);
-        try {
-            if (parts.length === 2) {
-                const from = math.unit(parts[0]);
-                const to = from.to(parts[1]);
-                unitResult.innerText = to.toString();
-            } else {
-                // 尝试直接构造unit
-                const u = math.unit(txt);
-                unitResult.innerText = u.toString();
+    if (unitConvertBtn) {
+        unitConvertBtn.addEventListener('click', () => {
+            if (!unitValueEl || !unitFromEl || !unitToEl) return;
+            const rawValue = unitValueEl.value;
+            const numericValue = Number(rawValue);
+            if (!rawValue || Number.isNaN(numericValue)) {
+                unitResult.innerText = '请输入要转换的数值';
+                return;
             }
-        } catch (e) {
-            unitResult.innerText = '转换错误: ' + e.message;
+            const fromUnit = unitFromEl.value;
+            const toUnit = unitToEl.value;
+            if (!fromUnit || !toUnit) {
+                unitResult.innerText = '请选择需要转换的单位';
+                return;
+            }
+            try {
+                const converted = math.unit(numericValue, fromUnit).to(toUnit);
+                const formatted = formatNumber(converted.toNumber(toUnit));
+                const fromLabel = unitFromEl.options[unitFromEl.selectedIndex]?.textContent || fromUnit;
+                const toLabel = unitToEl.options[unitToEl.selectedIndex]?.textContent || toUnit;
+                unitResult.innerText = `${numericValue} ${fromLabel} = ${formatted} ${toLabel}`;
+            } catch (e) {
+                unitResult.innerText = '转换错误: ' + e.message;
+            }
+        });
+    }
+
+    const BASE_DIGITS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    function populateBaseSelect(selectEl) {
+        if (!selectEl) return;
+        selectEl.innerHTML = '';
+        for (let base = 2; base <= 36; base++) {
+            const option = document.createElement('option');
+            option.value = String(base);
+            option.textContent = `${base} 进制`;
+            selectEl.appendChild(option);
         }
-    });
+    }
+
+    function parseToBigInt(value, base) {
+        let s = (value || '').trim().toUpperCase();
+        if (!s) throw new Error('请输入要转换的数值');
+        let sign = 1n;
+        if (s.startsWith('-')) {
+            sign = -1n;
+            s = s.slice(1);
+        }
+        s = s.replace(/\s+/g, '');
+        if (!s) throw new Error('请输入要转换的数值');
+        let acc = 0n;
+        for (const ch of s) {
+            const idx = BASE_DIGITS.indexOf(ch);
+            if (idx === -1 || idx >= base) {
+                throw new Error(`字符 ${ch} 不在 ${base} 进制范围内`);
+            }
+            acc = acc * BigInt(base) + BigInt(idx);
+        }
+        return acc * sign;
+    }
+
+    function bigIntToBase(value, base) {
+        if (value === 0n) return '0';
+        let sign = '';
+        let n = value;
+        if (n < 0) {
+            sign = '-';
+            n = -n;
+        }
+        let result = '';
+        while (n > 0) {
+            const rem = n % BigInt(base);
+            result = BASE_DIGITS[Number(rem)] + result;
+            n = n / BigInt(base);
+        }
+        return sign + result;
+    }
+
+    if (baseFromEl && baseToEl) {
+        populateBaseSelect(baseFromEl);
+        populateBaseSelect(baseToEl);
+        baseFromEl.value = '10';
+        baseToEl.value = '2';
+    }
+
+    if (baseConvertBtn) {
+        baseConvertBtn.addEventListener('click', () => {
+            if (!baseValueEl || !baseFromEl || !baseToEl || !baseResultEl) return;
+            const raw = (baseValueEl.value || '').trim();
+            if (!raw) {
+                baseResultEl.innerText = '请输入要转换的数值';
+                return;
+            }
+            const fromBase = parseInt(baseFromEl.value, 10);
+            const toBase = parseInt(baseToEl.value, 10);
+            try {
+                const bigIntValue = parseToBigInt(raw, fromBase);
+                const converted = bigIntToBase(bigIntValue, toBase);
+                baseResultEl.innerText = `${raw} (${fromBase} 进制) = ${converted} (${toBase} 进制)`;
+            } catch (e) {
+                baseResultEl.innerText = '转换失败: ' + e.message;
+            }
+        });
+    }
 
     // allow pressing Enter in display to evaluate
     displayEl.addEventListener('keydown', (e) => {

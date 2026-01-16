@@ -307,8 +307,20 @@ body {
     scale: 1.02;
 }
 
-.btn-primary, .btn-success {
+.btn-primary,
+.btn-success {
     /* 使用相同的毛玻璃效果 */
+}
+
+.btn-secondary {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    color: hsl(0 0% 95%);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    border-color: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.08);
 }
 
 /* 分隔符选项 */
@@ -359,6 +371,18 @@ body {
     border-color: rgba(255, 255, 255, 0.3);
 }
 
+.radio-option.custom-option {
+    flex-wrap: wrap;
+}
+
+.radio-option.custom-option label {
+    cursor: pointer;
+}
+
+.radio-option.custom-option input[type="text"] {
+    flex: 1 1 200px;
+}
+
 /* 数据预览 */
 .data-preview {
     margin-top: 20px;
@@ -395,6 +419,16 @@ body {
     display: flex;
     flex-direction: column;
     gap: 15px;
+}
+
+.search-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.search-actions .btn {
+    flex: 1 1 180px;
 }
 
 .search-area textarea {
@@ -942,6 +976,17 @@ body.day-mode .divider::after {
 
 body.day-mode .radio-option span {
     color: #2d3748;
+}
+
+body.day-mode .radio-option input[type="text"] {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: #1a202c;
+    caret-color: #1a202c;
+}
+
+body.day-mode .radio-option input[type="text"]::placeholder {
+    color: #a0aec0;
 }
 
 body.day-mode .data-preview,
