@@ -1,0 +1,151 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0c111a">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <title>环上比较 - RingCalculation</title>
+    <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+<script>
+    if (localStorage.getItem('tooltopia-theme') === 'day') {
+        document.body.classList.add('day-mode');
+    }
+</script>
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+
+    <div id="background-wrapper"></div>
+    <div class="page-container">
+        <a href="../../index.html" class="back-btn">&#x2190; 返回首页</a>
+        <header class="header">
+            <h1 data-shadow="Ring Comparison">Ring Comparison</h1>
+            <p class="subtitle">在整数环 \(Z_N\) 上体验输入点与区间判断的可视化逻辑。</p>
+        </header>
+
+        <div class="ring-grid">
+            <section class="panel ring-panel">
+                <div class="panel-head">
+                    <div>
+                        <h2>动态模数环生成器</h2>
+                        <p class="panel-sub">点击或拖动环上的刻度选择 \(x\)。</p>
+                    </div>
+                    <div class="control-inline">
+                        <label for="modSelect">模数 \(N\)</label>
+                        <select id="modSelect" class="input-field">
+                            <option value="8">8</option>
+                            <option value="16" selected>16</option>
+                            <option value="32">32</option>
+                            <option value="64">64</option>
+                        </select>
+                        <button id="resetBtn" class="btn btn-secondary">重置</button>
+                    </div>
+                </div>
+
+                <div class="ring-canvas">
+                    <svg id="ringSvg" viewBox="0 0 600 600" aria-label="整数环可视化">
+                        <defs>
+                            <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto" markerUnits="strokeWidth">
+                                <path d="M0,0 L6,3 L0,6 Z" fill="context-stroke"></path>
+                            </marker>
+                        </defs>
+                        <circle class="ring-base" cx="300" cy="300" r="270"></circle>
+                        <circle id="hitRing" class="ring-hit" cx="300" cy="300" r="270"></circle>
+                        <g id="tickGroup"></g>
+                        <g id="arcGroupTarget"></g>
+                        <g id="arcGroupOffset"></g>
+                        <g id="arrowGroup"></g>
+                        <g id="pointGroup"></g>
+                        <circle id="pointZero" class="ring-point point-zero" r="5"></circle>
+                    </svg>
+
+                    <div id="readoutContainer" class="ring-readout"></div>
+
+                    <div id="legendList" class="legend"></div>
+                </div>
+            </section>
+
+            <aside class="panel control-panel">
+                <div class="control-block">
+                    <h3>点列表</h3>
+                    <div class="control-row">
+                        <button id="addPointBtn" class="btn btn-secondary btn-compact">添加点</button>
+                    </div>
+                    <div id="pointList" class="dynamic-list"></div>
+                    <p class="hint">名称用于表达式与选择。</p>
+                </div>
+
+                <div class="control-block">
+                    <h3>显示变量</h3>
+                    <div class="control-row">
+                        <label for="readoutInput">输入</label>
+                        <input id="readoutInput" class="input-field" type="text" placeholder="输入表达式，逗号分隔">
+                    </div>
+                </div>
+
+                <div class="control-block">
+                    <h3>弧段列表</h3>
+                    <div class="control-row">
+                        <button id="addArcBtn" class="btn btn-secondary btn-compact">添加弧段</button>
+                    </div>
+                    <div class="control-row">
+                        <label class="toggle-inline">
+                            <input id="hideTargetArcToggle" type="checkbox">
+                            <span>隐藏目标弧段</span>
+                        </label>
+                        <label class="toggle-inline">
+                            <input id="hideOffsetArcToggle" type="checkbox">
+                            <span>隐藏偏移弧段</span>
+                        </label>
+                    </div>
+                    <div id="arcList" class="dynamic-list"></div>
+                    <div class="formula">偏移弧段：起点/终点 + r。</div>
+                </div>
+
+                <div class="control-block wrap-card">
+                    <h3>回绕判断</h3>
+                    <div class="control-row">
+                        <label for="arcSelect">弧段</label>
+                        <select id="arcSelect" class="input-field"></select>
+                    </div>
+                    <div class="control-row">
+                        <label for="intervalSelect">区间</label>
+                        <select id="intervalSelect" class="input-field">
+                            <option value="target">目标弧段</option>
+                            <option value="offset">偏移弧段</option>
+                        </select>
+                    </div>
+                    <div class="wrap-row">
+                        <span id="wrapFormula" class="mono">\(1\{\text{start} > \text{end}\}\)</span>
+                        <span id="wrapValue" class="wrap-value">0</span>
+                    </div>
+                    <p class="hint">区间由所选弧段决定。</p>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script src="./assets/js/theme-toggle.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['\\(', '\\)'], ['$', '$']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+    <script src="./assets/js/script.js"></script>
+</body>
+</html>
