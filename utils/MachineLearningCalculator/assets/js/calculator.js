@@ -274,6 +274,62 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             return math.matrix(math.transpose(cofactors));
         };
+        const matrixRank = (a) => {
+            const matrix = normalizeMatrix(a);
+            if (typeof math.rank === 'function') {
+                return math.rank(matrix);
+            }
+            const data = matrix.valueOf();
+            const rows = data.length;
+            const cols = rows > 0 ? data[0].length : 0;
+            if (rows === 0 || cols === 0) return 0;
+            const toNumeric = (value) => {
+                const valueType = math.typeOf(value);
+                if (valueType === 'Fraction') return value.valueOf();
+                if (valueType === 'BigNumber') return value.toNumber();
+                if (valueType === 'Complex') return math.abs(value);
+                const numeric = Number(value);
+                if (!Number.isFinite(numeric)) {
+                    throw new Error('请输入数值矩阵');
+                }
+                return numeric;
+            };
+            const mat = data.map((row) => row.map(toNumeric));
+            const tol = 1e-10;
+            let rank = 0;
+            let row = 0;
+            for (let col = 0; col < cols && row < rows; col += 1) {
+                let pivot = row;
+                for (let r = row + 1; r < rows; r += 1) {
+                    if (Math.abs(mat[r][col]) > Math.abs(mat[pivot][col])) {
+                        pivot = r;
+                    }
+                }
+                if (Math.abs(mat[pivot][col]) <= tol) {
+                    continue;
+                }
+                if (pivot !== row) {
+                    const tmp = mat[row];
+                    mat[row] = mat[pivot];
+                    mat[pivot] = tmp;
+                }
+                const pivotVal = mat[row][col];
+                for (let c = col; c < cols; c += 1) {
+                    mat[row][c] /= pivotVal;
+                }
+                for (let r = 0; r < rows; r += 1) {
+                    if (r === row) continue;
+                    const factor = mat[r][col];
+                    if (Math.abs(factor) <= tol) continue;
+                    for (let c = col; c < cols; c += 1) {
+                        mat[r][c] -= factor * mat[row][c];
+                    }
+                }
+                row += 1;
+                rank += 1;
+            }
+            return rank;
+        };
         const normalizeSetInput = (value) => {
             if (Array.isArray(value)) return value;
             if (isMatrixValue(value)) return value.valueOf();
@@ -412,6 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
             matDet: matrixDet,
             matInv: matrixInv,
             matAdj: matrixAdj,
+            matRank: matrixRank,
             setUnion: setUnion,
             setIntersect: setIntersect,
             setDifference: setDifference,
