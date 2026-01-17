@@ -93,6 +93,15 @@
                 </div>
 
                 <div class="control-block">
+                    <h3>偏移量列表</h3>
+                    <div class="control-row">
+                        <button id="addOffsetBtn" class="btn btn-secondary btn-compact">添加偏移量</button>
+                    </div>
+                    <div id="offsetList" class="dynamic-list"></div>
+                    <p class="hint">名称用于表达式，弧段内可选择偏移量。</p>
+                </div>
+
+                <div class="control-block">
                     <h3>弧段列表</h3>
                     <div class="control-row">
                         <button id="addArcBtn" class="btn btn-secondary btn-compact">添加弧段</button>
@@ -108,7 +117,7 @@
                         </label>
                     </div>
                     <div id="arcList" class="dynamic-list"></div>
-                    <div class="formula">偏移弧段：起点/终点 + r。</div>
+                    <div class="formula">偏移弧段：起点/终点 + 该弧段偏移量。</div>
                 </div>
 
                 <div class="control-block wrap-card">

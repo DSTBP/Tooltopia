@@ -1,11 +1,13 @@
 const state = {
     N: 16,
     points: [],
-    arcs: []
+    arcs: [],
+    offsets: []
 };
 
 let pointId = 0;
 let arcId = 0;
+let offsetId = 0;
 let readoutExpressions = [];
 
 const ringSvg = document.getElementById('ringSvg');
@@ -34,6 +36,8 @@ const elements = {
     arcList: document.getElementById('arcList'),
     readoutInput: document.getElementById('readoutInput'),
     readoutContainer: document.getElementById('readoutContainer'),
+    addOffsetBtn: document.getElementById('addOffsetBtn'),
+    offsetList: document.getElementById('offsetList'),
     arcSelect: document.getElementById('arcSelect'),
     intervalSelect: document.getElementById('intervalSelect'),
     wrapFormula: document.getElementById('wrapFormula'),
@@ -123,9 +127,43 @@ function pointColor(point, index) {
     return fallback;
 }
 
+function pointLabel(point, index) {
+    const name = point.name.trim();
+    return name ? name : `点 ${index + 1}`;
+}
+
+function getPointById(pointId) {
+    return state.points.find((point) => point.id === pointId) || null;
+}
+
+function getPointLabelById(pointId) {
+    const index = state.points.findIndex((point) => point.id === pointId);
+    if (index === -1) return '';
+    return pointLabel(state.points[index], index);
+}
+
+function offsetLabel(offset, index) {
+    const name = offset.name.trim();
+    return name ? name : `偏移 ${index + 1}`;
+}
+
+function getOffsetById(offsetIdValue) {
+    return state.offsets.find((offset) => offset.id === offsetIdValue) || null;
+}
+
+function getArcOffsetValue(arc) {
+    const offset = getOffsetById(arc.offsetId);
+    return offset ? offset.value : null;
+}
+
+function getSelectedArc() {
+    const selectedId = elements.arcSelect ? Number(elements.arcSelect.value) : null;
+    return state.arcs.find((entry) => entry.id === selectedId) || null;
+}
+
+
 function updateRanges() {
     const pointMax = state.N;
-    const arcMax = state.N - 1;
 
     state.points.forEach((point) => {
         if (point.slider) {
@@ -138,22 +176,10 @@ function updateRanges() {
         }
     });
 
-    state.arcs.forEach((arc) => {
-        if (arc.startSlider) {
-            arc.startSlider.min = 0;
-            arc.startSlider.max = arcMax;
-        }
-        if (arc.endSlider) {
-            arc.endSlider.min = 0;
-            arc.endSlider.max = arcMax;
-        }
-        if (arc.startInput) {
-            arc.startInput.min = 0;
-            arc.startInput.max = arcMax;
-        }
-        if (arc.endInput) {
-            arc.endInput.min = 0;
-            arc.endInput.max = arcMax;
+    state.offsets.forEach((offset) => {
+        if (offset.input) {
+            offset.input.min = 0;
+            offset.input.max = pointMax;
         }
     });
 }
@@ -218,6 +244,7 @@ function buildPointRow(point) {
     nameInput.addEventListener('input', () => {
         point.name = nameInput.value;
         updateArcSelectOptions();
+        updateArcPointOptions();
         updateDisplay();
     });
 
@@ -246,6 +273,7 @@ function buildPointRow(point) {
         state.points = state.points.filter((entry) => entry.id !== point.id);
         row.remove();
         updateArcSelectOptions();
+        updateArcPointOptions();
         updateDisplay();
     });
 
@@ -271,7 +299,186 @@ function addPoint() {
         elements.pointList.appendChild(buildPointRow(point));
     }
     updateRanges();
+    updateArcPointOptions();
     updateDisplay();
+}
+
+function updateOffsetEntryValue(offset, value) {
+    const clamped = clampValue(Number(value), state.N);
+    offset.value = clamped;
+    if (offset.input) offset.input.value = clamped;
+}
+
+function buildOffsetRow(offset) {
+    const row = document.createElement('div');
+    row.className = 'dynamic-row';
+    row.dataset.id = String(offset.id);
+
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.className = 'input-field name-input';
+    nameInput.placeholder = '名称';
+    nameInput.value = offset.name;
+
+    const numberInput = document.createElement('input');
+    numberInput.type = 'number';
+    numberInput.className = 'number-input';
+    numberInput.min = 0;
+    numberInput.max = state.N;
+    numberInput.step = 1;
+    numberInput.value = offset.value;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'btn btn-secondary btn-compact';
+    removeBtn.textContent = '移除';
+
+    nameInput.addEventListener('input', () => {
+        offset.name = nameInput.value;
+        updateArcOffsetOptions();
+        updateDisplay();
+    });
+
+    numberInput.addEventListener('change', () => {
+        updateOffsetEntryValue(offset, numberInput.value);
+        updateDisplay();
+    });
+
+    removeBtn.addEventListener('click', () => {
+        state.offsets = state.offsets.filter((entry) => entry.id !== offset.id);
+        row.remove();
+        updateArcOffsetOptions();
+        updateDisplay();
+    });
+
+    offset.row = row;
+    offset.input = numberInput;
+
+    row.append(nameInput, numberInput, removeBtn);
+    return row;
+}
+
+function addOffset() {
+    offsetId += 1;
+    const offset = {
+        id: offsetId,
+        name: '',
+        value: 0
+    };
+    state.offsets.push(offset);
+    if (elements.offsetList) {
+        elements.offsetList.appendChild(buildOffsetRow(offset));
+    }
+    updateRanges();
+    updateArcOffsetOptions();
+    updateDisplay();
+}
+
+function getDefaultArcPointIds() {
+    if (state.points.length === 0) {
+        return { startPointId: null, endPointId: null };
+    }
+    const startPointId = state.points[0].id;
+    const endPointId = state.points.length > 1 ? state.points[1].id : startPointId;
+    return { startPointId, endPointId };
+}
+
+function ensureArcPointSelection(arc) {
+    if (state.points.length === 0) {
+        arc.startPointId = null;
+        arc.endPointId = null;
+        return;
+    }
+    const startValid = state.points.some((point) => point.id === arc.startPointId);
+    const endValid = state.points.some((point) => point.id === arc.endPointId);
+    if (startValid && !endValid) {
+        arc.endPointId = arc.startPointId;
+        return;
+    }
+    if (!startValid && endValid) {
+        arc.startPointId = arc.endPointId;
+        return;
+    }
+    if (!startValid && !endValid) {
+        const startPointId = state.points[0].id;
+        const endPointId = state.points.length > 1 ? state.points[1].id : startPointId;
+        arc.startPointId = startPointId;
+        arc.endPointId = endPointId;
+    }
+}
+
+function fillPointSelect(select, selectedId) {
+    select.innerHTML = '';
+    if (state.points.length === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = '无点';
+        option.disabled = true;
+        option.selected = true;
+        select.appendChild(option);
+        select.disabled = true;
+        return;
+    }
+    select.disabled = false;
+    state.points.forEach((point, index) => {
+        const option = document.createElement('option');
+        option.value = String(point.id);
+        option.textContent = pointLabel(point, index);
+        if (point.id === selectedId) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+}
+
+function updateArcPointOptions() {
+    state.arcs.forEach((arc) => {
+        ensureArcPointSelection(arc);
+        if (arc.startSelect) {
+            fillPointSelect(arc.startSelect, arc.startPointId);
+        }
+        if (arc.endSelect) {
+            fillPointSelect(arc.endSelect, arc.endPointId);
+        }
+    });
+}
+
+function fillOffsetSelect(select, selectedId) {
+    select.innerHTML = '';
+    const noneOption = document.createElement('option');
+    noneOption.value = '';
+    noneOption.textContent = '无偏移';
+    select.appendChild(noneOption);
+    if (state.offsets.length === 0) {
+        noneOption.selected = true;
+        select.disabled = true;
+        return;
+    }
+    select.disabled = false;
+    state.offsets.forEach((offset, index) => {
+        const option = document.createElement('option');
+        option.value = String(offset.id);
+        option.textContent = offsetLabel(offset, index);
+        if (offset.id === selectedId) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+    if (!selectedId) {
+        select.value = '';
+    }
+}
+
+function updateArcOffsetOptions() {
+    state.arcs.forEach((arc) => {
+        const exists = state.offsets.some((offset) => offset.id === arc.offsetId);
+        if (!exists) {
+            arc.offsetId = null;
+        }
+        if (arc.offsetSelect) {
+            fillOffsetSelect(arc.offsetSelect, arc.offsetId);
+        }
+    });
 }
 
 function buildArcRow(arc) {
@@ -285,37 +492,20 @@ function buildArcRow(arc) {
     nameInput.placeholder = '弧段名';
     nameInput.value = arc.name;
 
-    const startSlider = document.createElement('input');
-    startSlider.type = 'range';
-    startSlider.className = 'value-slider';
-    startSlider.min = 0;
-    startSlider.max = state.N - 1;
-    startSlider.step = 1;
-    startSlider.value = arc.start;
+    const startSelect = document.createElement('select');
+    startSelect.className = 'input-field';
+    startSelect.setAttribute('aria-label', '弧段起点');
+    startSelect.title = '起点';
 
-    const startInput = document.createElement('input');
-    startInput.type = 'number';
-    startInput.className = 'number-input';
-    startInput.min = 0;
-    startInput.max = state.N - 1;
-    startInput.step = 1;
-    startInput.value = arc.start;
+    const endSelect = document.createElement('select');
+    endSelect.className = 'input-field';
+    endSelect.setAttribute('aria-label', '弧段终点');
+    endSelect.title = '终点';
 
-    const endSlider = document.createElement('input');
-    endSlider.type = 'range';
-    endSlider.className = 'value-slider';
-    endSlider.min = 0;
-    endSlider.max = state.N - 1;
-    endSlider.step = 1;
-    endSlider.value = arc.end;
-
-    const endInput = document.createElement('input');
-    endInput.type = 'number';
-    endInput.className = 'number-input';
-    endInput.min = 0;
-    endInput.max = state.N - 1;
-    endInput.step = 1;
-    endInput.value = arc.end;
+    const offsetSelect = document.createElement('select');
+    offsetSelect.className = 'input-field';
+    offsetSelect.setAttribute('aria-label', '弧段偏移量');
+    offsetSelect.title = '偏移量';
 
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
@@ -325,35 +515,22 @@ function buildArcRow(arc) {
     nameInput.addEventListener('input', () => {
         arc.name = nameInput.value;
         updateArcSelectOptions();
-    });
-
-    const syncArcStart = (value) => {
-        const clamped = clampValue(Number(value), state.N - 1);
-        arc.start = clamped;
-        startSlider.value = clamped;
-        startInput.value = clamped;
         updateDisplay();
-    };
+    });
 
-    const syncArcEnd = (value) => {
-        const clamped = clampValue(Number(value), state.N - 1);
-        arc.end = clamped;
-        endSlider.value = clamped;
-        endInput.value = clamped;
+    startSelect.addEventListener('change', () => {
+        arc.startPointId = startSelect.value ? Number(startSelect.value) : null;
         updateDisplay();
-    };
+    });
 
-    startSlider.addEventListener('input', () => {
-        syncArcStart(startSlider.value);
+    endSelect.addEventListener('change', () => {
+        arc.endPointId = endSelect.value ? Number(endSelect.value) : null;
+        updateDisplay();
     });
-    startInput.addEventListener('change', () => {
-        syncArcStart(startInput.value);
-    });
-    endSlider.addEventListener('input', () => {
-        syncArcEnd(endSlider.value);
-    });
-    endInput.addEventListener('change', () => {
-        syncArcEnd(endInput.value);
+
+    offsetSelect.addEventListener('change', () => {
+        arc.offsetId = offsetSelect.value ? Number(offsetSelect.value) : null;
+        updateDisplay();
     });
 
     removeBtn.addEventListener('click', () => {
@@ -364,27 +541,32 @@ function buildArcRow(arc) {
     });
 
     arc.row = row;
-    arc.startSlider = startSlider;
-    arc.endSlider = endSlider;
-    arc.startInput = startInput;
-    arc.endInput = endInput;
+    arc.startSelect = startSelect;
+    arc.endSelect = endSelect;
+    arc.offsetSelect = offsetSelect;
 
-    row.append(nameInput, startSlider, startInput, endSlider, endInput, removeBtn);
+    updateArcPointOptions();
+    updateArcOffsetOptions();
+    row.append(nameInput, startSelect, endSelect, offsetSelect, removeBtn);
     return row;
 }
 
 function addArc() {
+    const defaults = getDefaultArcPointIds();
     const arc = {
         id: arcId += 1,
         name: '',
-        start: 0,
-        end: Math.min(3, state.N - 1)
+        startPointId: defaults.startPointId,
+        endPointId: defaults.endPointId,
+        offsetId: null
     };
     state.arcs.push(arc);
     if (elements.arcList) {
         elements.arcList.appendChild(buildArcRow(arc));
     }
     updateArcSelectOptions();
+    updateArcPointOptions();
+    updateArcOffsetOptions();
     updateDisplay();
 }
 
@@ -413,6 +595,11 @@ function buildVariableMap() {
         const key = point.name.trim().toLowerCase();
         if (!key) return;
         values[key] = point.value;
+    });
+    state.offsets.forEach((offset) => {
+        const key = offset.name.trim().toLowerCase();
+        if (!key) return;
+        values[key] = offset.value;
     });
     return values;
 }
@@ -532,14 +719,25 @@ function updateReadoutValues(values) {
     });
 }
 
-function drawArcs(rValue) {
+function getArcEndpoints(arc) {
+    const startPoint = getPointById(arc.startPointId);
+    const endPoint = getPointById(arc.endPointId);
+    if (!startPoint || !endPoint) return null;
+    return {
+        start: modValue(startPoint.value),
+        end: modValue(endPoint.value)
+    };
+}
+
+function drawArcs() {
     if (!elements.arcGroupTarget || !elements.arcGroupOffset) return;
     elements.arcGroupTarget.innerHTML = '';
     elements.arcGroupOffset.innerHTML = '';
 
     state.arcs.forEach((arc) => {
-        const start = modValue(arc.start);
-        const end = modValue(arc.end);
+        const endpoints = getArcEndpoints(arc);
+        if (!endpoints) return;
+        const { start, end } = endpoints;
         const targetPath = arcPath(start, end, ring.arcRadius);
         if (targetPath) {
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -548,9 +746,10 @@ function drawArcs(rValue) {
             elements.arcGroupTarget.appendChild(path);
         }
 
-        if (rValue !== null && rValue !== undefined) {
-            const offsetStart = modValue(start + rValue);
-            const offsetEnd = modValue(end + rValue);
+        const offsetValue = getArcOffsetValue(arc);
+        if (offsetValue !== null && offsetValue !== undefined) {
+            const offsetStart = modValue(start + offsetValue);
+            const offsetEnd = modValue(end + offsetValue);
             const offsetPath = arcPath(offsetStart, offsetEnd, ring.arcRadius - ring.arcOffset);
             if (offsetPath) {
                 const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -606,8 +805,7 @@ function renderLegend() {
         dot.style.background = point.color || pointPalette[index % pointPalette.length];
 
         const label = document.createElement('span');
-        const name = point.name.trim();
-        label.textContent = name ? name : `点 ${index + 1}`;
+        label.textContent = pointLabel(point, index);
 
         item.append(dot, label);
         container.appendChild(item);
@@ -629,39 +827,50 @@ function renderLegend() {
 
         const label = document.createElement('span');
         const name = arc.name.trim();
-        label.textContent = name ? name : `弧段 ${index + 1}`;
+        const startLabel = getPointLabelById(arc.startPointId);
+        const endLabel = getPointLabelById(arc.endPointId);
+        if (startLabel && endLabel) {
+            const endpoints = `${startLabel} -> ${endLabel}`;
+            label.textContent = name ? `${name} (${endpoints})` : endpoints;
+        } else {
+            label.textContent = name ? name : `弧段 ${index + 1}`;
+        }
 
         item.append(swatch, label);
         container.appendChild(item);
     });
 }
 
-function updateWrapIndicator(variableMap) {
+function updateWrapIndicator() {
     if (!elements.wrapValue || !elements.wrapFormula) return;
-    const selectedId = elements.arcSelect ? Number(elements.arcSelect.value) : null;
-    const arc = state.arcs.find((entry) => entry.id === selectedId);
+    const arc = getSelectedArc();
     if (!arc) {
         elements.wrapValue.textContent = '-';
         elements.wrapFormula.innerHTML = '\\(1\\{\\text{start} > \\text{end}\\}\\)';
         return;
     }
 
-    const start = modValue(arc.start);
-    const end = modValue(arc.end);
-    const rValue = variableMap.r;
     const useOffset = elements.intervalSelect && elements.intervalSelect.value === 'offset';
     const formula = useOffset
-        ? '\\(1\\{\\text{start} + r > \\text{end} + r\\}\\)'
+        ? '\\(1\\{\\text{start} + \\text{offset} > \\text{end} + \\text{offset}\\}\\)'
         : '\\(1\\{\\text{start} > \\text{end}\\}\\)';
     elements.wrapFormula.innerHTML = formula;
 
-    if (useOffset && rValue === undefined) {
+    const endpoints = getArcEndpoints(arc);
+    if (!endpoints) {
+        elements.wrapValue.textContent = '-';
+        return;
+    }
+
+    const { start, end } = endpoints;
+    const offsetValue = getArcOffsetValue(arc);
+    if (useOffset && (offsetValue === null || offsetValue === undefined)) {
         elements.wrapValue.textContent = '-';
         return;
     }
 
     const wrap = useOffset
-        ? modValue(start + rValue) > modValue(end + rValue)
+        ? modValue(start + offsetValue) > modValue(end + offsetValue)
         : start > end;
     elements.wrapValue.textContent = wrap ? '1' : '0';
 }
@@ -669,9 +878,9 @@ function updateWrapIndicator(variableMap) {
 function updateDisplay() {
     const variableMap = buildVariableMap();
     updateReadoutValues(variableMap);
-    drawArcs(variableMap.r);
+    drawArcs();
     drawPoints(variableMap);
-    updateWrapIndicator(variableMap);
+    updateWrapIndicator();
     renderLegend();
 
     if (elements.pointZero) {
@@ -748,13 +957,8 @@ function applyModFromSelect() {
         if (point.slider) point.slider.value = point.value;
         if (point.input) point.input.value = point.value;
     });
-    state.arcs.forEach((arc) => {
-        arc.start = clampValue(arc.start, state.N - 1);
-        arc.end = clampValue(arc.end, state.N - 1);
-        if (arc.startSlider) arc.startSlider.value = arc.start;
-        if (arc.endSlider) arc.endSlider.value = arc.end;
-        if (arc.startInput) arc.startInput.value = arc.start;
-        if (arc.endInput) arc.endInput.value = arc.end;
+    state.offsets.forEach((offset) => {
+        updateOffsetEntryValue(offset, offset.value);
     });
     updateAll();
 }
@@ -763,6 +967,7 @@ function init() {
     updateTicks();
     initPointerEvents();
     updateArcSelectOptions();
+    updateArcOffsetOptions();
     updateDisplay();
 
     elements.modSelect.addEventListener('change', () => {
@@ -772,12 +977,15 @@ function init() {
     elements.resetBtn.addEventListener('click', () => {
         state.points = [];
         state.arcs = [];
+        state.offsets = [];
         if (elements.pointList) elements.pointList.innerHTML = '';
         if (elements.arcList) elements.arcList.innerHTML = '';
+        if (elements.offsetList) elements.offsetList.innerHTML = '';
         readoutExpressions = [];
         if (elements.readoutInput) elements.readoutInput.value = '';
         if (elements.readoutContainer) elements.readoutContainer.innerHTML = '';
         updateArcSelectOptions();
+        updateArcOffsetOptions();
         updateDisplay();
     });
 
@@ -790,6 +998,12 @@ function init() {
     if (elements.addArcBtn) {
         elements.addArcBtn.addEventListener('click', () => {
             addArc();
+        });
+    }
+
+    if (elements.addOffsetBtn) {
+        elements.addOffsetBtn.addEventListener('click', () => {
+            addOffset();
         });
     }
 
