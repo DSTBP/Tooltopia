@@ -138,6 +138,199 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         const logWithBase = (value) => math.log(value, getValidLogBase());
         const rootWithDegree = (value) => math.nthRoot(value, getRootDegree());
+        const isMatrixValue = (value) => {
+            const valueType = math.typeOf(value);
+            return valueType === 'Matrix' || valueType === 'DenseMatrix' || valueType === 'SparseMatrix';
+        };
+        const isVector = (value) => Array.isArray(value) || isMatrixValue(value);
+        const normalizeVector = (value) => {
+            if (Array.isArray(value)) return value;
+            if (isMatrixValue(value)) return value.valueOf();
+            throw new Error('请输入向量数组');
+        };
+        const scalarMultiply = (a, b) => {
+            const aIsVector = isVector(a);
+            const bIsVector = isVector(b);
+            if (aIsVector && bIsVector) {
+                throw new Error('数乘需要一个标量和一个向量');
+            }
+            return math.multiply(a, b);
+        };
+        const outerProduct = (a, b) => {
+            const va = normalizeVector(a);
+            const vb = normalizeVector(b);
+            const col = math.reshape(va, [va.length, 1]);
+            const row = math.reshape(vb, [1, vb.length]);
+            return math.multiply(col, row);
+        };
+        const vectorNorm = (v, p) => {
+            const vec = normalizeVector(v);
+            const values = vec.map((item) => math.abs(item));
+            const normalizeOrder = (order) => {
+                if (order === undefined || order === null) return 2;
+                if (order === Infinity || order === -Infinity) return Infinity;
+                if (typeof order === 'string') {
+                    const trimmed = order.trim().toLowerCase();
+                    if (trimmed === 'inf' || trimmed === 'infinity') return Infinity;
+                    const parsed = Number(trimmed);
+                    if (Number.isFinite(parsed)) return parsed;
+                }
+                if (math.typeOf(order) === 'BigNumber') return order.toNumber();
+                if (math.typeOf(order) === 'Fraction') return order.valueOf();
+                const numeric = Number(order);
+                if (Number.isFinite(numeric)) return numeric;
+                throw new Error('请输入有效的范数阶数');
+            };
+            const order = normalizeOrder(p);
+            if (order === 0) {
+                return values.reduce((count, val) => count + (math.equal(val, 0) ? 0 : 1), 0);
+            }
+            if (order === 1) {
+                return values.reduce((sum, val) => math.add(sum, val), 0);
+            }
+            if (order === 2) {
+                const sumSquares = values.reduce((sum, val) => math.add(sum, math.multiply(val, val)), 0);
+                return math.sqrt(sumSquares);
+            }
+            if (order === Infinity) {
+                return values.reduce((max, val) => (math.larger(val, max) ? val : max), 0);
+            }
+            if (order <= 0) {
+                throw new Error('范数阶数需大于 0');
+            }
+            const sum = values.reduce((acc, val) => math.add(acc, math.pow(val, order)), 0);
+            return math.pow(sum, math.divide(1, order));
+        };
+        const isMatrixLike = (value) => Array.isArray(value) || isMatrixValue(value);
+        const normalizeMatrix = (value) => {
+            if (isMatrixValue(value)) return value;
+            if (Array.isArray(value)) return math.matrix(value);
+            throw new Error('请输入矩阵数组');
+        };
+        const ensureSquareMatrix = (matrix) => {
+            const size = math.size(matrix).valueOf();
+            if (size.length !== 2 || size[0] !== size[1]) {
+                throw new Error('请输入方阵');
+            }
+            return size[0];
+        };
+        const matrixScalarMul = (a, b) => {
+            const aIsMatrix = isMatrixLike(a);
+            const bIsMatrix = isMatrixLike(b);
+            if (aIsMatrix && bIsMatrix) {
+                throw new Error('矩阵数乘需要一个标量和一个矩阵');
+            }
+            if (!aIsMatrix && !bIsMatrix) {
+                throw new Error('矩阵数乘需要一个矩阵');
+            }
+            return aIsMatrix
+                ? math.multiply(normalizeMatrix(a), b)
+                : math.multiply(a, normalizeMatrix(b));
+        };
+        const matrixMultiply = (a, b) => {
+            if (!isMatrixLike(a) || !isMatrixLike(b)) {
+                throw new Error('矩阵乘法需要两个矩阵');
+            }
+            return math.multiply(normalizeMatrix(a), normalizeMatrix(b));
+        };
+        const matrixTranspose = (a) => math.transpose(normalizeMatrix(a));
+        const matrixConjTranspose = (a) => math.conj(math.transpose(normalizeMatrix(a)));
+        const matrixTrace = (a) => {
+            const matrix = normalizeMatrix(a);
+            const n = ensureSquareMatrix(matrix);
+            const data = matrix.valueOf();
+            let sum = 0;
+            for (let i = 0; i < n; i += 1) {
+                sum = math.add(sum, data[i][i]);
+            }
+            return sum;
+        };
+        const matrixDet = (a) => {
+            const matrix = normalizeMatrix(a);
+            ensureSquareMatrix(matrix);
+            return math.det(matrix);
+        };
+        const matrixInv = (a) => {
+            const matrix = normalizeMatrix(a);
+            ensureSquareMatrix(matrix);
+            return math.inv(matrix);
+        };
+        const matrixAdj = (a) => {
+            const matrix = normalizeMatrix(a);
+            const n = ensureSquareMatrix(matrix);
+            const data = matrix.valueOf();
+            if (n === 1) {
+                return math.matrix([[1]]);
+            }
+            const cofactors = Array.from({ length: n }, (_, i) => {
+                return Array.from({ length: n }, (_, j) => {
+                    const minor = data
+                        .filter((_, row) => row !== i)
+                        .map((row) => row.filter((_, col) => col !== j));
+                    const detMinor = math.det(minor);
+                    const sign = (i + j) % 2 === 0 ? 1 : -1;
+                    return math.multiply(sign, detMinor);
+                });
+            });
+            return math.matrix(math.transpose(cofactors));
+        };
+        const normalizeSetInput = (value) => {
+            if (Array.isArray(value)) return value;
+            if (isMatrixValue(value)) return value.valueOf();
+            throw new Error('请输入数组');
+        };
+        const makeSetKey = (item) => {
+            const itemType = math.typeOf(item);
+            if (itemType === 'BigNumber' || itemType === 'Fraction' || itemType === 'Complex') {
+                return `${itemType}:${item.toString()}`;
+            }
+            const primitiveType = typeof item;
+            if (primitiveType === 'number' || primitiveType === 'string' || primitiveType === 'boolean') {
+                return `${primitiveType}:${String(item)}`;
+            }
+            if (item === null || item === undefined) {
+                return String(item);
+            }
+            try {
+                return `object:${JSON.stringify(item)}`;
+            } catch (e) {
+                return `object:${String(item)}`;
+            }
+        };
+        const uniqueByKey = (items) => {
+            const seen = new Set();
+            const result = [];
+            items.forEach((item) => {
+                const key = makeSetKey(item);
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    result.push(item);
+                }
+            });
+            return result;
+        };
+        const setUnion = (a, b) => {
+            const arrA = normalizeSetInput(a);
+            const arrB = normalizeSetInput(b);
+            return uniqueByKey([...arrA, ...arrB]);
+        };
+        const setIntersect = (a, b) => {
+            const arrA = normalizeSetInput(a);
+            const arrB = normalizeSetInput(b);
+            const keysB = new Set(arrB.map(makeSetKey));
+            return uniqueByKey(arrA.filter((item) => keysB.has(makeSetKey(item))));
+        };
+        const setDifference = (a, b) => {
+            const arrA = normalizeSetInput(a);
+            const arrB = normalizeSetInput(b);
+            const keysB = new Set(arrB.map(makeSetKey));
+            return uniqueByKey(arrA.filter((item) => !keysB.has(makeSetKey(item))));
+        };
+        const setSymDifference = (a, b) => {
+            const left = setDifference(a, b);
+            const right = setDifference(b, a);
+            return uniqueByKey([...left, ...right]);
+        };
         return {
             sin: trigWrap(Math.sin),
             cos: trigWrap(Math.cos),
@@ -201,6 +394,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return Math.pow(10, x);
             },
+            vecAdd: (a, b) => math.add(a, b),
+            vecSub: (a, b) => math.subtract(a, b),
+            scalarMul: scalarMultiply,
+            dot: (a, b) => math.dot(a, b),
+            cross: (a, b) => math.cross(a, b),
+            outer: outerProduct,
+            hadamard: (a, b) => math.dotMultiply(a, b),
+            vecNorm: vectorNorm,
+            matAdd: (a, b) => math.add(normalizeMatrix(a), normalizeMatrix(b)),
+            matSub: (a, b) => math.subtract(normalizeMatrix(a), normalizeMatrix(b)),
+            matScalarMul: matrixScalarMul,
+            matMul: matrixMultiply,
+            matTranspose: matrixTranspose,
+            matConjTranspose: matrixConjTranspose,
+            matTrace: matrixTrace,
+            matDet: matrixDet,
+            matInv: matrixInv,
+            matAdj: matrixAdj,
+            setUnion: setUnion,
+            setIntersect: setIntersect,
+            setDifference: setDifference,
+            setSymDifference: setSymDifference,
             // keep math functions available via math namespace if needed
             math: math
         };
@@ -327,6 +542,58 @@ document.addEventListener('DOMContentLoaded', () => {
         return { text: formatted, numeric: Number(value) };
     }
 
+    function isMatrixResult(value) {
+        const valueType = math.typeOf(value);
+        return valueType === 'Matrix' || valueType === 'DenseMatrix' || valueType === 'SparseMatrix';
+    }
+
+    function formatComplexValue(value) {
+        const re = value.re ?? 0;
+        const im = value.im ?? 0;
+        const reText = formatNumericOutput(re).text;
+        const imAbsText = formatNumericOutput(Math.abs(im)).text;
+        if (im === 0) return reText;
+        if (re === 0) return `${im < 0 ? '-' : ''}${imAbsText}i`;
+        const sign = im < 0 ? '-' : '+';
+        return `${reText} ${sign} ${imAbsText}i`;
+    }
+
+    function formatScalarValue(value) {
+        const valueType = math.typeOf(value);
+        if (valueType === 'Fraction') {
+            if (getDisplayMode() === 'fraction' && typeof value.toFraction === 'function') {
+                return value.toFraction(false);
+            }
+            return formatNumber(value.valueOf());
+        }
+        if (valueType === 'BigNumber') {
+            const numeric = Number(value);
+            if (Number.isFinite(numeric)) {
+                return formatNumber(numeric);
+            }
+            return value.toString();
+        }
+        if (valueType === 'Complex') {
+            return formatComplexValue(value);
+        }
+        if (typeof value === 'number') {
+            return formatNumericOutput(value).text;
+        }
+        return String(value);
+    }
+
+    function formatStructuredValue(value) {
+        if (Array.isArray(value)) {
+            const items = value.map(formatStructuredValue);
+            return `[${items.join(', ')}]`;
+        }
+        if (isMatrixResult(value)) {
+            const items = value.valueOf().map(formatStructuredValue);
+            return `[${items.join(', ')}]`;
+        }
+        return formatScalarValue(value);
+    }
+
     function pushHistory(expr, result) {
         if (!historyEl) return;
         const item = document.createElement('div');
@@ -383,6 +650,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const out = res.toString();
                 pushHistory(expr, out);
                 setDisplay(out);
+                return;
+            }
+
+            const resType = math.typeOf(res);
+            if (Array.isArray(res) || isMatrixResult(res)) {
+                const text = formatStructuredValue(res);
+                pushHistory(expr, text);
+                setDisplay(text);
+                return;
+            }
+            if (resType === 'Complex' || resType === 'BigNumber') {
+                const text = formatScalarValue(res);
+                pushHistory(expr, text);
+                setDisplay(text);
                 return;
             }
 

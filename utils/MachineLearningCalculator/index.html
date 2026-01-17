@@ -103,11 +103,11 @@
                             title="10 的 x 次方：计算 10^x">10^x</button>
                     </div>
 
-                    <div class="function-section">
-                        <div class="section-heading">
+                    <details class="function-section">
+                        <summary class="section-heading">
                             <span class="trig-title">三角函数</span>
                             <small>遵循角度/弧度设置</small>
-                        </div>
+                        </summary>
                         <div class="function-grid trig-grid">
                             <button class="btn-calc btn-op" data-fn="sin" title="正弦：使用当前角度/弧度模式">sin</button>
                             <button class="btn-calc btn-op" data-fn="cos" title="余弦：使用当前角度/弧度模式">cos</button>
@@ -125,12 +125,12 @@
                             <button class="btn-calc btn-op" data-fn="acosh" title="反双曲余弦函数">arcosh</button>
                             <button class="btn-calc btn-op" data-fn="atanh" title="反双曲正切函数">artanh</button>
                         </div>
-                    </div>
-                    <div class="function-section">
-                        <div class="section-heading">
+                    </details>
+                    <details class="function-section">
+                        <summary class="section-heading">
                             <span class="trig-title">&#25968;&#23398;&#24120;&#37327;</span>
                             <small>单击插入</small>
-                        </div>
+                        </summary>
                         <div class="function-grid const-grid">
                             <button class="btn-calc btn-op" data-val="pi" title="圆周率">&pi;</button>
                             <button class="btn-calc btn-op" data-val="e" title="自然常数">e</button>
@@ -151,7 +151,73 @@
                             <button class="btn-calc btn-op" data-val="B" title="布伦常数">B</button>
                             <button class="btn-calc btn-op" data-val="zeta2" title="黎曼ζ函数值">&zeta;(2)</button>
                         </div>
-                    </div>
+                    </details>
+                    <details class="function-section">
+                        <summary class="section-heading">
+                            <span class="trig-title">逻辑运算</span>
+                            <small>布尔运算</small>
+                        </summary>
+                        <div class="function-grid logic-grid">
+                            <button class="btn-calc btn-op" data-val="true" title="布尔真">True</button>
+                            <button class="btn-calc btn-op" data-val="false" title="布尔假">False</button>
+                            <button class="btn-calc btn-op" data-val=" and " title="逻辑与">and</button>
+                            <button class="btn-calc btn-op" data-val=" or " title="逻辑或">or</button>
+                            <button class="btn-calc btn-op" data-val=" xor " title="逻辑异或">xor</button>
+                            <button class="btn-calc btn-op" data-val="not()" title="逻辑非">not</button>
+                            <button class="btn-calc btn-op" data-val=" == " title="等于">==</button>
+                            <button class="btn-calc btn-op" data-val=" &gt; " title="大于">&gt;</button>
+                            <button class="btn-calc btn-op" data-val=" &lt; " title="小于">&lt;</button>
+                            <button class="btn-calc btn-op" data-val=" &gt;= " title="大于等于">≥</button>
+                            <button class="btn-calc btn-op" data-val=" &lt;= " title="小于等于">≤</button>
+                        </div>
+                    </details>
+                    <details class="function-section">
+                        <summary class="section-heading">
+                            <span class="trig-title">集合运算</span>
+                            <small>数组示例：[1,2,3]</small>
+                        </summary>
+                        <div class="function-grid set-grid">
+                            <button class="btn-calc btn-op" data-val="setUnion()" title="并集 setUnion(A, B)">并集</button>
+                            <button class="btn-calc btn-op" data-val="setIntersect()" title="交集 setIntersect(A, B)">交集</button>
+                            <button class="btn-calc btn-op" data-val="setDifference()" title="差集 setDifference(A, B)">差集</button>
+                            <button class="btn-calc btn-op" data-val="setSymDifference()" title="对称差 setSymDifference(A, B)">对称差</button>
+                            <button class="btn-calc btn-op" data-val="[]" title="数组">数组 [ ]</button>
+                        </div>
+                    </details>
+                    <details class="function-section">
+                        <summary class="section-heading">
+                            <span class="trig-title">向量基础运算</span>
+                            <small>向量示例：[1,2,3]</small>
+                        </summary>
+                        <div class="function-grid vector-grid">
+                            <button class="btn-calc btn-op" data-val="vecAdd()" title="vecAdd([a,b], [c,d])">向量加法</button>
+                            <button class="btn-calc btn-op" data-val="vecSub()" title="vecSub([a,b], [c,d])">向量减法</button>
+                            <button class="btn-calc btn-op" data-val="scalarMul()" title="scalarMul([a,b], scalar)">数乘运算</button>
+                            <button class="btn-calc btn-op" data-val="dot()" title="dot([a,b], [c,d])">点积</button>
+                            <button class="btn-calc btn-op" data-val="cross()" title="cross([a,b], [c,d])">叉积</button>
+                            <button class="btn-calc btn-op" data-val="outer()" title="outer([a,b], [c,d])">外积</button>
+                            <button class="btn-calc btn-op" data-val="hadamard()" title="hadamard([1,2],[3,4])">哈达玛积</button>
+                            <button class="btn-calc btn-op" data-val="vecNorm()" title="vecNorm([1,2], 0/1/2/Infinity/p)">向量范数</button>
+                        </div>
+                    </details>
+                    <details class="function-section">
+                        <summary class="section-heading">
+                            <span class="trig-title">矩阵基础运算</span>
+                            <small>矩阵示例：[[1,2],[3,4]]</small>
+                        </summary>
+                        <div class="function-grid matrix-grid">
+                            <button class="btn-calc btn-op" data-val="matAdd()" title="用法：matAdd([[1,2],[3,4]], [[5,6],[7,8]])">矩阵加法</button>
+                            <button class="btn-calc btn-op" data-val="matSub()" title="用法：matSub([[1,2],[3,4]], [[5,6],[7,8]])">矩阵减法</button>
+                            <button class="btn-calc btn-op" data-val="matScalarMul()" title="用法：matScalarMul([[1,2],[3,4]], 2)">矩阵数乘</button>
+                            <button class="btn-calc btn-op" data-val="matMul()" title="用法：matMul([[1,2],[3,4]], [[5,6],[7,8]])">矩阵乘法</button>
+                            <button class="btn-calc btn-op" data-val="matTranspose()" title="用法：matTranspose([[1,2],[3,4]])">矩阵转置</button>
+                            <button class="btn-calc btn-op" data-val="matConjTranspose()" title="用法：matConjTranspose([[1,2],[3,4]])">共轭转置</button>
+                            <button class="btn-calc btn-op" data-val="matTrace()" title="用法：matTrace([[1,2],[3,4]])">求迹</button>
+                            <button class="btn-calc btn-op" data-val="matDet()" title="用法：matDet([[1,2],[3,4]])">行列式</button>
+                            <button class="btn-calc btn-op" data-val="matInv()" title="用法：matInv([[1,2],[3,4]])">逆矩阵</button>
+                            <button class="btn-calc btn-op" data-val="matAdj()" title="用法：matAdj([[1,2],[3,4]])">伴随矩阵</button>
+                        </div>
+                    </details>
                 </section>
 
                 <aside class="side-panel">
