@@ -59,7 +59,7 @@ class Pixel {
       this.isIdle = true;
       return;
     } else {
-      this.size -= 0.1;
+      this.size = Math.max(0, this.size - 0.1);
     }
     this.draw();
   }
@@ -175,7 +175,25 @@ class PixelCanvas extends HTMLElement {
   }
 
   handleAnimation(name) {
+    // 如果动画类型没有改变，不重新启动
+    if (this.currentAnimationType === name && this.animation !== null) {
+      return;
+    }
+
     cancelAnimationFrame(this.animation);
+
+    // 如果从 appear 切换到 disappear，需要确保像素状态正确
+    if (name === "disappear") {
+      for (let i = 0; i < this.pixels.length; i++) {
+        this.pixels[i].isIdle = false;
+        this.pixels[i].isShimmer = false;
+      }
+    } else if (name === "appear") {
+      for (let i = 0; i < this.pixels.length; i++) {
+        this.pixels[i].isIdle = false;
+      }
+    }
+
     this.animation = this.animate(name);
   }
 
@@ -209,6 +227,7 @@ class PixelCanvas extends HTMLElement {
   }
 
   animate(fnName) {
+    this.currentAnimationType = fnName;
     this.animation = requestAnimationFrame(() => this.animate(fnName));
     const timeNow = performance.now();
     const timePassed = timeNow - this.timePrevious;
@@ -222,8 +241,10 @@ class PixelCanvas extends HTMLElement {
       this.pixels[i][fnName]();
     }
 
+    // 检查是否所有像素都已空闲，或者动画类型已改变
     if (this.pixels.every((pixel) => pixel.isIdle)) {
       cancelAnimationFrame(this.animation);
+      this.animation = null;
     }
   }
 }
