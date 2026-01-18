@@ -144,6 +144,11 @@ body {
     align-items: start;
 }
 
+.ring-stack {
+    display: grid;
+    gap: 24px;
+}
+
 .panel {
     background: var(--panel);
     border: 1px solid var(--panel-border);
@@ -281,13 +286,6 @@ body {
     stroke-width: 14;
 }
 
-.hide-target-arc #arcGroupTarget {
-    display: none;
-}
-
-.hide-offset-arc #arcGroupOffset {
-    display: none;
-}
 
 .arc-target {
     stroke: var(--accent-arc);
@@ -310,8 +308,7 @@ body {
 }
 
 .arc-wrap {
-    stroke: var(--accent-wrap);
-    filter: drop-shadow(0 0 6px rgba(255, 93, 143, 0.8));
+    filter: drop-shadow(0 0 8px currentColor);
     animation: pulse 1.4s ease infinite;
 }
 
@@ -426,8 +423,14 @@ body {
 
 .legend-swatch {
     display: inline-flex;
-    gap: 6px;
     align-items: center;
+}
+
+.legend-arc-line {
+    width: 15px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--accent-arc);
 }
 
 .dot-point {
@@ -491,6 +494,30 @@ body {
     flex-wrap: wrap;
     gap: 8px;
     align-items: center;
+}
+
+.offset-multi {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    align-items: center;
+}
+
+.offset-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text-1);
+}
+
+.offset-item input {
+    accent-color: var(--accent-mask);
+}
+
+.offset-empty {
+    color: var(--text-2);
+    font-size: 0.8rem;
 }
 
 .dynamic-row .name-input {
@@ -558,6 +585,12 @@ input[type="range"] {
     font-size: 1.05rem;
 }
 
+.interval-row {
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+}
+
 .wrap-value {
     font-size: 1.5rem;
     font-weight: 700;
@@ -576,7 +609,7 @@ input[type="range"] {
 
 @keyframes floatIn {
     from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    to { opacity: 1; transform: none; }
 }
 
 @keyframes pulse {
@@ -618,6 +651,14 @@ body.day-mode .panel {
     background: rgba(255, 255, 255, 0.9);
     border-color: rgba(15, 23, 42, 0.08);
     box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+}
+
+body.day-mode .back-btn {
+    color: #4a5568;
+}
+
+body.day-mode .back-btn:hover {
+    color: #1a202c;
 }
 
 body.day-mode .header h1 {
@@ -700,12 +741,20 @@ body.day-mode .toggle-inline {
     color: #1f2937;
 }
 
+body.day-mode .offset-item {
+    color: #1f2937;
+}
+
 body.day-mode .control-inline label,
 body.day-mode .control-row label {
     color: #1f2937;
 }
 
 body.day-mode .toggle-inline input {
+    accent-color: #2563eb;
+}
+
+body.day-mode .offset-item input {
     accent-color: #2563eb;
 }
 
@@ -895,5 +944,3 @@ body.day-mode .toggle-inline input {
     transform: scale(0.58);
   }
 }
-
-

@@ -26,18 +26,18 @@
 
     <div id="background-wrapper"></div>
     <div class="page-container">
-        <a href="../../index.html" class="back-btn">&#x2190; 返回首页</a>
+        <a href="../../index.html" class="back-btn">← 返回首页</a>
         <header class="header">
             <h1 data-shadow="Ring Comparison">Ring Comparison</h1>
             <p class="subtitle">在整数环 \(Z_N\) 上体验输入点与区间判断的可视化逻辑。</p>
         </header>
 
         <div class="ring-grid">
-            <section class="panel ring-panel">
+            <div class="ring-stack">
+                <section class="panel ring-panel">
                 <div class="panel-head">
                     <div>
-                        <h2>动态模数环生成器</h2>
-                        <p class="panel-sub">点击或拖动环上的刻度选择 \(x\)。</p>
+                        <h2>环上比较可视化</h2>
                     </div>
                     <div class="control-inline">
                         <label for="modSelect">模数 \(N\)</label>
@@ -72,9 +72,28 @@
 
                     <div id="legendList" class="legend"></div>
                 </div>
-            </section>
+                </section>
 
-            <aside class="panel control-panel">
+                <section class="panel control-panel aux-panel">
+                <div class="control-block">
+                    <h3>显示变量</h3>
+                    <div class="control-row">
+                        <label for="readoutInput">输入</label>
+                        <input id="readoutInput" class="input-field" type="text" placeholder="输入表达式，逗号分隔">
+                    </div>
+                </div>
+
+                <div class="control-block">
+                    <h3>区间表示</h3>
+                    <div class="interval-row">
+                        <span id="intervalFormula" class="mono formula">\\([\\text{start}, \\text{end})\\)</span>
+                    </div>
+                    <p class="hint">回绕后区间自动拆分。</p>
+                </div>
+                </section>
+            </div>
+
+            <aside class="panel control-panel main-controls">
                 <div class="control-block">
                     <h3>点列表</h3>
                     <div class="control-row">
@@ -82,14 +101,6 @@
                     </div>
                     <div id="pointList" class="dynamic-list"></div>
                     <p class="hint">名称用于表达式与选择。</p>
-                </div>
-
-                <div class="control-block">
-                    <h3>显示变量</h3>
-                    <div class="control-row">
-                        <label for="readoutInput">输入</label>
-                        <input id="readoutInput" class="input-field" type="text" placeholder="输入表达式，逗号分隔">
-                    </div>
                 </div>
 
                 <div class="control-block">
@@ -105,16 +116,6 @@
                     <h3>弧段列表</h3>
                     <div class="control-row">
                         <button id="addArcBtn" class="btn btn-secondary btn-compact">添加弧段</button>
-                    </div>
-                    <div class="control-row">
-                        <label class="toggle-inline">
-                            <input id="hideTargetArcToggle" type="checkbox">
-                            <span>隐藏目标弧段</span>
-                        </label>
-                        <label class="toggle-inline">
-                            <input id="hideOffsetArcToggle" type="checkbox">
-                            <span>隐藏偏移弧段</span>
-                        </label>
                     </div>
                     <div id="arcList" class="dynamic-list"></div>
                     <div class="formula">偏移弧段：起点/终点 + 该弧段偏移量。</div>

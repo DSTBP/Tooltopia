@@ -1,4 +1,4 @@
-const state = {
+﻿const state = {
     N: 16,
     points: [],
     arcs: [],
@@ -42,8 +42,7 @@ const elements = {
     intervalSelect: document.getElementById('intervalSelect'),
     wrapFormula: document.getElementById('wrapFormula'),
     wrapValue: document.getElementById('wrapValue'),
-    hideTargetArcToggle: document.getElementById('hideTargetArcToggle'),
-    hideOffsetArcToggle: document.getElementById('hideOffsetArcToggle'),
+    intervalFormula: document.getElementById('intervalFormula'),
     ringSvg: document.getElementById('ringSvg'),
     tickGroup: document.getElementById('tickGroup'),
     arcGroupTarget: document.getElementById('arcGroupTarget'),
@@ -56,6 +55,7 @@ const elements = {
 };
 
 const pointPalette = ['#3fb8f4', '#f59e0b', '#22c55e', '#f472b6', '#38bdf8', '#a855f7'];
+const arcPalette = ['#ffd166', '#60a5fa', '#fca5a5', '#34d399', '#a78bfa', '#fb7185', '#f97316', '#2dd4bf'];
 
 function modValue(value) {
     const n = state.N;
@@ -127,6 +127,65 @@ function pointColor(point, index) {
     return fallback;
 }
 
+function arcColor(arc, index) {
+    if (arc.color) return arc.color;
+    const fallback = arcPalette[index % arcPalette.length];
+    arc.color = fallback;
+    return fallback;
+}
+
+function latexText(value) {
+    return String(value)
+        .replace(/\\/g, '\\\\')
+        .replace(/[{}%$]/g, '\\$&');
+}
+
+function normalizeLatexInput(value) {
+    const trimmed = String(value).trim();
+    if (trimmed.startsWith('\\(') && trimmed.endsWith('\\)')) {
+        return trimmed.slice(2, -2).trim();
+    }
+    if (trimmed.startsWith('$') && trimmed.endsWith('$')) {
+        return trimmed.slice(1, -1).trim();
+    }
+    return trimmed;
+}
+
+function isLikelyLatex(value) {
+    return /[\\^_{}$]/.test(value);
+}
+
+function isValidLatex(value) {
+    if (!window.MathJax || typeof window.MathJax.tex2svg !== 'function') return false;
+    try {
+        window.MathJax.tex2svg(value);
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
+function formatInlineMath(value) {
+    const normalized = normalizeLatexInput(value);
+    if (!normalized) return '';
+    if (!isLikelyLatex(normalized)) return normalized;
+    if (isValidLatex(normalized)) return `\\(${normalized}\\)`;
+    return String(value).trim();
+}
+
+function normalizeVariableKey(value) {
+    return normalizeLatexInput(value).replace(/\s+/g, '');
+}
+
+function formatWrapTerm(value, fallback) {
+    const raw = value && String(value).trim() ? String(value).trim() : fallback;
+    const normalized = normalizeLatexInput(raw);
+    if (normalized && isLikelyLatex(normalized) && isValidLatex(normalized)) {
+        return normalized;
+    }
+    return `\\text{${latexText(raw)}}`;
+}
+
 function pointLabel(point, index) {
     const name = point.name.trim();
     return name ? name : `点 ${index + 1}`;
@@ -151,9 +210,33 @@ function getOffsetById(offsetIdValue) {
     return state.offsets.find((offset) => offset.id === offsetIdValue) || null;
 }
 
-function getArcOffsetValue(arc) {
-    const offset = getOffsetById(arc.offsetId);
-    return offset ? offset.value : null;
+function getOffsetLabelById(offsetIdValue) {
+    const index = state.offsets.findIndex((offset) => offset.id === offsetIdValue);
+    if (index === -1) return '';
+    return offsetLabel(state.offsets[index], index);
+}
+
+function getOffsetValuesByIds(offsetIds) {
+    if (!Array.isArray(offsetIds)) return [];
+    return offsetIds
+        .map((offsetIdValue) => getOffsetById(offsetIdValue))
+        .filter(Boolean)
+        .map((offset) => offset.value);
+}
+
+function getOffsetLabelsByIds(offsetIds) {
+    if (!Array.isArray(offsetIds)) return [];
+    return offsetIds
+        .map((offsetIdValue) => getOffsetLabelById(offsetIdValue))
+        .filter(Boolean);
+}
+
+function getOffsetSumByIds(offsetIds) {
+    return getOffsetValuesByIds(offsetIds).reduce((sum, value) => sum + value, 0);
+}
+
+function getPointOffsetSum(point) {
+    return getOffsetSumByIds(point.offsetIds);
 }
 
 function getSelectedArc() {
@@ -177,6 +260,10 @@ function updateRanges() {
     });
 
     state.offsets.forEach((offset) => {
+        if (offset.slider) {
+            offset.slider.min = 0;
+            offset.slider.max = pointMax;
+        }
         if (offset.input) {
             offset.input.min = 0;
             offset.input.max = pointMax;
@@ -227,6 +314,10 @@ function buildPointRow(point) {
     numberInput.step = 1;
     numberInput.value = point.value;
 
+    const offsetContainer = document.createElement('div');
+    offsetContainer.className = 'offset-multi';
+    offsetContainer.setAttribute('aria-label', 'offsets');
+
     const hideLabel = document.createElement('label');
     hideLabel.className = 'toggle-inline';
     const hideInput = document.createElement('input');
@@ -264,6 +355,11 @@ function buildPointRow(point) {
         syncPointValue(numberInput.value);
     });
 
+    const onOffsetChange = () => {
+        point.offsetIds = getSelectedOffsetIds(offsetContainer);
+        updateDisplay();
+    };
+
     hideInput.addEventListener('change', () => {
         point.hidden = hideInput.checked;
         updateDisplay();
@@ -280,8 +376,11 @@ function buildPointRow(point) {
     point.row = row;
     point.slider = slider;
     point.input = numberInput;
+    point.offsetContainer = offsetContainer;
+    point.onOffsetChange = onOffsetChange;
 
-    row.append(nameInput, slider, numberInput, hideLabel, removeBtn);
+    renderOffsetMulti(offsetContainer, point.offsetIds, onOffsetChange);
+    row.append(nameInput, slider, numberInput, offsetContainer, hideLabel, removeBtn);
     return row;
 }
 
@@ -292,7 +391,8 @@ function addPoint() {
         name: '',
         value: 0,
         hidden: false,
-        color: pointPalette[(pointId - 1) % pointPalette.length]
+        color: pointPalette[(pointId - 1) % pointPalette.length],
+        offsetIds: []
     };
     state.points.push(point);
     if (elements.pointList) {
@@ -306,6 +406,7 @@ function addPoint() {
 function updateOffsetEntryValue(offset, value) {
     const clamped = clampValue(Number(value), state.N);
     offset.value = clamped;
+    if (offset.slider) offset.slider.value = clamped;
     if (offset.input) offset.input.value = clamped;
 }
 
@@ -328,6 +429,14 @@ function buildOffsetRow(offset) {
     numberInput.step = 1;
     numberInput.value = offset.value;
 
+    const slider = document.createElement('input');
+    slider.type = 'range';
+    slider.className = 'value-slider';
+    slider.min = 0;
+    slider.max = state.N;
+    slider.step = 1;
+    slider.value = offset.value;
+
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'btn btn-secondary btn-compact';
@@ -336,6 +445,7 @@ function buildOffsetRow(offset) {
     nameInput.addEventListener('input', () => {
         offset.name = nameInput.value;
         updateArcOffsetOptions();
+        updatePointOffsetOptions();
         updateDisplay();
     });
 
@@ -344,17 +454,24 @@ function buildOffsetRow(offset) {
         updateDisplay();
     });
 
+    slider.addEventListener('input', () => {
+        updateOffsetEntryValue(offset, slider.value);
+        updateDisplay();
+    });
+
     removeBtn.addEventListener('click', () => {
         state.offsets = state.offsets.filter((entry) => entry.id !== offset.id);
         row.remove();
         updateArcOffsetOptions();
+        updatePointOffsetOptions();
         updateDisplay();
     });
 
     offset.row = row;
     offset.input = numberInput;
+    offset.slider = slider;
 
-    row.append(nameInput, numberInput, removeBtn);
+    row.append(nameInput, slider, numberInput, removeBtn);
     return row;
 }
 
@@ -371,6 +488,7 @@ function addOffset() {
     }
     updateRanges();
     updateArcOffsetOptions();
+    updatePointOffsetOptions();
     updateDisplay();
 }
 
@@ -443,40 +561,61 @@ function updateArcPointOptions() {
     });
 }
 
-function fillOffsetSelect(select, selectedId) {
-    select.innerHTML = '';
-    const noneOption = document.createElement('option');
-    noneOption.value = '';
-    noneOption.textContent = '无偏移';
-    select.appendChild(noneOption);
+function getSelectedOffsetIds(container) {
+    return Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+        .map((input) => Number(input.value))
+        .filter((value) => Number.isFinite(value));
+}
+
+function renderOffsetMulti(container, selectedIds, onChange) {
+    container.innerHTML = '';
     if (state.offsets.length === 0) {
-        noneOption.selected = true;
-        select.disabled = true;
+        const empty = document.createElement('span');
+        empty.className = 'offset-empty';
+        empty.textContent = '无偏移';
+        container.appendChild(empty);
         return;
     }
-    select.disabled = false;
+    const selectedSet = new Set(selectedIds);
     state.offsets.forEach((offset, index) => {
-        const option = document.createElement('option');
-        option.value = String(offset.id);
-        option.textContent = offsetLabel(offset, index);
-        if (offset.id === selectedId) {
-            option.selected = true;
-        }
-        select.appendChild(option);
+        const label = document.createElement('label');
+        label.className = 'offset-item';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = String(offset.id);
+        input.checked = selectedSet.has(offset.id);
+        input.addEventListener('change', onChange);
+        const text = document.createElement('span');
+        text.textContent = offsetLabel(offset, index);
+        label.append(input, text);
+        container.appendChild(label);
     });
-    if (!selectedId) {
-        select.value = '';
-    }
 }
 
 function updateArcOffsetOptions() {
     state.arcs.forEach((arc) => {
-        const exists = state.offsets.some((offset) => offset.id === arc.offsetId);
-        if (!exists) {
-            arc.offsetId = null;
+        const validIds = Array.isArray(arc.offsetIds)
+            ? arc.offsetIds.filter((offsetIdValue) => state.offsets.some((offset) => offset.id === offsetIdValue))
+            : [];
+        if (!Array.isArray(arc.offsetIds) || validIds.length !== arc.offsetIds.length) {
+            arc.offsetIds = validIds;
         }
-        if (arc.offsetSelect) {
-            fillOffsetSelect(arc.offsetSelect, arc.offsetId);
+        if (arc.offsetContainer && arc.onOffsetChange) {
+            renderOffsetMulti(arc.offsetContainer, arc.offsetIds, arc.onOffsetChange);
+        }
+    });
+}
+
+function updatePointOffsetOptions() {
+    state.points.forEach((point) => {
+        const validIds = Array.isArray(point.offsetIds)
+            ? point.offsetIds.filter((offsetIdValue) => state.offsets.some((offset) => offset.id === offsetIdValue))
+            : [];
+        if (!Array.isArray(point.offsetIds) || validIds.length !== point.offsetIds.length) {
+            point.offsetIds = validIds;
+        }
+        if (point.offsetContainer && point.onOffsetChange) {
+            renderOffsetMulti(point.offsetContainer, point.offsetIds, point.onOffsetChange);
         }
     });
 }
@@ -502,10 +641,27 @@ function buildArcRow(arc) {
     endSelect.setAttribute('aria-label', '弧段终点');
     endSelect.title = '终点';
 
-    const offsetSelect = document.createElement('select');
-    offsetSelect.className = 'input-field';
-    offsetSelect.setAttribute('aria-label', '弧段偏移量');
-    offsetSelect.title = '偏移量';
+    const offsetContainer = document.createElement('div');
+    offsetContainer.className = 'offset-multi';
+    offsetContainer.setAttribute('aria-label', 'offsets');
+
+    const hideTargetLabel = document.createElement('label');
+    hideTargetLabel.className = 'toggle-inline';
+    const hideTargetInput = document.createElement('input');
+    hideTargetInput.type = 'checkbox';
+    hideTargetInput.checked = Boolean(arc.hideTarget);
+    const hideTargetText = document.createElement('span');
+    hideTargetText.textContent = '隐藏目标';
+    hideTargetLabel.append(hideTargetInput, hideTargetText);
+
+    const hideOffsetLabel = document.createElement('label');
+    hideOffsetLabel.className = 'toggle-inline';
+    const hideOffsetInput = document.createElement('input');
+    hideOffsetInput.type = 'checkbox';
+    hideOffsetInput.checked = Boolean(arc.hideOffset);
+    const hideOffsetText = document.createElement('span');
+    hideOffsetText.textContent = '隐藏偏移';
+    hideOffsetLabel.append(hideOffsetInput, hideOffsetText);
 
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
@@ -528,8 +684,18 @@ function buildArcRow(arc) {
         updateDisplay();
     });
 
-    offsetSelect.addEventListener('change', () => {
-        arc.offsetId = offsetSelect.value ? Number(offsetSelect.value) : null;
+    const onOffsetChange = () => {
+        arc.offsetIds = getSelectedOffsetIds(offsetContainer);
+        updateDisplay();
+    };
+
+    hideTargetInput.addEventListener('change', () => {
+        arc.hideTarget = hideTargetInput.checked;
+        updateDisplay();
+    });
+
+    hideOffsetInput.addEventListener('change', () => {
+        arc.hideOffset = hideOffsetInput.checked;
         updateDisplay();
     });
 
@@ -543,11 +709,12 @@ function buildArcRow(arc) {
     arc.row = row;
     arc.startSelect = startSelect;
     arc.endSelect = endSelect;
-    arc.offsetSelect = offsetSelect;
+    arc.offsetContainer = offsetContainer;
+    arc.onOffsetChange = onOffsetChange;
 
     updateArcPointOptions();
     updateArcOffsetOptions();
-    row.append(nameInput, startSelect, endSelect, offsetSelect, removeBtn);
+    row.append(nameInput, startSelect, endSelect, offsetContainer, hideTargetLabel, hideOffsetLabel, removeBtn);
     return row;
 }
 
@@ -558,7 +725,10 @@ function addArc() {
         name: '',
         startPointId: defaults.startPointId,
         endPointId: defaults.endPointId,
-        offsetId: null
+        offsetIds: [],
+        color: arcPalette[(arcId - 1) % arcPalette.length],
+        hideTarget: false,
+        hideOffset: false
     };
     state.arcs.push(arc);
     if (elements.arcList) {
@@ -591,15 +761,20 @@ function updateArcSelectOptions() {
 
 function buildVariableMap() {
     const values = { n: state.N, N: state.N };
+    const addEntry = (name, value) => {
+        const normalized = normalizeVariableKey(name);
+        if (!normalized) return;
+        values[normalized] = value;
+        const lower = normalized.toLowerCase();
+        if (lower !== normalized) {
+            values[lower] = value;
+        }
+    };
     state.points.forEach((point) => {
-        const key = point.name.trim().toLowerCase();
-        if (!key) return;
-        values[key] = point.value;
+        addEntry(point.name, point.value);
     });
     state.offsets.forEach((offset) => {
-        const key = offset.name.trim().toLowerCase();
-        if (!key) return;
-        values[key] = offset.value;
+        addEntry(offset.name, offset.value);
     });
     return values;
 }
@@ -607,9 +782,36 @@ function buildVariableMap() {
 function tokenizeExpression(expr) {
     const raw = expr.replace(/\s+/g, '');
     if (!raw) return null;
-    const tokens = raw.match(/([A-Za-z]+|\d+|[+\-])/g);
-    if (!tokens || tokens.join('') !== raw) return null;
-    return tokens;
+    const tokens = [];
+    let current = '';
+    let braceDepth = 0;
+
+    for (let i = 0; i < raw.length; i += 1) {
+        const char = raw[i];
+        if (char === '{') {
+            braceDepth += 1;
+            current += char;
+            continue;
+        }
+        if (char === '}') {
+            braceDepth = Math.max(0, braceDepth - 1);
+            current += char;
+            continue;
+        }
+        if (braceDepth === 0 && (char === '+' || char === '-' || char === '(' || char === ')')) {
+            if (current) {
+                tokens.push(current);
+                current = '';
+            }
+            tokens.push(char);
+            continue;
+        }
+        current += char;
+    }
+    if (current) {
+        tokens.push(current);
+    }
+    return tokens.length ? tokens : null;
 }
 
 function formatExpressionLabel(expr) {
@@ -628,38 +830,58 @@ function formatExpressionLabel(expr) {
 function evaluateExpression(expr, values) {
     const tokens = tokenizeExpression(expr);
     if (!tokens) return { error: true };
-    let total = 0;
-    let expectingTerm = true;
-    let sign = 1;
+    let index = 0;
     let hasOperator = false;
 
-    for (let i = 0; i < tokens.length; i += 1) {
-        const token = tokens[i];
+    const parseFactor = () => {
+        if (index >= tokens.length) throw new Error('Unexpected end');
+        const token = tokens[index];
         if (token === '+' || token === '-') {
             hasOperator = true;
-            sign = token === '-' ? -1 : 1;
-            expectingTerm = true;
-            continue;
+            index += 1;
+            const value = parseFactor();
+            return token === '-' ? -value : value;
         }
-        if (!expectingTerm) return { error: true };
-        const lower = token.toLowerCase();
-        let value;
+        if (token === '(') {
+            index += 1;
+            const value = parseExpression();
+            if (tokens[index] !== ')') throw new Error('Missing closing paren');
+            index += 1;
+            return value;
+        }
+        if (token === ')') {
+            throw new Error('Unexpected closing paren');
+        }
+        index += 1;
         if (/^\d+$/.test(token)) {
-            value = Number(token);
-        } else if (values[lower] !== undefined) {
-            value = values[lower];
-        } else if (values[token] !== undefined) {
-            value = values[token];
-        } else {
-            return { error: true };
+            return Number(token);
         }
-        total += sign * value;
-        expectingTerm = false;
-        sign = 1;
-    }
+        const normalized = normalizeVariableKey(token);
+        const lower = normalized.toLowerCase();
+        if (values[normalized] !== undefined) return values[normalized];
+        if (values[lower] !== undefined) return values[lower];
+        throw new Error('Unknown token');
+    };
 
-    if (expectingTerm) return { error: true };
-    return { value: hasOperator || tokens.length > 1 ? modValue(total) : total };
+    const parseExpression = () => {
+        let total = parseFactor();
+        while (index < tokens.length && (tokens[index] === '+' || tokens[index] === '-')) {
+            const op = tokens[index];
+            hasOperator = true;
+            index += 1;
+            const rhs = parseFactor();
+            total = op === '+' ? total + rhs : total - rhs;
+        }
+        return total;
+    };
+
+    try {
+        const total = parseExpression();
+        if (index !== tokens.length) return { error: true };
+        return { value: hasOperator || tokens.length > 1 ? modValue(total) : total };
+    } catch (error) {
+        return { error: true };
+    }
 }
 
 function renderReadoutCards() {
@@ -734,20 +956,26 @@ function drawArcs() {
     elements.arcGroupTarget.innerHTML = '';
     elements.arcGroupOffset.innerHTML = '';
 
-    state.arcs.forEach((arc) => {
+    state.arcs.forEach((arc, index) => {
         const endpoints = getArcEndpoints(arc);
         if (!endpoints) return;
+        const color = arcColor(arc, index);
         const { start, end } = endpoints;
         const targetPath = arcPath(start, end, ring.arcRadius);
-        if (targetPath) {
+        if (targetPath && !arc.hideTarget) {
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             path.setAttribute('d', targetPath);
             path.setAttribute('class', 'ring-arc arc-target');
+            path.setAttribute('data-arc-id', String(arc.id));
+            path.setAttribute('data-arc-kind', 'target');
+            path.style.stroke = color;
+            path.style.color = color;
             elements.arcGroupTarget.appendChild(path);
         }
 
-        const offsetValue = getArcOffsetValue(arc);
-        if (offsetValue !== null && offsetValue !== undefined) {
+        const offsetIds = Array.isArray(arc.offsetIds) ? arc.offsetIds : [];
+        if (offsetIds.length > 0 && !arc.hideOffset) {
+            const offsetValue = getOffsetSumByIds(offsetIds);
             const offsetStart = modValue(start + offsetValue);
             const offsetEnd = modValue(end + offsetValue);
             const offsetPath = arcPath(offsetStart, offsetEnd, ring.arcRadius - ring.arcOffset);
@@ -755,6 +983,10 @@ function drawArcs() {
                 const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                 path.setAttribute('d', offsetPath);
                 path.setAttribute('class', 'ring-arc arc-offset');
+                path.setAttribute('data-arc-id', String(arc.id));
+                path.setAttribute('data-arc-kind', 'offset');
+                path.style.stroke = color;
+                path.style.color = color;
                 elements.arcGroupOffset.appendChild(path);
             }
         }
@@ -769,7 +1001,8 @@ function drawPoints(variableMap) {
     const visiblePoints = state.points.filter((point) => !point.hidden);
     visiblePoints.forEach((point, index) => {
         const color = pointColor(point, index);
-        const angleIndex = modValue(point.value);
+        const offsetValue = getPointOffsetSum(point);
+        const angleIndex = modValue(point.value + offsetValue);
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
         line.setAttribute('class', 'ring-arrow');
         line.setAttribute('marker-end', 'url(#arrowHead)');
@@ -805,7 +1038,7 @@ function renderLegend() {
         dot.style.background = point.color || pointPalette[index % pointPalette.length];
 
         const label = document.createElement('span');
-        label.textContent = pointLabel(point, index);
+        label.textContent = formatInlineMath(pointLabel(point, index));
 
         item.append(dot, label);
         container.appendChild(item);
@@ -818,61 +1051,108 @@ function renderLegend() {
         const swatch = document.createElement('span');
         swatch.className = 'legend-swatch';
 
-        const targetDot = document.createElement('span');
-        targetDot.className = 'legend-dot dot-arc';
-        const offsetDot = document.createElement('span');
-        offsetDot.className = 'legend-dot dot-mask';
-
-        swatch.append(targetDot, offsetDot);
+        const swatchLine = document.createElement('span');
+        swatchLine.className = 'legend-arc-line';
+        swatchLine.style.background = arcColor(arc, index);
+        swatch.append(swatchLine);
 
         const label = document.createElement('span');
         const name = arc.name.trim();
         const startLabel = getPointLabelById(arc.startPointId);
         const endLabel = getPointLabelById(arc.endPointId);
         if (startLabel && endLabel) {
-            const endpoints = `${startLabel} -> ${endLabel}`;
-            label.textContent = name ? `${name} (${endpoints})` : endpoints;
+            const endpoints = `${formatInlineMath(startLabel)} -> ${formatInlineMath(endLabel)}`;
+            label.textContent = name ? `${formatInlineMath(name)} (${endpoints})` : endpoints;
         } else {
-            label.textContent = name ? name : `弧段 ${index + 1}`;
+            label.textContent = name ? formatInlineMath(name) : `弧段 ${index + 1}`;
         }
 
         item.append(swatch, label);
         container.appendChild(item);
     });
+
+    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+        window.MathJax.typesetPromise([container]).catch(() => {});
+    }
 }
 
 function updateWrapIndicator() {
     if (!elements.wrapValue || !elements.wrapFormula) return;
+    if (elements.ringSvg) {
+        elements.ringSvg.querySelectorAll('.ring-arc.arc-wrap').forEach((path) => {
+            path.classList.remove('arc-wrap');
+        });
+    }
     const arc = getSelectedArc();
     if (!arc) {
         elements.wrapValue.textContent = '-';
         elements.wrapFormula.innerHTML = '\\(1\\{\\text{start} > \\text{end}\\}\\)';
+        if (elements.intervalFormula) {
+            elements.intervalFormula.innerHTML = '\\([\\text{start}, \\text{end})\\)';
+        }
         return;
     }
 
     const useOffset = elements.intervalSelect && elements.intervalSelect.value === 'offset';
+    const startLabel = getPointLabelById(arc.startPointId) || 'start';
+    const endLabel = getPointLabelById(arc.endPointId) || 'end';
+    const offsetLabels = getOffsetLabelsByIds(arc.offsetIds);
+    const startTerm = formatWrapTerm(startLabel, 'start');
+    const endTerm = formatWrapTerm(endLabel, 'end');
+    const offsetTerms = offsetLabels.length
+        ? offsetLabels.map((label) => formatWrapTerm(label, 'offset'))
+        : [formatWrapTerm('offset', 'offset')];
+    const offsetExpression = offsetTerms.join(' + ');
     const formula = useOffset
-        ? '\\(1\\{\\text{start} + \\text{offset} > \\text{end} + \\text{offset}\\}\\)'
-        : '\\(1\\{\\text{start} > \\text{end}\\}\\)';
+        ? `\\(1\\{${startTerm} + ${offsetExpression} > ${endTerm} + ${offsetExpression}\\}\\)`
+        : `\\(1\\{${startTerm} > ${endTerm}\\}\\)`;
     elements.wrapFormula.innerHTML = formula;
 
     const endpoints = getArcEndpoints(arc);
     if (!endpoints) {
         elements.wrapValue.textContent = '-';
+        if (elements.intervalFormula) {
+            elements.intervalFormula.innerHTML = '\\([\\text{start}, \\text{end})\\)';
+        }
         return;
     }
 
     const { start, end } = endpoints;
-    const offsetValue = getArcOffsetValue(arc);
-    if (useOffset && (offsetValue === null || offsetValue === undefined)) {
+    const offsetIds = Array.isArray(arc.offsetIds) ? arc.offsetIds : [];
+    const intervalStart = useOffset ? `${startTerm} + ${offsetExpression}` : startTerm;
+    const intervalEnd = useOffset ? `${endTerm} + ${offsetExpression}` : endTerm;
+    if (useOffset && offsetIds.length === 0) {
         elements.wrapValue.textContent = '-';
+        if (elements.intervalFormula) {
+            elements.intervalFormula.innerHTML = `\\([${intervalStart}, ${intervalEnd})\\)`;
+        }
         return;
     }
 
-    const wrap = useOffset
-        ? modValue(start + offsetValue) > modValue(end + offsetValue)
-        : start > end;
+    const offsetValue = getOffsetSumByIds(offsetIds);
+    const wrap = useOffset ? modValue(start + offsetValue) > modValue(end + offsetValue) : start > end;
     elements.wrapValue.textContent = wrap ? '1' : '0';
+    if (elements.intervalFormula) {
+        elements.intervalFormula.innerHTML = wrap
+            ? `\\([${intervalStart}, N-1] \\cup [0, ${intervalEnd})\\)`
+            : `\\([${intervalStart}, ${intervalEnd})\\)`;
+    }
+
+    if (wrap && elements.ringSvg) {
+        if (useOffset) {
+            elements.ringSvg
+                .querySelectorAll(`.ring-arc[data-arc-id="${arc.id}"][data-arc-kind="offset"]`)
+                .forEach((path) => {
+                    path.classList.add('arc-wrap');
+                });
+        } else {
+            elements.ringSvg
+                .querySelectorAll(`.ring-arc[data-arc-id="${arc.id}"][data-arc-kind="target"]`)
+                .forEach((path) => {
+                    path.classList.add('arc-wrap');
+                });
+        }
+    }
 }
 
 function updateDisplay() {
@@ -888,7 +1168,7 @@ function updateDisplay() {
     }
 
     if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
-        window.MathJax.typesetPromise([elements.wrapFormula]);
+        window.MathJax.typesetPromise([elements.wrapFormula, elements.intervalFormula].filter(Boolean));
     }
 }
 
@@ -1026,17 +1306,6 @@ function init() {
         });
     }
 
-    if (elements.hideTargetArcToggle) {
-        elements.hideTargetArcToggle.addEventListener('change', () => {
-            document.body.classList.toggle('hide-target-arc', elements.hideTargetArcToggle.checked);
-        });
-    }
-
-    if (elements.hideOffsetArcToggle) {
-        elements.hideOffsetArcToggle.addEventListener('change', () => {
-            document.body.classList.toggle('hide-offset-arc', elements.hideOffsetArcToggle.checked);
-        });
-    }
 }
 
 document.addEventListener('DOMContentLoaded', init);
