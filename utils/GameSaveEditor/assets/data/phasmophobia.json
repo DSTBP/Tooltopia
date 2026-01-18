@@ -1,0 +1,44 @@
+[
+  {
+    "FieldName": "PlayersMoney",
+    "Categorization": "经济资产",
+    "Description": "玩家当前持有的金钱，用于在商店购买装备及支付合约保险。",
+    "CurrentValue": 0,
+    "Suggestion": "建议不要超过 999999"
+  },
+  {
+    "FieldName": "Experience",
+    "Categorization": "等级进度",
+    "Description": "玩家当前的经验值总量，决定了玩家的等级升级进度。",
+    "CurrentValue": 0,
+    "Suggestion": "配合 Level 字段同步增加，每级所需经验约为 100 左右（视转生阶段而定）。"
+  },
+  {
+    "FieldName": "NewLevel",
+    "Categorization": "等级进度",
+    "Description": "玩家当前的实际等级。等级越高，解锁的装备 Tier（等阶）越高。",
+    "CurrentValue": 0,
+    "Suggestion": "修改到 100 以上即可在休息室选择转生（Prestige），解锁新的勋章背景。"
+  },
+  {
+    "FieldName": "Prestige",
+    "Categorization": "等级进度",
+    "Description": "当前的转生阶段等级。转生后等级重置，但会获得专属头像框和外观。",
+    "CurrentValue": 1,
+    "Suggestion": "可根据个人喜好修改（如 1-20），每一级对应不同的转生标志。"
+  },
+  {
+    "FieldName": "ApocalypseGoldReceived",
+    "Categorization": "挑战奖杯",
+    "Description": "末日挑战（Apocalypse Challenge）金牌完成状态。",
+    "CurrentValue": 1,
+    "Suggestion": "修改为 1 可直接在陈列柜获得末日挑战的金牌奖杯。"
+  },
+  {
+    "FieldName": "amountOfBonesCollected",
+    "Categorization": "统计数据",
+    "Description": "职业生涯中收集的骨头总数。",
+    "CurrentValue": 0,
+    "Suggestion": "可修改为一个较高的整数，用于在个人统计面板展示自己的“肝度”。"
+  }
+]

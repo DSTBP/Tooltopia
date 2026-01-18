@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <title>游戏存档编辑器 - GameSaveEditor</title>
+    <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+    <!-- 主题切换器 -->
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+
+    <div id="background-wrapper"></div>
+    <div class="page-container">
+        <a href="../../index.html" class="back-btn">← 返回首页</a>
+        <div class="header">
+            <h1 data-shadow="游戏存档编辑器">游戏存档编辑器</h1>
+            <p class="subtitle">自用游戏存档加解密与下载</p>
+        </div>
+
+        <div class="container">
+            <div class="section" id="step1">
+                <h2>步骤 1: 上传存档文件</h2>
+                <div class="upload-area">
+                    <div class="file-upload">
+                        <div class="file-upload-area" id="fileUploadArea">
+                            <input type="file" id="fileInput" style="display: none;">
+                            <div class="upload-icon">&#128193;</div>
+                            <p class="upload-text">点击选择存档文件，或拖拽文件到此处</p>
+                            <p class="upload-hint">支持任意扩展名的游戏存档</p>
+                            <span id="fileName" class="file-name"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="step2">
+                <h2>步骤 2: 选择游戏与密钥</h2>
+                <div class="delimiter-options">
+                    <div class="radio-option">
+                        <label for="gameSelect">游戏选择</label>
+                        <select id="gameSelect" class="game-select">
+                            <option value="恐鬼症（Phasmophobia）">恐鬼症（Phasmophobia）</option>
+                        </select>
+                    </div>
+                    <div class="radio-option">
+                        <label for="keyInput">密钥</label>
+                        <input type="text" id="keyInput" placeholder="输入解密/加密密钥">
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="step3">
+                <h2>步骤 3: 解密或加密</h2>
+                <div class="search-area">
+                    <div class="search-actions">
+                        <button id="decryptBtn" class="btn btn-primary">解密</button>
+                        <button id="encryptBtn" class="btn btn-success">加密</button>
+                        <button id="downloadBtn" class="btn btn-secondary" disabled>下载结果</button>
+                    </div>
+                </div>
+                <div id="statusMessage" class="search-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./assets/js/theme-toggle.js"></script>
+    <script src="./assets/js/script.js"></script>
+</body>
+</html>
