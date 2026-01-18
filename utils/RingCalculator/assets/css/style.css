@@ -11,6 +11,7 @@
     --text-0: #eef2f6;
     --text-1: rgba(238, 242, 246, 0.72);
     --text-2: rgba(238, 242, 246, 0.5);
+    --text-3: #4b5563;
     --accent-x: #3fb8f4;
     --accent-xhat: #ffb347;
     --accent-x0: #4ade80;
@@ -22,6 +23,11 @@
     --accent-wrap: #ff5d8f;
     --accent-ring: rgba(255, 255, 255, 0.4);
     --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    --input-bg: rgba(255, 255, 255, 0.05);
+    --input-border: rgba(255, 255, 255, 0.2);
+    --btn-bg: rgba(255, 255, 255, 0.08);
+    --control-bg: rgba(255, 255, 255, 0.04);
+    --control-border: rgba(255, 255, 255, 0.08);
 }
 
 * {
@@ -209,8 +215,8 @@ body {
     gap: 8px;
     padding: 6px 10px;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--control-bg);
+    border: 1px solid var(--control-border);
 }
 
 .power-input.is-visible {
@@ -225,8 +231,8 @@ body {
 .input-field {
     padding: 8px 12px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
     color: var(--text-0);
     font-size: 0.95rem;
     min-width: 80px;
@@ -371,8 +377,8 @@ body {
 }
 
 .readout-card {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--input-bg);
+    border: 1px solid var(--control-border);
     border-radius: 12px;
     padding: 10px 12px;
     display: grid;
@@ -434,24 +440,17 @@ body {
 }
 
 .dot-point {
-    background: conic-gradient(
-        #3fb8f4,
-        #f59e0b,
-        #22c55e,
-        #f472b6,
-        #38bdf8,
-        #a855f7
-    );
+    background: conic-gradient(#3fb8f4, #f59e0b, #22c55e, #f472b6, #38bdf8, #a855f7);
 }
 
 .dot-x { background: var(--accent-x); }
 .dot-xhat { background: var(--accent-xhat); }
-.dot-arc { background: var(--accent-arc); }
-.dot-mask { background: var(--accent-mask); }
 .dot-x0 { background: var(--accent-x0); }
 .dot-x1 { background: var(--accent-x1); }
 .dot-xminus { background: var(--accent-xminus); }
 .dot-r { background: var(--accent-r); }
+.dot-arc { background: var(--accent-arc); }
+.dot-mask { background: var(--accent-mask); }
 
 .control-panel {
     display: grid;
@@ -459,8 +458,8 @@ body {
 }
 
 .control-block {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--control-bg);
+    border: 1px solid var(--control-border);
     border-radius: 14px;
     padding: 16px;
     display: grid;
@@ -528,8 +527,8 @@ body {
     width: 70px;
     padding: 6px 8px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
     color: var(--text-0);
     font-size: 0.9rem;
 }
@@ -547,13 +546,13 @@ input[type="range"] {
 }
 
 .btn {
-    -webkit-tap-highlight-color: #0000;
+    -webkit-tap-highlight-color: transparent;
     cursor: pointer;
     border-radius: 10px;
     padding: 10px 16px;
     font-size: 0.9rem;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--btn-bg);
+    border: 1px solid var(--input-border);
     color: var(--text-0);
     transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
@@ -565,7 +564,7 @@ input[type="range"] {
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--control-bg);
 }
 
 .btn-compact {
@@ -639,22 +638,31 @@ input[type="range"] {
 }
 
 body.day-mode {
+    --text-0: #1f2937;
+    --text-1: #4a5568;
+    --text-2: #4b5563;
+    --text-3: var(--text-2);
+    --panel: rgba(255, 255, 255, 0.9);
+    --panel-border: rgba(15, 23, 42, 0.08);
+    --shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+    --input-bg: rgba(255, 255, 255, 0.9);
+    --input-border: rgba(15, 23, 42, 0.2);
+    --btn-bg: rgba(15, 23, 42, 0.06);
+    --control-bg: rgba(15, 23, 42, 0.04);
+    --control-border: rgba(15, 23, 42, 0.08);
+    --accent-ring: rgba(15, 23, 42, 0.35);
+    --accent-mask: #2563eb;
+
     color-scheme: light;
     background: #f0f4f8;
     background-image: url(../../../../assets/image/day-background.png);
     background-size: auto;
     background-repeat: repeat;
-    color: #1f2937;
-}
-
-body.day-mode .panel {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(15, 23, 42, 0.08);
-    box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+    color: var(--text-0);
 }
 
 body.day-mode .back-btn {
-    color: #4a5568;
+    color: var(--text-1);
 }
 
 body.day-mode .back-btn:hover {
@@ -667,11 +675,7 @@ body.day-mode .header h1 {
 }
 
 body.day-mode .subtitle {
-    color: #4a5568;
-}
-
-body.day-mode .ring-base {
-    stroke: rgba(15, 23, 42, 0.35);
+    color: var(--text-1);
 }
 
 body.day-mode .tick-line {
@@ -685,77 +689,33 @@ body.day-mode .tick-label {
 body.day-mode #arrowHead path {
     fill: context-stroke;
 }
-body.day-mode .control-block,
-body.day-mode .readout-card {
-    background: rgba(15, 23, 42, 0.04);
-    border-color: rgba(15, 23, 42, 0.08);
-}
 
 body.day-mode .readout-label {
-    color: #1f2937;
     opacity: 0.75;
 }
 
-body.day-mode .panel-sub,
-body.day-mode .formula,
-body.day-mode .hint,
-body.day-mode .legend {
-    color: #4b5563;
-}
-
-body.day-mode .input-field,
-body.day-mode .number-input {
-    background: rgba(255, 255, 255, 0.9);
-    color: #1f2937;
-    border-color: rgba(15, 23, 42, 0.2);
-}
-
-body.day-mode input[type="range"] {
-    accent-color: #2563eb;
+body.day-mode input[type="range"],
+body.day-mode .toggle-inline input,
+body.day-mode .offset-item input {
+    accent-color: var(--accent-mask);
 }
 
 body.day-mode .power-input {
-    background: rgba(15, 23, 42, 0.04);
-    border-color: rgba(15, 23, 42, 0.12);
+    background: var(--control-bg);
+    border-color: var(--control-border);
 }
 
-body.day-mode .power-value {
-    color: #1f2937;
-}
-
-body.day-mode .btn {
-    color: #1f2937;
-    background: rgba(15, 23, 42, 0.06);
-    border-color: rgba(15, 23, 42, 0.2);
+body.day-mode .power-value,
+body.day-mode .wrap-row .mono,
+body.day-mode .toggle-inline,
+body.day-mode .offset-item,
+body.day-mode .control-inline label,
+body.day-mode .control-row label {
+    color: var(--text-0);
 }
 
 body.day-mode .wrap-card {
     background: rgba(255, 93, 143, 0.06);
-}
-
-body.day-mode .wrap-row .mono {
-    color: #1f2937;
-}
-
-body.day-mode .toggle-inline {
-    color: #1f2937;
-}
-
-body.day-mode .offset-item {
-    color: #1f2937;
-}
-
-body.day-mode .control-inline label,
-body.day-mode .control-row label {
-    color: #1f2937;
-}
-
-body.day-mode .toggle-inline input {
-    accent-color: #2563eb;
-}
-
-body.day-mode .offset-item input {
-    accent-color: #2563eb;
 }
 
 .theme-toggle {

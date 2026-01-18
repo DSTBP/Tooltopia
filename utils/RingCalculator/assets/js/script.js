@@ -120,19 +120,15 @@ function updateTicks() {
     }
 }
 
-function pointColor(point, index) {
-    if (point.color) return point.color;
-    const fallback = pointPalette[index % pointPalette.length];
-    point.color = fallback;
+function getColor(item, index, palette) {
+    if (item.color) return item.color;
+    const fallback = palette[index % palette.length];
+    item.color = fallback;
     return fallback;
 }
 
-function arcColor(arc, index) {
-    if (arc.color) return arc.color;
-    const fallback = arcPalette[index % arcPalette.length];
-    arc.color = fallback;
-    return fallback;
-}
+const pointColor = (point, index) => getColor(point, index, pointPalette);
+const arcColor = (arc, index) => getColor(arc, index, arcPalette);
 
 function latexText(value) {
     return String(value)
@@ -155,15 +151,15 @@ function isLikelyLatex(value) {
     return /[\\^_{}$]/.test(value);
 }
 
-function isValidLatex(value) {
-    if (!window.MathJax || typeof window.MathJax.tex2svg !== 'function') return false;
+const isValidLatex = (value) => {
+    if (!window.MathJax?.tex2svg) return false;
     try {
         window.MathJax.tex2svg(value);
         return true;
     } catch (error) {
         return false;
     }
-}
+};
 
 function formatInlineMath(value) {
     const normalized = normalizeLatexInput(value);
@@ -186,89 +182,66 @@ function formatWrapTerm(value, fallback) {
     return `\\text{${latexText(raw)}}`;
 }
 
-function pointLabel(point, index) {
-    const name = point.name.trim();
-    return name ? name : `点 ${index + 1}`;
+const getLabel = (item, index, defaultPrefix) =>
+    item.name.trim() || `${defaultPrefix} ${index + 1}`;
+
+const pointLabel = (point, index) => getLabel(point, index, '点');
+const offsetLabel = (offset, index) => getLabel(offset, index, '偏移');
+
+const getById = (collection, id) => collection.find(item => item.id === id) || null;
+const getPointById = (pointId) => getById(state.points, pointId);
+const getOffsetById = (offsetId) => getById(state.offsets, offsetId);
+
+function getLabelById(collection, id, labelFn) {
+    const index = collection.findIndex(item => item.id === id);
+    return index === -1 ? '' : labelFn(collection[index], index);
 }
 
-function getPointById(pointId) {
-    return state.points.find((point) => point.id === pointId) || null;
-}
+const getPointLabelById = (pointId) => getLabelById(state.points, pointId, pointLabel);
+const getOffsetLabelById = (offsetId) => getLabelById(state.offsets, offsetId, offsetLabel);
 
-function getPointLabelById(pointId) {
-    const index = state.points.findIndex((point) => point.id === pointId);
-    if (index === -1) return '';
-    return pointLabel(state.points[index], index);
-}
-
-function offsetLabel(offset, index) {
-    const name = offset.name.trim();
-    return name ? name : `偏移 ${index + 1}`;
-}
-
-function getOffsetById(offsetIdValue) {
-    return state.offsets.find((offset) => offset.id === offsetIdValue) || null;
-}
-
-function getOffsetLabelById(offsetIdValue) {
-    const index = state.offsets.findIndex((offset) => offset.id === offsetIdValue);
-    if (index === -1) return '';
-    return offsetLabel(state.offsets[index], index);
-}
-
-function getOffsetValuesByIds(offsetIds) {
-    if (!Array.isArray(offsetIds)) return [];
-    return offsetIds
-        .map((offsetIdValue) => getOffsetById(offsetIdValue))
+const getOffsetValuesByIds = (offsetIds) =>
+    (Array.isArray(offsetIds) ? offsetIds : [])
+        .map(getOffsetById)
         .filter(Boolean)
-        .map((offset) => offset.value);
-}
+        .map(offset => offset.value);
 
-function getOffsetLabelsByIds(offsetIds) {
-    if (!Array.isArray(offsetIds)) return [];
-    return offsetIds
-        .map((offsetIdValue) => getOffsetLabelById(offsetIdValue))
+const getOffsetLabelsByIds = (offsetIds) =>
+    (Array.isArray(offsetIds) ? offsetIds : [])
+        .map(getOffsetLabelById)
         .filter(Boolean);
-}
 
-function getOffsetSumByIds(offsetIds) {
-    return getOffsetValuesByIds(offsetIds).reduce((sum, value) => sum + value, 0);
-}
+const getOffsetSumByIds = (offsetIds) =>
+    getOffsetValuesByIds(offsetIds).reduce((sum, value) => sum + value, 0);
 
-function getPointOffsetSum(point) {
-    return getOffsetSumByIds(point.offsetIds);
-}
+const getPointOffsetSum = (point) => getOffsetSumByIds(point.offsetIds);
 
 function getSelectedArc() {
     const selectedId = elements.arcSelect ? Number(elements.arcSelect.value) : null;
     return state.arcs.find((entry) => entry.id === selectedId) || null;
 }
 
+const updateValue = (item, value, max) => {
+    const clamped = clampValue(Number(value), max);
+    item.value = clamped;
+    if (item.slider) item.slider.value = clamped;
+    if (item.input) item.input.value = clamped;
+};
 
 function updateRanges() {
     const pointMax = state.N;
-
-    state.points.forEach((point) => {
-        if (point.slider) {
-            point.slider.min = 0;
-            point.slider.max = pointMax;
+    const updateItemRange = (item) => {
+        if (item.slider) {
+            item.slider.min = 0;
+            item.slider.max = pointMax;
         }
-        if (point.input) {
-            point.input.min = 0;
-            point.input.max = pointMax;
+        if (item.input) {
+            item.input.min = 0;
+            item.input.max = pointMax;
         }
-    });
-
-    state.offsets.forEach((offset) => {
-        if (offset.slider) {
-            offset.slider.min = 0;
-            offset.slider.max = pointMax;
-        }
-        if (offset.input) {
-            offset.input.min = 0;
-            offset.input.max = pointMax;
-        }
-    });
+    };
+    state.points.forEach(updateItemRange);
+    state.offsets.forEach(updateItemRange);
 }
 
 function setArrowPosition(line, index, radius) {
@@ -340,10 +313,7 @@ function buildPointRow(point) {
     });
 
     const syncPointValue = (value) => {
-        const clamped = clampValue(Number(value), state.N);
-        point.value = clamped;
-        slider.value = clamped;
-        numberInput.value = clamped;
+        updateValue(point, value, state.N);
         updateDisplay();
     };
 
@@ -403,13 +373,6 @@ function addPoint() {
     updateDisplay();
 }
 
-function updateOffsetEntryValue(offset, value) {
-    const clamped = clampValue(Number(value), state.N);
-    offset.value = clamped;
-    if (offset.slider) offset.slider.value = clamped;
-    if (offset.input) offset.input.value = clamped;
-}
-
 function buildOffsetRow(offset) {
     const row = document.createElement('div');
     row.className = 'dynamic-row';
@@ -450,12 +413,12 @@ function buildOffsetRow(offset) {
     });
 
     numberInput.addEventListener('change', () => {
-        updateOffsetEntryValue(offset, numberInput.value);
+        updateValue(offset, numberInput.value, state.N);
         updateDisplay();
     });
 
     slider.addEventListener('input', () => {
-        updateOffsetEntryValue(offset, slider.value);
+        updateValue(offset, slider.value, state.N);
         updateDisplay();
     });
 
@@ -492,36 +455,25 @@ function addOffset() {
     updateDisplay();
 }
 
-function getDefaultArcPointIds() {
-    if (state.points.length === 0) {
-        return { startPointId: null, endPointId: null };
-    }
+const getDefaultArcPointIds = () => {
+    if (state.points.length === 0) return { startPointId: null, endPointId: null };
     const startPointId = state.points[0].id;
     const endPointId = state.points.length > 1 ? state.points[1].id : startPointId;
     return { startPointId, endPointId };
-}
+};
 
 function ensureArcPointSelection(arc) {
     if (state.points.length === 0) {
-        arc.startPointId = null;
-        arc.endPointId = null;
+        arc.startPointId = arc.endPointId = null;
         return;
     }
-    const startValid = state.points.some((point) => point.id === arc.startPointId);
-    const endValid = state.points.some((point) => point.id === arc.endPointId);
-    if (startValid && !endValid) {
-        arc.endPointId = arc.startPointId;
-        return;
-    }
-    if (!startValid && endValid) {
-        arc.startPointId = arc.endPointId;
-        return;
-    }
-    if (!startValid && !endValid) {
-        const startPointId = state.points[0].id;
-        const endPointId = state.points.length > 1 ? state.points[1].id : startPointId;
-        arc.startPointId = startPointId;
-        arc.endPointId = endPointId;
+    const startValid = state.points.some(point => point.id === arc.startPointId);
+    const endValid = state.points.some(point => point.id === arc.endPointId);
+
+    if (!startValid || !endValid) {
+        const { startPointId, endPointId } = getDefaultArcPointIds();
+        if (!startValid) arc.startPointId = endValid ? arc.endPointId : startPointId;
+        if (!endValid) arc.endPointId = startValid ? arc.startPointId : endPointId;
     }
 }
 
@@ -531,8 +483,7 @@ function fillPointSelect(select, selectedId) {
         const option = document.createElement('option');
         option.value = '';
         option.textContent = '无点';
-        option.disabled = true;
-        option.selected = true;
+        option.disabled = option.selected = true;
         select.appendChild(option);
         select.disabled = true;
         return;
@@ -542,9 +493,7 @@ function fillPointSelect(select, selectedId) {
         const option = document.createElement('option');
         option.value = String(point.id);
         option.textContent = pointLabel(point, index);
-        if (point.id === selectedId) {
-            option.selected = true;
-        }
+        option.selected = point.id === selectedId;
         select.appendChild(option);
     });
 }
@@ -592,33 +541,20 @@ function renderOffsetMulti(container, selectedIds, onChange) {
     });
 }
 
-function updateArcOffsetOptions() {
-    state.arcs.forEach((arc) => {
-        const validIds = Array.isArray(arc.offsetIds)
-            ? arc.offsetIds.filter((offsetIdValue) => state.offsets.some((offset) => offset.id === offsetIdValue))
-            : [];
-        if (!Array.isArray(arc.offsetIds) || validIds.length !== arc.offsetIds.length) {
-            arc.offsetIds = validIds;
-        }
-        if (arc.offsetContainer && arc.onOffsetChange) {
-            renderOffsetMulti(arc.offsetContainer, arc.offsetIds, arc.onOffsetChange);
-        }
-    });
-}
+const validateOffsetIds = (item) => {
+    const validIds = Array.isArray(item.offsetIds)
+        ? item.offsetIds.filter(offsetId => state.offsets.some(offset => offset.id === offsetId))
+        : [];
+    if (!Array.isArray(item.offsetIds) || validIds.length !== item.offsetIds.length) {
+        item.offsetIds = validIds;
+    }
+    if (item.offsetContainer && item.onOffsetChange) {
+        renderOffsetMulti(item.offsetContainer, item.offsetIds, item.onOffsetChange);
+    }
+};
 
-function updatePointOffsetOptions() {
-    state.points.forEach((point) => {
-        const validIds = Array.isArray(point.offsetIds)
-            ? point.offsetIds.filter((offsetIdValue) => state.offsets.some((offset) => offset.id === offsetIdValue))
-            : [];
-        if (!Array.isArray(point.offsetIds) || validIds.length !== point.offsetIds.length) {
-            point.offsetIds = validIds;
-        }
-        if (point.offsetContainer && point.onOffsetChange) {
-            renderOffsetMulti(point.offsetContainer, point.offsetIds, point.onOffsetChange);
-        }
-    });
-}
+const updateArcOffsetOptions = () => state.arcs.forEach(validateOffsetIds);
+const updatePointOffsetOptions = () => state.points.forEach(validateOffsetIds);
 
 function buildArcRow(arc) {
     const row = document.createElement('div');
@@ -888,15 +824,12 @@ function renderReadoutCards() {
     const container = elements.readoutContainer;
     if (!container) return;
 
-    const existing = new Map();
-    container.querySelectorAll('.readout-card').forEach((card) => {
-        existing.set(card.dataset.expr, card);
-    });
+    const existing = new Map(
+        Array.from(container.querySelectorAll('.readout-card')).map(card => [card.dataset.expr, card])
+    );
 
     existing.forEach((card, key) => {
-        if (!readoutExpressions.includes(key)) {
-            card.remove();
-        }
+        if (!readoutExpressions.includes(key)) card.remove();
     });
 
     readoutExpressions.forEach((expr) => {
@@ -914,7 +847,7 @@ function renderReadoutCards() {
         container.appendChild(card);
     });
 
-    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+    if (window.MathJax?.typesetPromise) {
         window.MathJax.typesetPromise([container]);
     }
 }
@@ -1029,9 +962,7 @@ function renderLegend() {
     state.points.forEach((point, index) => {
         const item = document.createElement('div');
         item.className = 'legend-item';
-        if (point.hidden) {
-            item.classList.add('is-muted');
-        }
+        if (point.hidden) item.classList.add('is-muted');
 
         const dot = document.createElement('span');
         dot.className = 'legend-dot';
@@ -1050,7 +981,6 @@ function renderLegend() {
 
         const swatch = document.createElement('span');
         swatch.className = 'legend-swatch';
-
         const swatchLine = document.createElement('span');
         swatchLine.className = 'legend-arc-line';
         swatchLine.style.background = arcColor(arc, index);
@@ -1060,18 +990,16 @@ function renderLegend() {
         const name = arc.name.trim();
         const startLabel = getPointLabelById(arc.startPointId);
         const endLabel = getPointLabelById(arc.endPointId);
-        if (startLabel && endLabel) {
-            const endpoints = `${formatInlineMath(startLabel)} -> ${formatInlineMath(endLabel)}`;
-            label.textContent = name ? `${formatInlineMath(name)} (${endpoints})` : endpoints;
-        } else {
-            label.textContent = name ? formatInlineMath(name) : `弧段 ${index + 1}`;
-        }
+        label.textContent = (startLabel && endLabel)
+            ? (name ? `${formatInlineMath(name)} (${formatInlineMath(startLabel)} -> ${formatInlineMath(endLabel)})`
+                    : `${formatInlineMath(startLabel)} -> ${formatInlineMath(endLabel)}`)
+            : (name ? formatInlineMath(name) : `弧段 ${index + 1}`);
 
         item.append(swatch, label);
         container.appendChild(item);
     });
 
-    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+    if (window.MathJax?.typesetPromise) {
         window.MathJax.typesetPromise([container]).catch(() => {});
     }
 }
@@ -1167,7 +1095,7 @@ function updateDisplay() {
         setPointPosition(elements.pointZero, 0, ring.pointRadius);
     }
 
-    if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+    if (window.MathJax?.typesetPromise) {
         window.MathJax.typesetPromise([elements.wrapFormula, elements.intervalFormula].filter(Boolean));
     }
 }
@@ -1190,13 +1118,6 @@ function pointerToIndex(event) {
     return clampValue(rawIndex, state.N);
 }
 
-function updatePointValue(point, value) {
-    const clamped = clampValue(Number(value), state.N);
-    point.value = clamped;
-    if (point.slider) point.slider.value = clamped;
-    if (point.input) point.input.value = clamped;
-}
-
 function initPointerEvents() {
     if (!elements.hitRing) return;
     let dragging = false;
@@ -1205,7 +1126,7 @@ function initPointerEvents() {
         const index = pointerToIndex(event);
         const point = state.points.find((entry) => entry.name.trim().toLowerCase() === 'x');
         if (!point) return;
-        updatePointValue(point, index);
+        updateValue(point, index, state.N);
         updateDisplay();
     };
 
@@ -1233,12 +1154,10 @@ function initPointerEvents() {
 function applyModFromSelect() {
     state.N = Number(elements.modSelect.value);
     state.points.forEach((point) => {
-        point.value = clampValue(point.value, state.N);
-        if (point.slider) point.slider.value = point.value;
-        if (point.input) point.input.value = point.value;
+        updateValue(point, point.value, state.N);
     });
     state.offsets.forEach((offset) => {
-        updateOffsetEntryValue(offset, offset.value);
+        updateValue(offset, offset.value, state.N);
     });
     updateAll();
 }
