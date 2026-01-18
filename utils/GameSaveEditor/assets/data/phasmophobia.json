@@ -16,16 +16,16 @@
   {
     "FieldName": "NewLevel",
     "Categorization": "等级进度",
-    "Description": "玩家当前的实际等级。等级越高，解锁的装备 Tier（等阶）越高。",
+    "Description": "玩家当前的实际等级。等级越高，解锁的装备等级越高。",
     "CurrentValue": 0,
-    "Suggestion": "修改到 100 以上即可在休息室选择转生（Prestige），解锁新的勋章背景。"
+    "Suggestion": "修改到 100 以上即可在休息室选择转生，解锁新的勋章背景。"
   },
   {
     "FieldName": "Prestige",
     "Categorization": "等级进度",
     "Description": "当前的转生阶段等级。转生后等级重置，但会获得专属头像框和外观。",
     "CurrentValue": 1,
-    "Suggestion": "可根据个人喜好修改（如 1-20），每一级对应不同的转生标志。"
+    "Suggestion": "根据个人喜好修改，每一级对应不同的转生标志。"
   },
   {
     "FieldName": "ApocalypseGoldReceived",

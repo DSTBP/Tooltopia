@@ -399,7 +399,7 @@ body {
     outline: none;
     border-color: rgba(255, 255, 255, 0.3);
     box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 255, 255, 0.08);
 }
 
 .radio-option.custom-option {
@@ -412,6 +412,20 @@ body {
 
 .radio-option.custom-option input[type="text"] {
     flex: 1 1 200px;
+}
+
+/* 游戏路径提示 */
+.game-path-hint {
+    margin-top: 15px;
+    padding: 12px 15px;
+    background: rgba(76, 175, 80, 0.15);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    border-radius: 8px;
+    color: hsl(122 40% 75%);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    word-break: break-all;
 }
 
 /* 数据预览 */
@@ -684,7 +698,6 @@ body {
 .field-suggestion {
     font-size: 0.85rem;
     color: hsl(45 100% 70%);
-    font-style: italic;
 }
 
 .field-input {
@@ -1146,7 +1159,7 @@ body.day-mode .radio-option label {
 
 body.day-mode .radio-option input[type="text"],
 body.day-mode .radio-option .game-select {
-    background: rgba(255, 255, 255, 0.9);
+    background-color: rgba(255, 255, 255, 0.9);
     border-color: rgba(0, 0, 0, 0.15);
     color: #1a202c;
     caret-color: #1a202c;
@@ -1257,6 +1270,12 @@ body.day-mode .field-input {
 body.day-mode .field-input:focus {
     border-color: rgba(0, 0, 0, 0.3);
     background: rgba(255, 255, 255, 1);
+}
+
+body.day-mode .game-path-hint {
+    background: rgba(76, 175, 80, 0.1);
+    border-color: rgba(76, 175, 80, 0.25);
+    color: #22863a;
 }
 
 

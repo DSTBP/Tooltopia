@@ -48,16 +48,17 @@
                 <h2>步骤 2: 选择游戏与密钥</h2>
                 <div class="delimiter-options">
                     <div class="radio-option">
+                        <label for="keyInput">密钥</label>
+                        <input type="text" id="keyInput" placeholder="输入解密/加密密钥">
+                    </div>
+                    <div class="radio-option">
                         <label for="gameSelect">游戏选择</label>
                         <select id="gameSelect" class="game-select">
                             <option value="恐鬼症（Phasmophobia）">恐鬼症（Phasmophobia）</option>
                         </select>
                     </div>
-                    <div class="radio-option">
-                        <label for="keyInput">密钥</label>
-                        <input type="text" id="keyInput" placeholder="输入解密/加密密钥">
-                    </div>
                 </div>
+                <div id="gamePathHint" class="game-path-hint"></div>
             </div>
 
             <div class="section" id="step3">
