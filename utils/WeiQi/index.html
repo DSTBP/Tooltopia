@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <title>围棋对弈 - Tooltopia</title>
+    <link rel="stylesheet" href="./assets/css/style.css">
+    <style>
+        .setup-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .setup-group h3 {
+            margin: 0 0 12px 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+        }
+
+        .setup-group .delimiter-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .game-layout {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .board-card {
+            flex: 1 1 520px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 16px;
+        }
+
+        #board {
+            width: 100%;
+            max-width: 560px;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            display: block;
+            border-radius: 12px;
+        }
+
+        .game-panel {
+            flex: 1 1 260px;
+            min-width: 240px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .score-grid {
+            display: grid;
+            grid-template-columns: auto auto;
+            gap: 6px 12px;
+        }
+
+        .board-hint {
+            color: hsl(0 0% 75%);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        body.day-mode .board-hint {
+            color: #2d3748;
+        }
+
+        @media (max-width: 768px) {
+            .setup-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 日夜切换器 -->
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+
+    <div id="background-wrapper"></div>
+    <div class="page-container">
+        <a href="../../index.html" class="back-btn">← 返回首页</a>
+        <div class="header">
+            <h1 data-shadow="围棋对弈">围棋对弈</h1>
+            <p class="subtitle">单机对局 · 三档难度 · 轻松上手</p>
+        </div>
+
+        <div class="container">
+            <div class="section" id="setup">
+                <div class="setup-grid">
+                    <div class="setup-group">
+                        <h3>AI 难度</h3>
+                        <div class="delimiter-options">
+                            <label class="radio-option">
+                                <input type="radio" name="difficulty" value="easy" checked>
+                                <span>简单</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="difficulty" value="medium">
+                                <span>中等</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="difficulty" value="hard">
+                                <span>困难</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="setup-group">
+                        <h3>棋盘大小</h3>
+                        <div class="delimiter-options">
+                            <label class="radio-option">
+                                <input type="radio" name="boardSize" value="9" checked>
+                                <span>9 路</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="boardSize" value="13">
+                                <span>13 路</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="boardSize" value="19">
+                                <span>19 路</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="setup-group">
+                        <h3>计分方式</h3>
+                        <div class="delimiter-options">
+                            <label class="radio-option">
+                                <input type="radio" name="scoringMethod" value="territory" checked>
+                                <span>数目法</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="scoringMethod" value="stones">
+                                <span>数子法</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="search-actions">
+                    <button id="newGameBtn" class="btn btn-primary">新开局</button>
+                    <button id="undoBtn" class="btn btn-secondary">回退</button>
+                    <button id="passBtn" class="btn btn-secondary">停一手</button>
+                    <button id="hintBtn" class="btn btn-secondary">提示</button>
+                </div>
+                <div class="data-preview">
+                    <div class="preview-info">规则要点</div>
+                    <div class="preview-items board-hint">
+                        玩家执黑先行，点击棋盘落子。双方连续停一手将自动结束。
+                    </div>
+                </div>
+            </div>
+
+            <div class="section" id="boardSection">
+                <h2>棋盘</h2>
+                <div class="game-layout">
+                    <div class="result-item board-card">
+                        <canvas id="board" width="600" height="600" aria-label="围棋棋盘"></canvas>
+                    </div>
+                    <div class="game-panel">
+                        <div id="status" class="result-header success">新对局开始，玩家执黑先行。</div>
+                        <div class="result-item">
+                            <div class="result-item-header">
+                                <span>对局信息</span>
+                                <span id="moveCount">步数 0</span>
+                            </div>
+                            <div class="result-item-content score-grid">
+                                <span>玩家(黑) 提子</span>
+                                <span id="blackCaptures">0</span>
+                                <span>AI(白) 提子</span>
+                                <span id="whiteCaptures">0</span>
+                                <span>当前回合</span>
+                                <span id="currentPlayer">黑</span>
+                                <span>上一手</span>
+                                <span id="lastMove">-</span>
+                            </div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-item-header">
+                                <span>对局提示</span>
+                                <span id="aiHint">AI 难度：简单</span>
+                            </div>
+                            <div class="result-item-content board-hint" id="tipText">
+                                开局建议先占角，再向边与中央扩展。AI 会根据难度进行不同强度的落子选择。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./assets/js/theme-toggle.js"></script>
+    <script src="./assets/js/script.js"></script>
+</body>
+</html>
