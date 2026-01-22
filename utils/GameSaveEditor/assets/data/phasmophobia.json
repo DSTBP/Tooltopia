@@ -2,43 +2,99 @@
   {
     "FieldName": "PlayersMoney",
     "Categorization": "经济资产",
-    "Description": "玩家当前持有的金钱，用于在商店购买装备及支付合约保险。",
+    "Description": "玩家当前持有的金钱，用于在商店购买装备及支付合约保险",
     "CurrentValue": 0,
     "Suggestion": "建议不要超过 999999"
   },
   {
     "FieldName": "Experience",
     "Categorization": "等级进度",
-    "Description": "玩家当前的经验值总量，决定了玩家的等级升级进度。",
+    "Description": "玩家当前的经验值，决定了玩家的等级升级进度",
     "CurrentValue": 0,
-    "Suggestion": "配合 Level 字段同步增加，每级所需经验约为 100 左右（视转生阶段而定）。"
+    "Suggestion": "配合 Level 字段同步增加，每级所需经验约为 100 左右（视转生阶段而定）"
   },
   {
     "FieldName": "NewLevel",
     "Categorization": "等级进度",
-    "Description": "玩家当前的实际等级。等级越高，解锁的装备等级越高。",
+    "Description": "玩家当前的实际等级等级越高，解锁的装备等级越高",
     "CurrentValue": 0,
-    "Suggestion": "修改到 100 以上即可在休息室选择转生，解锁新的勋章背景。"
+    "Suggestion": "修改到 100 以上即可选择转生，解锁新的勋章背景"
   },
   {
     "FieldName": "Prestige",
     "Categorization": "等级进度",
-    "Description": "当前的转生阶段等级。转生后等级重置，但会获得专属头像框和外观。",
+    "Description": "当前的转生阶段等级转生后等级重置，但会获得专属头像框和外观",
     "CurrentValue": 1,
-    "Suggestion": "根据个人喜好修改，每一级对应不同的转生标志。"
+    "Suggestion": "根据个人喜好修改，每一级对应不同的转生标志"
+  },
+  {
+    "FieldName": "PrestigeIndex",
+    "Categorization": "等级进度",
+    "Description": "转生阶段索引，通常与 Prestige 一致",
+    "CurrentValue": 1,
+    "Suggestion": "应与 Prestige 保持一致，否则可能导致 UI 错误"
   },
   {
     "FieldName": "ApocalypseGoldReceived",
     "Categorization": "挑战奖杯",
-    "Description": "末日挑战（Apocalypse Challenge）金牌完成状态。",
+    "Description": "末日挑战（Apocalypse Challenge）金牌完成状态",
     "CurrentValue": 1,
-    "Suggestion": "修改为 1 可直接在陈列柜获得末日挑战的金牌奖杯。"
+    "Suggestion": "修改为 1 可直接在陈列柜获得末日挑战的金牌奖杯"
   },
   {
     "FieldName": "amountOfBonesCollected",
     "Categorization": "统计数据",
-    "Description": "职业生涯中收集的骨头总数。",
+    "Description": "职业生涯中收集的骨头总数",
     "CurrentValue": 0,
-    "Suggestion": "可修改为一个较高的整数，用于在个人统计面板展示自己的“肝度”。"
+    "Suggestion": "可修改为一个较高的整数，用于在个人统计面板展示自己的肝度"
+  },
+  {
+    "FieldName": "ghostsIdentifiedAmount",
+    "Categorization": "统计数据",
+    "Description": "正确识别鬼魂的次数",
+    "CurrentValue": 0,
+    "Suggestion": "可修改为一个较高的整数"
+  },
+  {
+    "FieldName": "diedAmount",
+    "Categorization": "统计数据",
+    "Description": "死亡总次数",
+    "CurrentValue": 0,
+    "Suggestion": "可修改为一个较高的整数"
+  },
+  {
+    "FieldName": "timeSpentInvestigating",
+    "Categorization": "统计数据",
+    "Description": "总调查时长（单位：秒）",
+    "CurrentValue": 0,
+    "Suggestion": "可修改为一个较高的整数"
+  },
+  {
+    "FieldName": "amountOfGhostHunts",
+    "Categorization": "统计数据",
+    "Description": "总遭遇的鬼魂狩猎次数",
+    "CurrentValue": 0,
+    "Suggestion": "可修改为一个较高的整数"
+  },
+  {
+    "FieldName": "objectivesCompleted",
+    "Categorization": "统计数据",
+    "Description": "累计完成的任务目标数",
+    "CurrentValue": 0,
+    "Suggestion": "可修改为一个较高的整数"
+  },
+  {
+    "FieldName": "moneyEarned",
+    "Categorization": "统计数据",
+    "Description": "累计赚取的金钱总数",
+    "CurrentValue": 0,
+    "Suggestion": "可修改为一个较高的整数"
+  },
+  {
+    "FieldName": "moneySpent",
+    "Categorization": "统计数据",
+    "Description": "累计花费的金钱总数",
+    "CurrentValue": 0,
+    "Suggestion": "可修改为一个较高的整数"
   }
 ]

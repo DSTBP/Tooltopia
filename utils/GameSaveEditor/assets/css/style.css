@@ -1096,7 +1096,7 @@ body.day-mode .upload-hint {
 }
 
 body.day-mode .file-name {
-    color: #2d3748;
+    color: hsl(122 40% 70%);
 }
 
 body.day-mode textarea {

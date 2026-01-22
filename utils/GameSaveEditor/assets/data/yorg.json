@@ -1,0 +1,51 @@
+[
+  {
+    "FieldName": "day",
+    "Categorization": "游戏进度",
+    "Description": "当前生存天数。增加此值会让僵尸变强",
+    "CurrentValue": 1,
+    "Suggestion": "如果您想回到轻松阶段，可以改回 1"
+  },
+  {
+    "FieldName": "stats.gems",
+    "Categorization": "经济资产",
+    "Description": "当前红水晶总量",
+    "CurrentValue": 0,
+    "Suggestion": "不建议查超过 999999999"
+  },
+  {
+    "FieldName": "stats.points",
+    "Categorization": "技能点数",
+    "Description": "当前可用技能点",
+    "CurrentValue": 1,
+    "Suggestion": "不建议改太大"
+  },
+  {
+    "FieldName": "mapSeed",
+    "Categorization": "地图种子",
+    "Description": "地图种子，可以用来生成特定地图",
+    "CurrentValue": 1,
+    "Suggestion": "不建议修改"
+  },
+  {
+    "FieldName": "gamemode",
+    "Categorization": "游戏模式",
+    "Description": "当前游戏模式",
+    "CurrentValue": "easy",
+    "Suggestion": "有以下几个选项：easy（简单）、regular（正常）、hard（困难）、impossible（不可能）、sandbox（沙盒模式）、challenge_boss_only（挑战模式）"
+  },
+  {
+    "FieldName": "PlayerBase level",
+    "Categorization": "主基地",
+    "Description": "基地 (PlayerBase) 等级",
+    "CurrentValue": 2,
+    "Suggestion": "建议提升至 5 或更高，增加基地血量"
+  },
+  {
+    "FieldName": "All buildings level",
+    "Categorization": "所有建筑等级",
+    "Description": "统一修改所有建筑的等级",
+    "CurrentValue": 1,
+    "Suggestion": "建议不超过 8"
+  }
+]
