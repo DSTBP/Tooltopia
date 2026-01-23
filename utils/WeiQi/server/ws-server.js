@@ -1,8 +1,25 @@
 /* eslint-disable no-console */
+const fs = require('fs');
+const https = require('https');
 const WebSocket = require('ws');
 
 const port = Number.parseInt(process.env.PORT, 10) || 3001;
-const wss = new WebSocket.Server({ port });
+const sslKeyPath = process.env.SSL_KEY;
+const sslCertPath = process.env.SSL_CERT;
+let wss;
+let server;
+
+if (sslKeyPath && sslCertPath) {
+    const options = {
+        key: fs.readFileSync(sslKeyPath),
+        cert: fs.readFileSync(sslCertPath)
+    };
+    server = https.createServer(options);
+    wss = new WebSocket.Server({ server });
+    server.listen(port);
+} else {
+    wss = new WebSocket.Server({ port });
+}
 
 const rooms = new Map();
 
@@ -160,4 +177,5 @@ wss.on('connection', ws => {
     });
 });
 
-console.log(`WeiQi LAN server running on ws://0.0.0.0:${port}`);
+const scheme = sslKeyPath && sslCertPath ? 'wss' : 'ws';
+console.log(`WeiQi LAN server running on ${scheme}://0.0.0.0:${port}`);

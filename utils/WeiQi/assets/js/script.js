@@ -798,16 +798,21 @@
         if (!trimmed) {
             return '';
         }
+        const isHttpsPage = window.location.protocol === 'https:';
         if (trimmed.startsWith('ws://') || trimmed.startsWith('wss://')) {
+            if (isHttpsPage && trimmed.startsWith('ws://')) {
+                return `wss://${trimmed.slice(5)}`;
+            }
             return trimmed;
         }
         if (trimmed.startsWith('http://')) {
-            return `ws://${trimmed.slice(7)}`;
+            const host = trimmed.slice(7);
+            return isHttpsPage ? `wss://${host}` : `ws://${host}`;
         }
         if (trimmed.startsWith('https://')) {
             return `wss://${trimmed.slice(8)}`;
         }
-        return `ws://${trimmed}`;
+        return isHttpsPage ? `wss://${trimmed}` : `ws://${trimmed}`;
     }
 
     function joinRoomViaServer(serverUrl, roomId, password, asSpectator) {
@@ -815,6 +820,11 @@
         const normalized = normalizeServerUrl(serverUrl);
         if (!normalized) {
             setStatus('请输入有效的联机服务器地址。', 'error');
+            return;
+        }
+        if (window.location.protocol === 'https:' && normalized.startsWith('ws://')) {
+            setStatus('当前页面为 HTTPS，请使用 WSS 服务器地址。', 'error');
+            updateRoomStatus('未加入房间');
             return;
         }
         if (ui.serverUrlInput) {
@@ -860,7 +870,7 @@
         socket.addEventListener('message', handleSocketMessage);
         socket.addEventListener('close', handleSocketClose);
         socket.addEventListener('error', () => {
-            setStatus('联机服务器连接失败。', 'error');
+            setStatus('联机服务器连接失败，请确认地址与协议是否正确。', 'error');
             updateRoomStatus('未加入房间');
             state.pendingJoin = null;
             state.onlineProvider = 'local';
