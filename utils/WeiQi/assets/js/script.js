@@ -607,11 +607,27 @@
         }
     }
 
-    function handlePeerData(conn, data) {
+    function handlePeerData(conn, rawData) {
+        // 【修复】增加数据解析的健壮性
+        let data = rawData;
+        if (typeof rawData === 'string') {
+            try {
+                data = JSON.parse(rawData);
+            } catch (e) {
+                console.error('无法解析 Peer 数据:', rawData);
+                return;
+            }
+        }
+
         if (!data || typeof data !== 'object') {
             return;
         }
+
+        // 调试日志：看看收到了什么
+        console.log('收到 Peer 数据:', data.type, data);
+
         if (data.type === 'hello' && state.isHost) {
+            // ... (保持原有逻辑) ...
             const incomingRole = data.role === 'spectator' ? 'spectator' : 'player';
             if (incomingRole === 'player') {
                 if (state.guestId && state.guestId !== conn.peer) {
@@ -644,6 +660,7 @@
         }
 
         if (data.type === 'hello-ack' && !state.isHost) {
+            // ... (保持原有逻辑) ...
             if (!data.ok) {
                 setStatus(data.reason || '加入联机失败。', 'error');
                 leaveRoom(true);
@@ -665,6 +682,7 @@
             updateMatchLabel();
             updateControlAvailability();
             if (data.game) {
+                // 这里直接调用新的 applyRemoteGameState
                 applyRemoteGameState(data.game);
             }
             setOnlineTurnStatus();
@@ -677,12 +695,15 @@
         if (data.type === 'game' && data.game) {
             if (state.isHost) {
                 const entry = state.connections.get(conn.peer);
+                // 房主只接收“玩家”发来的棋局，不接收“观众”的
                 if (!entry || entry.role !== 'player') {
                     return;
                 }
                 applyRemoteGameState(data.game);
+                // 房主收到后，广播给其他所有人（如果有观众）
                 broadcastGameState(conn.peer);
             } else {
+                // 客人直接应用状态
                 applyRemoteGameState(data.game);
             }
         }
@@ -1046,13 +1067,22 @@
     }
 
     function applyRemoteGameState(game) {
-        if (game && game.updatedAt && game.updatedAt <= state.lastGameUpdate) {
-            return;
+        // 只要接收到的步数大于等于当前步数，就认为是有效更新
+        if (game && typeof game.moveCount === 'number') {
+            if (game.moveCount < state.moveCount) {
+                console.warn('收到旧的步数，忽略', game.moveCount, state.moveCount);
+                return;
+            }
         }
+        
+        console.log('应用远程状态:', game); // 添加日志方便调试
         applyGameState(game);
+        
+        // 更新最后更新时间用于后续参考（可选）
         if (game && game.updatedAt) {
             state.lastGameUpdate = game.updatedAt;
         }
+        
         if (state.mode === 'online') {
             setOnlineTurnStatus();
         }
@@ -2253,32 +2283,46 @@
         const gradient = ctx.createLinearGradient(0, 0, size, size);
 
         if (style === 'bamboo') {
-            gradient.addColorStop(0, '#ddb97f');
-            gradient.addColorStop(0.5, '#c9a25f');
-            gradient.addColorStop(1, '#b89050');
+            // 竹制棋盘 - 竹子特有的金黄色和绿色纹理
+            gradient.addColorStop(0, '#e8c44a');
+            gradient.addColorStop(0.3, '#dab850');
+            gradient.addColorStop(0.6, '#c9a858');
+            gradient.addColorStop(1, '#b89548');
         } else if (style === 'whitePorcelain') {
-            gradient.addColorStop(0, '#fafaf8');
-            gradient.addColorStop(1, '#e8e8e4');
+            // 白釉瓷棋盘 - 瓷器的纯净白色和米白色
+            gradient.addColorStop(0, '#fef9f3');
+            gradient.addColorStop(0.5, '#f5f0e8');
+            gradient.addColorStop(1, '#ebe5dd');
         } else if (style === 'celadon') {
-            gradient.addColorStop(0, '#d8e8dd');
-            gradient.addColorStop(1, '#bcd0c2');
+            // 青瓷 - 古典青绿色，带有柔和的灰绿色调
+            gradient.addColorStop(0, '#d9ead8');
+            gradient.addColorStop(0.4, '#c4dcc4');
+            gradient.addColorStop(0.7, '#b5cdb5');
+            gradient.addColorStop(1, '#a5bfa5');
         } else if (style === 'marble') {
-            gradient.addColorStop(0, '#f5f5f5');
-            gradient.addColorStop(0.5, '#e8e8e8');
-            gradient.addColorStop(1, '#d8d8d8');
+            // 大理石 - 灰色调为主，带有白色纹理
+            gradient.addColorStop(0, '#f8f8f8');
+            gradient.addColorStop(0.3, '#eeeeee');
+            gradient.addColorStop(0.6, '#e0e0e0');
+            gradient.addColorStop(1, '#d5d5d5');
         } else if (style === 'brocade') {
-            gradient.addColorStop(0, '#d0a070');
-            gradient.addColorStop(0.5, '#b88f58');
-            gradient.addColorStop(1, '#a07848');
+            // 织锦棋盘 - 暖棕色与金色混合，富贵感
+            gradient.addColorStop(0, '#d8a86f');
+            gradient.addColorStop(0.3, '#c9984a');
+            gradient.addColorStop(0.6, '#b8873a');
+            gradient.addColorStop(1, '#a67930');
         } else if (style === 'acrylic') {
-            gradient.addColorStop(0, '#e8f2ff');
-            gradient.addColorStop(1, '#d0ddec');
+            // 亚克力棋盘 - 浅蓝色，透明感，现代感
+            gradient.addColorStop(0, '#e8f4ff');
+            gradient.addColorStop(0.4, '#d8e8f5');
+            gradient.addColorStop(0.7, '#c8dce8');
+            gradient.addColorStop(1, '#b8d0db');
         } else {
-            // 桧木棋盘 - 更丰富的木纹色彩
-            gradient.addColorStop(0, '#d4a574');
-            gradient.addColorStop(0.3, '#c69860');
-            gradient.addColorStop(0.7, '#b88850');
-            gradient.addColorStop(1, '#a87840');
+            // 桧木棋盘 - 日本高级木材，红褐色调
+            gradient.addColorStop(0, '#d8a873');
+            gradient.addColorStop(0.3, '#c89960');
+            gradient.addColorStop(0.6, '#b88a50');
+            gradient.addColorStop(1, '#a87a40');
         }
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, size, size);
@@ -2286,127 +2330,211 @@
         // 添加纹理效果
         if (style === 'hiba') {
             // 桧木纹理 - 更细腻的木纹
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            ctx.strokeStyle = 'rgba(200, 150, 100, 0.18)';
             ctx.lineWidth = 1.5;
-            const lines = 12;
+            const lines = 14;
             for (let i = 0; i < lines; i += 1) {
                 const y = ((i + 1) / (lines + 1)) * size;
-                const amplitude = size * 0.015;
+                const amplitude = size * 0.018;
                 ctx.beginPath();
                 ctx.moveTo(0, y);
-                for (let x = 0; x <= size; x += size / 20) {
-                    const wave = Math.sin(x / size * Math.PI * 4 + i) * amplitude;
+                for (let x = 0; x <= size; x += size / 22) {
+                    const wave = Math.sin(x / size * Math.PI * 4.5 + i) * amplitude;
                     ctx.lineTo(x, y + wave);
                 }
                 ctx.stroke();
             }
 
-            // 添加年轮效果
-            ctx.strokeStyle = 'rgba(120, 80, 40, 0.08)';
-            ctx.lineWidth = 2;
-            for (let i = 0; i < 8; i += 1) {
-                const y = ((i + 1) / 9) * size;
-                const amplitude = size * 0.02;
+            // 添加年轮效果（深色）
+            ctx.strokeStyle = 'rgba(100, 60, 30, 0.12)';
+            ctx.lineWidth = 2.5;
+            for (let i = 0; i < 10; i += 1) {
+                const y = ((i + 1) / 11) * size;
+                const amplitude = size * 0.025;
                 ctx.beginPath();
                 ctx.moveTo(0, y);
-                for (let x = 0; x <= size; x += size / 15) {
-                    const wave = Math.sin(x / size * Math.PI * 3 + i * 0.5) * amplitude;
+                for (let x = 0; x <= size; x += size / 18) {
+                    const wave = Math.sin(x / size * Math.PI * 3.5 + i * 0.6) * amplitude;
+                    ctx.lineTo(x, y + wave);
+                }
+                ctx.stroke();
+            }
+
+            // 添加浅色木纹细节
+            ctx.strokeStyle = 'rgba(255, 240, 220, 0.08)';
+            ctx.lineWidth = 0.8;
+            for (let i = 0; i < 6; i += 1) {
+                const y = ((i + 1) / 7) * size;
+                const amplitude = size * 0.008;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                for (let x = 0; x <= size; x += size / 25) {
+                    const wave = Math.sin(x / size * Math.PI * 5 + i) * amplitude;
                     ctx.lineTo(x, y + wave);
                 }
                 ctx.stroke();
             }
         } else if (style === 'bamboo') {
             // 竹制纹理 - 竹节效果
-            const segmentHeight = size / 6;
-            for (let i = 0; i < 6; i += 1) {
+            const segmentHeight = size / 7;
+            for (let i = 0; i < 7; i += 1) {
                 const y = i * segmentHeight;
-                // 竹节
-                ctx.fillStyle = `rgba(80, 60, 30, ${0.08 + Math.random() * 0.04})`;
-                ctx.fillRect(0, y - 2, size, 4);
+                // 竹节（深棕色）
+                ctx.fillStyle = `rgba(100, 70, 20, ${0.12 + Math.random() * 0.08})`;
+                ctx.fillRect(0, y - 3, size, 6);
 
-                // 竹纹
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-                ctx.lineWidth = 0.5;
-                for (let j = 0; j < 3; j += 1) {
+                // 竹纹（细腻的浅色纹理）
+                ctx.strokeStyle = 'rgba(255, 240, 200, 0.2)';
+                ctx.lineWidth = 0.7;
+                for (let j = 0; j < 4; j += 1) {
                     ctx.beginPath();
-                    ctx.moveTo(0, y + segmentHeight * (j + 1) / 4);
-                    ctx.lineTo(size, y + segmentHeight * (j + 1) / 4);
+                    ctx.moveTo(0, y + segmentHeight * (j + 0.5) / 4);
+                    ctx.lineTo(size, y + segmentHeight * (j + 0.5) / 4);
+                    ctx.stroke();
+                }
+
+                // 纵向竹纹
+                ctx.strokeStyle = 'rgba(200, 150, 80, 0.08)';
+                ctx.lineWidth = 1;
+                for (let x = 0; x < size; x += size / 12) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x, y + segmentHeight);
                     ctx.stroke();
                 }
             }
-        } else if (style === 'whitePorcelain' || style === 'celadon') {
-            // 瓷器光泽效果
+        } else if (style === 'whitePorcelain') {
+            // 白釉瓷棋盘 - 更精致的光泽效果
             const gloss = ctx.createRadialGradient(
-                size * 0.3,
                 size * 0.25,
-                size * 0.1,
+                size * 0.2,
+                size * 0.05,
+                size * 0.35,
                 size * 0.3,
-                size * 0.25,
-                size * 0.9
+                size * 0.85
             );
-            gloss.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
-            gloss.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
+            gloss.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+            gloss.addColorStop(0.4, 'rgba(255, 255, 255, 0.35)');
             gloss.addColorStop(1, 'rgba(255, 255, 255, 0)');
             ctx.fillStyle = gloss;
             ctx.fillRect(0, 0, size, size);
 
-            // 细微的釉面纹理
-            ctx.strokeStyle = style === 'celadon'
-                ? 'rgba(100, 140, 110, 0.12)'
-                : 'rgba(200, 200, 200, 0.15)';
+            // 微妙的釉面龟裂纹理（瓷器的特征）
+            ctx.strokeStyle = 'rgba(200, 190, 180, 0.1)';
             ctx.lineWidth = 0.5;
-            for (let i = 0; i < 8; i += 1) {
-                const angle = (Math.PI * 2 * i) / 8;
-                const cx = size * 0.5;
-                const cy = size * 0.5;
-                const r1 = size * 0.2;
-                const r2 = size * 0.7;
+            for (let i = 0; i < 12; i += 1) {
+                const angle = (Math.PI * 2 * i) / 12;
+                const cx = size * 0.45;
+                const cy = size * 0.45;
+                const r1 = size * 0.15;
+                const r2 = size * 0.8;
                 ctx.beginPath();
                 ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
                 ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
                 ctx.stroke();
             }
+
+            // 细微的瓷器细节纹理
+            for (let i = 0; i < 20; i += 1) {
+                const x = Math.random() * size;
+                const y = Math.random() * size;
+                const r = Math.random() * size * 0.008 + size * 0.003;
+                ctx.fillStyle = `rgba(220, 210, 200, ${Math.random() * 0.1})`;
+                ctx.fillRect(x, y, r, r);
+            }
+        } else if (style === 'celadon') {
+            // 青瓷 - 温润的青绿色光泽
+            const gloss = ctx.createRadialGradient(
+                size * 0.3,
+                size * 0.25,
+                size * 0.08,
+                size * 0.35,
+                size * 0.3,
+                size * 0.88
+            );
+            gloss.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
+            gloss.addColorStop(0.3, 'rgba(240, 250, 245, 0.4)');
+            gloss.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = gloss;
+            ctx.fillRect(0, 0, size, size);
+
+            // 青瓷特有的细纹
+            ctx.strokeStyle = 'rgba(100, 130, 110, 0.15)';
+            ctx.lineWidth = 0.6;
+            for (let i = 0; i < 10; i += 1) {
+                const angle = (Math.PI * 2 * i) / 10;
+                const cx = size * 0.5;
+                const cy = size * 0.5;
+                const r1 = size * 0.18;
+                const r2 = size * 0.75;
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
+                ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
+                ctx.stroke();
+            }
+
+            // 青瓷的细微纹理点缀
+            ctx.fillStyle = 'rgba(100, 140, 120, 0.06)';
+            for (let i = 0; i < 25; i += 1) {
+                const x = Math.random() * size;
+                const y = Math.random() * size;
+                const r = Math.random() * size * 0.01 + size * 0.004;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
         } else if (style === 'marble') {
             // 大理石纹理 - 更自然的大理石纹路
-            ctx.strokeStyle = 'rgba(120, 120, 120, 0.15)';
-            ctx.lineWidth = 1;
-            const waves = 8;
+            ctx.strokeStyle = 'rgba(150, 150, 150, 0.2)';
+            ctx.lineWidth = 1.2;
+            const waves = 10;
             for (let i = 0; i < waves; i += 1) {
                 ctx.beginPath();
-                const startY = size * (0.1 + i * 0.11);
+                const startY = size * (0.08 + i * 0.092);
                 ctx.moveTo(0, startY);
-                for (let x = 0; x <= size; x += size / 30) {
-                    const phase = (x / size) * Math.PI * 3;
-                    const y = startY + Math.sin(phase + i * 0.7) * size * 0.03;
+                for (let x = 0; x <= size; x += size / 32) {
+                    const phase = (x / size) * Math.PI * 3.5;
+                    const y = startY + Math.sin(phase + i * 0.8) * size * 0.035;
                     ctx.lineTo(x, y);
                 }
                 ctx.stroke();
             }
 
-            // 大理石的斑点
-            ctx.fillStyle = 'rgba(100, 100, 100, 0.08)';
+            // 大理石的斑点（深灰色）
+            ctx.fillStyle = 'rgba(100, 100, 100, 0.12)';
+            for (let i = 0; i < 20; i += 1) {
+                const x = Math.random() * size;
+                const y = Math.random() * size;
+                const r = Math.random() * size * 0.025 + size * 0.008;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 添加浅色大理石细节
+            ctx.fillStyle = 'rgba(200, 200, 200, 0.08)';
             for (let i = 0; i < 15; i += 1) {
                 const x = Math.random() * size;
                 const y = Math.random() * size;
-                const r = Math.random() * size * 0.02 + size * 0.01;
+                const r = Math.random() * size * 0.015 + size * 0.005;
                 ctx.beginPath();
                 ctx.arc(x, y, r, 0, Math.PI * 2);
                 ctx.fill();
             }
         } else if (style === 'brocade') {
             // 织锦纹理 - 经纬纹理
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-            ctx.lineWidth = 1;
-            const step = size / 16;
-            // 经线
+            ctx.strokeStyle = 'rgba(255, 240, 200, 0.2)';
+            ctx.lineWidth = 1.2;
+            const step = size / 14;
+            // 经线（纵向）
             for (let x = 0; x <= size; x += step) {
                 ctx.beginPath();
                 ctx.moveTo(x, 0);
                 ctx.lineTo(x, size);
                 ctx.stroke();
             }
-            // 纬线
-            ctx.strokeStyle = 'rgba(80, 50, 30, 0.12)';
+            // 纬线（横向）
+            ctx.strokeStyle = 'rgba(120, 80, 40, 0.18)';
             for (let y = 0; y <= size; y += step) {
                 ctx.beginPath();
                 ctx.moveTo(0, y);
@@ -2414,22 +2542,34 @@
                 ctx.stroke();
             }
 
-            // 织锦花纹
-            ctx.fillStyle = 'rgba(200, 150, 100, 0.08)';
-            const patternSize = size / 8;
-            for (let i = 0; i < 8; i += 1) {
-                for (let j = 0; j < 8; j += 1) {
+            // 织锦花纹 - 菱形图案
+            ctx.fillStyle = 'rgba(220, 180, 120, 0.12)';
+            const patternSize = size / 7;
+            for (let i = 0; i < 7; i += 1) {
+                for (let j = 0; j < 7; j += 1) {
                     if ((i + j) % 2 === 0) {
-                        ctx.fillRect(i * patternSize, j * patternSize, patternSize * 0.5, patternSize * 0.5);
+                        const x = i * patternSize;
+                        const y = j * patternSize;
+                        ctx.fillRect(x + patternSize * 0.25, y + patternSize * 0.25, patternSize * 0.5, patternSize * 0.5);
+                    }
+                }
+            }
+
+            // 织锦光泽效果
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+            for (let i = 0; i < size; i += size / 20) {
+                for (let j = 0; j < size; j += size / 20) {
+                    if (Math.random() > 0.6) {
+                        ctx.fillRect(i, j, size / 25, size / 25);
                     }
                 }
             }
         } else if (style === 'acrylic') {
-            // 亚克力透明感
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-            ctx.lineWidth = 1.5;
-            const step = size / 10;
-            for (let i = 1; i < 10; i += 1) {
+            // 亚克力透明感 - 现代蓝色透明效果
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1.8;
+            const step = size / 12;
+            for (let i = 1; i < 12; i += 1) {
                 const pos = i * step;
                 // 垂直线
                 ctx.beginPath();
@@ -2443,19 +2583,31 @@
                 ctx.stroke();
             }
 
-            // 亚克力光晕
+            // 亚克力光晕和透光效果
             const highlight = ctx.createRadialGradient(
-                size * 0.2,
-                size * 0.2,
+                size * 0.25,
+                size * 0.25,
                 size * 0.1,
-                size * 0.2,
-                size * 0.2,
-                size * 0.6
+                size * 0.25,
+                size * 0.25,
+                size * 0.7
             );
-            highlight.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+            highlight.addColorStop(0, 'rgba(255, 255, 255, 0.5)');
+            highlight.addColorStop(0.5, 'rgba(220, 240, 255, 0.25)');
             highlight.addColorStop(1, 'rgba(255, 255, 255, 0)');
             ctx.fillStyle = highlight;
             ctx.fillRect(0, 0, size, size);
+
+            // 添加亚克力的气泡效果（微妙）
+            ctx.fillStyle = 'rgba(200, 220, 255, 0.08)';
+            for (let i = 0; i < 8; i += 1) {
+                const x = Math.random() * size;
+                const y = Math.random() * size;
+                const r = Math.random() * size * 0.02 + size * 0.005;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
     }
 
