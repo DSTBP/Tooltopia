@@ -869,8 +869,8 @@
                             <div class="settings-group online-section">
                                 <label class="online-label">联机连接</label>
                                 <div class="settings-subgroup">
-                                    <label for="selfIdInput" class="settings-subtitle">我的 ID</label>
-                                    <input type="text" id="selfIdInput" name="selfId" placeholder="点击加入对局生成" autocomplete="off" readonly>
+                                    <label for="selfIdInput" class="settings-subtitle">我的 ID <span style="color: #a0aec0; font-size: 0.85rem;">（点击复制）</span></label>
+                                    <input type="text" id="selfIdInput" name="selfId" placeholder="点击加入对局生成" autocomplete="off" readonly style="cursor: pointer;">
                                 </div>
                                 <div class="settings-subgroup">
                                     <label for="peerIdInput" class="settings-subtitle">对方 ID</label>
@@ -1021,7 +1021,7 @@
             }
         })();
     </script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="./assets/js/peerjs.min.js"></script>
     <script src="./assets/js/script.js"></script>
 </body>
 </html>

@@ -175,6 +175,20 @@
         ui.leaveRoomBtn.addEventListener('click', leaveRoom);
         window.addEventListener('beforeunload', () => leaveRoom(true));
 
+        // 添加点击复制自ID的功能
+        ui.selfIdInput.addEventListener('click', () => {
+            if (ui.selfIdInput.value) {
+                navigator.clipboard.writeText(ui.selfIdInput.value).then(() => {
+                    setStatus('ID 已复制到剪贴板！', 'success');
+                }).catch(() => {
+                    // 降级方案：使用旧的 execCommand 方法
+                    ui.selfIdInput.select();
+                    document.execCommand('copy');
+                    setStatus('ID 已复制到剪贴板！', 'success');
+                });
+            }
+        });
+
         ui.difficultySelect.addEventListener('change', (e) => {
             if (state.mode === 'online') {
                 e.target.value = state.difficulty;
