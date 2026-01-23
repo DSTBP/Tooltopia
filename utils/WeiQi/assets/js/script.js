@@ -39,7 +39,13 @@
         showEyesCheck: document.getElementById('showEyesCheck'),
         showHandAnimationCheck: document.getElementById('showHandAnimationCheck'),
         blackLabel: document.getElementById('blackLabel'),
-        whiteLabel: document.getElementById('whiteLabel')
+        whiteLabel: document.getElementById('whiteLabel'),
+        roomIdInput: document.getElementById('roomIdInput'),
+        roomPasswordInput: document.getElementById('roomPasswordInput'),
+        joinRoomBtn: document.getElementById('joinRoomBtn'),
+        watchRoomBtn: document.getElementById('watchRoomBtn'),
+        leaveRoomBtn: document.getElementById('leaveRoomBtn'),
+        roomStatus: document.getElementById('roomStatus')
     };
 
     const config = {
@@ -50,6 +56,16 @@
         boardCssSize: 560,
         koRule: 'simple',
         playerColor: 'black'
+    };
+
+    const onlineConfig = {
+        heartbeatInterval: 3000,
+        staleThreshold: 12000
+    };
+
+    const storagePrefix = {
+        meta: 'weiqi-room-meta-',
+        game: 'weiqi-room-game-'
     };
 
     const state = {
@@ -77,7 +93,15 @@
         showEyes: false,
         showHandAnimation: true,
         handAnimation: null,
-        pendingMove: null  // 待命的落子信息，等待动画到达时更新
+        pendingMove: null,  // 待命的落子信息，等待动画到达时更新
+        mode: 'solo',
+        role: 'player',
+        roomId: '',
+        roomPassword: '',
+        channel: null,
+        clientId: getClientId(),
+        heartbeatTimer: null,
+        lastGameUpdate: 0
     };
 
     const difficultyLabel = {
@@ -120,6 +144,8 @@
         ui.playerColorSelect.value = config.playerColor;
         applyPlayerColor();
         updateDifficultyUI();
+        updateRoomStatus('未加入房间');
+        updateControlAvailability();
         loadHandImage();
         startNewGame();
         resizeCanvas();
@@ -139,18 +165,32 @@
 
     function bindEvents() {
         canvas.addEventListener('click', onBoardClick);
-        ui.newGameBtn.addEventListener('click', startNewGame);
+        ui.newGameBtn.addEventListener('click', handleNewGameClick);
         ui.undoBtn.addEventListener('click', undoMove);
-        ui.passBtn.addEventListener('click', () => handlePass(state.human));
+        ui.passBtn.addEventListener('click', handlePassAction);
         ui.hintBtn.addEventListener('click', getHint);
         ui.resignBtn.addEventListener('click', resignGame);
+        ui.joinRoomBtn.addEventListener('click', () => joinRoom(false));
+        ui.watchRoomBtn.addEventListener('click', () => joinRoom(true));
+        ui.leaveRoomBtn.addEventListener('click', leaveRoom);
+        window.addEventListener('beforeunload', () => leaveRoom(true));
 
         ui.difficultySelect.addEventListener('change', (e) => {
+            if (state.mode === 'online') {
+                e.target.value = state.difficulty;
+                setStatus('联机模式下无法调整 AI 难度。', 'error');
+                return;
+            }
             state.difficulty = e.target.value;
             updateDifficultyUI();
         });
 
         ui.boardSizeSelect.addEventListener('change', (e) => {
+            if (state.mode === 'online') {
+                e.target.value = config.size;
+                setStatus('联机模式下无法调整棋盘大小。', 'error');
+                return;
+            }
             const size = Number.parseInt(e.target.value, 10);
             if (Number.isNaN(size)) {
                 e.target.value = config.size;
@@ -248,6 +288,11 @@
         });
 
         ui.scoringMethodSelect.addEventListener('change', (e) => {
+            if (state.mode === 'online') {
+                e.target.value = config.scoringMethod;
+                setStatus('联机模式下无法调整计分方式。', 'error');
+                return;
+            }
             const method = e.target.value;
             if (!scoringLabel[method]) {
                 e.target.value = config.scoringMethod;
@@ -277,6 +322,11 @@
         });
 
         ui.komiSelect.addEventListener('change', (e) => {
+            if (state.mode === 'online') {
+                e.target.value = config.komi;
+                setStatus('联机模式下无法调整贴目。', 'error');
+                return;
+            }
             const komi = Number.parseFloat(e.target.value);
             if (Number.isNaN(komi)) {
                 e.target.value = config.komi;
@@ -306,6 +356,11 @@
         });
 
         ui.koRuleSelect.addEventListener('change', (e) => {
+            if (state.mode === 'online') {
+                e.target.value = config.koRule;
+                setStatus('联机模式下无法调整劫规则。', 'error');
+                return;
+            }
             const rule = e.target.value;
             if (rule !== 'simple' && rule !== 'super') {
                 e.target.value = config.koRule;
@@ -322,6 +377,11 @@
         });
 
         ui.playerColorSelect.addEventListener('change', (e) => {
+            if (state.mode === 'online') {
+                e.target.value = config.playerColor;
+                setStatus('联机模式下由房间座次决定执子颜色。', 'error');
+                return;
+            }
             const color = e.target.value;
             if (color !== 'black' && color !== 'white') {
                 e.target.value = config.playerColor;
@@ -401,12 +461,518 @@
         });
     }
 
+    function getClientId() {
+        const key = 'weiqi-client-id';
+        let id = localStorage.getItem(key);
+        if (!id) {
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                id = window.crypto.randomUUID();
+            } else {
+                id = `client-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+            }
+            localStorage.setItem(key, id);
+        }
+        return id;
+    }
+
+    function normalizeRoomId(roomId) {
+        return roomId.trim();
+    }
+
+    function getRoomMetaKey(roomId) {
+        return `${storagePrefix.meta}${encodeURIComponent(roomId)}`;
+    }
+
+    function getRoomGameKey(roomId) {
+        return `${storagePrefix.game}${encodeURIComponent(roomId)}`;
+    }
+
+    function loadRoomMeta(roomId) {
+        const raw = localStorage.getItem(getRoomMetaKey(roomId));
+        if (!raw) {
+            return null;
+        }
+        try {
+            const meta = JSON.parse(raw);
+            if (!meta || typeof meta !== 'object') {
+                return null;
+            }
+            if (!Array.isArray(meta.players)) {
+                meta.players = [];
+            }
+            return meta;
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function saveRoomMeta(roomId, meta) {
+        localStorage.setItem(getRoomMetaKey(roomId), JSON.stringify(meta));
+    }
+
+    function cleanupRoomMeta(meta) {
+        const now = Date.now();
+        meta.players = (meta.players || []).filter(player => (
+            player && typeof player.lastSeen === 'number' &&
+            now - player.lastSeen <= onlineConfig.staleThreshold
+        ));
+        return meta;
+    }
+
+    function startHeartbeat() {
+        stopHeartbeat();
+        updateRoomPresence();
+        state.heartbeatTimer = setInterval(updateRoomPresence, onlineConfig.heartbeatInterval);
+    }
+
+    function stopHeartbeat() {
+        if (state.heartbeatTimer) {
+            clearInterval(state.heartbeatTimer);
+            state.heartbeatTimer = null;
+        }
+    }
+
+    function updateRoomPresence() {
+        if (state.mode !== 'online' || state.role !== 'player' || !state.roomId) {
+            return;
+        }
+        const meta = loadRoomMeta(state.roomId);
+        if (!meta) {
+            return;
+        }
+        cleanupRoomMeta(meta);
+        const now = Date.now();
+        const entry = meta.players.find(player => player.id === state.clientId);
+        if (entry) {
+            entry.lastSeen = now;
+        } else {
+            meta.players.push({
+                id: state.clientId,
+                color: state.human,
+                lastSeen: now
+            });
+        }
+        saveRoomMeta(state.roomId, meta);
+    }
+
+    function connectRoomChannel(roomId) {
+        disconnectRoomChannel();
+        if ('BroadcastChannel' in window) {
+            state.channel = new BroadcastChannel(`weiqi-room-${encodeURIComponent(roomId)}`);
+            state.channel.addEventListener('message', handleRoomMessage);
+        }
+        window.addEventListener('storage', handleStorageEvent);
+    }
+
+    function disconnectRoomChannel() {
+        if (state.channel) {
+            state.channel.removeEventListener('message', handleRoomMessage);
+            state.channel.close();
+            state.channel = null;
+        }
+        window.removeEventListener('storage', handleStorageEvent);
+    }
+
+    function handleRoomMessage(event) {
+        const data = event.data;
+        if (!data || data.source === state.clientId) {
+            return;
+        }
+        if (data.type === 'game' && data.game) {
+            applyRemoteGameState(data.game);
+        }
+    }
+
+    function handleStorageEvent(event) {
+        if (!state.roomId || event.key !== getRoomGameKey(state.roomId) || !event.newValue) {
+            return;
+        }
+        try {
+            const game = JSON.parse(event.newValue);
+            if (game) {
+                applyRemoteGameState(game);
+            }
+        } catch (error) {
+            // ignore invalid payload
+        }
+    }
+
+    function updateRoomStatus(text) {
+        if (!ui.roomStatus) {
+            return;
+        }
+        ui.roomStatus.textContent = text;
+    }
+
+    function updateControlAvailability() {
+        const isOnline = state.mode === 'online';
+        const isSpectator = isOnline && state.role === 'spectator';
+        ui.difficultySelect.disabled = isOnline;
+        ui.boardSizeSelect.disabled = isOnline;
+        ui.playerColorSelect.disabled = isOnline;
+        ui.scoringMethodSelect.disabled = isOnline;
+        ui.komiSelect.disabled = isOnline;
+        ui.koRuleSelect.disabled = isOnline;
+        ui.undoBtn.disabled = isOnline;
+        ui.passBtn.disabled = isSpectator;
+        ui.resignBtn.disabled = isSpectator;
+        ui.hintBtn.disabled = isSpectator;
+    }
+
+    function updateMatchLabel() {
+        if (state.mode !== 'online') {
+            updateDifficultyUI();
+            return;
+        }
+        if (state.role === 'spectator') {
+            ui.aiHint.textContent = '联机观战';
+        } else {
+            ui.aiHint.textContent = `联机对战：你执${state.human === 1 ? '黑' : '白'}`;
+        }
+    }
+
+    function updatePlayerLabels() {
+        if (!ui.blackLabel || !ui.whiteLabel) {
+            return;
+        }
+        if (state.mode === 'online') {
+            if (state.role === 'spectator') {
+                ui.blackLabel.textContent = '黑方';
+                ui.whiteLabel.textContent = '白方';
+            } else {
+                ui.blackLabel.textContent = state.human === 1 ? '黑方（你）' : '黑方（对手）';
+                ui.whiteLabel.textContent = state.human === 2 ? '白方（你）' : '白方（对手）';
+            }
+            return;
+        }
+        ui.blackLabel.textContent = state.human === 1 ? '黑方（玩家）' : '黑方（AI）';
+        ui.whiteLabel.textContent = state.human === 2 ? '白方（玩家）' : '白方（AI）';
+    }
+
+    function handleNewGameClick() {
+        if (state.mode === 'online') {
+            requestOnlineNewGame();
+            return;
+        }
+        startNewGame();
+    }
+
+    function handlePassAction() {
+        if (state.mode === 'online' && state.role !== 'player') {
+            setStatus('观战中无法停手。', 'error');
+            return;
+        }
+        if (state.mode === 'online' && state.current !== state.human) {
+            setStatus('等待对手落子...', 'error');
+            return;
+        }
+        handlePass(state.human);
+    }
+
+    function joinRoom(asSpectator) {
+        const rawRoomId = ui.roomIdInput.value;
+        const password = ui.roomPasswordInput.value;
+        const roomId = normalizeRoomId(rawRoomId);
+
+        if (!roomId || !password) {
+            setStatus('请输入房间号和密码。', 'error');
+            return;
+        }
+        ui.roomIdInput.value = roomId;
+
+        if (state.mode === 'online' && state.roomId === roomId) {
+            setStatus('已在该房间中。', 'error');
+            return;
+        }
+
+        leaveRoom(true);
+
+        let meta = loadRoomMeta(roomId);
+        if (!meta) {
+            if (asSpectator) {
+                setStatus('房间不存在，无法观战。', 'error');
+                return;
+            }
+            meta = {
+                password: password,
+                players: []
+            };
+        } else if (meta.password !== password) {
+            setStatus('房间号或密码错误。', 'error');
+            return;
+        }
+
+        cleanupRoomMeta(meta);
+        meta.players = meta.players.filter(player => player.id !== state.clientId);
+
+        let assignedColor = null;
+        if (!asSpectator) {
+            if (meta.players.length >= 2) {
+                setStatus('房间已满，可点击观战进入。', 'error');
+                updateRoomStatus(`房间 ${roomId} 已满`);
+                saveRoomMeta(roomId, meta);
+                return;
+            }
+            const colors = meta.players.map(player => player.color);
+            assignedColor = colors.includes(1) ? 2 : 1;
+            meta.players.push({
+                id: state.clientId,
+                color: assignedColor,
+                lastSeen: Date.now()
+            });
+        }
+
+        saveRoomMeta(roomId, meta);
+        connectRoomChannel(roomId);
+
+        state.mode = 'online';
+        state.role = asSpectator ? 'spectator' : 'player';
+        state.roomId = roomId;
+        state.roomPassword = password;
+        state.lastGameUpdate = 0;
+        if (state.role === 'player') {
+            state.human = assignedColor;
+            state.ai = assignedColor === 1 ? 2 : 1;
+            config.playerColor = assignedColor === 1 ? 'black' : 'white';
+            ui.playerColorSelect.value = config.playerColor;
+        } else {
+            state.human = 0;
+            state.ai = 0;
+        }
+
+        updatePlayerLabels();
+        updateMatchLabel();
+        updateControlAvailability();
+
+        if (state.role === 'player') {
+            startHeartbeat();
+        }
+
+        const game = loadRoomGame(roomId);
+        if (game) {
+            applyRemoteGameState(game);
+        } else if (state.role === 'player') {
+            const freshGame = createGameState();
+            applyGameState(freshGame);
+            broadcastGameState();
+            setStatus('房间已创建，等待对手加入。', 'success');
+        } else {
+            setStatus('房间尚未开始对局。', 'error');
+        }
+
+        const roomTitle = state.role === 'spectator'
+            ? `房间 ${roomId} · 观战中`
+            : `房间 ${roomId} · 你执${state.human === 1 ? '黑' : '白'}`;
+        updateRoomStatus(roomTitle);
+    }
+
+    function leaveRoom(silent = false) {
+        if (state.mode !== 'online') {
+            if (!silent) {
+                setStatus('当前未加入房间。', 'error');
+            }
+            return;
+        }
+
+        if (state.role === 'player' && state.roomId) {
+            const meta = loadRoomMeta(state.roomId);
+            if (meta) {
+                meta.players = (meta.players || []).filter(player => player.id !== state.clientId);
+                saveRoomMeta(state.roomId, meta);
+            }
+        }
+
+        stopHeartbeat();
+        disconnectRoomChannel();
+
+        state.mode = 'solo';
+        state.role = 'player';
+        state.roomId = '';
+        state.roomPassword = '';
+        state.lastGameUpdate = 0;
+        applyPlayerColor();
+        updateMatchLabel();
+        updateControlAvailability();
+        updateRoomStatus('未加入房间');
+
+        if (!silent) {
+            setStatus('已退出房间，回到单机模式。', 'success');
+            startNewGame();
+        }
+    }
+
+    function createGameState() {
+        return {
+            size: config.size,
+            komi: config.komi,
+            scoringMethod: config.scoringMethod,
+            koRule: config.koRule,
+            board: createBoard(config.size),
+            current: 1,
+            captures: { 1: 0, 2: 0 },
+            koPoint: null,
+            passCount: 0,
+            moveCount: 0,
+            lastMove: null,
+            gameOver: false,
+            updatedAt: Date.now()
+        };
+    }
+
+    function loadRoomGame(roomId) {
+        const raw = localStorage.getItem(getRoomGameKey(roomId));
+        if (!raw) {
+            return null;
+        }
+        try {
+            return JSON.parse(raw);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function serializeGameState() {
+        return {
+            size: config.size,
+            komi: config.komi,
+            scoringMethod: config.scoringMethod,
+            koRule: config.koRule,
+            board: cloneBoard(state.board),
+            current: state.current,
+            captures: { 1: state.captures[1], 2: state.captures[2] },
+            koPoint: state.koPoint ? { x: state.koPoint.x, y: state.koPoint.y } : null,
+            passCount: state.passCount,
+            moveCount: state.moveCount,
+            lastMove: state.lastMove ? { ...state.lastMove } : null,
+            gameOver: state.gameOver,
+            updatedAt: Date.now()
+        };
+    }
+
+    function broadcastGameState() {
+        if (state.mode !== 'online' || !state.roomId) {
+            return;
+        }
+        const game = serializeGameState();
+        state.lastGameUpdate = game.updatedAt || state.lastGameUpdate;
+        localStorage.setItem(getRoomGameKey(state.roomId), JSON.stringify(game));
+        if (state.channel) {
+            state.channel.postMessage({
+                type: 'game',
+                game: game,
+                source: state.clientId
+            });
+        }
+    }
+
+    function applyGameState(game) {
+        if (!game || !Array.isArray(game.board)) {
+            return;
+        }
+        const prevSize = config.size;
+        if (game.size) {
+            config.size = game.size;
+            ui.boardSizeSelect.value = config.size;
+        }
+        if (typeof game.komi === 'number') {
+            config.komi = game.komi;
+            ui.komiSelect.value = config.komi;
+        }
+        if (game.scoringMethod && scoringLabel[game.scoringMethod]) {
+            config.scoringMethod = game.scoringMethod;
+            ui.scoringMethodSelect.value = config.scoringMethod;
+        }
+        if (game.koRule) {
+            config.koRule = game.koRule;
+            ui.koRuleSelect.value = config.koRule;
+        }
+
+        state.board = cloneBoard(game.board);
+        state.positionKeys = new Set([boardKey(state.board)]);
+        state.current = game.current || 1;
+        state.captures = {
+            1: game.captures && typeof game.captures[1] === 'number' ? game.captures[1] : 0,
+            2: game.captures && typeof game.captures[2] === 'number' ? game.captures[2] : 0
+        };
+        state.koPoint = game.koPoint ? { x: game.koPoint.x, y: game.koPoint.y } : null;
+        state.passCount = game.passCount || 0;
+        state.moveCount = game.moveCount || 0;
+        state.lastMove = game.lastMove ? { ...game.lastMove } : null;
+        state.gameOver = !!game.gameOver;
+        state.history = [];
+        state.hintUsed = 0;
+        state.busy = false;
+        clearAiTimer();
+        state.handAnimation = null;
+        state.pendingMove = null;
+
+        if (game.updatedAt) {
+            state.lastGameUpdate = game.updatedAt;
+        }
+
+        if (config.size !== prevSize) {
+            resizeCanvas();
+        }
+        updateUI();
+        draw();
+    }
+
+    function applyRemoteGameState(game) {
+        applyGameState(game);
+        if (state.mode === 'online') {
+            setOnlineTurnStatus();
+        }
+    }
+
+    function setOnlineTurnStatus() {
+        if (state.gameOver) {
+            if (state.lastMove && state.lastMove.resign) {
+                const resignColor = state.lastMove.color;
+                if (state.role === 'spectator') {
+                    setStatus(`${resignColor === 1 ? '黑方' : '白方'} 认输，对局结束。`, 'success');
+                } else if (resignColor === state.human) {
+                    setStatus('你已认输，对局结束。', 'success');
+                } else {
+                    setStatus('对手认输，你获胜。', 'success');
+                }
+                return;
+            }
+            const score = calculateScore();
+            const winner = score.black > score.white ? '黑胜' : score.black < score.white ? '白胜' : '平局';
+            const diff = Math.abs(score.black - score.white);
+            setStatus(`终局：黑 ${score.black.toFixed(1)} 目 / 白 ${score.white.toFixed(1)} 目，${winner}（${diff.toFixed(1)} 目差距）。`, 'success');
+            ui.tipText.textContent = getScoreSummary(score);
+            return;
+        }
+
+        if (state.role === 'spectator') {
+            setStatus('观战中...', 'success');
+            return;
+        }
+
+        if (state.current === state.human) {
+            setStatus('轮到你落子。', 'success');
+        } else {
+            setStatus('等待对手落子...', 'success');
+        }
+    }
+
     function updateDifficultyUI() {
+        if (state.mode === 'online') {
+            return;
+        }
         const label = difficultyLabel[state.difficulty] || '简单';
         ui.aiHint.textContent = `AI 难度：${label}`;
     }
 
     function applyPlayerColor() {
+        if (state.mode === 'online') {
+            updatePlayerLabels();
+            if (state.board.length === config.size) {
+                updateUI();
+            }
+            return;
+        }
         if (config.playerColor === 'white') {
             state.human = 2;
             state.ai = 1;
@@ -414,13 +980,20 @@
             state.human = 1;
             state.ai = 2;
         }
-        if (ui.blackLabel && ui.whiteLabel) {
-            ui.blackLabel.textContent = state.human === 1 ? '黑方（玩家）' : '黑方（AI）';
-            ui.whiteLabel.textContent = state.human === 2 ? '白方（玩家）' : '白方（AI）';
-        }
+        updatePlayerLabels();
         if (state.board.length === config.size) {
             updateUI();
         }
+    }
+
+    function getActorLabel(color) {
+        if (state.mode === 'online') {
+            if (state.role === 'spectator') {
+                return color === 1 ? '黑方' : '白方';
+            }
+            return color === state.human ? '你' : '对手';
+        }
+        return color === state.human ? '玩家' : 'AI';
     }
 
     function getRuleLabel(method) {
@@ -448,6 +1021,9 @@
     }
 
     function startNewGame() {
+        if (state.mode === 'online') {
+            return;
+        }
         state.turnId += 1;
         clearAiTimer();
         state.board = createBoard(config.size);
@@ -485,6 +1061,29 @@
         draw();
     }
 
+    function requestOnlineNewGame() {
+        if (state.mode !== 'online') {
+            startNewGame();
+            return;
+        }
+        if (state.role !== 'player') {
+            setStatus('观战中无法新开局。', 'error');
+            return;
+        }
+        if (state.human !== 1) {
+            setStatus('只有黑方可以发起新对局。', 'error');
+            return;
+        }
+        state.turnId += 1;
+        clearAiTimer();
+        state.hintUsed = 0;
+        const freshGame = createGameState();
+        applyGameState(freshGame);
+        broadcastGameState();
+        ui.tipText.textContent = '联机对局已重置，等待对手落子。';
+        setOnlineTurnStatus();
+    }
+
     function createBoard(size) {
         return Array.from({ length: size }, () => Array(size).fill(0));
     }
@@ -517,7 +1116,19 @@
     }
 
     function onBoardClick(event) {
-        if (state.gameOver || state.busy || state.current !== state.human) {
+        if (state.gameOver || state.busy) {
+            return;
+        }
+        if (state.mode === 'online') {
+            if (state.role !== 'player') {
+                setStatus('观战中无法落子。', 'error');
+                return;
+            }
+            if (state.current !== state.human) {
+                setStatus('等待对手落子...', 'error');
+                return;
+            }
+        } else if (state.current !== state.human) {
             return;
         }
         const point = getPointFromEvent(event);
@@ -563,11 +1174,20 @@
         }
 
         applyMove(move, state.human);
-        setStatus('AI 思考中...', 'success');
-        scheduleAiMove();
+        if (state.mode === 'online') {
+            broadcastGameState();
+            setOnlineTurnStatus();
+        } else {
+            setStatus('AI 思考中...', 'success');
+            scheduleAiMove();
+        }
     }
 
     function scheduleAiMove() {
+        if (state.mode === 'online') {
+            state.busy = false;
+            return;
+        }
         clearAiTimer();
         state.busy = true;
         const turnId = state.turnId;
@@ -614,7 +1234,7 @@
             captured: 0
         };
         state.koPoint = null;
-        const playerName = color === state.human ? '玩家' : 'AI';
+        const playerName = getActorLabel(color);
 
         if (state.passCount === 1) {
             setStatus(`${playerName} 停一手。`, 'success');
@@ -628,11 +1248,17 @@
 
         if (state.passCount >= 2) {
             endGame();
+            if (state.mode === 'online') {
+                broadcastGameState();
+            }
             return;
         }
 
         switchPlayer();
-        if (state.current === state.ai) {
+        if (state.mode === 'online') {
+            broadcastGameState();
+            setOnlineTurnStatus();
+        } else if (state.current === state.ai) {
             setStatus('AI 思考中...', 'success');
             scheduleAiMove();
         } else {
@@ -677,7 +1303,7 @@
 
         // 如果提了子，在状态栏显示提示
         if (capturedCount > 0) {
-            const playerName = color === state.human ? '玩家' : 'AI';
+            const playerName = getActorLabel(color);
             const coord = formatCoord(move.x, move.y);
             setStatus(`${playerName} 在 ${coord} 落子，提掉 ${capturedCount} 子。`, 'success');
         }
@@ -711,6 +1337,9 @@
     }
 
     function aiMove() {
+        if (state.mode === 'online') {
+            return;
+        }
         if (state.gameOver || state.current !== state.ai) {
             return;
         }
@@ -1066,6 +1695,29 @@
         if (state.gameOver) {
             return;
         }
+        if (state.mode === 'online') {
+            if (state.role !== 'player') {
+                setStatus('观战中无法认输。', 'error');
+                return;
+            }
+            state.turnId += 1;
+            clearAiTimer();
+            state.busy = false;
+            state.handAnimation = null;
+            state.pendingMove = null;
+            state.gameOver = true;
+            state.lastMove = {
+                resign: true,
+                color: state.human,
+                captured: 0
+            };
+            setStatus('你已认输，对局结束。', 'success');
+            ui.tipText.textContent = '联机对局已结束，可由黑方发起新开局。';
+            updateUI();
+            draw();
+            broadcastGameState();
+            return;
+        }
         state.turnId += 1;
         clearAiTimer();
         state.busy = false;
@@ -1088,8 +1740,12 @@
             setStatus('对局已结束，无法获取提示。', 'error');
             return;
         }
+        if (state.mode === 'online' && state.role !== 'player') {
+            setStatus('观战中无法获取提示。', 'error');
+            return;
+        }
         if (state.current !== state.human) {
-            setStatus('轮到 AI 落子，暂不需要提示。', 'error');
+            setStatus(state.mode === 'online' ? '轮到对手落子，暂不需要提示。' : '轮到 AI 落子，暂不需要提示。', 'error');
             return;
         }
         if (state.hintUsed >= state.hintLimit) {
@@ -1189,6 +1845,10 @@
     }
 
     function undoMove() {
+        if (state.mode === 'online') {
+            setStatus('联机模式下无法悔棋。', 'error');
+            return;
+        }
         if (!state.history.length) {
             setStatus('暂无可回退的步。', 'error');
             return;
