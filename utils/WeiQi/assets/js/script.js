@@ -42,6 +42,7 @@
         whiteLabel: document.getElementById('whiteLabel'),
         roomIdInput: document.getElementById('roomIdInput'),
         roomPasswordInput: document.getElementById('roomPasswordInput'),
+        serverUrlInput: document.getElementById('serverUrlInput'),
         joinRoomBtn: document.getElementById('joinRoomBtn'),
         watchRoomBtn: document.getElementById('watchRoomBtn'),
         leaveRoomBtn: document.getElementById('leaveRoomBtn'),
@@ -96,8 +97,12 @@
         pendingMove: null,  // 待命的落子信息，等待动画到达时更新
         mode: 'solo',
         role: 'player',
+        onlineProvider: 'local',
         roomId: '',
         roomPassword: '',
+        serverUrl: '',
+        socket: null,
+        pendingJoin: null,
         channel: null,
         clientId: getClientId(),
         heartbeatTimer: null,
@@ -520,6 +525,9 @@
     }
 
     function startHeartbeat() {
+        if (state.onlineProvider !== 'local') {
+            return;
+        }
         stopHeartbeat();
         updateRoomPresence();
         state.heartbeatTimer = setInterval(updateRoomPresence, onlineConfig.heartbeatInterval);
@@ -533,7 +541,7 @@
     }
 
     function updateRoomPresence() {
-        if (state.mode !== 'online' || state.role !== 'player' || !state.roomId) {
+        if (state.mode !== 'online' || state.role !== 'player' || !state.roomId || state.onlineProvider !== 'local') {
             return;
         }
         const meta = loadRoomMeta(state.roomId);
@@ -607,6 +615,7 @@
     function updateControlAvailability() {
         const isOnline = state.mode === 'online';
         const isSpectator = isOnline && state.role === 'spectator';
+        const inRoom = isOnline;
         ui.difficultySelect.disabled = isOnline;
         ui.boardSizeSelect.disabled = isOnline;
         ui.playerColorSelect.disabled = isOnline;
@@ -617,6 +626,13 @@
         ui.passBtn.disabled = isSpectator;
         ui.resignBtn.disabled = isSpectator;
         ui.hintBtn.disabled = isSpectator;
+        ui.newGameBtn.disabled = isSpectator;
+        if (ui.roomIdInput) ui.roomIdInput.disabled = inRoom;
+        if (ui.roomPasswordInput) ui.roomPasswordInput.disabled = inRoom;
+        if (ui.serverUrlInput) ui.serverUrlInput.disabled = inRoom;
+        if (ui.joinRoomBtn) ui.joinRoomBtn.disabled = inRoom;
+        if (ui.watchRoomBtn) ui.watchRoomBtn.disabled = inRoom;
+        if (ui.leaveRoomBtn) ui.leaveRoomBtn.disabled = !inRoom;
     }
 
     function updateMatchLabel() {
@@ -672,6 +688,7 @@
     function joinRoom(asSpectator) {
         const rawRoomId = ui.roomIdInput.value;
         const password = ui.roomPasswordInput.value;
+        const serverUrl = ui.serverUrlInput ? ui.serverUrlInput.value.trim() : '';
         const roomId = normalizeRoomId(rawRoomId);
 
         if (!roomId || !password) {
@@ -685,7 +702,17 @@
             return;
         }
 
+        if (serverUrl) {
+            joinRoomViaServer(serverUrl, roomId, password, asSpectator);
+        } else {
+            joinRoomLocal(roomId, password, asSpectator);
+        }
+    }
+
+    function joinRoomLocal(roomId, password, asSpectator) {
         leaveRoom(true);
+        state.onlineProvider = 'local';
+        state.serverUrl = '';
 
         let meta = loadRoomMeta(roomId);
         if (!meta) {
@@ -766,6 +793,186 @@
         updateRoomStatus(roomTitle);
     }
 
+    function normalizeServerUrl(raw) {
+        const trimmed = raw.trim();
+        if (!trimmed) {
+            return '';
+        }
+        if (trimmed.startsWith('ws://') || trimmed.startsWith('wss://')) {
+            return trimmed;
+        }
+        if (trimmed.startsWith('http://')) {
+            return `ws://${trimmed.slice(7)}`;
+        }
+        if (trimmed.startsWith('https://')) {
+            return `wss://${trimmed.slice(8)}`;
+        }
+        return `ws://${trimmed}`;
+    }
+
+    function joinRoomViaServer(serverUrl, roomId, password, asSpectator) {
+        leaveRoom(true);
+        const normalized = normalizeServerUrl(serverUrl);
+        if (!normalized) {
+            setStatus('请输入有效的联机服务器地址。', 'error');
+            return;
+        }
+        if (ui.serverUrlInput) {
+            ui.serverUrlInput.value = normalized;
+        }
+
+        state.onlineProvider = 'server';
+        state.serverUrl = normalized;
+        state.pendingJoin = {
+            roomId,
+            password,
+            role: asSpectator ? 'spectator' : 'player'
+        };
+        updateRoomStatus(`连接服务器 ${normalized}...`);
+        connectSocket(normalized);
+    }
+
+    function connectSocket(serverUrl) {
+        disconnectSocket();
+        let socket;
+        try {
+            socket = new WebSocket(serverUrl);
+        } catch (error) {
+            setStatus('联机服务器地址无效。', 'error');
+            updateRoomStatus('未加入房间');
+            return;
+        }
+        state.socket = socket;
+
+        socket.addEventListener('open', () => {
+            if (!state.pendingJoin) {
+                return;
+            }
+            sendSocketMessage({
+                type: 'join',
+                roomId: state.pendingJoin.roomId,
+                password: state.pendingJoin.password,
+                role: state.pendingJoin.role,
+                clientId: state.clientId
+            });
+        });
+
+        socket.addEventListener('message', handleSocketMessage);
+        socket.addEventListener('close', handleSocketClose);
+        socket.addEventListener('error', () => {
+            setStatus('联机服务器连接失败。', 'error');
+            updateRoomStatus('未加入房间');
+            state.pendingJoin = null;
+            state.onlineProvider = 'local';
+            state.serverUrl = '';
+        });
+    }
+
+    function disconnectSocket() {
+        if (state.socket) {
+            state.socket.removeEventListener('message', handleSocketMessage);
+            state.socket.removeEventListener('close', handleSocketClose);
+            state.socket.close();
+            state.socket = null;
+        }
+    }
+
+    function sendSocketMessage(message) {
+        if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
+            return;
+        }
+        state.socket.send(JSON.stringify(message));
+    }
+
+    function handleSocketMessage(event) {
+        let data;
+        try {
+            data = JSON.parse(event.data);
+        } catch (error) {
+            return;
+        }
+        if (!data || data.source === state.clientId) {
+            return;
+        }
+        if (data.type === 'join-ack') {
+            if (!data.ok) {
+                setStatus(data.reason || '加入房间失败。', 'error');
+                updateRoomStatus('未加入房间');
+                state.pendingJoin = null;
+                disconnectSocket();
+                state.onlineProvider = 'local';
+                return;
+            }
+            state.mode = 'online';
+            state.role = data.role || state.pendingJoin?.role || 'player';
+            state.roomId = data.roomId || state.pendingJoin?.roomId || '';
+            state.roomPassword = state.pendingJoin?.password || '';
+            state.lastGameUpdate = 0;
+            state.pendingJoin = null;
+            if (state.role === 'player') {
+                const assignedColor = data.color || 1;
+                state.human = assignedColor;
+                state.ai = assignedColor === 1 ? 2 : 1;
+                config.playerColor = assignedColor === 1 ? 'black' : 'white';
+                ui.playerColorSelect.value = config.playerColor;
+            } else {
+                state.human = 0;
+                state.ai = 0;
+            }
+
+            updatePlayerLabels();
+            updateMatchLabel();
+            updateControlAvailability();
+
+            if (data.game) {
+                applyRemoteGameState(data.game);
+            } else if (state.role === 'player' && state.human === 1) {
+                const freshGame = createGameState();
+                applyGameState(freshGame);
+                broadcastGameState();
+                setStatus('房间已创建，等待对手加入。', 'success');
+            } else {
+                setStatus('已加入房间，等待对局开始。', 'success');
+            }
+
+            const roomTitle = state.role === 'spectator'
+                ? `房间 ${state.roomId} · 观战中`
+                : `房间 ${state.roomId} · 你执${state.human === 1 ? '黑' : '白'}`;
+            updateRoomStatus(roomTitle);
+            return;
+        }
+
+        if (data.type === 'game' && data.game) {
+            applyRemoteGameState(data.game);
+            return;
+        }
+
+        if (data.type === 'room-info' && data.roomId === state.roomId) {
+            updateRoomStatus(data.text || '房间状态已更新');
+        }
+
+        if (data.type === 'error') {
+            setStatus(data.message || '联机通信异常。', 'error');
+        }
+    }
+
+    function handleSocketClose() {
+        if (state.pendingJoin) {
+            state.pendingJoin = null;
+            state.onlineProvider = 'local';
+            state.serverUrl = '';
+            updateRoomStatus('未加入房间');
+            setStatus('联机服务器连接已断开。', 'error');
+            return;
+        }
+        if (state.mode !== 'online' || state.onlineProvider !== 'server') {
+            return;
+        }
+        updateRoomStatus('连接已断开');
+        leaveRoom(true);
+        setStatus('联机服务器已断开，已回到单机模式。', 'error');
+    }
+
     function leaveRoom(silent = false) {
         if (state.mode !== 'online') {
             if (!silent) {
@@ -774,7 +981,16 @@
             return;
         }
 
-        if (state.role === 'player' && state.roomId) {
+        if (state.onlineProvider === 'server') {
+            if (state.roomId) {
+                sendSocketMessage({
+                    type: 'leave',
+                    roomId: state.roomId,
+                    clientId: state.clientId
+                });
+            }
+            disconnectSocket();
+        } else if (state.role === 'player' && state.roomId) {
             const meta = loadRoomMeta(state.roomId);
             if (meta) {
                 meta.players = (meta.players || []).filter(player => player.id !== state.clientId);
@@ -787,8 +1003,11 @@
 
         state.mode = 'solo';
         state.role = 'player';
+        state.onlineProvider = 'local';
         state.roomId = '';
         state.roomPassword = '';
+        state.serverUrl = '';
+        state.pendingJoin = null;
         state.lastGameUpdate = 0;
         applyPlayerColor();
         updateMatchLabel();
@@ -855,6 +1074,15 @@
         }
         const game = serializeGameState();
         state.lastGameUpdate = game.updatedAt || state.lastGameUpdate;
+        if (state.onlineProvider === 'server') {
+            sendSocketMessage({
+                type: 'game',
+                roomId: state.roomId,
+                game: game,
+                clientId: state.clientId
+            });
+            return;
+        }
         localStorage.setItem(getRoomGameKey(state.roomId), JSON.stringify(game));
         if (state.channel) {
             state.channel.postMessage({
