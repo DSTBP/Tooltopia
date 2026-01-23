@@ -553,8 +553,14 @@
 
         .score-grid {
             display: grid;
-            grid-template-columns: auto auto;
+            grid-template-columns: 1fr auto;
             gap: 6px 12px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .score-grid span:nth-child(2n) {
+            text-align: right;
         }
 
         .scoreboard {
@@ -861,25 +867,21 @@
                                 </label>
                             </div>
                             <div class="settings-group online-section">
-                                <label class="online-label">联机房间</label>
+                                <label class="online-label">联机连接</label>
                                 <div class="settings-subgroup">
-                                    <label for="serverUrlInput" class="settings-subtitle">联机服务器</label>
-                                    <input type="text" id="serverUrlInput" name="serverUrl" placeholder="例如 ws://192.168.1.10:3001" autocomplete="off">
+                                    <label for="selfIdInput" class="settings-subtitle">我的 ID</label>
+                                    <input type="text" id="selfIdInput" name="selfId" placeholder="点击加入对局生成" autocomplete="off" readonly>
                                 </div>
                                 <div class="settings-subgroup">
-                                    <label for="roomIdInput" class="settings-subtitle">房间号</label>
-                                    <input type="text" id="roomIdInput" name="roomId" placeholder="输入房间号" autocomplete="off">
-                                </div>
-                                <div class="settings-subgroup">
-                                    <label for="roomPasswordInput" class="settings-subtitle">房间密码</label>
-                                    <input type="password" id="roomPasswordInput" name="roomPassword" placeholder="输入房间密码" autocomplete="off">
+                                    <label for="peerIdInput" class="settings-subtitle">对方 ID</label>
+                                    <input type="text" id="peerIdInput" name="peerId" placeholder="输入对方 ID 建立连接" autocomplete="off">
                                 </div>
                                 <div class="settings-actions">
                                     <button id="joinRoomBtn" class="btn btn-primary">加入对局</button>
                                     <button id="watchRoomBtn" class="btn btn-secondary">观战</button>
-                                    <button id="leaveRoomBtn" class="btn btn-secondary">退出房间</button>
+                                    <button id="leaveRoomBtn" class="btn btn-secondary">退出联机</button>
                                 </div>
-                                <div id="roomStatus" class="board-hint">未加入房间</div>
+                                <div id="roomStatus" class="board-hint">未加入联机</div>
                             </div>
                             <div class="settings-group beginner-section">
                                 <label class="beginner-label">辅助设置</label>
@@ -1019,6 +1021,7 @@
             }
         })();
     </script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="./assets/js/script.js"></script>
 </body>
 </html>

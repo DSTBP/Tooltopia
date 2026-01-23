@@ -40,9 +40,8 @@
         showHandAnimationCheck: document.getElementById('showHandAnimationCheck'),
         blackLabel: document.getElementById('blackLabel'),
         whiteLabel: document.getElementById('whiteLabel'),
-        roomIdInput: document.getElementById('roomIdInput'),
-        roomPasswordInput: document.getElementById('roomPasswordInput'),
-        serverUrlInput: document.getElementById('serverUrlInput'),
+        peerIdInput: document.getElementById('peerIdInput'),
+        selfIdInput: document.getElementById('selfIdInput'),
         joinRoomBtn: document.getElementById('joinRoomBtn'),
         watchRoomBtn: document.getElementById('watchRoomBtn'),
         leaveRoomBtn: document.getElementById('leaveRoomBtn'),
@@ -59,14 +58,8 @@
         playerColor: 'black'
     };
 
-    const onlineConfig = {
-        heartbeatInterval: 3000,
-        staleThreshold: 12000
-    };
-
-    const storagePrefix = {
-        meta: 'weiqi-room-meta-',
-        game: 'weiqi-room-game-'
+    const peerDefaults = {
+        secure: window.location.protocol === 'https:'
     };
 
     const state = {
@@ -97,15 +90,16 @@
         pendingMove: null,  // 待命的落子信息，等待动画到达时更新
         mode: 'solo',
         role: 'player',
-        onlineProvider: 'local',
         roomId: '',
-        roomPassword: '',
-        serverUrl: '',
-        socket: null,
+        selfId: '',
+        peer: null,
+        connections: new Map(),
+        hostConnection: null,
+        isHost: false,
         pendingJoin: null,
-        channel: null,
+        peerServer: null,
+        guestId: null,
         clientId: getClientId(),
-        heartbeatTimer: null,
         lastGameUpdate: 0
     };
 
@@ -149,7 +143,8 @@
         ui.playerColorSelect.value = config.playerColor;
         applyPlayerColor();
         updateDifficultyUI();
-        updateRoomStatus('未加入房间');
+        updateRoomStatus('未加入联机');
+        updateSelfIdDisplay();
         updateControlAvailability();
         loadHandImage();
         startNewGame();
@@ -384,7 +379,7 @@
         ui.playerColorSelect.addEventListener('change', (e) => {
             if (state.mode === 'online') {
                 e.target.value = config.playerColor;
-                setStatus('联机模式下由房间座次决定执子颜色。', 'error');
+                setStatus('联机模式下由连接顺序决定执子颜色。', 'error');
                 return;
             }
             const color = e.target.value;
@@ -480,129 +475,268 @@
         return id;
     }
 
-    function normalizeRoomId(roomId) {
-        return roomId.trim();
+    function normalizePeerId(peerId) {
+        return peerId.trim();
     }
 
-    function getRoomMetaKey(roomId) {
-        return `${storagePrefix.meta}${encodeURIComponent(roomId)}`;
-    }
-
-    function getRoomGameKey(roomId) {
-        return `${storagePrefix.game}${encodeURIComponent(roomId)}`;
-    }
-
-    function loadRoomMeta(roomId) {
-        const raw = localStorage.getItem(getRoomMetaKey(roomId));
-        if (!raw) {
-            return null;
+    function parsePeerServer(raw) {
+        const trimmed = (raw || '').trim();
+        const isHttps = window.location.protocol === 'https:';
+        if (!trimmed) {
+            return {
+                host: '',
+                port: null,
+                path: '',
+                secure: isHttps
+            };
         }
-        try {
-            const meta = JSON.parse(raw);
-            if (!meta || typeof meta !== 'object') {
-                return null;
-            }
-            if (!Array.isArray(meta.players)) {
-                meta.players = [];
-            }
-            return meta;
-        } catch (error) {
-            return null;
-        }
-    }
 
-    function saveRoomMeta(roomId, meta) {
-        localStorage.setItem(getRoomMetaKey(roomId), JSON.stringify(meta));
-    }
-
-    function cleanupRoomMeta(meta) {
-        const now = Date.now();
-        meta.players = (meta.players || []).filter(player => (
-            player && typeof player.lastSeen === 'number' &&
-            now - player.lastSeen <= onlineConfig.staleThreshold
-        ));
-        return meta;
-    }
-
-    function startHeartbeat() {
-        if (state.onlineProvider !== 'local') {
-            return;
-        }
-        stopHeartbeat();
-        updateRoomPresence();
-        state.heartbeatTimer = setInterval(updateRoomPresence, onlineConfig.heartbeatInterval);
-    }
-
-    function stopHeartbeat() {
-        if (state.heartbeatTimer) {
-            clearInterval(state.heartbeatTimer);
-            state.heartbeatTimer = null;
-        }
-    }
-
-    function updateRoomPresence() {
-        if (state.mode !== 'online' || state.role !== 'player' || !state.roomId || state.onlineProvider !== 'local') {
-            return;
-        }
-        const meta = loadRoomMeta(state.roomId);
-        if (!meta) {
-            return;
-        }
-        cleanupRoomMeta(meta);
-        const now = Date.now();
-        const entry = meta.players.find(player => player.id === state.clientId);
-        if (entry) {
-            entry.lastSeen = now;
+        let urlText = trimmed;
+        let secure = isHttps;
+        if (trimmed.startsWith('wss://') || trimmed.startsWith('ws://')) {
+            secure = trimmed.startsWith('wss://');
+            urlText = trimmed.replace(/^ws/, 'http');
+        } else if (trimmed.startsWith('https://') || trimmed.startsWith('http://')) {
+            secure = trimmed.startsWith('https://');
         } else {
-            meta.players.push({
-                id: state.clientId,
-                color: state.human,
-                lastSeen: now
-            });
+            urlText = `${secure ? 'https' : 'http'}://${trimmed}`;
         }
-        saveRoomMeta(state.roomId, meta);
-    }
 
-    function connectRoomChannel(roomId) {
-        disconnectRoomChannel();
-        if ('BroadcastChannel' in window) {
-            state.channel = new BroadcastChannel(`weiqi-room-${encodeURIComponent(roomId)}`);
-            state.channel.addEventListener('message', handleRoomMessage);
-        }
-        window.addEventListener('storage', handleStorageEvent);
-    }
-
-    function disconnectRoomChannel() {
-        if (state.channel) {
-            state.channel.removeEventListener('message', handleRoomMessage);
-            state.channel.close();
-            state.channel = null;
-        }
-        window.removeEventListener('storage', handleStorageEvent);
-    }
-
-    function handleRoomMessage(event) {
-        const data = event.data;
-        if (!data || data.source === state.clientId) {
-            return;
-        }
-        if (data.type === 'game' && data.game) {
-            applyRemoteGameState(data.game);
-        }
-    }
-
-    function handleStorageEvent(event) {
-        if (!state.roomId || event.key !== getRoomGameKey(state.roomId) || !event.newValue) {
-            return;
-        }
+        let url;
         try {
-            const game = JSON.parse(event.newValue);
-            if (game) {
-                applyRemoteGameState(game);
-            }
+            url = new URL(urlText);
         } catch (error) {
-            // ignore invalid payload
+            return {
+                host: '',
+                port: null,
+                path: '',
+                secure: isHttps
+            };
         }
+
+        let path = url.pathname || '/';
+        if (!path.endsWith('/')) {
+            path += '/';
+        }
+
+        return {
+            host: url.hostname,
+            port: url.port ? Number.parseInt(url.port, 10) : (secure ? 443 : 80),
+            path: path,
+            secure: secure
+        };
+    }
+
+    function buildPeerOptions(serverConfig) {
+        const options = {
+            secure: peerDefaults.secure
+        };
+        if (serverConfig && serverConfig.host) {
+            options.host = serverConfig.host;
+            options.port = serverConfig.port;
+            options.path = serverConfig.path || '/';
+            options.secure = serverConfig.secure;
+        }
+        return options;
+    }
+
+    function createPeerInstance(peerId, serverConfig) {
+        if (!window.Peer) {
+            return null;
+        }
+        const options = buildPeerOptions(serverConfig);
+        if (peerId) {
+            return new window.Peer(peerId, options);
+        }
+        return new window.Peer(options);
+    }
+
+    function resetConnections() {
+        state.connections.forEach(entry => {
+            if (entry.conn && entry.conn.open) {
+                entry.conn.close();
+            }
+        });
+        state.connections.clear();
+        state.hostConnection = null;
+        state.guestId = null;
+    }
+
+    function registerConnection(conn, meta) {
+        const existing = state.connections.get(conn.peer);
+        if (existing) {
+            existing.role = meta.role || existing.role;
+            existing.color = meta.color || existing.color;
+            return;
+        }
+        state.connections.set(conn.peer, {
+            conn,
+            role: meta.role || 'spectator',
+            color: meta.color || null
+        });
+
+        conn.on('data', data => {
+            handlePeerData(conn, data);
+        });
+        conn.on('close', () => {
+            handlePeerClose(conn);
+        });
+        conn.on('error', () => {
+            handlePeerClose(conn);
+        });
+    }
+
+    function handlePeerClose(conn) {
+        const entry = state.connections.get(conn.peer);
+        if (entry && entry.role === 'player' && state.isHost) {
+            if (state.guestId === conn.peer) {
+                state.guestId = null;
+                setStatus('对手已断开连接。', 'error');
+                updateRoomStatus(`我的 ID：${state.selfId || state.roomId} · 等待对手加入`);
+            }
+        } else if (!state.isHost && conn === state.hostConnection) {
+            setStatus('对方已断开连接。', 'error');
+            leaveRoom(true);
+        }
+        state.connections.delete(conn.peer);
+    }
+
+    function sendPeerMessage(conn, payload) {
+        if (conn && conn.open) {
+            conn.send(payload);
+        }
+    }
+
+    function handlePeerData(conn, data) {
+        if (!data || typeof data !== 'object') {
+            return;
+        }
+        if (data.type === 'hello' && state.isHost) {
+            const incomingRole = data.role === 'spectator' ? 'spectator' : 'player';
+            if (incomingRole === 'player') {
+                if (state.guestId && state.guestId !== conn.peer) {
+                    sendPeerMessage(conn, { type: 'hello-ack', ok: false, reason: '当前对局已满，可观战。' });
+                    conn.close();
+                    return;
+                }
+                state.guestId = conn.peer;
+                registerConnection(conn, { role: 'player', color: 2 });
+                sendPeerMessage(conn, {
+                    type: 'hello-ack',
+                    ok: true,
+                    role: 'player',
+                    color: 2,
+                    game: serializeGameState()
+                });
+                setStatus('对手已加入联机。', 'success');
+                updateRoomStatus(`我的 ID：${state.selfId || state.roomId} · 对战中`);
+                return;
+            }
+
+            registerConnection(conn, { role: 'spectator' });
+            sendPeerMessage(conn, {
+                type: 'hello-ack',
+                ok: true,
+                role: 'spectator',
+                game: serializeGameState()
+            });
+            return;
+        }
+
+        if (data.type === 'hello-ack' && !state.isHost) {
+            if (!data.ok) {
+                setStatus(data.reason || '加入联机失败。', 'error');
+                leaveRoom(true);
+                return;
+            }
+            state.role = data.role === 'spectator' ? 'spectator' : 'player';
+            state.isHost = false;
+            if (state.role === 'player') {
+                const assigned = data.color || 2;
+                state.human = assigned;
+                state.ai = assigned === 1 ? 2 : 1;
+                config.playerColor = assigned === 1 ? 'black' : 'white';
+                ui.playerColorSelect.value = config.playerColor;
+            } else {
+                state.human = 0;
+                state.ai = 0;
+            }
+            updatePlayerLabels();
+            updateMatchLabel();
+            updateControlAvailability();
+            if (data.game) {
+                applyRemoteGameState(data.game);
+            }
+            setOnlineTurnStatus();
+            updateRoomStatus(state.role === 'spectator'
+                ? `对方 ID ${state.roomId} · 观战中`
+                : `对方 ID ${state.roomId} · 你执${state.human === 1 ? '黑' : '白'}`);
+            return;
+        }
+
+        if (data.type === 'game' && data.game) {
+            if (state.isHost) {
+                const entry = state.connections.get(conn.peer);
+                if (!entry || entry.role !== 'player') {
+                    return;
+                }
+                applyRemoteGameState(data.game);
+                broadcastGameState(conn.peer);
+            } else {
+                applyRemoteGameState(data.game);
+            }
+        }
+    }
+
+    function connectToHost(role) {
+        const conn = state.peer.connect(state.roomId, { reliable: true });
+        state.hostConnection = conn;
+        registerConnection(conn, { role: 'host' });
+
+        conn.on('open', () => {
+            sendPeerMessage(conn, {
+                type: 'hello',
+                role: role,
+                clientId: state.clientId
+            });
+            updateRoomStatus(`已连接对方 ID ${state.roomId}，等待确认...`);
+        });
+
+        conn.on('error', err => {
+            setStatus('对方 ID 不存在或连接失败。', 'error');
+            leaveRoom(true);
+        });
+    }
+
+    function becomeHost() {
+        resetConnections();
+        if (!state.peer) {
+            setStatus('PeerJS 未加载，无法创建联机。', 'error');
+            leaveRoom(true);
+            return;
+        }
+        state.isHost = true;
+        state.role = 'player';
+        state.human = 1;
+        state.ai = 2;
+        state.guestId = null;
+        config.playerColor = 'black';
+        ui.playerColorSelect.value = config.playerColor;
+        updatePlayerLabels();
+        updateMatchLabel();
+        updateControlAvailability();
+        if (state.peer.id) {
+            state.selfId = state.peer.id;
+        }
+        if (state.selfId) {
+            state.roomId = state.selfId;
+        }
+        updateSelfIdDisplay();
+        updateRoomStatus(`我的 ID：${state.selfId || '-'} · 等待对手加入`);
+        const freshGame = createGameState();
+        state.lastGameUpdate = freshGame.updatedAt;
+        applyGameState(freshGame);
+        setStatus('联机已创建，等待对手加入。', 'success');
     }
 
     function updateRoomStatus(text) {
@@ -610,6 +744,13 @@
             return;
         }
         ui.roomStatus.textContent = text;
+    }
+
+    function updateSelfIdDisplay() {
+        if (!ui.selfIdInput) {
+            return;
+        }
+        ui.selfIdInput.value = state.selfId || '';
     }
 
     function updateControlAvailability() {
@@ -626,10 +767,8 @@
         ui.passBtn.disabled = isSpectator;
         ui.resignBtn.disabled = isSpectator;
         ui.hintBtn.disabled = isSpectator;
-        ui.newGameBtn.disabled = isSpectator;
-        if (ui.roomIdInput) ui.roomIdInput.disabled = inRoom;
-        if (ui.roomPasswordInput) ui.roomPasswordInput.disabled = inRoom;
-        if (ui.serverUrlInput) ui.serverUrlInput.disabled = inRoom;
+        ui.newGameBtn.disabled = isSpectator || (isOnline && !state.isHost);
+        if (ui.peerIdInput) ui.peerIdInput.disabled = inRoom;
         if (ui.joinRoomBtn) ui.joinRoomBtn.disabled = inRoom;
         if (ui.watchRoomBtn) ui.watchRoomBtn.disabled = inRoom;
         if (ui.leaveRoomBtn) ui.leaveRoomBtn.disabled = !inRoom;
@@ -678,6 +817,10 @@
             setStatus('观战中无法停手。', 'error');
             return;
         }
+        if (state.mode === 'online' && state.isHost && !state.guestId) {
+            setStatus('等待对手加入后才能停手。', 'error');
+            return;
+        }
         if (state.mode === 'online' && state.current !== state.human) {
             setStatus('等待对手落子...', 'error');
             return;
@@ -686,346 +829,108 @@
     }
 
     function joinRoom(asSpectator) {
-        const rawRoomId = ui.roomIdInput.value;
-        const password = ui.roomPasswordInput.value;
-        const serverUrl = ui.serverUrlInput ? ui.serverUrlInput.value.trim() : '';
-        const roomId = normalizeRoomId(rawRoomId);
+        const rawPeerId = ui.peerIdInput.value;
+        const peerId = normalizePeerId(rawPeerId);
 
-        if (!roomId || !password) {
-            setStatus('请输入房间号和密码。', 'error');
+        if (asSpectator && !peerId) {
+            setStatus('观战需要输入对方 ID。', 'error');
             return;
         }
-        ui.roomIdInput.value = roomId;
+        if (!window.Peer) {
+            setStatus('PeerJS 未加载，无法联机。', 'error');
+            return;
+        }
+        ui.peerIdInput.value = peerId;
 
-        if (state.mode === 'online' && state.roomId === roomId) {
-            setStatus('已在该房间中。', 'error');
+        if (state.mode === 'online' && state.roomId === peerId && state.role === (asSpectator ? 'spectator' : 'player')) {
+            setStatus('已在联机中。', 'error');
             return;
         }
 
-        if (serverUrl) {
-            joinRoomViaServer(serverUrl, roomId, password, asSpectator);
-        } else {
-            joinRoomLocal(roomId, password, asSpectator);
-        }
-    }
-
-    function joinRoomLocal(roomId, password, asSpectator) {
         leaveRoom(true);
-        state.onlineProvider = 'local';
-        state.serverUrl = '';
-
-        let meta = loadRoomMeta(roomId);
-        if (!meta) {
-            if (asSpectator) {
-                setStatus('房间不存在，无法观战。', 'error');
-                return;
-            }
-            meta = {
-                password: password,
-                players: []
-            };
-        } else if (meta.password !== password) {
-            setStatus('房间号或密码错误。', 'error');
-            return;
-        }
-
-        cleanupRoomMeta(meta);
-        meta.players = meta.players.filter(player => player.id !== state.clientId);
-
-        let assignedColor = null;
-        if (!asSpectator) {
-            if (meta.players.length >= 2) {
-                setStatus('房间已满，可点击观战进入。', 'error');
-                updateRoomStatus(`房间 ${roomId} 已满`);
-                saveRoomMeta(roomId, meta);
-                return;
-            }
-            const colors = meta.players.map(player => player.color);
-            assignedColor = colors.includes(1) ? 2 : 1;
-            meta.players.push({
-                id: state.clientId,
-                color: assignedColor,
-                lastSeen: Date.now()
-            });
-        }
-
-        saveRoomMeta(roomId, meta);
-        connectRoomChannel(roomId);
-
         state.mode = 'online';
         state.role = asSpectator ? 'spectator' : 'player';
-        state.roomId = roomId;
-        state.roomPassword = password;
+        state.roomId = peerId;
+        state.selfId = '';
         state.lastGameUpdate = 0;
-        if (state.role === 'player') {
-            state.human = assignedColor;
-            state.ai = assignedColor === 1 ? 2 : 1;
-            config.playerColor = assignedColor === 1 ? 'black' : 'white';
-            ui.playerColorSelect.value = config.playerColor;
-        } else {
-            state.human = 0;
-            state.ai = 0;
-        }
-
-        updatePlayerLabels();
-        updateMatchLabel();
+        state.human = 0;
+        state.ai = 0;
+        state.isHost = false;
+        state.peerServer = null;
+        updateSelfIdDisplay();
         updateControlAvailability();
-
-        if (state.role === 'player') {
-            startHeartbeat();
-        }
-
-        const game = loadRoomGame(roomId);
-        if (game) {
-            applyRemoteGameState(game);
-        } else if (state.role === 'player') {
-            const freshGame = createGameState();
-            applyGameState(freshGame);
-            broadcastGameState();
-            setStatus('房间已创建，等待对手加入。', 'success');
-        } else {
-            setStatus('房间尚未开始对局。', 'error');
-        }
-
-        const roomTitle = state.role === 'spectator'
-            ? `房间 ${roomId} · 观战中`
-            : `房间 ${roomId} · 你执${state.human === 1 ? '黑' : '白'}`;
-        updateRoomStatus(roomTitle);
+        updateRoomStatus(peerId ? '正在连接对方 ID...' : '正在生成联机 ID...');
+        setupPeerForJoin(state.role);
     }
 
-    function normalizeServerUrl(raw) {
-        const trimmed = raw.trim();
-        if (!trimmed) {
-            return '';
-        }
-        const isHttpsPage = window.location.protocol === 'https:';
-        if (trimmed.startsWith('ws://') || trimmed.startsWith('wss://')) {
-            if (isHttpsPage && trimmed.startsWith('ws://')) {
-                return `wss://${trimmed.slice(5)}`;
-            }
-            return trimmed;
-        }
-        if (trimmed.startsWith('http://')) {
-            const host = trimmed.slice(7);
-            return isHttpsPage ? `wss://${host}` : `ws://${host}`;
-        }
-        if (trimmed.startsWith('https://')) {
-            return `wss://${trimmed.slice(8)}`;
-        }
-        return isHttpsPage ? `wss://${trimmed}` : `ws://${trimmed}`;
-    }
-
-    function joinRoomViaServer(serverUrl, roomId, password, asSpectator) {
-        leaveRoom(true);
-        const normalized = normalizeServerUrl(serverUrl);
-        if (!normalized) {
-            setStatus('请输入有效的联机服务器地址。', 'error');
+    function setupPeerForJoin(role) {
+        const peer = createPeerInstance(null, state.peerServer);
+        if (!peer) {
+            setStatus('PeerJS 未加载，无法联机。', 'error');
+            leaveRoom(true);
             return;
         }
-        if (window.location.protocol === 'https:' && normalized.startsWith('ws://')) {
-            setStatus('当前页面为 HTTPS，请使用 WSS 服务器地址。', 'error');
-            updateRoomStatus('未加入房间');
-            return;
-        }
-        if (ui.serverUrlInput) {
-            ui.serverUrlInput.value = normalized;
-        }
+        state.peer = peer;
 
-        state.onlineProvider = 'server';
-        state.serverUrl = normalized;
-        state.pendingJoin = {
-            roomId,
-            password,
-            role: asSpectator ? 'spectator' : 'player'
-        };
-        updateRoomStatus(`连接服务器 ${normalized}...`);
-        connectSocket(normalized);
-    }
-
-    function connectSocket(serverUrl) {
-        disconnectSocket();
-        let socket;
-        try {
-            socket = new WebSocket(serverUrl);
-        } catch (error) {
-            setStatus('联机服务器地址无效。', 'error');
-            updateRoomStatus('未加入房间');
-            return;
-        }
-        state.socket = socket;
-
-        socket.addEventListener('open', () => {
-            if (!state.pendingJoin) {
+        peer.on('open', id => {
+            state.selfId = id || '';
+            updateSelfIdDisplay();
+            if (state.roomId) {
+                connectToHost(role);
                 return;
             }
-            sendSocketMessage({
-                type: 'join',
-                roomId: state.pendingJoin.roomId,
-                password: state.pendingJoin.password,
-                role: state.pendingJoin.role,
-                clientId: state.clientId
-            });
-        });
-
-        socket.addEventListener('message', handleSocketMessage);
-        socket.addEventListener('close', handleSocketClose);
-        socket.addEventListener('error', () => {
-            setStatus('联机服务器连接失败，请确认地址与协议是否正确。', 'error');
-            updateRoomStatus('未加入房间');
-            state.pendingJoin = null;
-            state.onlineProvider = 'local';
-            state.serverUrl = '';
-        });
-    }
-
-    function disconnectSocket() {
-        if (state.socket) {
-            state.socket.removeEventListener('message', handleSocketMessage);
-            state.socket.removeEventListener('close', handleSocketClose);
-            state.socket.close();
-            state.socket = null;
-        }
-    }
-
-    function sendSocketMessage(message) {
-        if (!state.socket || state.socket.readyState !== WebSocket.OPEN) {
-            return;
-        }
-        state.socket.send(JSON.stringify(message));
-    }
-
-    function handleSocketMessage(event) {
-        let data;
-        try {
-            data = JSON.parse(event.data);
-        } catch (error) {
-            return;
-        }
-        if (!data || data.source === state.clientId) {
-            return;
-        }
-        if (data.type === 'join-ack') {
-            if (!data.ok) {
-                setStatus(data.reason || '加入房间失败。', 'error');
-                updateRoomStatus('未加入房间');
-                state.pendingJoin = null;
-                disconnectSocket();
-                state.onlineProvider = 'local';
+            if (role === 'spectator') {
+                setStatus('观战需要输入对方 ID。', 'error');
+                leaveRoom(true);
                 return;
             }
-            state.mode = 'online';
-            state.role = data.role || state.pendingJoin?.role || 'player';
-            state.roomId = data.roomId || state.pendingJoin?.roomId || '';
-            state.roomPassword = state.pendingJoin?.password || '';
-            state.lastGameUpdate = 0;
-            state.pendingJoin = null;
-            if (state.role === 'player') {
-                const assignedColor = data.color || 1;
-                state.human = assignedColor;
-                state.ai = assignedColor === 1 ? 2 : 1;
-                config.playerColor = assignedColor === 1 ? 'black' : 'white';
-                ui.playerColorSelect.value = config.playerColor;
+            becomeHost();
+        });
+
+        peer.on('connection', conn => {
+            if (state.isHost) {
+                registerConnection(conn, { role: 'spectator' });
             } else {
-                state.human = 0;
-                state.ai = 0;
+                conn.close();
             }
+        });
 
-            updatePlayerLabels();
-            updateMatchLabel();
-            updateControlAvailability();
-
-            if (data.game) {
-                applyRemoteGameState(data.game);
-            } else if (state.role === 'player' && state.human === 1) {
-                const freshGame = createGameState();
-                applyGameState(freshGame);
-                broadcastGameState();
-                setStatus('房间已创建，等待对手加入。', 'success');
-            } else {
-                setStatus('已加入房间，等待对局开始。', 'success');
-            }
-
-            const roomTitle = state.role === 'spectator'
-                ? `房间 ${state.roomId} · 观战中`
-                : `房间 ${state.roomId} · 你执${state.human === 1 ? '黑' : '白'}`;
-            updateRoomStatus(roomTitle);
-            return;
-        }
-
-        if (data.type === 'game' && data.game) {
-            applyRemoteGameState(data.game);
-            return;
-        }
-
-        if (data.type === 'room-info' && data.roomId === state.roomId) {
-            updateRoomStatus(data.text || '房间状态已更新');
-        }
-
-        if (data.type === 'error') {
-            setStatus(data.message || '联机通信异常。', 'error');
-        }
-    }
-
-    function handleSocketClose() {
-        if (state.pendingJoin) {
-            state.pendingJoin = null;
-            state.onlineProvider = 'local';
-            state.serverUrl = '';
-            updateRoomStatus('未加入房间');
-            setStatus('联机服务器连接已断开。', 'error');
-            return;
-        }
-        if (state.mode !== 'online' || state.onlineProvider !== 'server') {
-            return;
-        }
-        updateRoomStatus('连接已断开');
-        leaveRoom(true);
-        setStatus('联机服务器已断开，已回到单机模式。', 'error');
+        peer.on('error', err => {
+            setStatus(`PeerJS 连接失败：${err && err.type ? err.type : '未知错误'}`, 'error');
+            leaveRoom(true);
+        });
     }
 
     function leaveRoom(silent = false) {
         if (state.mode !== 'online') {
             if (!silent) {
-                setStatus('当前未加入房间。', 'error');
+                setStatus('当前未加入联机。', 'error');
             }
             return;
         }
-
-        if (state.onlineProvider === 'server') {
-            if (state.roomId) {
-                sendSocketMessage({
-                    type: 'leave',
-                    roomId: state.roomId,
-                    clientId: state.clientId
-                });
-            }
-            disconnectSocket();
-        } else if (state.role === 'player' && state.roomId) {
-            const meta = loadRoomMeta(state.roomId);
-            if (meta) {
-                meta.players = (meta.players || []).filter(player => player.id !== state.clientId);
-                saveRoomMeta(state.roomId, meta);
-            }
+        resetConnections();
+        if (state.peer) {
+            state.peer.destroy();
+            state.peer = null;
         }
-
-        stopHeartbeat();
-        disconnectRoomChannel();
 
         state.mode = 'solo';
         state.role = 'player';
-        state.onlineProvider = 'local';
         state.roomId = '';
-        state.roomPassword = '';
-        state.serverUrl = '';
+        state.selfId = '';
         state.pendingJoin = null;
         state.lastGameUpdate = 0;
+        state.isHost = false;
+        state.peerServer = null;
+        state.guestId = null;
+        updateSelfIdDisplay();
         applyPlayerColor();
         updateMatchLabel();
         updateControlAvailability();
-        updateRoomStatus('未加入房间');
+        updateRoomStatus('未加入联机');
 
         if (!silent) {
-            setStatus('已退出房间，回到单机模式。', 'success');
+            setStatus('已退出联机，回到单机模式。', 'success');
             startNewGame();
         }
     }
@@ -1048,18 +953,6 @@
         };
     }
 
-    function loadRoomGame(roomId) {
-        const raw = localStorage.getItem(getRoomGameKey(roomId));
-        if (!raw) {
-            return null;
-        }
-        try {
-            return JSON.parse(raw);
-        } catch (error) {
-            return null;
-        }
-    }
-
     function serializeGameState() {
         return {
             size: config.size,
@@ -1078,28 +971,25 @@
         };
     }
 
-    function broadcastGameState() {
-        if (state.mode !== 'online' || !state.roomId) {
+    function broadcastGameState(excludePeerId = null) {
+        if (state.mode !== 'online') {
             return;
         }
         const game = serializeGameState();
         state.lastGameUpdate = game.updatedAt || state.lastGameUpdate;
-        if (state.onlineProvider === 'server') {
-            sendSocketMessage({
-                type: 'game',
-                roomId: state.roomId,
-                game: game,
-                clientId: state.clientId
+        const payload = {
+            type: 'game',
+            game: game,
+            source: state.clientId
+        };
+        if (state.isHost) {
+            state.connections.forEach((entry, peerId) => {
+                if (peerId && peerId !== excludePeerId) {
+                    sendPeerMessage(entry.conn, payload);
+                }
             });
-            return;
-        }
-        localStorage.setItem(getRoomGameKey(state.roomId), JSON.stringify(game));
-        if (state.channel) {
-            state.channel.postMessage({
-                type: 'game',
-                game: game,
-                source: state.clientId
-            });
+        } else if (state.hostConnection) {
+            sendPeerMessage(state.hostConnection, payload);
         }
     }
 
@@ -1156,7 +1046,13 @@
     }
 
     function applyRemoteGameState(game) {
+        if (game && game.updatedAt && game.updatedAt <= state.lastGameUpdate) {
+            return;
+        }
         applyGameState(game);
+        if (game && game.updatedAt) {
+            state.lastGameUpdate = game.updatedAt;
+        }
         if (state.mode === 'online') {
             setOnlineTurnStatus();
         }
@@ -1185,6 +1081,10 @@
 
         if (state.role === 'spectator') {
             setStatus('观战中...', 'success');
+            return;
+        }
+        if (state.isHost && !state.guestId) {
+            setStatus('等待对手加入...', 'success');
             return;
         }
 
@@ -1308,8 +1208,8 @@
             setStatus('观战中无法新开局。', 'error');
             return;
         }
-        if (state.human !== 1) {
-            setStatus('只有黑方可以发起新对局。', 'error');
+        if (!state.isHost) {
+            setStatus('只有创建者可以发起新对局。', 'error');
             return;
         }
         state.turnId += 1;
@@ -1360,6 +1260,10 @@
         if (state.mode === 'online') {
             if (state.role !== 'player') {
                 setStatus('观战中无法落子。', 'error');
+                return;
+            }
+            if (state.isHost && !state.guestId) {
+                setStatus('等待对手加入后才能落子。', 'error');
                 return;
             }
             if (state.current !== state.human) {
