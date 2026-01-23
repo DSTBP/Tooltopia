@@ -534,6 +534,14 @@ body {
     word-wrap: break-word;
 }
 
+body:not(.day-mode) .score-grid span {
+    color: hsl(210 40% 92%);
+}
+
+body:not(.day-mode) .score-grid span:nth-child(2n) {
+    color: #ffffff;
+}
+
 .highlight {
     background: rgba(255, 193, 7, 0.3);
     padding: 2px 4px;

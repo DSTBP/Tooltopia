@@ -14,23 +14,42 @@
         lastMove: document.getElementById('lastMove'),
         aiHint: document.getElementById('aiHint'),
         tipText: document.getElementById('tipText'),
+        blackScore: document.getElementById('blackScore'),
+        whiteScore: document.getElementById('whiteScore'),
+        blackDetail: document.getElementById('blackDetail'),
+        whiteDetail: document.getElementById('whiteDetail'),
         newGameBtn: document.getElementById('newGameBtn'),
         undoBtn: document.getElementById('undoBtn'),
         passBtn: document.getElementById('passBtn'),
         hintBtn: document.getElementById('hintBtn'),
+        resignBtn: document.getElementById('resignBtn'),
         difficultySelect: document.getElementById('difficultySelect'),
         boardSizeSelect: document.getElementById('boardSizeSelect'),
+        boardDimensionInput: document.getElementById('boardDimensionInput'),
+        boardDimensionUp: document.getElementById('boardDimensionUp'),
+        boardDimensionDown: document.getElementById('boardDimensionDown'),
+        boardStyleSelect: document.getElementById('boardStyleSelect'),
         scoringMethodSelect: document.getElementById('scoringMethodSelect'),
+        komiSelect: document.getElementById('komiSelect'),
+        koRuleSelect: document.getElementById('koRuleSelect'),
+        playerColorSelect: document.getElementById('playerColorSelect'),
         showLibertiesCheck: document.getElementById('showLibertiesCheck'),
         showConnectionsCheck: document.getElementById('showConnectionsCheck'),
         showInfluenceCheck: document.getElementById('showInfluenceCheck'),
-        showEyesCheck: document.getElementById('showEyesCheck')
+        showEyesCheck: document.getElementById('showEyesCheck'),
+        showHandAnimationCheck: document.getElementById('showHandAnimationCheck'),
+        blackLabel: document.getElementById('blackLabel'),
+        whiteLabel: document.getElementById('whiteLabel')
     };
 
     const config = {
         size: 9,
-        komi: 6.5,
-        scoringMethod: 'territory'
+        komi: 5.5,
+        scoringMethod: 'japanese',
+        boardStyle: 'hiba',
+        boardCssSize: 560,
+        koRule: 'simple',
+        playerColor: 'black'
     };
 
     const state = {
@@ -45,15 +64,20 @@
         lastMove: null,
         difficulty: 'easy',
         busy: false,
+        aiTimer: null,
         gameOver: false,
         turnId: 0,
         history: [],
+        positionKeys: new Set(),
         hintUsed: 0,
         hintLimit: 3,
         showLiberties: false,
         showConnections: false,
         showInfluence: false,
-        showEyes: false
+        showEyes: false,
+        showHandAnimation: true,
+        handAnimation: null,
+        pendingMove: null  // 待命的落子信息，等待动画到达时更新
     };
 
     const difficultyLabel = {
@@ -62,18 +86,55 @@
         hard: '困难'
     };
 
+    const boardStyleLabel = {
+        hiba: '桧木棋盘',
+        bamboo: '竹制棋盘',
+        whitePorcelain: '白釉瓷棋盘',
+        celadon: '青瓷',
+        marble: '大理石',
+        brocade: '织锦棋盘',
+        acrylic: '亚克力棋盘'
+    };
+
+    const scoringLabel = {
+        japanese: '日韩规则',
+        chinese: '中国规则',
+        aga: 'AGA 规则'
+    };
+
     let render = {
         size: 0,
         pad: 0,
-        cell: 0
+        cell: 0,
+        handImage: null // 用于存储加载的SVG手部图像
     };
 
     function init() {
         bindEvents();
+        ui.boardSizeSelect.value = config.size;
+        ui.boardDimensionInput.value = config.boardCssSize;
+        ui.boardStyleSelect.value = config.boardStyle;
+        ui.scoringMethodSelect.value = config.scoringMethod;
+        ui.komiSelect.value = config.komi;
+        ui.koRuleSelect.value = config.koRule;
+        ui.playerColorSelect.value = config.playerColor;
+        applyPlayerColor();
         updateDifficultyUI();
+        loadHandImage();
         startNewGame();
         resizeCanvas();
         setupResizeListener();
+    }
+
+    function loadHandImage() {
+        const img = new Image();
+        img.onload = () => {
+            render.handImage = img;
+        };
+        img.onerror = () => {
+            console.warn('Failed to load hand.svg');
+        };
+        img.src = './assets/data/hand.svg';
     }
 
     function bindEvents() {
@@ -82,6 +143,7 @@
         ui.undoBtn.addEventListener('click', undoMove);
         ui.passBtn.addEventListener('click', () => handlePass(state.human));
         ui.hintBtn.addEventListener('click', getHint);
+        ui.resignBtn.addEventListener('click', resignGame);
 
         ui.difficultySelect.addEventListener('change', (e) => {
             state.difficulty = e.target.value;
@@ -91,49 +153,212 @@
         ui.boardSizeSelect.addEventListener('change', (e) => {
             const size = Number.parseInt(e.target.value, 10);
             if (Number.isNaN(size)) {
+                e.target.value = config.size;
+                return;
+            }
+            if (size === config.size) {
                 return;
             }
             config.size = size;
+            // 清除正在进行的手部动画和待命落子，避免位置错乱
+            state.handAnimation = null;
+            state.pendingMove = null;
             startNewGame();
             resizeCanvas();
+            let sizeDesc = '';
+            if (size === 9) {
+                sizeDesc = '9 路棋盘适合快速对局和初学者练习，一般 15-30 分钟完成';
+            } else if (size === 13) {
+                sizeDesc = '13 路棋盘适合中级练习，对局时长约 30-60 分钟';
+            } else {
+                sizeDesc = '19 路棋盘是正式比赛标准，对局时长通常超过 1 小时';
+            }
             setStatus(`棋盘已切换为 ${size} 路，新对局开始。`, 'success');
+            ui.tipText.textContent = sizeDesc;
         });
 
-        ui.scoringMethodSelect.addEventListener('change', (e) => {
-            config.scoringMethod = e.target.value;
-            if (state.gameOver) {
-                const score = calculateScore();
-                const winner = score.black > score.white ? '黑胜' : score.black < score.white ? '白胜' : '平局';
-                setStatus(`计分方式已切换，重新结算：黑 ${score.black.toFixed(1)} / 白 ${score.white.toFixed(1)}，${winner}。`, 'success');
-                ui.tipText.textContent = `${config.scoringMethod === 'territory' ? '数目法' : '数子法'}：黑领地 ${score.territory[1]}，白领地 ${score.territory[2]}，黑提子 ${state.captures[1]}，白提子 ${state.captures[2]}。`;
-            } else {
-                const method = config.scoringMethod === 'territory' ? '数目法' : '数子法';
-                setStatus(`计分方式已切换为 ${method}。`, 'success');
+        const applyBoardDimension = (input) => {
+            const size = Number.parseInt(input.value, 10);
+            if (Number.isNaN(size)) {
+                input.value = config.boardCssSize;
+                return;
+            }
+            const nextSize = Math.min(900, Math.max(240, size));
+            if (nextSize !== size) {
+                input.value = nextSize;
+            }
+            if (nextSize === config.boardCssSize) {
+                return;
+            }
+            config.boardCssSize = nextSize;
+            resizeCanvas();
+            setStatus(`棋盘尺寸已调整为 ${nextSize}px。`, 'success');
+        };
+
+        // 监听键盘事件，只允许上下箭头键调整尺寸
+        ui.boardDimensionInput.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                const currentSize = Number.parseInt(e.target.value, 10) || config.boardCssSize;
+                const step = 10;
+                let newSize;
+
+                if (e.key === 'ArrowUp') {
+                    newSize = Math.min(900, currentSize + step);
+                } else {
+                    newSize = Math.max(240, currentSize - step);
+                }
+
+                if (newSize !== currentSize) {
+                    e.target.value = newSize;
+                    applyBoardDimension(e.target);
+                }
             }
         });
 
-        ui.showLibertiesCheck.addEventListener('change', (e) => {
-            state.showLiberties = e.target.checked;
-            draw();
-            updateBeginnerOptionsStatus();
+        // 监听上下按钮点击
+        ui.boardDimensionUp.addEventListener('click', () => {
+            const currentSize = Number.parseInt(ui.boardDimensionInput.value, 10) || config.boardCssSize;
+            const step = 10;
+            const newSize = Math.min(900, currentSize + step);
+            if (newSize !== currentSize) {
+                ui.boardDimensionInput.value = newSize;
+                applyBoardDimension(ui.boardDimensionInput);
+            }
         });
 
-        ui.showConnectionsCheck.addEventListener('change', (e) => {
-            state.showConnections = e.target.checked;
-            draw();
-            updateBeginnerOptionsStatus();
+        ui.boardDimensionDown.addEventListener('click', () => {
+            const currentSize = Number.parseInt(ui.boardDimensionInput.value, 10) || config.boardCssSize;
+            const step = 10;
+            const newSize = Math.max(240, currentSize - step);
+            if (newSize !== currentSize) {
+                ui.boardDimensionInput.value = newSize;
+                applyBoardDimension(ui.boardDimensionInput);
+            }
         });
 
-        ui.showInfluenceCheck.addEventListener('change', (e) => {
-            state.showInfluence = e.target.checked;
+        ui.boardStyleSelect.addEventListener('change', (e) => {
+            const style = e.target.value;
+            if (!boardStyleLabel[style]) {
+                return;
+            }
+            config.boardStyle = style;
             draw();
-            updateBeginnerOptionsStatus();
+            setStatus(`棋盘样式已切换为 ${boardStyleLabel[style]}。`, 'success');
         });
 
-        ui.showEyesCheck.addEventListener('change', (e) => {
-            state.showEyes = e.target.checked;
-            draw();
-            updateBeginnerOptionsStatus();
+        ui.scoringMethodSelect.addEventListener('change', (e) => {
+            const method = e.target.value;
+            if (!scoringLabel[method]) {
+                e.target.value = config.scoringMethod;
+                return;
+            }
+            config.scoringMethod = method;
+
+            // 更新提示信息
+            let ruleDesc = '';
+            if (method === 'chinese') {
+                ruleDesc = '中国规则计算：领地 + 棋盘上的棋子 + 贴目';
+            } else if (method === 'aga') {
+                ruleDesc = 'AGA 规则计算：领地 + 提子 + 棋盘上的棋子 + 贴目';
+            } else {
+                ruleDesc = '日韩规则计算：领地 + 提子 + 贴目';
+            }
+
+            if (state.gameOver) {
+                const score = calculateScore();
+                const winner = score.black > score.white ? '黑胜' : score.black < score.white ? '白胜' : '平局';
+                setStatus(`计分方式已切换为 ${getRuleLabel(method)}，重新结算：黑 ${score.black.toFixed(1)} / 白 ${score.white.toFixed(1)}，${winner}。`, 'success');
+                ui.tipText.textContent = getScoreSummary(score);
+            } else {
+                setStatus(`计分方式已切换为 ${getRuleLabel(method)}。`, 'success');
+                ui.tipText.textContent = `${ruleDesc}，当前贴目为 ${config.komi.toFixed(1)} 目。`;
+            }
+        });
+
+        ui.komiSelect.addEventListener('change', (e) => {
+            const komi = Number.parseFloat(e.target.value);
+            if (Number.isNaN(komi)) {
+                e.target.value = config.komi;
+                return;
+            }
+            config.komi = komi;
+
+            // 根据规则提供相应的说明
+            let ruleDesc = '';
+            if (config.scoringMethod === 'chinese') {
+                ruleDesc = '中国规则计算：领地 + 棋盘上的棋子 + 贴目';
+            } else if (config.scoringMethod === 'aga') {
+                ruleDesc = 'AGA 规则计算：领地 + 提子 + 棋盘上的棋子 + 贴目';
+            } else {
+                ruleDesc = '日韩规则计算：领地 + 提子 + 贴目';
+            }
+
+            if (state.gameOver) {
+                const score = calculateScore();
+                const winner = score.black > score.white ? '黑胜' : score.black < score.white ? '白胜' : '平局';
+                setStatus(`贴目已调整为 ${komi.toFixed(1)} 目，重新结算：黑 ${score.black.toFixed(1)} / 白 ${score.white.toFixed(1)}，${winner}。`, 'success');
+                ui.tipText.textContent = getScoreSummary(score);
+            } else {
+                setStatus(`贴目已调整为 ${komi.toFixed(1)} 目。`, 'success');
+                ui.tipText.textContent = `${ruleDesc}，当前贴目为 ${komi.toFixed(1)} 目，用于补偿黑方先手优势。`;
+            }
+        });
+
+        ui.koRuleSelect.addEventListener('change', (e) => {
+            const rule = e.target.value;
+            if (rule !== 'simple' && rule !== 'super') {
+                e.target.value = config.koRule;
+                return;
+            }
+            config.koRule = rule;
+            if (rule === 'super') {
+                setStatus('劫规则已切换为超级劫：禁止重现任何先前的棋盘局面。', 'success');
+                ui.tipText.textContent = '超级劫规则更严格，防止所有类型的循环局面，适合正式比赛。';
+            } else {
+                setStatus('劫规则已切换为简单劫：禁止立即重新提回刚被提的棋子。', 'success');
+                ui.tipText.textContent = '简单劫规则允许复杂的劫争，是最常用的劫规则。';
+            }
+        });
+
+        ui.playerColorSelect.addEventListener('change', (e) => {
+            const color = e.target.value;
+            if (color !== 'black' && color !== 'white') {
+                e.target.value = config.playerColor;
+                return;
+            }
+            if (color === config.playerColor) {
+                return;
+            }
+            config.playerColor = color;
+            applyPlayerColor();
+            startNewGame();
+        });
+
+        [
+            { element: ui.showLibertiesCheck, key: 'showLiberties' },
+            { element: ui.showConnectionsCheck, key: 'showConnections' },
+            { element: ui.showInfluenceCheck, key: 'showInfluence' },
+            { element: ui.showEyesCheck, key: 'showEyes' },
+            { element: ui.showHandAnimationCheck, key: 'showHandAnimation' }
+        ].forEach(({ element, key }) => {
+            element.addEventListener('change', (e) => {
+                state[key] = e.target.checked;
+                const isHandToggle = key === 'showHandAnimation';
+                if (key === 'showHandAnimation' && !state.showHandAnimation) {
+                    state.handAnimation = null;
+                    state.pendingMove = null;
+                    if (state.current === state.ai && !state.gameOver) {
+                        scheduleAiMove();
+                    }
+                }
+                draw();
+                if (isHandToggle) {
+                    setStatus(`手部动画已${state.showHandAnimation ? '开启' : '关闭'}。`, 'success');
+                } else {
+                    updateBeginnerOptionsStatus();
+                }
+            });
         });
     }
 
@@ -155,26 +380,23 @@
         let timer = null;
         let lastIsMobile = window.innerWidth <= 768;
 
+        const scheduleResize = () => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+            timer = setTimeout(resizeCanvas, 150);
+        };
+
         window.addEventListener('resize', () => {
             const isMobile = window.innerWidth <= 768;
 
             // 只在跨越移动端/桌面端阈值时才重新渲染
             if (isMobile !== lastIsMobile) {
                 lastIsMobile = isMobile;
-                if (timer) {
-                    clearTimeout(timer);
-                }
-                timer = setTimeout(() => {
-                    resizeCanvas();
-                }, 150);
+                scheduleResize();
             } else if (isMobile) {
                 // 移动端仍然响应窗口变化
-                if (timer) {
-                    clearTimeout(timer);
-                }
-                timer = setTimeout(() => {
-                    resizeCanvas();
-                }, 150);
+                scheduleResize();
             }
         });
     }
@@ -184,10 +406,53 @@
         ui.aiHint.textContent = `AI 难度：${label}`;
     }
 
+    function applyPlayerColor() {
+        if (config.playerColor === 'white') {
+            state.human = 2;
+            state.ai = 1;
+        } else {
+            state.human = 1;
+            state.ai = 2;
+        }
+        if (ui.blackLabel && ui.whiteLabel) {
+            ui.blackLabel.textContent = state.human === 1 ? '黑方（玩家）' : '黑方（AI）';
+            ui.whiteLabel.textContent = state.human === 2 ? '白方（玩家）' : '白方（AI）';
+        }
+        if (state.board.length === config.size) {
+            updateUI();
+        }
+    }
+
+    function getRuleLabel(method) {
+        return scoringLabel[method] || '规则';
+    }
+
+    function usesAreaScoring(method) {
+        return method === 'chinese' || method === 'aga';
+    }
+
+    function getScoreSummary(score) {
+        const ruleLabel = getRuleLabel(config.scoringMethod);
+        const komiText = config.komi.toFixed(1);
+
+        if (config.scoringMethod === 'chinese') {
+            // 中国规则：领地 + 棋盘上的棋子 + 贴目
+            return `${ruleLabel}：黑领地 ${score.territory[1]} + 黑子 ${score.stones[1]} = ${score.black.toFixed(1)}，白领地 ${score.territory[2]} + 白子 ${score.stones[2]} + 贴目 ${komiText} = ${score.white.toFixed(1)}。`;
+        } else if (config.scoringMethod === 'aga') {
+            // AGA规则：领地 + 提子 + 棋盘上的棋子 + 贴目
+            return `${ruleLabel}：黑领地 ${score.territory[1]} + 黑子 ${score.stones[1]} + 黑提子 ${state.captures[1]} = ${score.black.toFixed(1)}，白领地 ${score.territory[2]} + 白子 ${score.stones[2]} + 白提子 ${state.captures[2]} + 贴目 ${komiText} = ${score.white.toFixed(1)}。`;
+        } else {
+            // 日韩规则：领地 + 提子 + 贴目
+            return `${ruleLabel}：黑领地 ${score.territory[1]} + 黑提子 ${state.captures[1]} = ${score.black.toFixed(1)}，白领地 ${score.territory[2]} + 白提子 ${state.captures[2]} + 贴目 ${komiText} = ${score.white.toFixed(1)}。`;
+        }
+    }
+
     function startNewGame() {
         state.turnId += 1;
+        clearAiTimer();
         state.board = createBoard(config.size);
-        state.current = state.human;
+        state.positionKeys = new Set([boardKey(state.board)]);
+        state.current = 1;
         state.captures = { 1: 0, 2: 0 };
         state.koPoint = null;
         state.passCount = 0;
@@ -197,8 +462,25 @@
         state.busy = false;
         state.history = [];
         state.hintUsed = 0;
-        setStatus('新对局开始，玩家执黑先行。', 'success');
-        ui.tipText.textContent = '开局建议先占角，再向边与中央扩展。AI 会根据难度进行不同强度的落子选择。';
+        state.handAnimation = null;
+        state.pendingMove = null;
+        setStatus(`新对局开始，黑方先行，玩家执${state.human === 1 ? '黑' : '白'}。`, 'success');
+
+        // 根据规则提供相应的说明
+        let ruleDesc = '';
+        if (config.scoringMethod === 'chinese') {
+            ruleDesc = '中国规则：领地 + 棋盘上的棋子 + 贴目';
+        } else if (config.scoringMethod === 'aga') {
+            ruleDesc = 'AGA 规则：领地 + 提子 + 棋盘上的棋子 + 贴目';
+        } else {
+            ruleDesc = '日韩规则：领地 + 提子 + 贴目';
+        }
+        ui.tipText.textContent = `开局建议先占角，再向边与中央扩展。AI 会根据难度进行不同强度的落子选择。当前采用${ruleDesc}，贴目 ${config.komi.toFixed(1)} 目。`;
+        if (state.current === state.ai) {
+            setStatus('AI 思考中...', 'success');
+            scheduleAiMove();
+        }
+
         updateUI();
         draw();
     }
@@ -211,6 +493,29 @@
         return board.map(row => row.slice());
     }
 
+    function boardKey(board) {
+        return board.map(row => row.join('')).join('|');
+    }
+
+    function rebuildPositionKeys() {
+        const keys = new Set();
+        keys.add(boardKey(state.board));
+        state.history.forEach(snapshot => {
+            keys.add(boardKey(snapshot.board));
+        });
+        state.positionKeys = keys;
+    }
+
+    function isSuperkoViolation(board) {
+        if (config.koRule !== 'super') {
+            return false;
+        }
+        if (!state.positionKeys) {
+            return false;
+        }
+        return state.positionKeys.has(boardKey(board));
+    }
+
     function onBoardClick(event) {
         if (state.gameOver || state.busy || state.current !== state.human) {
             return;
@@ -219,27 +524,78 @@
         if (!point) {
             return;
         }
-        const move = simulateMove(state.board, point.x, point.y, state.human, state.koPoint);
-        if (!move) {
-            setStatus('该位置无法落子，请尝试其他位置。', 'error');
+
+        // 如果点击位置已有棋子，显示该棋子组的信息
+        if (state.board[point.y][point.x] !== 0) {
+            const color = state.board[point.y][point.x];
+            const group = getGroup(state.board, point.x, point.y);
+            const colorName = color === 1 ? '黑棋' : '白棋';
+            const liberties = group.liberties.size;
+            let statusDesc = '';
+            if (liberties === 1) {
+                statusDesc = '（叫吃状态，危险！）';
+            } else if (liberties === 2) {
+                statusDesc = '（气数较少，需要补强）';
+            } else if (liberties >= 4) {
+                statusDesc = '（气数充足，相对安全）';
+            }
+            setStatus(`该位置已有${colorName}，该组共 ${group.stones.length} 子，剩余 ${liberties} 气${statusDesc}`, 'error');
             return;
         }
+
+        // 检查劫规则
+        if (state.koPoint && state.koPoint.x === point.x && state.koPoint.y === point.y) {
+            setStatus('劫规则限制：不能立即重新提回刚被提的棋子，请先在其他位置落子。', 'error');
+            return;
+        }
+
+        // 模拟走法
+        const move = simulateMove(state.board, point.x, point.y, state.human, state.koPoint);
+        if (!move) {
+            if (isSuicideMove(state.board, point.x, point.y, state.human)) {
+                setStatus('禁止自杀性走法：该位置会导致己方棋子没有气，且无法提掉对方棋子。', 'error');
+            } else if (config.koRule === 'super') {
+                setStatus('超级劫规则限制：该走法会重现之前的棋盘局面，请选择其他位置。', 'error');
+            } else {
+                setStatus('该位置无法落子，请尝试其他位置。', 'error');
+            }
+            return;
+        }
+
         applyMove(move, state.human);
         setStatus('AI 思考中...', 'success');
         scheduleAiMove();
     }
 
     function scheduleAiMove() {
+        clearAiTimer();
         state.busy = true;
         const turnId = state.turnId;
-        setTimeout(() => {
+        const baseDelay = 420;
+        const remainingAnimation = state.handAnimation
+            ? Math.max(state.handAnimation.duration - (Date.now() - state.handAnimation.startTime), 0)
+            : 0;
+        const delay = Math.max(baseDelay, remainingAnimation);
+        const timerId = setTimeout(() => {
+            if (state.aiTimer !== timerId) {
+                return;
+            }
+            state.aiTimer = null;
             if (state.turnId !== turnId || state.gameOver) {
                 state.busy = false;
                 return;
             }
             aiMove();
             state.busy = false;
-        }, 420);
+        }, delay);
+        state.aiTimer = timerId;
+    }
+
+    function clearAiTimer() {
+        if (state.aiTimer) {
+            clearTimeout(state.aiTimer);
+            state.aiTimer = null;
+        }
     }
 
     function handlePass(color) {
@@ -252,16 +608,29 @@
         saveSnapshot();
         state.passCount += 1;
         state.moveCount += 1;
-        state.lastMove = { pass: true, color };
+        state.lastMove = {
+            pass: true,
+            color: color,
+            captured: 0
+        };
         state.koPoint = null;
         const playerName = color === state.human ? '玩家' : 'AI';
-        setStatus(`${playerName} 停一手。`, 'success');
+
+        if (state.passCount === 1) {
+            setStatus(`${playerName} 停一手。`, 'success');
+            ui.tipText.textContent = `${playerName}选择停一手。如果对方也停一手，对局将自动结束并进行计分。`;
+        } else {
+            setStatus(`${playerName} 停一手，双方连续停一手。`, 'success');
+        }
+
         updateUI();
         draw();
+
         if (state.passCount >= 2) {
             endGame();
             return;
         }
+
         switchPlayer();
         if (state.current === state.ai) {
             setStatus('AI 思考中...', 'success');
@@ -274,19 +643,71 @@
     function applyMove(move, color) {
         saveSnapshot();
         state.board = move.board;
-        state.captures[color] += move.captured.length;
+        if (!state.positionKeys) {
+            state.positionKeys = new Set();
+        }
+        state.positionKeys.add(boardKey(state.board));
+
+        const capturedCount = move.captured.length;
+        state.captures[color] += capturedCount;
         state.koPoint = move.koPoint;
-        state.lastMove = { x: move.x, y: move.y, color };
         state.moveCount += 1;
         state.passCount = 0;
+
+        // 保存落子信息，用于动画
+        state.pendingMove = {
+            x: move.x,
+            y: move.y,
+            color: color,
+            startTime: Date.now()
+        };
+
+        // 立即设置最后一步信息，但延迟显示棋子
+        state.lastMove = {
+            x: move.x,
+            y: move.y,
+            color: color,
+            captured: capturedCount
+        };
+
+        // 启动落子动画，无法播放时立即刷新棋盘
+        if (!startHandAnimation(move.x, move.y, color)) {
+            draw();
+        }
+
+        // 如果提了子，在状态栏显示提示
+        if (capturedCount > 0) {
+            const playerName = color === state.human ? '玩家' : 'AI';
+            const coord = formatCoord(move.x, move.y);
+            setStatus(`${playerName} 在 ${coord} 落子，提掉 ${capturedCount} 子。`, 'success');
+        }
+
         updateUI();
-        draw();
         switchPlayer();
     }
 
     function switchPlayer() {
         state.current = state.current === 1 ? 2 : 1;
         updateUI();
+
+        // 如果切换到玩家回合，检查双方的危险状态
+        if (state.current === state.human && !state.gameOver) {
+            checkBoardStatus();
+        }
+    }
+
+    function checkBoardStatus() {
+        // 检查双方的叫吃状态
+        const humanAtari = countGroupsInAtari(state.board, state.human);
+        const aiAtari = countGroupsInAtari(state.board, state.ai);
+
+        if (humanAtari > 0 && aiAtari > 0) {
+            ui.tipText.textContent = `注意：您有 ${humanAtari} 组棋子处于叫吃状态（只剩 1 气），对方也有 ${aiAtari} 组处于叫吃状态。`;
+        } else if (humanAtari > 0) {
+            ui.tipText.textContent = `警告：您有 ${humanAtari} 组棋子处于叫吃状态（只剩 1 气），请立即补强或转移！`;
+        } else if (aiAtari > 0) {
+            ui.tipText.textContent = `机会：对方有 ${aiAtari} 组棋子处于叫吃状态（只剩 1 气），可以考虑提子。`;
+        }
     }
 
     function aiMove() {
@@ -304,7 +725,14 @@
             return;
         }
         applyMove(move, state.ai);
-        setStatus('轮到玩家落子。', 'success');
+
+        // AI 落子后的提示
+        if (move.captured && move.captured.length > 0) {
+            // AI 提了子，显示在状态栏
+            setStatus('轮到玩家落子。', 'success');
+        } else {
+            setStatus('轮到玩家落子。', 'success');
+        }
     }
 
     function chooseAiMove(moves) {
@@ -393,6 +821,32 @@
         return moves;
     }
 
+    function isSuicideMove(board, x, y, color) {
+        // 检查是否为自杀性走法
+        if (board[y][x] !== 0) {
+            return false;
+        }
+        const next = cloneBoard(board);
+        next[y][x] = color;
+        const opponent = color === 1 ? 2 : 1;
+
+        // 先检查是否能提掉对方棋子
+        const neighbors = getNeighbors(x, y, config.size);
+        for (const n of neighbors) {
+            if (next[n.y][n.x] === opponent) {
+                const group = getGroup(next, n.x, n.y);
+                if (group.liberties.size === 0) {
+                    // 能提掉对方棋子，不是自杀
+                    return false;
+                }
+            }
+        }
+
+        // 检查己方棋子是否有气
+        const selfGroup = getGroup(next, x, y);
+        return selfGroup.liberties.size === 0;
+    }
+
     function simulateMove(board, x, y, color, koPoint) {
         if (board[y][x] !== 0) {
             return null;
@@ -426,6 +880,10 @@
 
         const selfGroup = getGroup(next, x, y);
         if (selfGroup.liberties.size === 0) {
+            return null;
+        }
+
+        if (isSuperkoViolation(next)) {
             return null;
         }
 
@@ -519,17 +977,57 @@
     }
 
     function updateUI() {
-        ui.blackCaptures.textContent = state.captures[1];
-        ui.whiteCaptures.textContent = state.captures[2];
         ui.currentPlayer.textContent = state.current === 1 ? '黑' : '白';
         ui.moveCount.textContent = `步数 ${state.moveCount}`;
         if (!state.lastMove) {
             ui.lastMove.textContent = '-';
+        } else if (state.lastMove.resign) {
+            ui.lastMove.textContent = `${state.lastMove.color === 1 ? '黑' : '白'} 认输`;
         } else if (state.lastMove.pass) {
             ui.lastMove.textContent = `${state.lastMove.color === 1 ? '黑' : '白'} 停一手`;
         } else {
-            ui.lastMove.textContent = formatCoord(state.lastMove.x, state.lastMove.y);
+            const coord = formatCoord(state.lastMove.x, state.lastMove.y);
+            if (state.lastMove.captured && state.lastMove.captured > 0) {
+                ui.lastMove.textContent = `${coord} (提${state.lastMove.captured})`;
+            } else {
+                ui.lastMove.textContent = coord;
+            }
         }
+
+        // 更新实时记分牌
+        updateScoreboard();
+    }
+
+    function updateScoreboard() {
+        // 计算实时得分
+        const score = calculateScore();
+
+        // 更新黑方记分牌
+        ui.blackScore.textContent = score.black.toFixed(1);
+
+        // 更新白方记分牌
+        ui.whiteScore.textContent = score.white.toFixed(1);
+
+        // 根据规则显示详细信息
+        let blackDetailText = '';
+        let whiteDetailText = '';
+
+        if (config.scoringMethod === 'chinese') {
+            // 中国规则：领地 + 棋子
+            blackDetailText = `领地 ${score.territory[1]} | 棋子 ${score.stones[1]}`;
+            whiteDetailText = `领地 ${score.territory[2]} | 棋子 ${score.stones[2]} | 贴目 ${config.komi.toFixed(1)}`;
+        } else if (config.scoringMethod === 'aga') {
+            // AGA规则：领地 + 提子 + 棋子
+            blackDetailText = `领地 ${score.territory[1]} | 提子 ${state.captures[1]} | 棋子 ${score.stones[1]}`;
+            whiteDetailText = `领地 ${score.territory[2]} | 提子 ${state.captures[2]} | 棋子 ${score.stones[2]} | 贴目 ${config.komi.toFixed(1)}`;
+        } else {
+            // 日韩规则：领地 + 提子
+            blackDetailText = `领地 ${score.territory[1]} | 提子 ${state.captures[1]}`;
+            whiteDetailText = `领地 ${score.territory[2]} | 提子 ${state.captures[2]} | 贴目 ${config.komi.toFixed(1)}`;
+        }
+
+        ui.blackDetail.textContent = blackDetailText;
+        ui.whiteDetail.textContent = whiteDetailText;
     }
 
     function setStatus(text, type) {
@@ -549,9 +1047,40 @@
         state.gameOver = true;
         const score = calculateScore();
         const winner = score.black > score.white ? '黑胜' : score.black < score.white ? '白胜' : '平局';
-        setStatus(`终局：黑 ${score.black.toFixed(1)} / 白 ${score.white.toFixed(1)}，${winner}。`, 'success');
-        ui.tipText.textContent = `终局统计：黑领地 ${score.territory[1]}，白领地 ${score.territory[2]}，黑提子 ${state.captures[1]}，白提子 ${state.captures[2]}。`;
+        const diff = Math.abs(score.black - score.white);
+        setStatus(`终局：黑 ${score.black.toFixed(1)} 目 / 白 ${score.white.toFixed(1)} 目，${winner}（${diff.toFixed(1)} 目差距）。`, 'success');
+
+        // 生成详细的终局统计
+        let summary = getScoreSummary(score);
+        summary += `\n\n对局统计：总步数 ${state.moveCount} 步`;
+        if (state.captures[1] > 0 || state.captures[2] > 0) {
+            summary += `，黑方共提 ${state.captures[1]} 子，白方共提 ${state.captures[2]} 子`;
+        }
+        summary += '。';
+
+        ui.tipText.textContent = summary;
         updateUI();
+    }
+
+    function resignGame() {
+        if (state.gameOver) {
+            return;
+        }
+        state.turnId += 1;
+        clearAiTimer();
+        state.busy = false;
+        state.handAnimation = null;
+        state.pendingMove = null;
+        state.gameOver = true;
+        state.lastMove = {
+            resign: true,
+            color: state.human,
+            captured: 0
+        };
+        setStatus('玩家认输，AI 获胜。', 'success');
+        ui.tipText.textContent = `对局已结束。玩家可以在明显落后或无法挽回的局面下选择认输。感谢对弈！`;
+        updateUI();
+        draw();
     }
 
     function getHint() {
@@ -575,7 +1104,30 @@
         const bestMove = pickBestMove(moves, state.human);
         state.hintUsed += 1;
         const coord = formatCoord(bestMove.x, bestMove.y);
-        ui.tipText.textContent = `推荐落子位置：${coord}（已用 ${state.hintUsed}/${state.hintLimit} 次提示）`;
+
+        // 分析该走法的特点
+        let moveDesc = '';
+        if (bestMove.captured && bestMove.captured.length > 0) {
+            moveDesc = `可提掉对方 ${bestMove.captured.length} 子`;
+        } else {
+            const group = getGroup(bestMove.board, bestMove.x, bestMove.y);
+            const liberties = group.liberties.size;
+            if (liberties === 1) {
+                moveDesc = `落子后只有 1 气，注意防守`;
+            } else if (liberties >= 4) {
+                moveDesc = `落子后有 ${liberties} 气，位置较安全`;
+            } else {
+                moveDesc = `落子后有 ${liberties} 气`;
+            }
+
+            // 检查是否能攻击对方
+            const oppAtari = countGroupsInAtari(bestMove.board, state.ai);
+            if (oppAtari > 0) {
+                moveDesc += `，可威胁对方 ${oppAtari} 组`;
+            }
+        }
+
+        ui.tipText.textContent = `推荐落子位置：${coord}（${moveDesc}）。已用 ${state.hintUsed}/${state.hintLimit} 次提示。`;
         setStatus(`获得提示：建议在 ${coord} 位落子。`, 'success');
         highlightHintPosition(bestMove.x, bestMove.y);
         setTimeout(() => {
@@ -614,7 +1166,10 @@
             koPoint: state.koPoint ? { x: state.koPoint.x, y: state.koPoint.y } : null,
             passCount: state.passCount,
             moveCount: state.moveCount,
-            lastMove: state.lastMove ? { ...state.lastMove } : null,
+            lastMove: state.lastMove ? {
+                ...state.lastMove,
+                captured: state.lastMove.captured || 0
+            } : null,
             gameOver: state.gameOver
         });
     }
@@ -626,7 +1181,10 @@
         state.koPoint = snapshot.koPoint ? { x: snapshot.koPoint.x, y: snapshot.koPoint.y } : null;
         state.passCount = snapshot.passCount;
         state.moveCount = snapshot.moveCount;
-        state.lastMove = snapshot.lastMove ? { ...snapshot.lastMove } : null;
+        state.lastMove = snapshot.lastMove ? {
+            ...snapshot.lastMove,
+            captured: snapshot.lastMove.captured || 0
+        } : null;
         state.gameOver = snapshot.gameOver;
     }
 
@@ -636,7 +1194,10 @@
             return;
         }
         state.turnId += 1;
+        clearAiTimer();
         state.busy = false;
+        state.handAnimation = null;
+        state.pendingMove = null;
         let steps = 1;
         if (state.lastMove && state.lastMove.color === state.ai && state.history.length >= 2) {
             steps = 2;
@@ -653,6 +1214,7 @@
             return;
         }
         restoreSnapshot(snapshot);
+        rebuildPositionKeys();
         updateUI();
         draw();
         if (state.current === state.human) {
@@ -689,12 +1251,18 @@
         }
 
         let blackScore, whiteScore;
-        if (config.scoringMethod === 'territory') {
+        if (config.scoringMethod === 'chinese') {
+            // 中国规则：领地 + 棋盘上的棋子 + 贴目
+            blackScore = territory[1] + stones[1];
+            whiteScore = territory[2] + stones[2] + config.komi;
+        } else if (config.scoringMethod === 'aga') {
+            // AGA规则：领地 + 提子 + 棋盘上的棋子 + 贴目
+            blackScore = territory[1] + stones[1] + state.captures[1];
+            whiteScore = territory[2] + stones[2] + state.captures[2] + config.komi;
+        } else {
+            // 日韩规则：领地 + 提子 + 贴目
             blackScore = territory[1] + state.captures[1];
             whiteScore = territory[2] + state.captures[2] + config.komi;
-        } else {
-            blackScore = stones[1] + state.captures[1];
-            whiteScore = stones[2] + state.captures[2] + config.komi;
         }
 
         return {
@@ -732,21 +1300,28 @@
 
     function resizeCanvas() {
         const container = canvas.parentElement;
-        const maxSize = 560;
+        const targetSize = config.boardCssSize || 560;
 
-        // 在移动设备上使用容器宽度，桌面端使用固定尺寸
+        // 在移动设备上使用容器宽度，桌面端使用用户设置的尺寸
         let cssSize;
         if (window.innerWidth <= 768) {
-            const available = container ? container.clientWidth - 32 : maxSize;
-            cssSize = Math.max(260, Math.min(maxSize, available));
+            const frame = container ? container.parentElement : null;
+            const frameWidth = frame ? frame.clientWidth : (container ? container.clientWidth : targetSize);
+            const available = frameWidth ? frameWidth - 32 : targetSize;
+            cssSize = Math.max(220, Math.min(targetSize, available));
         } else {
-            cssSize = maxSize;
+            // 桌面端直接使用用户设置的尺寸，不受容器宽度限制
+            cssSize = targetSize;
         }
 
         const dpr = window.devicePixelRatio || 1;
 
-        canvas.style.width = `${cssSize}px`;
-        canvas.style.height = `${cssSize}px`;
+        if (container) {
+            container.style.width = `${cssSize}px`;
+            container.style.height = `${cssSize}px`;
+        }
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
         canvas.width = Math.floor(cssSize * dpr);
         canvas.height = Math.floor(cssSize * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -755,7 +1330,8 @@
         render = {
             size: cssSize,
             pad,
-            cell: (cssSize - pad * 2) / (config.size - 1)
+            cell: (cssSize - pad * 2) / (config.size - 1),
+            handImage: render.handImage  // 保留已加载的SVG手部图像
         };
 
         draw();
@@ -763,8 +1339,9 @@
 
     function getPointFromEvent(event) {
         const rect = canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
+        const scale = rect.width ? render.size / rect.width : 1;
+        const x = (event.clientX - rect.left) * scale;
+        const y = (event.clientY - rect.top) * scale;
         const col = Math.round((x - render.pad) / render.cell);
         const row = Math.round((y - render.pad) / render.cell);
         if (col < 0 || col >= config.size || row < 0 || row >= config.size) {
@@ -773,6 +1350,7 @@
         const ix = render.pad + col * render.cell;
         const iy = render.pad + row * render.cell;
         const dist = Math.hypot(ix - x, iy - y);
+        // 以交叉点中心为原点，半径为格子大小的 0.45
         if (dist > render.cell * 0.45) {
             return null;
         }
@@ -798,6 +1376,9 @@
             drawLiberties();
         }
         drawLastMove();
+        if (state.handAnimation) {
+            drawHandAnimation();
+        }
     }
 
     function drawBoard() {
@@ -805,14 +1386,15 @@
         const pad = render.pad;
         const cell = render.cell;
 
-        const gradient = ctx.createLinearGradient(0, 0, size, size);
-        gradient.addColorStop(0, '#d9b47d');
-        gradient.addColorStop(1, '#caa06a');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, size, size);
+        drawBoardBackground(size);
 
-        ctx.strokeStyle = 'rgba(20, 20, 20, 0.6)';
-        ctx.lineWidth = 1;
+        // 绘制网格线，添加阴影效果
+        ctx.strokeStyle = 'rgba(20, 20, 20, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+        ctx.shadowBlur = 1;
+        ctx.shadowOffsetX = 0.5;
+        ctx.shadowOffsetY = 0.5;
 
         for (let i = 0; i < config.size; i += 1) {
             const pos = pad + i * cell;
@@ -827,15 +1409,252 @@
             ctx.stroke();
         }
 
+        // 重置阴影
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+
+        // 绘制星位，添加立体感
         const starPoints = getStarPoints(config.size);
-        ctx.fillStyle = 'rgba(20, 20, 20, 0.8)';
         starPoints.forEach(point => {
             const cx = pad + point.x * cell;
             const cy = pad + point.y * cell;
+            const radius = Math.max(3, cell * 0.14);
+
+            // 绘制星位阴影
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.beginPath();
-            ctx.arc(cx, cy, Math.max(2.5, cell * 0.12), 0, Math.PI * 2);
+            ctx.arc(cx + 1, cy + 1, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 绘制星位主体
+            const gradient = ctx.createRadialGradient(
+                cx - radius * 0.3,
+                cy - radius * 0.3,
+                radius * 0.1,
+                cx,
+                cy,
+                radius
+            );
+            gradient.addColorStop(0, 'rgba(40, 40, 40, 0.9)');
+            gradient.addColorStop(1, 'rgba(10, 10, 10, 1)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
         });
+    }
+
+    function drawBoardBackground(size) {
+        const style = boardStyleLabel[config.boardStyle] ? config.boardStyle : 'hiba';
+        const gradient = ctx.createLinearGradient(0, 0, size, size);
+
+        if (style === 'bamboo') {
+            gradient.addColorStop(0, '#ddb97f');
+            gradient.addColorStop(0.5, '#c9a25f');
+            gradient.addColorStop(1, '#b89050');
+        } else if (style === 'whitePorcelain') {
+            gradient.addColorStop(0, '#fafaf8');
+            gradient.addColorStop(1, '#e8e8e4');
+        } else if (style === 'celadon') {
+            gradient.addColorStop(0, '#d8e8dd');
+            gradient.addColorStop(1, '#bcd0c2');
+        } else if (style === 'marble') {
+            gradient.addColorStop(0, '#f5f5f5');
+            gradient.addColorStop(0.5, '#e8e8e8');
+            gradient.addColorStop(1, '#d8d8d8');
+        } else if (style === 'brocade') {
+            gradient.addColorStop(0, '#d0a070');
+            gradient.addColorStop(0.5, '#b88f58');
+            gradient.addColorStop(1, '#a07848');
+        } else if (style === 'acrylic') {
+            gradient.addColorStop(0, '#e8f2ff');
+            gradient.addColorStop(1, '#d0ddec');
+        } else {
+            // 桧木棋盘 - 更丰富的木纹色彩
+            gradient.addColorStop(0, '#d4a574');
+            gradient.addColorStop(0.3, '#c69860');
+            gradient.addColorStop(0.7, '#b88850');
+            gradient.addColorStop(1, '#a87840');
+        }
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, size, size);
+
+        // 添加纹理效果
+        if (style === 'hiba') {
+            // 桧木纹理 - 更细腻的木纹
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+            ctx.lineWidth = 1.5;
+            const lines = 12;
+            for (let i = 0; i < lines; i += 1) {
+                const y = ((i + 1) / (lines + 1)) * size;
+                const amplitude = size * 0.015;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                for (let x = 0; x <= size; x += size / 20) {
+                    const wave = Math.sin(x / size * Math.PI * 4 + i) * amplitude;
+                    ctx.lineTo(x, y + wave);
+                }
+                ctx.stroke();
+            }
+
+            // 添加年轮效果
+            ctx.strokeStyle = 'rgba(120, 80, 40, 0.08)';
+            ctx.lineWidth = 2;
+            for (let i = 0; i < 8; i += 1) {
+                const y = ((i + 1) / 9) * size;
+                const amplitude = size * 0.02;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                for (let x = 0; x <= size; x += size / 15) {
+                    const wave = Math.sin(x / size * Math.PI * 3 + i * 0.5) * amplitude;
+                    ctx.lineTo(x, y + wave);
+                }
+                ctx.stroke();
+            }
+        } else if (style === 'bamboo') {
+            // 竹制纹理 - 竹节效果
+            const segmentHeight = size / 6;
+            for (let i = 0; i < 6; i += 1) {
+                const y = i * segmentHeight;
+                // 竹节
+                ctx.fillStyle = `rgba(80, 60, 30, ${0.08 + Math.random() * 0.04})`;
+                ctx.fillRect(0, y - 2, size, 4);
+
+                // 竹纹
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                ctx.lineWidth = 0.5;
+                for (let j = 0; j < 3; j += 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y + segmentHeight * (j + 1) / 4);
+                    ctx.lineTo(size, y + segmentHeight * (j + 1) / 4);
+                    ctx.stroke();
+                }
+            }
+        } else if (style === 'whitePorcelain' || style === 'celadon') {
+            // 瓷器光泽效果
+            const gloss = ctx.createRadialGradient(
+                size * 0.3,
+                size * 0.25,
+                size * 0.1,
+                size * 0.3,
+                size * 0.25,
+                size * 0.9
+            );
+            gloss.addColorStop(0, 'rgba(255, 255, 255, 0.85)');
+            gloss.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
+            gloss.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = gloss;
+            ctx.fillRect(0, 0, size, size);
+
+            // 细微的釉面纹理
+            ctx.strokeStyle = style === 'celadon'
+                ? 'rgba(100, 140, 110, 0.12)'
+                : 'rgba(200, 200, 200, 0.15)';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i < 8; i += 1) {
+                const angle = (Math.PI * 2 * i) / 8;
+                const cx = size * 0.5;
+                const cy = size * 0.5;
+                const r1 = size * 0.2;
+                const r2 = size * 0.7;
+                ctx.beginPath();
+                ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
+                ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
+                ctx.stroke();
+            }
+        } else if (style === 'marble') {
+            // 大理石纹理 - 更自然的大理石纹路
+            ctx.strokeStyle = 'rgba(120, 120, 120, 0.15)';
+            ctx.lineWidth = 1;
+            const waves = 8;
+            for (let i = 0; i < waves; i += 1) {
+                ctx.beginPath();
+                const startY = size * (0.1 + i * 0.11);
+                ctx.moveTo(0, startY);
+                for (let x = 0; x <= size; x += size / 30) {
+                    const phase = (x / size) * Math.PI * 3;
+                    const y = startY + Math.sin(phase + i * 0.7) * size * 0.03;
+                    ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+
+            // 大理石的斑点
+            ctx.fillStyle = 'rgba(100, 100, 100, 0.08)';
+            for (let i = 0; i < 15; i += 1) {
+                const x = Math.random() * size;
+                const y = Math.random() * size;
+                const r = Math.random() * size * 0.02 + size * 0.01;
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        } else if (style === 'brocade') {
+            // 织锦纹理 - 经纬纹理
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 1;
+            const step = size / 16;
+            // 经线
+            for (let x = 0; x <= size; x += step) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, size);
+                ctx.stroke();
+            }
+            // 纬线
+            ctx.strokeStyle = 'rgba(80, 50, 30, 0.12)';
+            for (let y = 0; y <= size; y += step) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(size, y);
+                ctx.stroke();
+            }
+
+            // 织锦花纹
+            ctx.fillStyle = 'rgba(200, 150, 100, 0.08)';
+            const patternSize = size / 8;
+            for (let i = 0; i < 8; i += 1) {
+                for (let j = 0; j < 8; j += 1) {
+                    if ((i + j) % 2 === 0) {
+                        ctx.fillRect(i * patternSize, j * patternSize, patternSize * 0.5, patternSize * 0.5);
+                    }
+                }
+            }
+        } else if (style === 'acrylic') {
+            // 亚克力透明感
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 1.5;
+            const step = size / 10;
+            for (let i = 1; i < 10; i += 1) {
+                const pos = i * step;
+                // 垂直线
+                ctx.beginPath();
+                ctx.moveTo(pos, 0);
+                ctx.lineTo(pos, size);
+                ctx.stroke();
+                // 水平线
+                ctx.beginPath();
+                ctx.moveTo(0, pos);
+                ctx.lineTo(size, pos);
+                ctx.stroke();
+            }
+
+            // 亚克力光晕
+            const highlight = ctx.createRadialGradient(
+                size * 0.2,
+                size * 0.2,
+                size * 0.1,
+                size * 0.2,
+                size * 0.2,
+                size * 0.6
+            );
+            highlight.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+            highlight.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.fillStyle = highlight;
+            ctx.fillRect(0, 0, size, size);
+        }
     }
 
     function drawInfluence() {
@@ -964,44 +1783,93 @@
                 if (!value) {
                     continue;
                 }
+
+                // 如果这是最后落下的棋子且手部动画还在进行中且进度 < 0.4，则隐藏它
+                if (state.handAnimation && state.lastMove &&
+                    x === state.lastMove.x && y === state.lastMove.y &&
+                    state.handAnimation.progress < 0.4) {
+                    continue;
+                }
+
                 const cx = pad + x * cell;
                 const cy = pad + y * cell;
                 const isDanger = dangerGroups.has(`${x},${y}`);
 
+                // 先绘制棋子阴影
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+                ctx.shadowBlur = radius * 0.3;
+                ctx.shadowOffsetX = radius * 0.15;
+                ctx.shadowOffsetY = radius * 0.15;
+
+                ctx.fillStyle = value === 1 ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.2)';
+                ctx.beginPath();
+                ctx.arc(cx + radius * 0.1, cy + radius * 0.1, radius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 重置阴影
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+
                 // 绘制棋子主体
                 const gradient = ctx.createRadialGradient(
-                    cx - radius * 0.35,
-                    cy - radius * 0.35,
-                    radius * 0.2,
+                    cx - radius * 0.4,
+                    cy - radius * 0.4,
+                    radius * 0.15,
                     cx,
                     cy,
                     radius
                 );
                 if (value === 1) {
-                    gradient.addColorStop(0, '#555');
-                    gradient.addColorStop(1, '#0b0b0b');
+                    gradient.addColorStop(0, '#666');
+                    gradient.addColorStop(0.4, '#333');
+                    gradient.addColorStop(1, '#0a0a0a');
                 } else {
                     gradient.addColorStop(0, '#ffffff');
-                    gradient.addColorStop(1, '#d6d6d6');
+                    gradient.addColorStop(0.6, '#f0f0f0');
+                    gradient.addColorStop(1, '#d0d0d0');
                 }
                 ctx.fillStyle = gradient;
                 ctx.beginPath();
                 ctx.arc(cx, cy, radius, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
-                ctx.lineWidth = 1;
+
+                // 棋子边缘高光
+                if (value === 2) {
+                    const highlight = ctx.createRadialGradient(
+                        cx - radius * 0.5,
+                        cy - radius * 0.5,
+                        0,
+                        cx - radius * 0.5,
+                        cy - radius * 0.5,
+                        radius * 0.6
+                    );
+                    highlight.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+                    highlight.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                    ctx.fillStyle = highlight;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // 棋子外边框
+                ctx.strokeStyle = value === 1 ? 'rgba(0, 0, 0, 0.5)' : 'rgba(150, 150, 150, 0.4)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
                 ctx.stroke();
 
                 // 如果处于危险状态（叫吃），绘制红色警告边框
                 if (isDanger) {
-                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
-                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.9)';
+                    ctx.lineWidth = 3.5;
                     ctx.beginPath();
                     ctx.arc(cx, cy, radius + 4, 0, Math.PI * 2);
                     ctx.stroke();
 
                     // 添加内侧的红色光晕
-                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
                     ctx.lineWidth = 2;
                     ctx.beginPath();
                     ctx.arc(cx, cy, radius + 7, 0, Math.PI * 2);
@@ -1035,10 +1903,10 @@
                     visited.add(key1);
 
                     connections.push({
-                        x1: x,
-                        y1: y,
-                        x2: neighbor.x,
-                        y2: neighbor.y,
+                        sx: pad + x * cell,
+                        sy: pad + y * cell,
+                        ex: pad + neighbor.x * cell,
+                        ey: pad + neighbor.y * cell,
                         color: value
                     });
                 }
@@ -1047,37 +1915,27 @@
 
         // 先绘制所有边框（立体效果）
         connections.forEach(conn => {
-            const cx1 = pad + conn.x1 * cell;
-            const cy1 = pad + conn.y1 * cell;
-            const cx2 = pad + conn.x2 * cell;
-            const cy2 = pad + conn.y2 * cell;
-
             ctx.strokeStyle = conn.color === 1
                 ? 'rgba(0, 0, 0, 0.25)'
                 : 'rgba(100, 100, 100, 0.35)';
             ctx.lineWidth = lineWidth + 3;
             ctx.lineCap = 'round';
             ctx.beginPath();
-            ctx.moveTo(cx1, cy1);
-            ctx.lineTo(cx2, cy2);
+            ctx.moveTo(conn.sx, conn.sy);
+            ctx.lineTo(conn.ex, conn.ey);
             ctx.stroke();
         });
 
         // 再绘制所有主体连接线
         connections.forEach(conn => {
-            const cx1 = pad + conn.x1 * cell;
-            const cy1 = pad + conn.y1 * cell;
-            const cx2 = pad + conn.x2 * cell;
-            const cy2 = pad + conn.y2 * cell;
-
             ctx.strokeStyle = conn.color === 1
                 ? 'rgba(30, 30, 30, 0.6)'
                 : 'rgba(230, 230, 230, 0.7)';
             ctx.lineWidth = lineWidth;
             ctx.lineCap = 'round';
             ctx.beginPath();
-            ctx.moveTo(cx1, cy1);
-            ctx.lineTo(cx2, cy2);
+            ctx.moveTo(conn.sx, conn.sy);
+            ctx.lineTo(conn.ex, conn.ey);
             ctx.stroke();
         });
     }
@@ -1318,43 +2176,171 @@
         const radius = cell * 0.18;
         const cx = pad + state.lastMove.x * cell;
         const cy = pad + state.lastMove.y * cell;
+
+        // 只绘制一个简洁的标记圆圈
         ctx.strokeStyle = state.lastMove.color === 1 ? '#f2f2f2' : '#111';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, Math.PI * 2);
         ctx.stroke();
     }
 
     function getStarPoints(size) {
-        if (size === 9) {
-            return [
-                { x: 2, y: 2 },
-                { x: 2, y: 6 },
-                { x: 6, y: 2 },
-                { x: 6, y: 6 },
-                { x: 4, y: 4 }
-            ];
+        if (size < 7 || size % 2 === 0) {
+            return [];
         }
-        if (size === 13) {
-            return [
-                { x: 3, y: 3 },
-                { x: 3, y: 9 },
-                { x: 9, y: 3 },
-                { x: 9, y: 9 },
-                { x: 6, y: 6 }
-            ];
+        const center = Math.floor(size / 2);
+        const cornerDistance = size >= 13 ? 3 : 2;
+        const low = cornerDistance;
+        const high = size - 1 - cornerDistance;
+        if (low >= high) {
+            return [];
         }
-        return [
-            { x: 3, y: 3 },
-            { x: 3, y: 9 },
-            { x: 3, y: 15 },
-            { x: 9, y: 3 },
-            { x: 9, y: 9 },
-            { x: 9, y: 15 },
-            { x: 15, y: 3 },
-            { x: 15, y: 9 },
-            { x: 15, y: 15 }
+        const points = [
+            { x: low, y: low },
+            { x: low, y: high },
+            { x: high, y: low },
+            { x: high, y: high },
+            { x: center, y: center }
         ];
+        if (size >= 15) {
+            points.push(
+                { x: low, y: center },
+                { x: high, y: center },
+                { x: center, y: low },
+                { x: center, y: high }
+            );
+        }
+        return points;
+    }
+
+    function startHandAnimation(x, y, color) {
+        if (!state.showHandAnimation || !render.handImage) {
+            return false; // SVG图像未加载完成或禁用动画
+        }
+
+        const pad = render.pad;
+        const cell = render.cell;
+        const targetX = pad + x * cell;
+        const targetY = pad + y * cell;
+
+        // 黑棋从底部边缘进入（玩家坐在下方）
+        // 白棋从顶部边缘进入（AI坐在上方）
+        const isBlack = color === 1;
+
+        state.handAnimation = {
+            targetX: targetX,
+            targetY: targetY,
+            color: color,
+            isBlack: isBlack,
+            progress: 0,
+            duration: 1800, // 动画持续时间，放慢速度
+            startTime: Date.now()
+        };
+
+        animateHand();
+        return true;
+    }
+
+    function animateHand() {
+        if (!state.handAnimation) return;
+
+        const elapsed = Date.now() - state.handAnimation.startTime;
+        state.handAnimation.progress = Math.min(elapsed / state.handAnimation.duration, 1);
+
+        draw();
+
+        if (state.handAnimation.progress < 1) {
+            requestAnimationFrame(animateHand);
+        } else {
+            // 动画结束，清除相关状态
+            state.handAnimation = null;
+            state.pendingMove = null;
+            draw();
+        }
+    }
+
+    function drawHandAnimation() {
+        if (!state.handAnimation || !render.handImage) return;
+
+        const anim = state.handAnimation;
+        const progress = anim.progress;
+        const isBlack = anim.isBlack;
+
+        // 简单的三阶段动画
+        // 阶段1 (0-0.4): 从边缘移入到目标位置
+        // 阶段2 (0.4-0.6): 停留在目标位置
+        // 阶段3 (0.6-1.0): 移出到边缘
+
+        let currentX, currentY, alpha, scale;
+
+        const edgeY = isBlack ? render.size - render.cell * 0.2 : -render.cell * 0.2;
+
+        // 根据棋盘大小调整手部大小：9路最大，13路中等，19路最小
+        let handSizeMultiplier;
+        if (config.size === 9) {
+            handSizeMultiplier = 1.20;
+        } else if (config.size === 13) {
+            handSizeMultiplier = 1.10;
+        } else {
+            handSizeMultiplier = 1.05;
+        }
+        const handSize = render.cell * handSizeMultiplier;
+        const imageWidth = render.handImage.naturalWidth || render.handImage.width || 1;
+        const imageHeight = render.handImage.naturalHeight || render.handImage.height || 1;
+        const imageRatio = imageWidth / imageHeight;
+        const drawWidth = imageRatio >= 1 ? handSize : handSize * imageRatio;
+        const drawHeight = imageRatio >= 1 ? handSize / imageRatio : handSize;
+
+        if (progress < 0.4) {
+            // 阶段1: 移入
+            const t = easeInOutCubic(progress / 0.4);
+            currentX = anim.targetX;
+            currentY = edgeY + (anim.targetY - edgeY) * t;
+            alpha = Math.min(progress / 0.1, 1);
+            scale = 0.8 + 0.2 * t;
+        } else if (progress < 0.6) {
+            // 阶段2: 停留
+            currentX = anim.targetX;
+            currentY = anim.targetY;
+            alpha = 1;
+            scale = 1;
+        } else {
+            // 阶段3: 移出
+            const t = easeInOutCubic((progress - 0.6) / 0.4);
+            currentX = anim.targetX;
+            currentY = anim.targetY + (edgeY - anim.targetY) * t;
+            alpha = Math.max(1 - (progress - 0.8) / 0.2, 0);
+            scale = 1 - 0.2 * t;
+        }
+
+        // 绘制手部SVG图像
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.translate(currentX, currentY);
+
+        // 白棋从上方来，旋转180度
+        if (!isBlack) {
+            ctx.rotate(Math.PI);
+        }
+
+        ctx.scale(scale, scale);
+
+        // 绘制手部图像，居中显示
+        ctx.drawImage(
+            render.handImage,
+            -drawWidth / 2,
+            -drawHeight / 2,
+            drawWidth,
+            drawHeight
+        );
+
+        ctx.restore();
+    }
+
+
+    function easeInOutCubic(t) {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     }
 
     init();
