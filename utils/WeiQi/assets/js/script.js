@@ -558,7 +558,21 @@
         if (!window.Peer) {
             return null;
         }
+        
+        // 1. 基础配置
         const options = buildPeerOptions(serverConfig);
+        
+        // 2. 【核心修改】强制添加 ICE 服务器配置
+        options.config = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' }
+            ]
+        };
+
+        console.log('正在创建 Peer 实例，使用配置:', options); // 添加日志
+
         if (peerId) {
             return new window.Peer(peerId, options);
         }
