@@ -724,11 +724,13 @@
     }
 
     function connectToHost(role) {
+        console.log('发起连接请求: ', state.roomId); // 1. 确认发起了连接
         const conn = state.peer.connect(state.roomId, { reliable: true });
         state.hostConnection = conn;
         registerConnection(conn, { role: 'host' });
 
         conn.on('open', () => {
+            console.log('✅ P2P 通道已打通！'); // 2. 只有看到这句话，才算真的连上了
             sendPeerMessage(conn, {
                 type: 'hello',
                 role: role,
@@ -736,6 +738,10 @@
             });
             updateRoomStatus(`已连接对方 ID ${state.roomId}，等待确认...`);
         });
+        
+        // 新增：监听错误和关闭
+        conn.on('error', (err) => console.error('❌ 连接错误:', err));
+        conn.on('close', () => console.warn('⚠️ 连接被关闭'));
 
         conn.on('error', err => {
             setStatus('对方 ID 不存在或连接失败。', 'error');
