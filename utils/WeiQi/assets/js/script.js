@@ -18,9 +18,13 @@
         undoBtn: document.getElementById('undoBtn'),
         passBtn: document.getElementById('passBtn'),
         hintBtn: document.getElementById('hintBtn'),
-        difficultyInputs: document.querySelectorAll('input[name="difficulty"]'),
-        boardSizeInputs: document.querySelectorAll('input[name="boardSize"]'),
-        scoringMethodInputs: document.querySelectorAll('input[name="scoringMethod"]')
+        difficultySelect: document.getElementById('difficultySelect'),
+        boardSizeSelect: document.getElementById('boardSizeSelect'),
+        scoringMethodSelect: document.getElementById('scoringMethodSelect'),
+        showLibertiesCheck: document.getElementById('showLibertiesCheck'),
+        showConnectionsCheck: document.getElementById('showConnectionsCheck'),
+        showInfluenceCheck: document.getElementById('showInfluenceCheck'),
+        showEyesCheck: document.getElementById('showEyesCheck')
     };
 
     const config = {
@@ -45,7 +49,11 @@
         turnId: 0,
         history: [],
         hintUsed: 0,
-        hintLimit: 3
+        hintLimit: 3,
+        showLiberties: false,
+        showConnections: false,
+        showInfluence: false,
+        showEyes: false
     };
 
     const difficultyLabel = {
@@ -74,49 +82,100 @@
         ui.undoBtn.addEventListener('click', undoMove);
         ui.passBtn.addEventListener('click', () => handlePass(state.human));
         ui.hintBtn.addEventListener('click', getHint);
-        ui.difficultyInputs.forEach(input => {
-            input.addEventListener('change', () => {
-                state.difficulty = input.value;
-                updateDifficultyUI();
-            });
+
+        ui.difficultySelect.addEventListener('change', (e) => {
+            state.difficulty = e.target.value;
+            updateDifficultyUI();
         });
-        ui.boardSizeInputs.forEach(input => {
-            input.addEventListener('change', () => {
-                const size = Number.parseInt(input.value, 10);
-                if (Number.isNaN(size)) {
-                    return;
-                }
-                config.size = size;
-                startNewGame();
-                resizeCanvas();
-                setStatus(`棋盘已切换为 ${size} 路，新对局开始。`, 'success');
-            });
+
+        ui.boardSizeSelect.addEventListener('change', (e) => {
+            const size = Number.parseInt(e.target.value, 10);
+            if (Number.isNaN(size)) {
+                return;
+            }
+            config.size = size;
+            startNewGame();
+            resizeCanvas();
+            setStatus(`棋盘已切换为 ${size} 路，新对局开始。`, 'success');
         });
-        ui.scoringMethodInputs.forEach(input => {
-            input.addEventListener('change', () => {
-                config.scoringMethod = input.value;
-                if (state.gameOver) {
-                    const score = calculateScore();
-                    const winner = score.black > score.white ? '黑胜' : score.black < score.white ? '白胜' : '平局';
-                    setStatus(`计分方式已切换，重新结算：黑 ${score.black.toFixed(1)} / 白 ${score.white.toFixed(1)}，${winner}。`, 'success');
-                    ui.tipText.textContent = `${config.scoringMethod === 'territory' ? '数目法' : '数子法'}：黑领地 ${score.territory[1]}，白领地 ${score.territory[2]}，黑提子 ${state.captures[1]}，白提子 ${state.captures[2]}。`;
-                } else {
-                    const method = config.scoringMethod === 'territory' ? '数目法' : '数子法';
-                    setStatus(`计分方式已切换为 ${method}。`, 'success');
-                }
-            });
+
+        ui.scoringMethodSelect.addEventListener('change', (e) => {
+            config.scoringMethod = e.target.value;
+            if (state.gameOver) {
+                const score = calculateScore();
+                const winner = score.black > score.white ? '黑胜' : score.black < score.white ? '白胜' : '平局';
+                setStatus(`计分方式已切换，重新结算：黑 ${score.black.toFixed(1)} / 白 ${score.white.toFixed(1)}，${winner}。`, 'success');
+                ui.tipText.textContent = `${config.scoringMethod === 'territory' ? '数目法' : '数子法'}：黑领地 ${score.territory[1]}，白领地 ${score.territory[2]}，黑提子 ${state.captures[1]}，白提子 ${state.captures[2]}。`;
+            } else {
+                const method = config.scoringMethod === 'territory' ? '数目法' : '数子法';
+                setStatus(`计分方式已切换为 ${method}。`, 'success');
+            }
         });
+
+        ui.showLibertiesCheck.addEventListener('change', (e) => {
+            state.showLiberties = e.target.checked;
+            draw();
+            updateBeginnerOptionsStatus();
+        });
+
+        ui.showConnectionsCheck.addEventListener('change', (e) => {
+            state.showConnections = e.target.checked;
+            draw();
+            updateBeginnerOptionsStatus();
+        });
+
+        ui.showInfluenceCheck.addEventListener('change', (e) => {
+            state.showInfluence = e.target.checked;
+            draw();
+            updateBeginnerOptionsStatus();
+        });
+
+        ui.showEyesCheck.addEventListener('change', (e) => {
+            state.showEyes = e.target.checked;
+            draw();
+            updateBeginnerOptionsStatus();
+        });
+    }
+
+    function updateBeginnerOptionsStatus() {
+        const features = [];
+        if (state.showLiberties) features.push('展示气');
+        if (state.showConnections) features.push('展示连接');
+        if (state.showInfluence) features.push('局势分析');
+        if (state.showEyes) features.push('展示眼位');
+
+        if (features.length === 0) {
+            setStatus('新手辅助功能已全部关闭。', 'success');
+        } else {
+            setStatus(`已开启：${features.join('、')}。`, 'success');
+        }
     }
 
     function setupResizeListener() {
         let timer = null;
+        let lastIsMobile = window.innerWidth <= 768;
+
         window.addEventListener('resize', () => {
-            if (timer) {
-                clearTimeout(timer);
+            const isMobile = window.innerWidth <= 768;
+
+            // 只在跨越移动端/桌面端阈值时才重新渲染
+            if (isMobile !== lastIsMobile) {
+                lastIsMobile = isMobile;
+                if (timer) {
+                    clearTimeout(timer);
+                }
+                timer = setTimeout(() => {
+                    resizeCanvas();
+                }, 150);
+            } else if (isMobile) {
+                // 移动端仍然响应窗口变化
+                if (timer) {
+                    clearTimeout(timer);
+                }
+                timer = setTimeout(() => {
+                    resizeCanvas();
+                }, 150);
             }
-            timer = setTimeout(() => {
-                resizeCanvas();
-            }, 150);
         });
     }
 
@@ -393,6 +452,21 @@
         return neighbors;
     }
 
+    function getAllNeighbors(x, y, size) {
+        const neighbors = [];
+        // 上下左右
+        if (x > 0) neighbors.push({ x: x - 1, y });
+        if (x < size - 1) neighbors.push({ x: x + 1, y });
+        if (y > 0) neighbors.push({ x, y: y - 1 });
+        if (y < size - 1) neighbors.push({ x, y: y + 1 });
+        // 斜向
+        if (x > 0 && y > 0) neighbors.push({ x: x - 1, y: y - 1 });
+        if (x < size - 1 && y > 0) neighbors.push({ x: x + 1, y: y - 1 });
+        if (x > 0 && y < size - 1) neighbors.push({ x: x - 1, y: y + 1 });
+        if (x < size - 1 && y < size - 1) neighbors.push({ x: x + 1, y: y + 1 });
+        return neighbors;
+    }
+
     function getGroup(board, x, y) {
         const color = board[y][x];
         const stack = [{ x, y }];
@@ -659,8 +733,16 @@
     function resizeCanvas() {
         const container = canvas.parentElement;
         const maxSize = 560;
-        const available = container ? container.clientWidth - 16 : maxSize;
-        const cssSize = Math.max(260, Math.min(maxSize, available));
+
+        // 在移动设备上使用容器宽度，桌面端使用固定尺寸
+        let cssSize;
+        if (window.innerWidth <= 768) {
+            const available = container ? container.clientWidth - 32 : maxSize;
+            cssSize = Math.max(260, Math.min(maxSize, available));
+        } else {
+            cssSize = maxSize;
+        }
+
         const dpr = window.devicePixelRatio || 1;
 
         canvas.style.width = `${cssSize}px`;
@@ -702,7 +784,19 @@
             return;
         }
         drawBoard();
+        if (state.showInfluence) {
+            drawInfluence();
+        }
+        if (state.showConnections) {
+            drawConnections();
+        }
         drawStones();
+        if (state.showEyes) {
+            drawEyes();
+        }
+        if (state.showLiberties) {
+            drawLiberties();
+        }
         drawLastMove();
     }
 
@@ -744,10 +838,125 @@
         });
     }
 
+    function drawInfluence() {
+        const pad = render.pad;
+        const cell = render.cell;
+
+        // 收集所有棋子位置和它们所属的组
+        const blackStones = [];
+        const whiteStones = [];
+        const groupInfluence = new Map(); // 存储每个组的强度（基于气数）
+
+        const visited = new Set();
+        for (let y = 0; y < config.size; y += 1) {
+            for (let x = 0; x < config.size; x += 1) {
+                const value = state.board[y][x];
+                if (value === 0) continue;
+
+                const key = `${x},${y}`;
+                if (visited.has(key)) continue;
+
+                const group = getGroup(state.board, x, y);
+                group.stones.forEach(stone => visited.add(`${stone.x},${stone.y}`));
+
+                // 计算组的强度：气越多，影响力越强
+                const strength = Math.min(group.liberties.size / 8, 1); // 最多8气为满强度
+
+                group.stones.forEach(stone => {
+                    if (value === 1) {
+                        blackStones.push({ x: stone.x, y: stone.y, strength });
+                    } else {
+                        whiteStones.push({ x: stone.x, y: stone.y, strength });
+                    }
+                });
+            }
+        }
+
+        // 如果棋盘上没有棋子，不显示势力
+        if (blackStones.length === 0 && whiteStones.length === 0) {
+            return;
+        }
+
+        // 计算每个空点的势力
+        for (let y = 0; y < config.size; y += 1) {
+            for (let x = 0; x < config.size; x += 1) {
+                if (state.board[y][x] !== 0) continue;
+
+                // 计算黑白双方的总影响力
+                let blackInfluence = 0;
+                let whiteInfluence = 0;
+
+                blackStones.forEach(stone => {
+                    const dist = Math.abs(x - stone.x) + Math.abs(y - stone.y);
+                    if (dist <= 5) {
+                        // 距离越近影响力越大，组的强度也会影响
+                        const influence = stone.strength * (1 - dist / 6);
+                        blackInfluence += influence;
+                    }
+                });
+
+                whiteStones.forEach(stone => {
+                    const dist = Math.abs(x - stone.x) + Math.abs(y - stone.y);
+                    if (dist <= 5) {
+                        const influence = stone.strength * (1 - dist / 6);
+                        whiteInfluence += influence;
+                    }
+                });
+
+                const cx = pad + x * cell;
+                const cy = pad + y * cell;
+                const rectSize = cell * 0.88;
+
+                // 根据双方影响力差异决定颜色
+                const totalInfluence = blackInfluence + whiteInfluence;
+                if (totalInfluence < 0.1) continue; // 影响力太小，不显示
+
+                if (blackInfluence > whiteInfluence * 1.3) {
+                    // 黑方优势区
+                    const alpha = Math.min(blackInfluence / totalInfluence * 0.4, 0.4);
+                    ctx.fillStyle = `rgba(50, 50, 50, ${alpha})`;
+                    ctx.fillRect(cx - rectSize / 2, cy - rectSize / 2, rectSize, rectSize);
+                } else if (whiteInfluence > blackInfluence * 1.3) {
+                    // 白方优势区
+                    const alpha = Math.min(whiteInfluence / totalInfluence * 0.45, 0.45);
+                    ctx.fillStyle = `rgba(245, 245, 245, ${alpha})`;
+                    ctx.fillRect(cx - rectSize / 2, cy - rectSize / 2, rectSize, rectSize);
+                } else if (totalInfluence > 0.2) {
+                    // 争夺区（双方势力接近）
+                    const alpha = Math.min(totalInfluence * 0.15, 0.15);
+                    ctx.fillStyle = `rgba(180, 150, 100, ${alpha})`;
+                    ctx.fillRect(cx - rectSize / 2, cy - rectSize / 2, rectSize, rectSize);
+                }
+            }
+        }
+    }
+
     function drawStones() {
         const pad = render.pad;
         const cell = render.cell;
         const radius = cell * 0.45;
+
+        // 计算每个棋子组的气数（用于危险状态检测）
+        const dangerGroups = new Set();
+        if (state.showConnections) {
+            const visited = new Set();
+            for (let y = 0; y < config.size; y += 1) {
+                for (let x = 0; x < config.size; x += 1) {
+                    const value = state.board[y][x];
+                    if (value === 0) continue;
+                    const key = `${x},${y}`;
+                    if (visited.has(key)) continue;
+
+                    const group = getGroup(state.board, x, y);
+                    group.stones.forEach(stone => visited.add(`${stone.x},${stone.y}`));
+
+                    // 如果这个组只有1气，标记为危险
+                    if (group.liberties.size === 1) {
+                        group.stones.forEach(stone => dangerGroups.add(`${stone.x},${stone.y}`));
+                    }
+                }
+            }
+        }
 
         for (let y = 0; y < config.size; y += 1) {
             for (let x = 0; x < config.size; x += 1) {
@@ -757,6 +966,9 @@
                 }
                 const cx = pad + x * cell;
                 const cy = pad + y * cell;
+                const isDanger = dangerGroups.has(`${x},${y}`);
+
+                // 绘制棋子主体
                 const gradient = ctx.createRadialGradient(
                     cx - radius * 0.35,
                     cy - radius * 0.35,
@@ -779,7 +991,321 @@
                 ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
                 ctx.lineWidth = 1;
                 ctx.stroke();
+
+                // 如果处于危险状态（叫吃），绘制红色警告边框
+                if (isDanger) {
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.8)';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, radius + 4, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    // 添加内侧的红色光晕
+                    ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, radius + 7, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
             }
+        }
+    }
+
+    function drawConnections() {
+        const pad = render.pad;
+        const cell = render.cell;
+        const lineWidth = cell * 0.25;
+        const visited = new Set();
+        const connections = [];
+
+        // 收集所有连接（只包括上下左右）
+        for (let y = 0; y < config.size; y += 1) {
+            for (let x = 0; x < config.size; x += 1) {
+                const value = state.board[y][x];
+                if (value === 0) continue;
+
+                const neighbors = getNeighbors(x, y, config.size);
+                for (const neighbor of neighbors) {
+                    if (state.board[neighbor.y][neighbor.x] !== value) continue;
+
+                    // 避免重复绘制同一条连接
+                    const key1 = `${x},${y}-${neighbor.x},${neighbor.y}`;
+                    const key2 = `${neighbor.x},${neighbor.y}-${x},${y}`;
+                    if (visited.has(key1) || visited.has(key2)) continue;
+                    visited.add(key1);
+
+                    connections.push({
+                        x1: x,
+                        y1: y,
+                        x2: neighbor.x,
+                        y2: neighbor.y,
+                        color: value
+                    });
+                }
+            }
+        }
+
+        // 先绘制所有边框（立体效果）
+        connections.forEach(conn => {
+            const cx1 = pad + conn.x1 * cell;
+            const cy1 = pad + conn.y1 * cell;
+            const cx2 = pad + conn.x2 * cell;
+            const cy2 = pad + conn.y2 * cell;
+
+            ctx.strokeStyle = conn.color === 1
+                ? 'rgba(0, 0, 0, 0.25)'
+                : 'rgba(100, 100, 100, 0.35)';
+            ctx.lineWidth = lineWidth + 3;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(cx1, cy1);
+            ctx.lineTo(cx2, cy2);
+            ctx.stroke();
+        });
+
+        // 再绘制所有主体连接线
+        connections.forEach(conn => {
+            const cx1 = pad + conn.x1 * cell;
+            const cy1 = pad + conn.y1 * cell;
+            const cx2 = pad + conn.x2 * cell;
+            const cy2 = pad + conn.y2 * cell;
+
+            ctx.strokeStyle = conn.color === 1
+                ? 'rgba(30, 30, 30, 0.6)'
+                : 'rgba(230, 230, 230, 0.7)';
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(cx1, cy1);
+            ctx.lineTo(cx2, cy2);
+            ctx.stroke();
+        });
+    }
+
+    function drawLiberties() {
+        const pad = render.pad;
+        const cell = render.cell;
+        const visited = new Set();
+        const libertiesMap = new Map();
+
+        // 收集所有棋子组的气
+        for (let y = 0; y < config.size; y += 1) {
+            for (let x = 0; x < config.size; x += 1) {
+                const value = state.board[y][x];
+                if (value === 0) {
+                    continue;
+                }
+                const key = `${x},${y}`;
+                if (visited.has(key)) {
+                    continue;
+                }
+
+                const group = getGroup(state.board, x, y);
+                group.stones.forEach(stone => visited.add(`${stone.x},${stone.y}`));
+
+                // 记录每个气属于哪个颜色的棋子组
+                group.liberties.forEach(libertyKey => {
+                    if (!libertiesMap.has(libertyKey)) {
+                        libertiesMap.set(libertyKey, new Set());
+                    }
+                    libertiesMap.get(libertyKey).add(value);
+                });
+            }
+        }
+
+        // 绘制气的标记
+        libertiesMap.forEach((colors, libertyKey) => {
+            const [lx, ly] = libertyKey.split(',').map(Number);
+            const cx = pad + lx * cell;
+            const cy = pad + ly * cell;
+            const radius = cell * 0.15;
+
+            // 如果这个点同时是黑白两方的气，绘制混合标记
+            if (colors.size === 2) {
+                // 绘制左半黑色，右半白色
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.clip();
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+                ctx.fillRect(cx - radius, cy - radius, radius, radius * 2);
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.fillRect(cx, cy - radius, radius, radius * 2);
+
+                ctx.restore();
+
+                ctx.strokeStyle = 'rgba(128, 128, 128, 0.6)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                // 单一颜色的气
+                const color = [...colors][0];
+                if (color === 1) {
+                    // 黑棋的气用半透明黑色
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+                } else {
+                    // 白棋的气用半透明白色
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                    ctx.strokeStyle = 'rgba(80, 80, 80, 0.5)';
+                }
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        });
+    }
+
+    function drawEyes() {
+        const pad = render.pad;
+        const cell = render.cell;
+        const eyes = findEyes();
+
+        eyes.forEach(eye => {
+            const cx = pad + eye.x * cell;
+            const cy = pad + eye.y * cell;
+            const radius = cell * 0.2;
+
+            if (eye.isReal) {
+                // 真眼（活眼）- 实心圆，带光晕
+                if (eye.color === 1) {
+                    // 黑方的活眼
+                    ctx.fillStyle = 'rgba(0, 150, 0, 0.7)';
+                    ctx.strokeStyle = 'rgba(0, 200, 0, 0.8)';
+                } else {
+                    // 白方的活眼
+                    ctx.fillStyle = 'rgba(0, 180, 0, 0.7)';
+                    ctx.strokeStyle = 'rgba(0, 220, 0, 0.9)';
+                }
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 外层光晕
+                ctx.strokeStyle = 'rgba(0, 255, 0, 0.4)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius + 4, 0, Math.PI * 2);
+                ctx.stroke();
+            } else {
+                // 假眼（死眼）- 空心圆带叉
+                if (eye.color === 1) {
+                    ctx.strokeStyle = 'rgba(200, 0, 0, 0.7)';
+                } else {
+                    ctx.strokeStyle = 'rgba(220, 0, 0, 0.8)';
+                }
+
+                // 外圆
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // 叉号
+                ctx.lineWidth = 2;
+                const crossSize = radius * 0.6;
+                ctx.beginPath();
+                ctx.moveTo(cx - crossSize, cy - crossSize);
+                ctx.lineTo(cx + crossSize, cy + crossSize);
+                ctx.moveTo(cx + crossSize, cy - crossSize);
+                ctx.lineTo(cx - crossSize, cy + crossSize);
+                ctx.stroke();
+            }
+        });
+    }
+
+    function findEyes() {
+        const eyes = [];
+
+        for (let y = 0; y < config.size; y += 1) {
+            for (let x = 0; x < config.size; x += 1) {
+                // 只检查空点
+                if (state.board[y][x] !== 0) continue;
+
+                // 检查是否是眼位
+                const eyeInfo = checkEye(x, y);
+                if (eyeInfo) {
+                    eyes.push({ x, y, color: eyeInfo.color, isReal: eyeInfo.isReal });
+                }
+            }
+        }
+
+        return eyes;
+    }
+
+    function checkEye(x, y) {
+        // 获取上下左右的邻居
+        const neighbors = getNeighbors(x, y, config.size);
+        if (neighbors.length === 0) return null;
+
+        // 检查所有邻居是否都是同一颜色
+        const firstColor = state.board[neighbors[0].y][neighbors[0].x];
+        if (firstColor === 0) return null;
+
+        for (const neighbor of neighbors) {
+            const color = state.board[neighbor.y][neighbor.x];
+            if (color !== firstColor) {
+                return null; // 邻居颜色不一致，不是眼
+            }
+        }
+
+        // 这是一个潜在的眼位，现在判断是真眼还是假眼
+        const isReal = isRealEye(x, y, firstColor);
+
+        return { color: firstColor, isReal };
+    }
+
+    function isRealEye(x, y, color) {
+        // 获取斜向的四个角点
+        const diagonals = [];
+        if (x > 0 && y > 0) diagonals.push({ x: x - 1, y: y - 1 });
+        if (x < config.size - 1 && y > 0) diagonals.push({ x: x + 1, y: y - 1 });
+        if (x > 0 && y < config.size - 1) diagonals.push({ x: x - 1, y: y + 1 });
+        if (x < config.size - 1 && y < config.size - 1) diagonals.push({ x: x + 1, y: y + 1 });
+
+        const opponent = color === 1 ? 2 : 1;
+        let opponentCorners = 0;
+        let adjacentOpponentCorners = [];
+
+        diagonals.forEach(diag => {
+            if (state.board[diag.y][diag.x] === opponent) {
+                opponentCorners += 1;
+                adjacentOpponentCorners.push(diag);
+            }
+        });
+
+        // 判断真假眼的规则：
+        // - 在角上（2个斜角）：不能有对方棋子
+        // - 在边上（3个斜角）：最多1个对方棋子
+        // - 在中央（4个斜角）：最多2个对方棋子，且必须在对角位置（不相邻）
+
+        if (diagonals.length === 2) {
+            // 在角上
+            return opponentCorners === 0;
+        } else if (diagonals.length === 3) {
+            // 在边上
+            return opponentCorners <= 1;
+        } else {
+            // 在中央（4个斜角）
+            if (opponentCorners > 2) {
+                return false;
+            }
+            if (opponentCorners === 2) {
+                // 检查两个对方棋子是否在对角位置（不相邻）
+                const [c1, c2] = adjacentOpponentCorners;
+                // 对角位置：x坐标和y坐标都相差2
+                const isDiagonal = Math.abs(c1.x - c2.x) === 2 && Math.abs(c1.y - c2.y) === 2;
+                return isDiagonal; // 对角位置是真眼，相邻位置是假眼
+            }
+            return true;
         }
     }
 

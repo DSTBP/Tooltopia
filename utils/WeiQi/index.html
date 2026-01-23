@@ -11,56 +11,182 @@
     <title>围棋对弈 - Tooltopia</title>
     <link rel="stylesheet" href="./assets/css/style.css">
     <style>
-        .setup-grid {
+        .game-layout {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: 240px 1fr 300px;
             gap: 24px;
+            align-items: flex-start;
             margin-bottom: 24px;
         }
 
-        .setup-group h3 {
-            margin: 0 0 12px 0;
-            font-size: 0.95rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            opacity: 0.8;
+        .settings-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
-        .setup-group .delimiter-options {
+        .settings-group {
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
 
-        .game-layout {
+        .settings-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+            margin-bottom: 4px;
+        }
+
+        .settings-group.beginner-section {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 16px;
+            margin-top: 8px;
+        }
+
+        body.day-mode .settings-group.beginner-section {
+            border-top-color: rgba(0, 0, 0, 0.15);
+        }
+
+        .settings-group .beginner-label {
+            color: #fbbf24;
+        }
+
+        body.day-mode .settings-group .beginner-label {
+            color: #d97706;
+        }
+
+        .settings-group select {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-group {
             display: flex;
-            gap: 24px;
-            align-items: flex-start;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 250px;
+        }
+
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .checkbox-option:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .checkbox-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .checkbox-option span {
+            color: hsl(0 0% 90%);
+            font-size: 0.95rem;
+        }
+
+        body.day-mode .checkbox-option {
+            border-color: rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        body.day-mode .checkbox-option:hover {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        body.day-mode .checkbox-option span {
+            color: #2d3748;
+        }
+
+        body.day-mode .checkbox-option input[type="checkbox"] {
+            accent-color: #667eea;
+        }
+
+        .settings-group select:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .settings-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        body.day-mode .settings-group select {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.1);
+            color: #2d3748;
+        }
+
+        body.day-mode .settings-group select:hover {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        body.day-mode .settings-group select:focus {
+            background: rgba(0, 0, 0, 0.08);
         }
 
         .board-card {
-            flex: 1 1 520px;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            margin: 0;
-            padding: 16px;
+            gap: 16px;
+            width: 100%;
+            max-width: 560px;
+            margin: 0 auto;
+        }
+
+        .board-container {
+            width: 100%;
+            position: relative;
         }
 
         #board {
             width: 100%;
-            max-width: 560px;
             height: auto;
             aspect-ratio: 1 / 1;
             display: block;
             border-radius: 12px;
         }
 
+        .game-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .game-actions .btn {
+            flex: 1;
+            min-width: 100px;
+        }
+
         .game-panel {
-            flex: 1 1 260px;
-            min-width: 240px;
             display: flex;
             flex-direction: column;
             gap: 16px;
@@ -70,6 +196,10 @@
             display: grid;
             grid-template-columns: auto auto;
             gap: 6px 12px;
+        }
+
+        .rules-section {
+            margin-top: 24px;
         }
 
         .board-hint {
@@ -82,10 +212,42 @@
             color: #2d3748;
         }
 
+        .danger-text {
+            color: #ef4444;
+        }
+
+        body.day-mode .danger-text {
+            color: #dc2626;
+        }
+
+        @media (max-width: 1200px) {
+            .game-layout {
+                grid-template-columns: 220px 1fr;
+                gap: 20px;
+            }
+
+            .game-panel {
+                grid-column: 1 / -1;
+            }
+        }
+
         @media (max-width: 768px) {
-            .setup-grid {
+            .game-layout {
                 grid-template-columns: 1fr;
                 gap: 20px;
+            }
+
+            .settings-panel {
+                order: 1;
+            }
+
+            .board-card {
+                order: 2;
+                max-width: 100%;
+            }
+
+            .game-panel {
+                order: 3;
             }
         }
     </style>
@@ -108,76 +270,71 @@
         </div>
 
         <div class="container">
-            <div class="section" id="setup">
-                <div class="setup-grid">
-                    <div class="setup-group">
-                        <h3>AI 难度</h3>
-                        <div class="delimiter-options">
-                            <label class="radio-option">
-                                <input type="radio" name="difficulty" value="easy" checked>
-                                <span>简单</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="difficulty" value="medium">
-                                <span>中等</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="difficulty" value="hard">
-                                <span>困难</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="setup-group">
-                        <h3>棋盘大小</h3>
-                        <div class="delimiter-options">
-                            <label class="radio-option">
-                                <input type="radio" name="boardSize" value="9" checked>
-                                <span>9 路</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="boardSize" value="13">
-                                <span>13 路</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="boardSize" value="19">
-                                <span>19 路</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="setup-group">
-                        <h3>计分方式</h3>
-                        <div class="delimiter-options">
-                            <label class="radio-option">
-                                <input type="radio" name="scoringMethod" value="territory" checked>
-                                <span>数目法</span>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="scoringMethod" value="stones">
-                                <span>数子法</span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <div class="search-actions">
-                    <button id="newGameBtn" class="btn btn-primary">新开局</button>
-                    <button id="undoBtn" class="btn btn-secondary">回退</button>
-                    <button id="passBtn" class="btn btn-secondary">停一手</button>
-                    <button id="hintBtn" class="btn btn-secondary">提示</button>
-                </div>
-                <div class="data-preview">
-                    <div class="preview-info">规则要点</div>
-                    <div class="preview-items board-hint">
-                        玩家执黑先行，点击棋盘落子。双方连续停一手将自动结束。
-                    </div>
-                </div>
-            </div>
-
             <div class="section" id="boardSection">
                 <h2>棋盘</h2>
                 <div class="game-layout">
-                    <div class="result-item board-card">
-                        <canvas id="board" width="600" height="600" aria-label="围棋棋盘"></canvas>
+                    <!-- 左侧设置面板 -->
+                    <div class="settings-panel">
+                        <div class="settings-group">
+                            <label for="difficultySelect">AI 难度</label>
+                            <select id="difficultySelect" name="difficulty">
+                                <option value="easy" selected>简单</option>
+                                <option value="medium">中等</option>
+                                <option value="hard">困难</option>
+                            </select>
+                        </div>
+                        <div class="settings-group">
+                            <label for="boardSizeSelect">棋盘大小</label>
+                            <select id="boardSizeSelect" name="boardSize">
+                                <option value="9" selected>9 路</option>
+                                <option value="13">13 路</option>
+                                <option value="19">19 路</option>
+                            </select>
+                        </div>
+                        <div class="settings-group">
+                            <label for="scoringMethodSelect">计分方式</label>
+                            <select id="scoringMethodSelect" name="scoringMethod">
+                                <option value="territory" selected>数目法</option>
+                                <option value="stones">数子法</option>
+                            </select>
+                        </div>
+                        <div class="settings-group beginner-section">
+                            <label class="beginner-label">新手选项</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-option">
+                                    <input type="checkbox" id="showLibertiesCheck" value="liberties">
+                                    <span>展示气</span>
+                                </label>
+                                <label class="checkbox-option">
+                                    <input type="checkbox" id="showConnectionsCheck" value="connections">
+                                    <span>展示连接</span>
+                                </label>
+                                <label class="checkbox-option">
+                                    <input type="checkbox" id="showInfluenceCheck" value="influence">
+                                    <span>局势分析</span>
+                                </label>
+                                <label class="checkbox-option">
+                                    <input type="checkbox" id="showEyesCheck" value="eyes">
+                                    <span>展示眼位</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- 中央棋盘区域 -->
+                    <div class="board-card">
+                        <div class="board-container">
+                            <canvas id="board" width="600" height="600" aria-label="围棋棋盘"></canvas>
+                        </div>
+                        <div class="game-actions">
+                            <button id="newGameBtn" class="btn btn-primary">新开局</button>
+                            <button id="undoBtn" class="btn btn-secondary">回退</button>
+                            <button id="passBtn" class="btn btn-secondary">停一手</button>
+                            <button id="hintBtn" class="btn btn-secondary">提示</button>
+                        </div>
+                    </div>
+
+                    <!-- 右侧对局信息 -->
                     <div class="game-panel">
                         <div id="status" class="result-header success">新对局开始，玩家执黑先行。</div>
                         <div class="result-item">
@@ -205,6 +362,20 @@
                                 开局建议先占角，再向边与中央扩展。AI 会根据难度进行不同强度的落子选择。
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部规则要点 -->
+            <div class="section rules-section">
+                <div class="data-preview">
+                    <div class="preview-info">规则要点</div>
+                    <div class="preview-items board-hint">
+                        玩家执黑先行，点击棋盘落子。双方连续停一手将自动结束。<br><br>
+                        <strong>什么是"气"？</strong>气是指棋子或棋子组紧邻的空白交叉点。当一个棋子或棋子组的所有气被对方占据时，该棋子或棋子组会被提走。开启"展示气"功能可以看到所有棋子组的气（黑色圆点代表黑棋的气，白色圆点代表白棋的气，半黑半白代表共享的气）。<br><br>
+                        <strong>什么是"连接"？</strong>上下左右相邻的同色棋子会连成一个整体，共享气数。开启"展示连接"功能可以看到同色棋子之间的连接线（像城墙一样）。<strong class="danger-text">当一个棋子组只剩1气时（叫吃状态），会显示红色警告边框</strong>，提示该组棋子处于危险状态，下一步可能被对方提掉。<br><br>
+                        <strong>什么是"局势分析"？</strong>开启后会用半透明颜色显示棋盘上的势力范围。<strong>深灰色区域表示黑方控制</strong>，<strong>浅白色区域表示白方控制</strong>，<strong>浅棕色区域为双方争夺区</strong>。颜色越深表示该方势力越强。势力分析会考虑棋子组的气数（气多的组影响力更强）。这能帮助新手理解当前局面的优劣和下一步的战略方向。<br><br>
+                        <strong>什么是"眼位"？</strong>眼是被己方棋子完全包围的空点。<strong style="color: #00cc00;">绿色实心圆表示"活眼"（真眼）</strong>，这是己方的真实领地，对方无法占据。<strong class="danger-text">红色空心圆带叉表示"死眼"（假眼）</strong>，虽然被己方包围，但对方可以占据并提掉周围的棋子。活眼是围棋中棋子存活的关键，一个棋子组至少需要两只活眼才能确保不被提掉。
                     </div>
                 </div>
             </div>
