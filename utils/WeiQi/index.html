@@ -4,709 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#667eea">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <title>围棋对弈 - Tooltopia</title>
     <link rel="stylesheet" href="./assets/css/style.css">
     <style>
-        .game-layout {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-            margin-bottom: 24px;
-        }
-
-        .board-and-panel {
-            display: grid;
-            grid-template-columns: 1fr 340px;
-            gap: 24px;
-            align-items: flex-start;
-        }
-
-        .board-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .settings-row {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 16px;
-        }
-
-        .settings-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .settings-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .settings-group label {
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            opacity: 0.8;
-            margin-bottom: 4px;
-            color: #e2e8f0;
-        }
-
-        body.day-mode .settings-group label {
-            color: #2d3748;
-        }
-
-        .settings-group.beginner-section {
-            border-top: none;
-            padding-top: 0;
-            margin-top: 0;
-        }
-
-        .settings-group .beginner-label {
-            color: #fbbf24;
-        }
-
-        body.day-mode .settings-group .beginner-label {
-            color: #d97706;
-        }
-
-        .settings-group select {
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .settings-group input[type="number"] {
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-        }
-
-        .settings-group input[type="text"],
-        .settings-group input[type="password"] {
-            padding: 10px 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            background: rgba(255, 255, 255, 0.05);
-            color: #fff;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-        }
-
-        .settings-subgroup {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .settings-subtitle {
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            opacity: 0.8;
-        }
-
-        .settings-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .settings-actions .btn {
-            flex: 1 1 120px;
-        }
-
-        .game-settings .checkbox-option {
-            margin-top: 6px;
-        }
-
-        .settings-group select option {
-            background: #1e293b;
-            color: #e2e8f0;
-        }
-
-        body.day-mode .settings-group select option {
-            background: #ffffff;
-            color: #2d3748;
-        }
-
-        .checkbox-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .checkbox-option {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            user-select: none;
-        }
-
-        .checkbox-option:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .checkbox-option input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-            accent-color: #667eea;
-        }
-
-        .checkbox-option span {
-            color: hsl(0 0% 90%);
-            font-size: 0.95rem;
-        }
-
-        body.day-mode .checkbox-option {
-            border-color: rgba(0, 0, 0, 0.1);
-            background: rgba(0, 0, 0, 0.03);
-        }
-
-        body.day-mode .checkbox-option:hover {
-            background: rgba(0, 0, 0, 0.05);
-            border-color: rgba(0, 0, 0, 0.2);
-        }
-
-        body.day-mode .checkbox-option span {
-            color: #2d3748;
-        }
-
-        body.day-mode .checkbox-option input[type="checkbox"] {
-            accent-color: #667eea;
-        }
-
-        .settings-group select:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .settings-group select:focus {
-            outline: none;
-            border-color: #667eea;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .settings-group input[type="number"]:hover,
-        .settings-group input[type="text"]:hover,
-        .settings-group input[type="password"]:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .settings-group input[type="number"]:focus,
-        .settings-group input[type="text"]:focus,
-        .settings-group input[type="password"]:focus {
-            outline: none;
-            border-color: #667eea;
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .number-input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .number-input-wrapper input[type="number"] {
-            flex: 1;
-            padding-right: 45px;
-        }
-
-        .number-input-buttons {
-            position: absolute;
-            right: 2px;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-        }
-
-        .number-input-btn {
-            width: 32px;
-            height: 18px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #e2e8f0;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-        }
-
-        .number-input-btn-up {
-            border-radius: 4px 4px 0 0;
-        }
-
-        .number-input-btn-down {
-            border-radius: 0 0 4px 4px;
-        }
-
-        .number-input-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        .number-input-btn:active {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(0.95);
-        }
-
-        body.day-mode .number-input-btn {
-            background: rgba(0, 0, 0, 0.05);
-            border-color: rgba(0, 0, 0, 0.15);
-            color: #2d3748;
-        }
-
-        body.day-mode .number-input-btn:hover {
-            background: rgba(0, 0, 0, 0.08);
-            border-color: rgba(0, 0, 0, 0.25);
-        }
-
-        body.day-mode .number-input-btn:active {
-            background: rgba(0, 0, 0, 0.12);
-        }
-
-        /* 规则框样式 */
-        .section.rules-section {
-            padding: 0;
-            border-bottom: none;
-        }
-
-        .rules-collapsible {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(20px) saturate(1.2);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            overflow: hidden;
-        }
-
-        body.day-mode .rules-collapsible {
-            background: rgba(0, 0, 0, 0.03);
-            border-color: rgba(0, 0, 0, 0.1);
-        }
-
-        .rules-toggle {
-            width: 100%;
-            background: rgba(102, 126, 234, 0.1);
-            border: none;
-            padding: 18px 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .rules-toggle:hover {
-            background: rgba(102, 126, 234, 0.15);
-        }
-
-        body.day-mode .rules-toggle {
-            background: rgba(102, 126, 234, 0.08);
-            border-bottom-color: rgba(0, 0, 0, 0.05);
-        }
-
-        body.day-mode .rules-toggle:hover {
-            background: rgba(102, 126, 234, 0.12);
-        }
-
-        .rules-toggle-text {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #e2e8f0;
-        }
-
-        body.day-mode .rules-toggle-text {
-            color: #1a202c;
-        }
-
-        .rules-toggle-icon {
-            font-size: 1rem;
-            color: #667eea;
-            transition: transform 0.3s ease;
-        }
-
-        .rules-collapsible.collapsed .rules-toggle-icon {
-            transform: rotate(-90deg);
-        }
-
-        .rules-collapsible-content {
-            max-height: 2000px;
-            overflow: hidden;
-            transition: max-height 0.4s ease, padding 0.4s ease;
-            padding: 24px;
-        }
-
-        .rules-collapsible.collapsed .rules-collapsible-content {
-            max-height: 0;
-            padding: 0 24px;
-        }
-
-        .rules-content {
-            max-height: none;
-            overflow-y: visible;
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 20px;
-            padding: 0;
-        }
-
-        .rule-section {
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 8px;
-            padding: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        body.day-mode .rule-section {
-            background: rgba(0, 0, 0, 0.02);
-            border-color: rgba(0, 0, 0, 0.08);
-        }
-
-        .rule-section h4 {
-            font-size: 1.05rem;
-            font-weight: 600;
-            color: #667eea;
-            margin: 0 0 12px 0;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(102, 126, 234, 0.2);
-        }
-
-        body.day-mode .rule-section h4 {
-            color: #5a67d8;
-        }
-
-        .rule-section ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .rule-section ul li {
-            color: hsl(0 0% 80%);
-            font-size: 0.92rem;
-            line-height: 1.7;
-            margin-bottom: 10px;
-            padding-left: 18px;
-            position: relative;
-        }
-
-        .rule-section ul li::before {
-            content: "•";
-            position: absolute;
-            left: 0;
-            color: #667eea;
-            font-weight: bold;
-            font-size: 1.2rem;
-        }
-
-        body.day-mode .rule-section ul li {
-            color: #2d3748;
-        }
-
-        body.day-mode .rule-section ul li::before {
-            color: #5a67d8;
-        }
-
-        @media (max-width: 768px) {
-            .rules-content {
-                grid-template-columns: 1fr;
-            }
-
-            .rules-toggle {
-                padding: 14px 18px;
-            }
-
-            .rules-toggle-text {
-                font-size: 1.1rem;
-            }
-
-            .rules-collapsible-content {
-                padding: 18px;
-            }
-
-            .rules-collapsible.collapsed .rules-collapsible-content {
-                padding: 0 18px;
-            }
-        }
-
-        body.day-mode .settings-group select {
-            background: rgba(0, 0, 0, 0.03);
-            border-color: rgba(0, 0, 0, 0.1);
-            color: #2d3748;
-        }
-
-        body.day-mode .settings-group input[type="number"] {
-            background: rgba(0, 0, 0, 0.03);
-            border-color: rgba(0, 0, 0, 0.1);
-            color: #2d3748;
-        }
-
-        body.day-mode .settings-group input[type="text"],
-        body.day-mode .settings-group input[type="password"] {
-            background: rgba(0, 0, 0, 0.03);
-            border-color: rgba(0, 0, 0, 0.1);
-            color: #2d3748;
-        }
-
-        body.day-mode .settings-group select:hover {
-            background: rgba(0, 0, 0, 0.05);
-            border-color: rgba(0, 0, 0, 0.2);
-        }
-
-        body.day-mode .settings-group select:focus {
-            background: rgba(0, 0, 0, 0.08);
-        }
-
-        body.day-mode .settings-group input[type="number"]:hover,
-        body.day-mode .settings-group input[type="text"]:hover,
-        body.day-mode .settings-group input[type="password"]:hover {
-            background: rgba(0, 0, 0, 0.05);
-            border-color: rgba(0, 0, 0, 0.2);
-        }
-
-        body.day-mode .settings-group input[type="number"]:focus,
-        body.day-mode .settings-group input[type="text"]:focus,
-        body.day-mode .settings-group input[type="password"]:focus {
-            background: rgba(0, 0, 0, 0.08);
-        }
-
-        .board-card {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 16px;
-            width: 100%;
-            max-width: none;
-            margin: 0 auto;
-        }
-
-        .board-container {
-            width: 100%;
-            position: relative;
-        }
-
-        #board {
-            width: 100%;
-            height: auto;
-            aspect-ratio: 1 / 1;
-            display: block;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-        }
-
-        body.day-mode #board {
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-        }
-
-        .game-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: nowrap;
-            justify-content: center;
-            width: 100%;
-        }
-
-        .game-actions .btn {
-            flex: 1;
-            min-width: 80px;
-            padding: 10px 16px;
-            font-size: 0.9rem;
-        }
-
-        .game-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .score-grid {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 6px 12px;
-            width: 100%;
-            align-items: center;
-        }
-
-        .score-grid span:nth-child(2n) {
-            text-align: right;
-        }
-
-        .scoreboard {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 8px;
-        }
-
-        .scoreboard-item {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 12px;
-            text-align: center;
-        }
-
-        body.day-mode .scoreboard-item {
-            background: rgba(0, 0, 0, 0.03);
-            border-color: rgba(0, 0, 0, 0.1);
-        }
-
-        .scoreboard-label {
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            opacity: 0.7;
-            margin-bottom: 8px;
-        }
-
-        .scoreboard-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            line-height: 1;
-        }
-
-        .scoreboard-detail {
-            font-size: 0.75rem;
-            opacity: 0.6;
-            margin-top: 4px;
-        }
-
-        .scoreboard-item.black {
-            border-color: rgba(0, 0, 0, 0.3);
-        }
-
-        body:not(.day-mode) .scoreboard-item.black {
-            border-color: rgba(248, 250, 252, 0.35);
-            color: #f8fafc;
-        }
-
-        .scoreboard-item.white {
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        body:not(.day-mode) .scoreboard-item.white {
-            border-color: rgba(148, 163, 184, 0.6);
-            color: #f1f5f9;
-        }
-
-        body.day-mode .scoreboard-item.black {
-            border-color: rgba(0, 0, 0, 0.2);
-        }
-
-        body.day-mode .scoreboard-item.white {
-            border-color: rgba(120, 120, 120, 0.2);
-        }
-
-        .settings-group.rules-section,
-        .settings-group.game-settings,
-        .settings-group.beginner-section,
-        .settings-group.online-section {
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 12px;
-            padding: 14px;
-            background: rgba(255, 255, 255, 0.02);
-        }
-
-        body.day-mode .settings-group.rules-section,
-        body.day-mode .settings-group.game-settings,
-        body.day-mode .settings-group.beginner-section,
-        body.day-mode .settings-group.online-section {
-            border-color: rgba(0, 0, 0, 0.12);
-            background: rgba(0, 0, 0, 0.02);
-        }
-
-        .section.rules-section {
-            margin-top: 24px;
-        }
-
-        .board-hint {
-            color: hsl(0 0% 75%);
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-
-        body.day-mode .board-hint {
-            color: #2d3748;
-        }
-
-        .danger-text {
-            color: #ef4444;
-        }
-
-        body.day-mode .danger-text {
-            color: #dc2626;
-        }
-
-        @media (max-width: 1200px) {
-            .board-and-panel {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-
-            .settings-row {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
-
-        @media (max-width: 768px) {
-            .settings-row {
-                grid-template-columns: 1fr;
-            }
-
-            .board-card {
-                max-width: 100%;
-            }
-
-            .game-actions {
-                flex-wrap: wrap;
-            }
-
-            .game-actions .btn {
-                min-width: calc(50% - 5px);
-            }
-        }
+        :root { --primary: #667eea; --bg-glass: rgba(255, 255, 255, 0.05); --border-glass: rgba(255, 255, 255, 0.1); }
+        .game-layout { display: flex; flex-direction: column; gap: 24px; margin-bottom: 24px; }
+        .board-and-panel { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: flex-start; }
+        .board-stack { display: flex; flex-direction: column; gap: 20px; }
+        .settings-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+        .settings-panel, .settings-group { display: flex; flex-direction: column; gap: 16px; }
+        .settings-group { gap: 8px; border: 1px solid var(--border-glass); border-radius: 12px; padding: 14px; background: rgba(255,255,255,0.02); }
+        .settings-group label { font-size: 0.9rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.8; margin-bottom: 4px; color: #e2e8f0; }
+        body.day-mode .settings-group label { color: #2d3748; }
+        .settings-group .beginner-label { color: #fbbf24; }
+        body.day-mode .settings-group .beginner-label { color: #d97706; }
+        .settings-group select, .settings-group input { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border-glass); background: var(--bg-glass); color: #fff; font-size: 0.95rem; transition: all 0.3s ease; width: 100%; box-sizing: border-box; }
+        .settings-subgroup { display: flex; flex-direction: column; gap: 6px; }
+        .settings-subtitle { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; opacity: 0.8; }
+        .settings-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+        .settings-actions .btn { flex: 1 1 120px; }
+        .checkbox-option { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--border-glass); border-radius: 8px; cursor: pointer; transition: all 0.3s ease; user-select: none; }
+        .checkbox-option:hover { background: rgba(255,255,255,0.08); }
+        .checkbox-option input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); }
+        body.day-mode .settings-group select, body.day-mode .settings-group input, body.day-mode .checkbox-option { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.1); color: #2d3748; }
+        .number-input-wrapper { position: relative; display: flex; align-items: center; }
+        .number-input-wrapper input[type="number"] { padding-right: 45px; }
+        .number-input-buttons { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 1px; }
+        .number-input-btn { width: 32px; height: 18px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #e2e8f0; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+        .number-input-btn:hover { background: rgba(255,255,255,0.15); }
+        body.day-mode .number-input-btn { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.15); color: #2d3748; }
+        .rules-collapsible { background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid var(--border-glass); overflow: hidden; }
+        body.day-mode .rules-collapsible { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.1); }
+        .rules-toggle { width: 100%; background: rgba(102,126,234,0.1); border: none; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: #e2e8f0; font-weight: 700; font-size: 1.3rem; }
+        body.day-mode .rules-toggle { background: rgba(102,126,234,0.08); color: #1a202c; }
+        .rules-toggle-icon { transition: transform 0.3s ease; color: var(--primary); }
+        .rules-collapsible.collapsed .rules-toggle-icon { transform: rotate(-90deg); }
+        .rules-collapsible-content { max-height: 2000px; padding: 24px; transition: all 0.4s ease; }
+        .rules-collapsible.collapsed .rules-collapsible-content { max-height: 0; padding: 0 24px; }
+        .rules-content { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .rule-section { background: rgba(255,255,255,0.02); border-radius: 8px; padding: 16px; border: 1px solid rgba(255,255,255,0.08); }
+        body.day-mode .rule-section { background: rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.08); }
+        .rule-section h4 { color: var(--primary); margin: 0 0 12px 0; padding-bottom: 8px; border-bottom: 1px solid rgba(102,126,234,0.2); }
+        .rule-section ul { list-style: none; padding: 0; margin: 0; }
+        .rule-section li { position: relative; padding-left: 18px; margin-bottom: 10px; font-size: 0.92rem; line-height: 1.7; color: hsl(0 0% 80%); }
+        body.day-mode .rule-section li { color: #2d3748; }
+        .rule-section li::before { content: "•"; position: absolute; left: 0; color: var(--primary); font-weight: bold; }
+        .board-card { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
+        #board { width: 100%; height: auto; aspect-ratio: 1/1; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.2); }
+        .game-actions { display: flex; gap: 10px; width: 100%; justify-content: center; }
+        .game-actions .btn { flex: 1; min-width: 80px; padding: 10px; }
+        .game-panel { display: flex; flex-direction: column; gap: 16px; }
+        .scoreboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+        .scoreboard-item { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; text-align: center; }
+        body.day-mode .scoreboard-item { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.1); }
+        .scoreboard-value { font-size: 1.8rem; font-weight: 700; }
+        .board-hint { color: hsl(0 0% 75%); font-size: 0.9rem; line-height: 1.5; }
+        body.day-mode .board-hint { color: #2d3748; }
+        .danger-text { color: #ef4444; }
+        @media (max-width: 1200px) { .board-and-panel { grid-template-columns: 1fr; } .settings-row { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { .settings-row, .rules-content { grid-template-columns: 1fr; } .game-actions { flex-wrap: wrap; } }
     </style>
 </head>
 <body>
-    <!-- 日夜切换器 -->
     <div class="theme-toggle">
         <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
-        <label for="themeToggle" class="theme-toggle__btn">
-            <span class="theme-toggle__feature"></span>
-        </label>
+        <label for="themeToggle" class="theme-toggle__btn"><span class="theme-toggle__feature"></span></label>
     </div>
 
     <div id="background-wrapper"></div>
@@ -720,7 +85,6 @@
         <div class="container">
             <div class="section" id="boardSection">
                 <div class="game-layout">
-                    <!-- 上部：棋盘和对局信息 -->
                     <div class="board-and-panel">
                         <div class="board-stack">
                             <div class="board-card">
@@ -728,69 +92,52 @@
                                     <canvas id="board" width="600" height="600" aria-label="围棋棋盘"></canvas>
                                 </div>
                                 <div class="game-actions">
-                                    <button id="newGameBtn" class="btn btn-primary" title="开始新的对局，当前对局将被重置">新开局</button>
-                                    <button id="undoBtn" class="btn btn-secondary" title="回退上一手（玩家和AI的落子会一起回退）">悔棋</button>
-                                    <button id="passBtn" class="btn btn-secondary" title="跳过本回合，双方连续停一手将结束对局">停手</button>
-                                    <button id="hintBtn" class="btn btn-secondary" title="获取AI推荐的落子位置（每局限3次）">提示</button>
-                                    <button id="resignBtn" class="btn btn-secondary" title="认输并结束当前对局">认输</button>
+                                    <button id="newGameBtn" class="btn btn-primary" title="重置对局">新开局</button>
+                                    <button id="undoBtn" class="btn btn-secondary" title="回退一步">悔棋</button>
+                                    <button id="passBtn" class="btn btn-secondary" title="跳过回合">停手</button>
+                                    <button id="hintBtn" class="btn btn-secondary" title="AI提示">提示</button>
+                                    <button id="resignBtn" class="btn btn-secondary" title="认输">认输</button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- 对局信息面板 -->
                         <div class="game-panel">
                             <div id="status" class="result-header success">新对局开始，玩家执黑先行。</div>
-
                             <div class="result-item">
-                                <div class="result-item-header">
-                                    <span>实时记分牌</span>
-                                    <span id="aiHint">AI 难度：简单</span>
-                                </div>
+                                <div class="result-item-header"><span>实时记分</span><span id="aiHint">AI 难度：简单</span></div>
                                 <div class="scoreboard">
                                     <div class="scoreboard-item black">
-                                        <div class="scoreboard-label" id="blackLabel">黑方（玩家）</div>
+                                        <div class="scoreboard-label" id="blackLabel">黑方</div>
                                         <div class="scoreboard-value" id="blackScore">0</div>
                                         <div class="scoreboard-detail" id="blackDetail">领地 0 | 提子 0</div>
                                     </div>
                                     <div class="scoreboard-item white">
-                                        <div class="scoreboard-label" id="whiteLabel">白方（AI）</div>
+                                        <div class="scoreboard-label" id="whiteLabel">白方</div>
                                         <div class="scoreboard-value" id="whiteScore">0</div>
                                         <div class="scoreboard-detail" id="whiteDetail">领地 0 | 提子 0</div>
                                     </div>
                                 </div>
                             </div>
-
                             <div class="result-item">
-                                <div class="result-item-header">
-                                    <span>对局信息</span>
-                                    <span id="moveCount">步数 0</span>
-                                </div>
+                                <div class="result-item-header"><span>对局信息</span><span id="moveCount">步数 0</span></div>
                                 <div class="result-item-content score-grid">
-                                    <span>当前回合</span>
-                                    <span id="currentPlayer">黑</span>
-                                    <span>上一手</span>
-                                    <span id="lastMove">-</span>
+                                    <span>当前回合</span><span id="currentPlayer">黑</span>
+                                    <span>上一手</span><span id="lastMove">-</span>
                                 </div>
                             </div>
-
                             <div class="result-item">
-                                <div class="result-item-header">
-                                    <span>对局提示</span>
-                                </div>
-                                <div class="result-item-content board-hint" id="tipText">
-                                    开局建议先占角，再向边与中央扩展。AI 会根据难度进行不同强度的落子选择。
-                                </div>
+                                <div class="result-item-header"><span>对局提示</span></div>
+                                <div class="result-item-content board-hint" id="tipText">开局建议先占角，再向边与中央扩展。</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 下部：设置选项 -->
                     <div class="settings-row">
-                            <div class="settings-group rules-section">
-                                <label class="rules-label">规则设置</label>
+                        <div class="settings-group rules-section">
+                            <label class="rules-label">规则设置</label>
                             <div class="settings-subgroup">
                                 <label for="boardSizeSelect" class="settings-subtitle">棋盘大小</label>
-                                <select id="boardSizeSelect" name="boardSize">
+                                <select id="boardSizeSelect">
                                     <option value="9" selected>9 路</option>
                                     <option value="13">13 路</option>
                                     <option value="19">19 路</option>
@@ -798,117 +145,106 @@
                             </div>
                             <div class="settings-subgroup">
                                 <label for="playerColorSelect" class="settings-subtitle">棋子选择</label>
-                                <select id="playerColorSelect" name="playerColor">
+                                <select id="playerColorSelect">
                                     <option value="black" selected>玩家执黑</option>
                                     <option value="white">玩家执白</option>
                                 </select>
                             </div>
-                                <div class="settings-subgroup">
-                                    <label for="scoringMethodSelect" class="settings-subtitle">计分方式</label>
-                                    <select id="scoringMethodSelect" name="scoringMethod">
-                                        <option value="japanese" selected>日韩规则</option>
-                                        <option value="chinese">中国规则</option>
-                                        <option value="aga">AGA 规则</option>
-                                    </select>
-                                </div>
-                                <div class="settings-subgroup">
-                                    <label for="komiSelect" class="settings-subtitle">贴目（白方补偿）</label>
-                                    <select id="komiSelect" name="komi">
-                                        <option value="5.5" selected>5.5 目（中国常用）</option>
-                                        <option value="6.5">6.5 目（日韩常用）</option>
-                                        <option value="7.5">7.5 目（AGA 常用）</option>
-                                        <option value="0.5">0.5 目（最小补偿）</option>
-                                        <option value="0">0 目（无贴目）</option>
-                                    </select>
-                                </div>
-                                <div class="settings-subgroup">
-                                    <label for="koRuleSelect" class="settings-subtitle">劫规则</label>
-                                    <select id="koRuleSelect" name="koRule">
-                                        <option value="simple" selected>简单劫</option>
-                                        <option value="super">超级劫</option>
-                                    </select>
-                                </div>
+                            <div class="settings-subgroup">
+                                <label for="scoringMethodSelect" class="settings-subtitle">计分方式</label>
+                                <select id="scoringMethodSelect">
+                                    <option value="japanese" selected>日韩规则</option>
+                                    <option value="chinese">中国规则</option>
+                                    <option value="aga">AGA 规则</option>
+                                </select>
                             </div>
-                            <div class="settings-group game-settings">
-                                <label class="game-label">游戏设置</label>
-                                <div class="settings-subgroup">
-                                    <label for="difficultySelect" class="settings-subtitle">AI 难度</label>
-                                    <select id="difficultySelect" name="difficulty">
-                                        <option value="easy" selected>简单</option>
-                                        <option value="medium">中等</option>
-                                        <option value="hard">困难</option>
-                                    </select>
-                                </div>
-                                <div class="settings-subgroup">
-                                    <label for="boardStyleSelect" class="settings-subtitle">棋盘样式</label>
-                                    <select id="boardStyleSelect" name="boardStyle">
-                                        <option value="hiba" selected>桧木棋盘</option>
-                                        <option value="bamboo">竹制棋盘</option>
-                                        <option value="whitePorcelain">白釉瓷棋盘</option>
-                                        <option value="celadon">青瓷</option>
-                                        <option value="marble">大理石</option>
-                                        <option value="brocade">织锦棋盘</option>
-                                        <option value="acrylic">亚克力棋盘</option>
-                                    </select>
-                                </div>
-                                <div class="settings-subgroup">
-                                    <label for="boardDimensionInput" class="settings-subtitle">棋盘尺寸</label>
-                                    <div class="number-input-wrapper">
-                                        <input type="number" id="boardDimensionInput" name="boardDimension" min="240" max="900" step="10" value="560" readonly>
-                                        <div class="number-input-buttons">
-                                            <button type="button" class="number-input-btn number-input-btn-up" id="boardDimensionUp" aria-label="增加尺寸">▲</button>
-                                            <button type="button" class="number-input-btn number-input-btn-down" id="boardDimensionDown" aria-label="减小尺寸">▼</button>
-                                        </div>
+                            <div class="settings-subgroup">
+                                <label for="komiSelect" class="settings-subtitle">贴目</label>
+                                <select id="komiSelect">
+                                    <option value="5.5" selected>5.5 目</option>
+                                    <option value="6.5">6.5 目</option>
+                                    <option value="7.5">7.5 目</option>
+                                    <option value="0.5">0.5 目</option>
+                                    <option value="0">0 目</option>
+                                </select>
+                            </div>
+                            <div class="settings-subgroup">
+                                <label for="koRuleSelect" class="settings-subtitle">劫规则</label>
+                                <select id="koRuleSelect">
+                                    <option value="simple" selected>简单劫</option>
+                                    <option value="super">超级劫</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="settings-group game-settings">
+                            <label class="game-label">游戏设置</label>
+                            <div class="settings-subgroup">
+                                <label for="difficultySelect" class="settings-subtitle">AI 难度</label>
+                                <select id="difficultySelect">
+                                    <option value="easy" selected>简单</option>
+                                    <option value="medium">中等</option>
+                                    <option value="hard">困难</option>
+                                </select>
+                            </div>
+                            <div class="settings-subgroup">
+                                <label for="boardStyleSelect" class="settings-subtitle">棋盘样式</label>
+                                <select id="boardStyleSelect">
+                                    <option value="hiba" selected>桧木棋盘</option>
+                                    <option value="bamboo">竹制棋盘</option>
+                                    <option value="whitePorcelain">白釉瓷</option>
+                                    <option value="celadon">青瓷</option>
+                                    <option value="marble">大理石</option>
+                                    <option value="brocade">织锦</option>
+                                    <option value="acrylic">亚克力</option>
+                                </select>
+                            </div>
+                            <div class="settings-subgroup">
+                                <label for="boardDimensionInput" class="settings-subtitle">棋盘尺寸</label>
+                                <div class="number-input-wrapper">
+                                    <input type="number" id="boardDimensionInput" min="240" max="900" step="10" value="560" readonly>
+                                    <div class="number-input-buttons">
+                                        <button type="button" class="number-input-btn number-input-btn-up" id="boardDimensionUp">▲</button>
+                                        <button type="button" class="number-input-btn number-input-btn-down" id="boardDimensionDown">▼</button>
                                     </div>
                                 </div>
-                                <label class="checkbox-option">
-                                    <input type="checkbox" id="showHandAnimationCheck" value="handAnimation" checked>
-                                    <span>手部动画</span>
-                                </label>
                             </div>
-                            <div class="settings-group online-section">
-                                <label class="online-label">联机连接</label>
-                                <div class="settings-subgroup">
-                                    <label for="selfIdInput" class="settings-subtitle">我的 ID <span style="color: #a0aec0; font-size: 0.85rem;">（点击复制）</span></label>
-                                    <input type="text" id="selfIdInput" name="selfId" placeholder="点击加入对局生成" autocomplete="off" readonly style="cursor: pointer;">
-                                </div>
-                                <div class="settings-subgroup">
-                                    <label for="peerIdInput" class="settings-subtitle">对方 ID</label>
-                                    <input type="text" id="peerIdInput" name="peerId" placeholder="输入对方 ID 建立连接" autocomplete="off">
-                                </div>
-                                <div class="settings-actions">
-                                    <button id="joinRoomBtn" class="btn btn-primary">加入对局</button>
-                                    <button id="watchRoomBtn" class="btn btn-secondary">观战</button>
-                                    <button id="leaveRoomBtn" class="btn btn-secondary">退出联机</button>
-                                </div>
-                                <div id="roomStatus" class="board-hint">未加入联机</div>
+                            <label class="checkbox-option">
+                                <input type="checkbox" id="showHandAnimationCheck" checked><span>手部动画</span>
+                            </label>
+                        </div>
+
+                        <div class="settings-group online-section">
+                            <label class="online-label">联机对战</label>
+                            <div class="settings-subgroup">
+                                <label for="selfIdInput" class="settings-subtitle">我的 ID (点击复制)</label>
+                                <input type="text" id="selfIdInput" placeholder="点击加入生成" readonly style="cursor: pointer;">
                             </div>
-                            <div class="settings-group beginner-section">
-                                <label class="beginner-label">辅助设置</label>
-                                <div class="checkbox-group">
-                                    <label class="checkbox-option">
-                                        <input type="checkbox" id="showLibertiesCheck" value="liberties">
-                                        <span>展示气</span>
-                                    </label>
-                                    <label class="checkbox-option">
-                                        <input type="checkbox" id="showConnectionsCheck" value="connections">
-                                        <span>展示连接</span>
-                                    </label>
-                                    <label class="checkbox-option">
-                                        <input type="checkbox" id="showInfluenceCheck" value="influence">
-                                        <span>局势分析</span>
-                                    </label>
-                                    <label class="checkbox-option">
-                                        <input type="checkbox" id="showEyesCheck" value="eyes">
-                                        <span>展示眼位</span>
-                                    </label>
-                                </div>
+                            <div class="settings-subgroup">
+                                <label for="peerIdInput" class="settings-subtitle">对手 ID</label>
+                                <input type="text" id="peerIdInput" placeholder="输入ID连接">
+                            </div>
+                            <div class="settings-actions">
+                                <button id="joinRoomBtn" class="btn btn-primary">加入</button>
+                                <button id="watchRoomBtn" class="btn btn-secondary">观战</button>
+                                <button id="leaveRoomBtn" class="btn btn-secondary">退出</button>
+                            </div>
+                            <div id="roomStatus" class="board-hint">未加入</div>
+                        </div>
+
+                        <div class="settings-group beginner-section">
+                            <label class="beginner-label">辅助功能</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-option"><input type="checkbox" id="showLibertiesCheck"><span>展示气</span></label>
+                                <label class="checkbox-option"><input type="checkbox" id="showConnectionsCheck"><span>展示连接</span></label>
+                                <label class="checkbox-option"><input type="checkbox" id="showInfluenceCheck"><span>局势分析</span></label>
+                                <label class="checkbox-option"><input type="checkbox" id="showEyesCheck"><span>展示眼位</span></label>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-
+            
             <!-- 底部规则要点 -->
             <div class="section rules-section">
                 <div class="rules-collapsible">
@@ -988,6 +324,16 @@
                                     <li><strong>胜负</strong>：得分最多的玩家获胜，贴目通常为半目数（如 5.5、6.5）以避免平局。</li>
                                 </ul>
                             </div>
+                            
+                            <div class="rule-section">
+                                <h4>行棋方式</h4>
+                                <ul>
+                                    <li><strong>实接</strong>：两子紧密相邻，连接最强，不易被打断。</li>
+                                    <li><strong>尖</strong>：棋子对角相邻，连接较为坚固，攻守兼备。</li>
+                                    <li><strong>跳</strong>：中间隔一路或两路（小跳/大跳），行棋快，但有被切断风险。</li>
+                                    <li><strong>飞</strong>：呈“日”字或“目”字形（小飞/大飞），灵活且兼顾外势，连接较薄。</li>
+                                </ul>
+                            </div>
 
                             <div class="rule-section">
                                 <h4>局势分析（新手辅助）</h4>
@@ -1003,25 +349,15 @@
             </div>
         </div>
     </div>
-
     <script src="./assets/js/theme-toggle.js"></script>
-    <script>
-        // 规则折叠功能
-        (function() {
-            const rulesToggle = document.getElementById('rulesToggle');
-            const rulesCollapsible = document.querySelector('.rules-collapsible');
-
-            if (rulesToggle && rulesCollapsible) {
-                // 默认展开状态
-                rulesCollapsible.classList.remove('collapsed');
-
-                rulesToggle.addEventListener('click', function() {
-                    rulesCollapsible.classList.toggle('collapsed');
-                });
-            }
-        })();
-    </script>
     <script src="./assets/js/peerjs.min.js"></script>
+    <script src="https://fastly.jsdelivr.net/gh/waltheri/wgo.js@master/wgo/wgo.min.js"></script>
     <script src="./assets/js/script.js"></script>
+    <script>
+        document.getElementById('rulesToggle')?.addEventListener('click', function() {
+            document.querySelector('.rules-collapsible').classList.toggle('collapsed');
+        });
+        document.querySelector('.rules-collapsible').classList.remove('collapsed');
+    </script>
 </body>
 </html>

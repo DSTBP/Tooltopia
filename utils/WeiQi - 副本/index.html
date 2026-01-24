@@ -1,0 +1,1041 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <title>围棋对弈 - Tooltopia</title>
+    <link rel="stylesheet" href="./assets/css/style.css">
+    <!-- WGo.js 棋盘库样式 CDN -->
+    <link rel="stylesheet" href="https://fastly.jsdelivr.net/gh/waltheri/wgo.js@master/wgo/wgo.player.css">
+    <style>
+        .game-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .board-and-panel {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+            align-items: flex-start;
+        }
+
+        .board-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .settings-row {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .settings-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .settings-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .settings-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+            margin-bottom: 4px;
+            color: #e2e8f0;
+        }
+
+        body.day-mode .settings-group label {
+            color: #2d3748;
+        }
+
+        .settings-group.beginner-section {
+            border-top: none;
+            padding-top: 0;
+            margin-top: 0;
+        }
+
+        .settings-group .beginner-label {
+            color: #fbbf24;
+        }
+
+        body.day-mode .settings-group .beginner-label {
+            color: #d97706;
+        }
+
+        .settings-group select {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .settings-group input[type="number"] {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .settings-group input[type="text"],
+        .settings-group input[type="password"] {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .settings-subgroup {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .settings-subtitle {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.8;
+        }
+
+        .settings-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .settings-actions .btn {
+            flex: 1 1 120px;
+        }
+
+        .game-settings .checkbox-option {
+            margin-top: 6px;
+        }
+
+        .settings-group select option {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+
+        body.day-mode .settings-group select option {
+            background: #ffffff;
+            color: #2d3748;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .checkbox-option:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .checkbox-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #667eea;
+        }
+
+        .checkbox-option span {
+            color: hsl(0 0% 90%);
+            font-size: 0.95rem;
+        }
+
+        body.day-mode .checkbox-option {
+            border-color: rgba(0, 0, 0, 0.1);
+            background: rgba(0, 0, 0, 0.03);
+        }
+
+        body.day-mode .checkbox-option:hover {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        body.day-mode .checkbox-option span {
+            color: #2d3748;
+        }
+
+        body.day-mode .checkbox-option input[type="checkbox"] {
+            accent-color: #667eea;
+        }
+
+        .settings-group select:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .settings-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .settings-group input[type="number"]:hover,
+        .settings-group input[type="text"]:hover,
+        .settings-group input[type="password"]:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .settings-group input[type="number"]:focus,
+        .settings-group input[type="text"]:focus,
+        .settings-group input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .number-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .number-input-wrapper input[type="number"] {
+            flex: 1;
+            padding-right: 45px;
+        }
+
+        .number-input-buttons {
+            position: absolute;
+            right: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+
+        .number-input-btn {
+            width: 32px;
+            height: 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+
+        .number-input-btn-up {
+            border-radius: 4px 4px 0 0;
+        }
+
+        .number-input-btn-down {
+            border-radius: 0 0 4px 4px;
+        }
+
+        .number-input-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .number-input-btn:active {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(0.95);
+        }
+
+        body.day-mode .number-input-btn {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.15);
+            color: #2d3748;
+        }
+
+        body.day-mode .number-input-btn:hover {
+            background: rgba(0, 0, 0, 0.08);
+            border-color: rgba(0, 0, 0, 0.25);
+        }
+
+        body.day-mode .number-input-btn:active {
+            background: rgba(0, 0, 0, 0.12);
+        }
+
+        /* 规则框样式 */
+        .section.rules-section {
+            padding: 0;
+            border-bottom: none;
+        }
+
+        .rules-collapsible {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px) saturate(1.2);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        body.day-mode .rules-collapsible {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .rules-toggle {
+            width: 100%;
+            background: rgba(102, 126, 234, 0.1);
+            border: none;
+            padding: 18px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .rules-toggle:hover {
+            background: rgba(102, 126, 234, 0.15);
+        }
+
+        body.day-mode .rules-toggle {
+            background: rgba(102, 126, 234, 0.08);
+            border-bottom-color: rgba(0, 0, 0, 0.05);
+        }
+
+        body.day-mode .rules-toggle:hover {
+            background: rgba(102, 126, 234, 0.12);
+        }
+
+        .rules-toggle-text {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+
+        body.day-mode .rules-toggle-text {
+            color: #1a202c;
+        }
+
+        .rules-toggle-icon {
+            font-size: 1rem;
+            color: #667eea;
+            transition: transform 0.3s ease;
+        }
+
+        .rules-collapsible.collapsed .rules-toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .rules-collapsible-content {
+            max-height: 2000px;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+            padding: 24px;
+        }
+
+        .rules-collapsible.collapsed .rules-collapsible-content {
+            max-height: 0;
+            padding: 0 24px;
+        }
+
+        .rules-content {
+            max-height: none;
+            overflow-y: visible;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            padding: 0;
+        }
+
+        .rule-section {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        body.day-mode .rule-section {
+            background: rgba(0, 0, 0, 0.02);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        .rule-section h4 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #667eea;
+            margin: 0 0 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        body.day-mode .rule-section h4 {
+            color: #5a67d8;
+        }
+
+        .rule-section ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .rule-section ul li {
+            color: hsl(0 0% 80%);
+            font-size: 0.92rem;
+            line-height: 1.7;
+            margin-bottom: 10px;
+            padding-left: 18px;
+            position: relative;
+        }
+
+        .rule-section ul li::before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        body.day-mode .rule-section ul li {
+            color: #2d3748;
+        }
+
+        body.day-mode .rule-section ul li::before {
+            color: #5a67d8;
+        }
+
+        @media (max-width: 768px) {
+            .rules-content {
+                grid-template-columns: 1fr;
+            }
+
+            .rules-toggle {
+                padding: 14px 18px;
+            }
+
+            .rules-toggle-text {
+                font-size: 1.1rem;
+            }
+
+            .rules-collapsible-content {
+                padding: 18px;
+            }
+
+            .rules-collapsible.collapsed .rules-collapsible-content {
+                padding: 0 18px;
+            }
+        }
+
+        body.day-mode .settings-group select {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.1);
+            color: #2d3748;
+        }
+
+        body.day-mode .settings-group input[type="number"] {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.1);
+            color: #2d3748;
+        }
+
+        body.day-mode .settings-group input[type="text"],
+        body.day-mode .settings-group input[type="password"] {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.1);
+            color: #2d3748;
+        }
+
+        body.day-mode .settings-group select:hover {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        body.day-mode .settings-group select:focus {
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        body.day-mode .settings-group input[type="number"]:hover,
+        body.day-mode .settings-group input[type="text"]:hover,
+        body.day-mode .settings-group input[type="password"]:hover {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        body.day-mode .settings-group input[type="number"]:focus,
+        body.day-mode .settings-group input[type="text"]:focus,
+        body.day-mode .settings-group input[type="password"]:focus {
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        .board-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+            max-width: none;
+            margin: 0 auto;
+        }
+
+        .board-container {
+            width: 100%;
+            position: relative;
+        }
+
+        #board {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            display: block;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        body.day-mode #board {
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .game-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: nowrap;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .game-actions .btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 10px 16px;
+            font-size: 0.9rem;
+        }
+
+        .game-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .score-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 6px 12px;
+            width: 100%;
+            align-items: center;
+        }
+
+        .score-grid span:nth-child(2n) {
+            text-align: right;
+        }
+
+        .scoreboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .scoreboard-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        body.day-mode .scoreboard-item {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .scoreboard-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.7;
+            margin-bottom: 8px;
+        }
+
+        .scoreboard-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .scoreboard-detail {
+            font-size: 0.75rem;
+            opacity: 0.6;
+            margin-top: 4px;
+        }
+
+        .scoreboard-item.black {
+            border-color: rgba(0, 0, 0, 0.3);
+        }
+
+        body:not(.day-mode) .scoreboard-item.black {
+            border-color: rgba(248, 250, 252, 0.35);
+            color: #f8fafc;
+        }
+
+        .scoreboard-item.white {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        body:not(.day-mode) .scoreboard-item.white {
+            border-color: rgba(148, 163, 184, 0.6);
+            color: #f1f5f9;
+        }
+
+        body.day-mode .scoreboard-item.black {
+            border-color: rgba(0, 0, 0, 0.2);
+        }
+
+        body.day-mode .scoreboard-item.white {
+            border-color: rgba(120, 120, 120, 0.2);
+        }
+
+        .settings-group.rules-section,
+        .settings-group.game-settings,
+        .settings-group.beginner-section,
+        .settings-group.online-section {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            padding: 14px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        body.day-mode .settings-group.rules-section,
+        body.day-mode .settings-group.game-settings,
+        body.day-mode .settings-group.beginner-section,
+        body.day-mode .settings-group.online-section {
+            border-color: rgba(0, 0, 0, 0.12);
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .section.rules-section {
+            margin-top: 24px;
+        }
+
+        .board-hint {
+            color: hsl(0 0% 75%);
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        body.day-mode .board-hint {
+            color: #2d3748;
+        }
+
+        .danger-text {
+            color: #ef4444;
+        }
+
+        body.day-mode .danger-text {
+            color: #dc2626;
+        }
+
+        @media (max-width: 1200px) {
+            .board-and-panel {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .settings-row {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .settings-row {
+                grid-template-columns: 1fr;
+            }
+
+            .board-card {
+                max-width: 100%;
+            }
+
+            .game-actions {
+                flex-wrap: wrap;
+            }
+
+            .game-actions .btn {
+                min-width: calc(50% - 5px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 日夜切换器 -->
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+
+    <div id="background-wrapper"></div>
+    <div class="page-container">
+        <a href="../../index.html" class="back-btn">← 返回首页</a>
+        <div class="header">
+            <h1 data-shadow="围棋对弈">围棋对弈</h1>
+            <p class="subtitle">单机对局 · 三档难度 · 轻松上手</p>
+        </div>
+
+        <div class="container">
+            <div class="section" id="boardSection">
+                <div class="game-layout">
+                    <!-- 上部：棋盘和对局信息 -->
+                    <div class="board-and-panel">
+                        <div class="board-stack">
+                            <div class="board-card">
+                                <div class="board-container">
+                                    <!-- WGo.js 棋盘容器（替代原有的 Canvas） -->
+                                    <div id="board" class="wgo-board-container" aria-label="围棋棋盘"></div>
+                                </div>
+                                <div class="game-actions">
+                                    <button id="newGameBtn" class="btn btn-primary" title="开始新的对局，当前对局将被重置">新开局</button>
+                                    <button id="undoBtn" class="btn btn-secondary" title="回退上一手（玩家和AI的落子会一起回退）">悔棋</button>
+                                    <button id="passBtn" class="btn btn-secondary" title="跳过本回合，双方连续停一手将结束对局">停手</button>
+                                    <button id="hintBtn" class="btn btn-secondary" title="获取AI推荐的落子位置（每局限3次）">提示</button>
+                                    <button id="resignBtn" class="btn btn-secondary" title="认输并结束当前对局">认输</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 对局信息面板 -->
+                        <div class="game-panel">
+                            <div id="status" class="result-header success">新对局开始，玩家执黑先行。</div>
+
+                            <div class="result-item">
+                                <div class="result-item-header">
+                                    <span>实时记分牌</span>
+                                    <span id="aiHint">AI 难度：简单</span>
+                                </div>
+                                <div class="scoreboard">
+                                    <div class="scoreboard-item black">
+                                        <div class="scoreboard-label" id="blackLabel">黑方（玩家）</div>
+                                        <div class="scoreboard-value" id="blackScore">0</div>
+                                        <div class="scoreboard-detail" id="blackDetail">领地 0 | 提子 0</div>
+                                    </div>
+                                    <div class="scoreboard-item white">
+                                        <div class="scoreboard-label" id="whiteLabel">白方（AI）</div>
+                                        <div class="scoreboard-value" id="whiteScore">0</div>
+                                        <div class="scoreboard-detail" id="whiteDetail">领地 0 | 提子 0</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="result-item">
+                                <div class="result-item-header">
+                                    <span>对局信息</span>
+                                    <span id="moveCount">步数 0</span>
+                                </div>
+                                <div class="result-item-content score-grid">
+                                    <span>当前回合</span>
+                                    <span id="currentPlayer">黑</span>
+                                    <span>上一手</span>
+                                    <span id="lastMove">-</span>
+                                </div>
+                            </div>
+
+                            <div class="result-item">
+                                <div class="result-item-header">
+                                    <span>对局提示</span>
+                                </div>
+                                <div class="result-item-content board-hint" id="tipText">
+                                    开局建议先占角，再向边与中央扩展。AI 会根据难度进行不同强度的落子选择。
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 下部：设置选项 -->
+                    <div class="settings-row">
+                            <div class="settings-group rules-section">
+                                <label class="rules-label">规则设置</label>
+                            <div class="settings-subgroup">
+                                <label for="boardSizeSelect" class="settings-subtitle">棋盘大小</label>
+                                <select id="boardSizeSelect" name="boardSize">
+                                    <option value="9" selected>9 路</option>
+                                    <option value="13">13 路</option>
+                                    <option value="19">19 路</option>
+                                </select>
+                            </div>
+                            <div class="settings-subgroup">
+                                <label for="playerColorSelect" class="settings-subtitle">棋子选择</label>
+                                <select id="playerColorSelect" name="playerColor">
+                                    <option value="black" selected>玩家执黑</option>
+                                    <option value="white">玩家执白</option>
+                                </select>
+                            </div>
+                                <div class="settings-subgroup">
+                                    <label for="scoringMethodSelect" class="settings-subtitle">计分方式</label>
+                                    <select id="scoringMethodSelect" name="scoringMethod">
+                                        <option value="japanese" selected>日韩规则</option>
+                                        <option value="chinese">中国规则</option>
+                                        <option value="aga">AGA 规则</option>
+                                    </select>
+                                </div>
+                                <div class="settings-subgroup">
+                                    <label for="komiSelect" class="settings-subtitle">贴目（白方补偿）</label>
+                                    <select id="komiSelect" name="komi">
+                                        <option value="5.5" selected>5.5 目（中国常用）</option>
+                                        <option value="6.5">6.5 目（日韩常用）</option>
+                                        <option value="7.5">7.5 目（AGA 常用）</option>
+                                        <option value="0.5">0.5 目（最小补偿）</option>
+                                        <option value="0">0 目（无贴目）</option>
+                                    </select>
+                                </div>
+                                <div class="settings-subgroup">
+                                    <label for="koRuleSelect" class="settings-subtitle">劫规则</label>
+                                    <select id="koRuleSelect" name="koRule">
+                                        <option value="simple" selected>简单劫</option>
+                                        <option value="super">超级劫</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="settings-group game-settings">
+                                <label class="game-label">游戏设置</label>
+                                <div class="settings-subgroup">
+                                    <label for="difficultySelect" class="settings-subtitle">AI 难度</label>
+                                    <select id="difficultySelect" name="difficulty">
+                                        <option value="easy" selected>简单</option>
+                                        <option value="medium">中等</option>
+                                        <option value="hard">困难</option>
+                                    </select>
+                                </div>
+                                <div class="settings-subgroup">
+                                    <label for="boardStyleSelect" class="settings-subtitle">棋盘样式</label>
+                                    <select id="boardStyleSelect" name="boardStyle">
+                                        <option value="hiba" selected>桧木棋盘</option>
+                                        <option value="bamboo">竹制棋盘</option>
+                                        <option value="whitePorcelain">白釉瓷棋盘</option>
+                                        <option value="celadon">青瓷</option>
+                                        <option value="marble">大理石</option>
+                                        <option value="brocade">织锦棋盘</option>
+                                        <option value="acrylic">亚克力棋盘</option>
+                                    </select>
+                                </div>
+                                <div class="settings-subgroup">
+                                    <label for="boardDimensionInput" class="settings-subtitle">棋盘尺寸</label>
+                                    <div class="number-input-wrapper">
+                                        <input type="number" id="boardDimensionInput" name="boardDimension" min="240" max="900" step="10" value="560" readonly>
+                                        <div class="number-input-buttons">
+                                            <button type="button" class="number-input-btn number-input-btn-up" id="boardDimensionUp" aria-label="增加尺寸">▲</button>
+                                            <button type="button" class="number-input-btn number-input-btn-down" id="boardDimensionDown" aria-label="减小尺寸">▼</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <label class="checkbox-option">
+                                    <input type="checkbox" id="showHandAnimationCheck" value="handAnimation" checked>
+                                    <span>手部动画</span>
+                                </label>
+                            </div>
+                            <div class="settings-group online-section">
+                                <label class="online-label">联机连接</label>
+                                <div class="settings-subgroup">
+                                    <label for="selfIdInput" class="settings-subtitle">我的 ID <span style="color: #a0aec0; font-size: 0.85rem;">（点击复制）</span></label>
+                                    <input type="text" id="selfIdInput" name="selfId" placeholder="点击加入对局生成" autocomplete="off" readonly style="cursor: pointer;">
+                                </div>
+                                <div class="settings-subgroup">
+                                    <label for="peerIdInput" class="settings-subtitle">对方 ID</label>
+                                    <input type="text" id="peerIdInput" name="peerId" placeholder="输入对方 ID 建立连接" autocomplete="off">
+                                </div>
+                                <div class="settings-actions">
+                                    <button id="joinRoomBtn" class="btn btn-primary">加入对局</button>
+                                    <button id="watchRoomBtn" class="btn btn-secondary">观战</button>
+                                    <button id="leaveRoomBtn" class="btn btn-secondary">退出联机</button>
+                                </div>
+                                <div id="roomStatus" class="board-hint">未加入联机</div>
+                            </div>
+                            <div class="settings-group beginner-section">
+                                <label class="beginner-label">辅助设置</label>
+                                <div class="checkbox-group">
+                                    <label class="checkbox-option">
+                                        <input type="checkbox" id="showLibertiesCheck" value="liberties">
+                                        <span>展示气</span>
+                                    </label>
+                                    <label class="checkbox-option">
+                                        <input type="checkbox" id="showConnectionsCheck" value="connections">
+                                        <span>展示连接</span>
+                                    </label>
+                                    <label class="checkbox-option">
+                                        <input type="checkbox" id="showInfluenceCheck" value="influence">
+                                        <span>局势分析</span>
+                                    </label>
+                                    <label class="checkbox-option">
+                                        <input type="checkbox" id="showEyesCheck" value="eyes">
+                                        <span>展示眼位</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部规则要点 -->
+            <div class="section rules-section">
+                <div class="rules-collapsible">
+                    <button class="rules-toggle" id="rulesToggle">
+                        <span class="rules-toggle-text">围棋基本规则</span>
+                        <span class="rules-toggle-icon">▼</span>
+                    </button>
+                    <div class="rules-collapsible-content" id="rulesContent">
+                        <div class="rules-content">
+                            <div class="rule-section">
+                                <h4>基本规则</h4>
+                                <ul>
+                                    <li>玩家轮流在<strong>交叉点</strong>上放置棋子（不是方格内）</li>
+                                    <li><strong>黑方先走</strong>，然后玩家轮流落子</li>
+                                    <li>棋子必须放在空的交叉点上</li>
+                                    <li>一旦放置，棋子不会移动，除非被提子</li>
+                                </ul>
+                            </div>
+
+                            <div class="rule-section">
+                                <h4>气与提子规则</h4>
+                                <ul>
+                                    <li><strong>气</strong>是指棋子<strong>直接相邻的空点</strong>（上、下、左、右四个方向）</li>
+                                    <li>当一个棋子或棋子群<strong>没有气时</strong>，它被<strong>提子</strong>并从棋盘上移除</li>
+                                    <li>提掉的棋子作为对方的得分（日韩规则和 AGA 规则）</li>
+                                    <li><strong>禁止自杀性走法</strong>：不能放置一个没有气的棋子，除非该走法能立即提掉对方棋子而获得气</li>
+                                    <li>开启"展示气"功能可以看到所有棋子组的气（黑色圆点代表黑棋的气，白色圆点代表白棋的气，半黑半白代表共享的气）</li>
+                                </ul>
+                            </div>
+
+                            <div class="rule-section">
+                                <h4>劫规则</h4>
+                                <ul>
+                                    <li><strong>简单劫规则</strong>（默认）：不能立即重新提回刚被提的同一个棋子，这防止了无限循环的提子和重新提子</li>
+                                    <li><strong>超级劫规则</strong>：不能重现任何先前出现过的棋盘局面，规则更严格，防止所有类型的循环</li>
+                                </ul>
+                            </div>
+
+                            <div class="rule-section">
+                                <h4>活棋与死棋</h4>
+                                <ul>
+                                    <li>一个棋子群需要至少<strong>两个独立的空点（眼）</strong>才能确保存活</li>
+                                    <li>只有一个眼的棋子群最终会被对方提掉</li>
+                                    <li><strong style="color: #00cc00;">绿色实心圆表示"活眼"（真眼）</strong>：己方的真实领地，对方无法占据</li>
+                                    <li><strong class="danger-text">红色空心圆带叉表示"死眼"（假眼）</strong>：虽然被己方包围，但对方可以占据并提掉周围的棋子</li>
+                                    <li><strong class="danger-text">红色边框表示棋子组只剩 1 气</strong>（叫吃状态），处于危险中，下一步可能被提掉</li>
+                                </ul>
+                            </div>
+
+                            <div class="rule-section">
+                                <h4>连接与棋子组</h4>
+                                <ul>
+                                    <li>上下左右相邻的同色棋子会<strong>连成一个整体</strong>，共享气数</li>
+                                    <li>开启"展示连接"功能可以看到同色棋子之间的连接线（像城墙一样）</li>
+                                </ul>
+                            </div>
+
+                            <div class="rule-section">
+                                <h4>结束游戏</h4>
+                                <ul>
+                                    <li>如果玩家认为没有有利的走法，可以<strong>停一手</strong>（跳过回合）</li>
+                                    <li>当双方玩家<strong>连续停一手</strong>时游戏自动结束</li>
+                                    <li>点击"认输"按钮可直接认输结束游戏</li>
+                                </ul>
+                            </div>
+
+                            <div class="rule-section">
+                                <h4>计分规则</h4>
+                                <ul>
+                                    <li><strong>1. 日韩规则</strong>（默认）：得分 = <strong>领地 + 提子 + 贴目</strong>（白方）<br>
+                                        只计算被己方棋子完全包围的空点作为领地，不计算棋盘上的棋子数。适合快速对局。</li>
+                                    <li><strong>2. 中国规则</strong>：得分 = <strong>领地 + 棋盘上的棋子 + 贴目</strong>（白方）<br>
+                                        同时计算领地和棋盘上存活的棋子数，不计算提子。这是中国最常用的规则。</li>
+                                    <li><strong>3. AGA 规则</strong>（美国围棋协会）：得分 = <strong>领地 + 提子 + 棋盘上的棋子 + 贴目</strong>（白方）<br>
+                                        综合计算所有要素，适合精确计分。</li>
+                                    <li><strong>贴目</strong>：为了补偿黑方先手优势，白方在终局时会获得额外的贴目分数（通常为 5.5、6.5 或 7.5 目）。</li>
+                                    <li><strong>胜负</strong>：得分最多的玩家获胜，贴目通常为半目数（如 5.5、6.5）以避免平局。</li>
+                                </ul>
+                            </div>
+
+                            <div class="rule-section">
+                                <h4>局势分析（新手辅助）</h4>
+                                <ul>
+                                    <li>开启后会用半透明颜色显示棋盘上的势力范围</li>
+                                    <li><strong>深灰色区域</strong>表示黑方控制，<strong>浅白色区域</strong>表示白方控制，<strong>浅棕色区域</strong>为双方争夺区</li>
+                                    <li>颜色越深表示该方势力越强，势力分析会考虑棋子组的气数（气多的组影响力更强）</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./assets/js/theme-toggle.js"></script>
+    <script>
+        // 规则折叠功能
+        (function() {
+            const rulesToggle = document.getElementById('rulesToggle');
+            const rulesCollapsible = document.querySelector('.rules-collapsible');
+
+            if (rulesToggle && rulesCollapsible) {
+                // 默认展开状态
+                rulesCollapsible.classList.remove('collapsed');
+
+                rulesToggle.addEventListener('click', function() {
+                    rulesCollapsible.classList.toggle('collapsed');
+                });
+            }
+        })();
+    </script>
+    <!-- PeerJS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <!-- WGo.js CDN (备选: https://cdnjs.cloudflare.com/ajax/libs/wgo.js/) -->
+    <script src="https://fastly.jsdelivr.net/gh/waltheri/wgo.js@master/wgo/wgo.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/waltheri/wgo.js@master/wgo/wgo.player.min.js"></script>
+    <!-- UI 适配层 -->
+    <script src="./assets/js/ui-adapter.js"></script>
+    <!-- KataGo AI Manager -->
+    <script src="./assets/js/ai-manager.js"></script>
+    <!-- SGF 棋谱解析与序列化 -->
+    <script src="./assets/js/sgf-parser.js"></script>
+    <!-- 主游戏脚本 -->
+    <script src="./assets/js/script.js"></script>
+</body>
+</html>

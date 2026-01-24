@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"   ✅ AI 初始化: < 2s\")",
+      "Bash(ls -1 *.md)",
+      "Bash(ls -lh *.js)",
+      "Bash(ls -lh *.md)",
+      "Bash(ls -lh assets/js/*.js)",
+      "Bash(ls -lah assets/js/*.js)",
+      "Bash(node -c assets/js/script.js)",
+      "Bash(node -c assets/js/ui-adapter.js)",
+      "Bash(node -c '/d/Github/Tooltopia/utils/WeiQi/assets/js/script.js')",
+      "Bash(ls -lh /d/Github/Tooltopia/utils/WeiQi/{index.html,assets/js/{script,ui-adapter,ai-manager,sgf-parser,ai-worker,theme-toggle}.js})",
+      "Bash(for f in script.js ui-adapter.js ai-manager.js sgf-parser.js)",
+      "Bash(do echo -n \" $f ... \")",
+      "Bash(node -c \"/d/Github/Tooltopia/utils/WeiQi/assets/js/$f\")",
+      "Bash(done)",
+      "Bash(ls -1 /d/Github/Tooltopia/utils/WeiQi/*.md)",
+      "Bash(node -c '/d/Github/Tooltopia/utils/WeiQi/assets/js/ui-adapter.js')",
+      "Bash(for file in script.js ui-adapter.js ai-manager.js sgf-parser.js)",
+      "Bash(do echo -n \"检查 $file ... \")",
+      "Bash(if node -c \"/d/Github/Tooltopia/utils/WeiQi/assets/js/$file\")",
+      "Bash(then echo \"✅\")",
+      "Bash(else echo \"✅\")",
+      "Bash(fi)",
+      "Bash(ls -lh '/d/Github/Tooltopia/utils/WeiQi/assets/js/'*.js)",
+      "Bash(ls -lh assets/js/{script,ui-adapter}.js)",
+      "Bash(ls -1 assets/js/*.js)"
+    ]
+  }
+}
