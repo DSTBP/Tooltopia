@@ -328,9 +328,9 @@
         ui.selfIdInput.onclick = () => {
             if (!ui.selfIdInput.value) return;
             const copySuccess = () => {
-                ui.selfIdInput.style.borderColor = '#00ff00';
-                ui.selfIdInput.style.boxShadow = '0 0 12px rgba(0, 255, 0, 0.8), inset 0 0 6px rgba(0, 255, 0, 0.3)';
-                ui.selfIdInput.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
+                ui.selfIdInput.style.borderColor = '#80ff80';
+                ui.selfIdInput.style.boxShadow = '0 0 10px rgba(0, 200, 0, 0.5), inset 0 0 4px rgba(0, 200, 0, 0.15)';
+                ui.selfIdInput.style.backgroundColor = 'rgba(0, 200, 0, 0.05)';
                 setStatus('ID 已复制到剪贴板 ✓', 'success');
                 setTimeout(() => {
                     ui.selfIdInput.style.borderColor = '';
@@ -997,12 +997,8 @@
         const targetX = pad + x * cell;
         const targetY = pad + y * cell;
         const isBlack = color === 1;
-        const edge = isBlack ? size : 0;
 
-        const dist = Math.abs(targetY - edge);
-        const maxDist = size || 1;
-        const normalizedDist = dist / maxDist;
-        const duration = 2000 + normalizedDist * 1500;
+        const duration = 600;
         const step = 16.7 / duration;
 
         state.handAnimation = {
@@ -1124,7 +1120,7 @@
         config.playerColor = 'black';
         resetGameState();
         state.lastGameUpdate = Date.now();
-        setStatus('🎯 房间已创建！你执黑子，对手执白子，等待对手加入...', 'success');
+        setStatus('房间已创建！你执黑子，对手执白子，等待对手加入...', 'success');
         updateRoomStatus(`我的ID: ${state.selfId}`);
         applyPlayerColor();
         updateUI();
@@ -1248,7 +1244,8 @@
         return {
             size: config.size, komi: config.komi, scoringMethod: config.scoringMethod, koRule: config.koRule,
             board: state.board, current: state.current, captures: state.captures, koPoint: state.koPoint,
-            passCount: state.passCount, moveCount: state.moveCount, lastMove: state.lastMove, gameOver: state.gameOver, updatedAt: Date.now()
+            passCount: state.passCount, moveCount: state.moveCount, lastMove: state.lastMove, gameOver: state.gameOver, updatedAt: Date.now(),
+            lastMoveColor: state.lastMove ? (state.moveCount % 2 === 0 ? 2 : 1) : null
         };
     }
 
@@ -1258,6 +1255,9 @@
         Object.assign(state, { board: g.board, current: g.current, captures: g.captures, koPoint: g.koPoint, passCount: g.passCount, moveCount: g.moveCount, lastMove: g.lastMove, gameOver: g.gameOver });
         state.positionKeys = new Set([boardKey(state.board)]);
         updateUI(); draw(); resizeCanvas();
+        if(g.lastMove && g.lastMove.x !== undefined && g.lastMove.y !== undefined && g.lastMoveColor) {
+            startHandAnimation(g.lastMove.x, g.lastMove.y, g.lastMoveColor);
+        }
         if(state.gameOver) endGame();
     }
 
