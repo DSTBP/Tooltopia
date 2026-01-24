@@ -328,13 +328,15 @@
         ui.selfIdInput.onclick = () => {
             if (!ui.selfIdInput.value) return;
             const copySuccess = () => {
-                ui.selfIdInput.style.borderColor = '#0f0';
-                ui.selfIdInput.style.boxShadow = '0 0 8px rgba(0, 255, 0, 0.6)';
+                ui.selfIdInput.style.borderColor = '#00ff00';
+                ui.selfIdInput.style.boxShadow = '0 0 12px rgba(0, 255, 0, 0.8), inset 0 0 6px rgba(0, 255, 0, 0.3)';
+                ui.selfIdInput.style.backgroundColor = 'rgba(0, 255, 0, 0.1)';
                 setStatus('ID 已复制到剪贴板 ✓', 'success');
                 setTimeout(() => {
                     ui.selfIdInput.style.borderColor = '';
                     ui.selfIdInput.style.boxShadow = '';
-                }, 1500);
+                    ui.selfIdInput.style.backgroundColor = '';
+                }, 2000);
             };
             navigator.clipboard.writeText(ui.selfIdInput.value).then(copySuccess)
                 .catch(() => { ui.selfIdInput.select(); document.execCommand('copy'); copySuccess(); });
@@ -1122,7 +1124,7 @@
         config.playerColor = 'black';
         resetGameState();
         state.lastGameUpdate = Date.now();
-        setStatus('🎯 房间已创建！你执黑子，等待对手加入...', 'success');
+        setStatus('🎯 房间已创建！你执黑子，对手执白子，等待对手加入...', 'success');
         updateRoomStatus(`我的ID: ${state.selfId}`);
         applyPlayerColor();
         updateUI();
@@ -1155,7 +1157,7 @@
                     meta.role = 'player';
                     // 确认玩家加入，发送当前游戏状态
                     conn.send({ type: 'hello-ack', ok: true, role: 'player', color: 2, game: serializeGame() });
-                    setStatus('✓ 对手已加入！对方执白子，开始对局...', 'success');
+                    setStatus('✓ 对手已加入！你执黑子，对方执白子，开始对局...', 'success');
                     updateRoomStatus('对战中');
                     applyPlayerColor();
                     updateUI();
@@ -1173,7 +1175,8 @@
                     config.playerColor = d.color===1?'black':'white';
                     applyPlayerColor();
                     const colorText = d.color===1 ? '黑子' : '白子';
-                    setStatus(`✓ 已加入对局！你执${colorText}，准备开始...`, 'success');
+                    const opponentColorText = d.color===1 ? '白子' : '黑子';
+                    setStatus(`✓ 已加入对局！你执${colorText}，对手执${opponentColorText}，准备开始...`, 'success');
                 } else {
                     setStatus('✓ 已作为观战者加入', 'success');
                 }
@@ -1287,6 +1290,7 @@
         if(state.mode !== 'online') { state.human = config.playerColor==='black'?1:2; state.ai = 3-state.human; }
         ui.blackLabel.textContent = `黑方 (${getActorName(1)})`;
         ui.whiteLabel.textContent = `白方 (${getActorName(2)})`;
+        updateDifficultyUI();
     }
     
     function getActorName(c) {
@@ -1302,7 +1306,13 @@
     function boardKey(b) { return b.map(r => r.join('')).join('|'); }
     function saveSnapshot() { state.history.push({ board: state.board.map(r=>[...r]), current: state.current, captures: {...state.captures}, koPoint: state.koPoint, passCount: state.passCount, moveCount: state.moveCount, lastMove: state.lastMove }); }
     function checkDanger() { if(countAtari(state.board, state.human) > 0) ui.tipText.textContent = "警告：有棋子被叫吃！"; }
-    function updateDifficultyUI() { if(state.mode!=='online') ui.aiHint.textContent = `AI难度: ${labels.diff[state.difficulty]}`; }
+    function updateDifficultyUI() {
+        if(state.mode==='online') {
+            ui.aiHint.textContent = state.isHost ? '你: 黑子 | 对手: 白子' : '你: 白子 | 对手: 黑子';
+        } else {
+            ui.aiHint.textContent = `AI难度: ${labels.diff[state.difficulty]}`;
+        }
+    }
     function getPoint(e) {
         const r = canvas.getBoundingClientRect(), s = render.size/r.width, x = (e.clientX-r.left)*s, y = (e.clientY-r.top)*s;
         const col = Math.round((x-render.pad)/render.cell), row = Math.round((y-render.pad)/render.cell);
