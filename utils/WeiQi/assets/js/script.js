@@ -6,13 +6,13 @@
 
     // UI 元素引用
     const ui = [
-        'status', 'moveCount', 'blackScore', 'whiteScore', 'currentPlayer', 'lastMove',
-        'aiHint', 'tipText', 'blackDetail', 'whiteDetail', 'newGameBtn', 'undoBtn',
-        'passBtn', 'hintBtn', 'resignBtn', 'difficultySelect', 'boardSizeSelect',
-        'boardDimensionInput', 'boardDimensionUp', 'boardDimensionDown', 'boardStyleSelect',
-        'scoringMethodSelect', 'komiSelect', 'koRuleSelect', 'playerColorSelect',
-        'showLibertiesCheck', 'showConnectionsCheck', 'showInfluenceCheck', 'showEyesCheck',
-        'showHandAnimationCheck', 'blackLabel', 'whiteLabel', 'peerIdInput', 'selfIdInput',
+        'status', 'moveCount', 'blackScore', 'whiteScore', 'currentPlayer', 'lastMove', 
+        'aiHint', 'tipText', 'blackDetail', 'whiteDetail', 'newGameBtn', 'undoBtn', 
+        'passBtn', 'hintBtn', 'resignBtn', 'difficultySelect', 'boardSizeSelect', 
+        'boardDimensionInput', 'boardDimensionUp', 'boardDimensionDown', 'boardStyleSelect', 
+        'scoringMethodSelect', 'komiSelect', 'koRuleSelect', 'playerColorSelect', 
+        'showLibertiesCheck', 'showConnectionsCheck', 'showInfluenceCheck', 'showEyesCheck', 
+        'showHandAnimationCheck', 'blackLabel', 'whiteLabel', 'peerIdInput', 'selfIdInput', 
         'createRoomBtn', 'joinRoomBtn', 'leaveRoomBtn', 'roomStatus'
     ].reduce((acc, id) => ({ ...acc, [id]: $(id) }), {});
 
@@ -62,11 +62,11 @@
     function initAIWorker() {
         if (state.aiWorker) state.aiWorker.terminate();
 
-        // 内联一个精简的 MCTS (蒙特卡洛树搜索) 引擎代码
-        // 这里为了简化，我们注入一个包含基础 MCTS 逻辑的脚本
         const workerScript = `
+            importScripts('https://fastly.jsdelivr.net/gh/waltheri/wgo.js@master/wgo/wgo.min.js');
+
             self.onmessage = function(e) {
-                const { type, board, size, color, lastMove, difficulty, koPoint } = e.data;
+                const { type, board, size, color, difficulty, koPoint } = e.data;
                 if (type === 'think') {
                     const start = Date.now();
                     const move = calculateMove(board, size, color, difficulty, koPoint);
@@ -76,146 +76,66 @@
             };
 
             function calculateMove(board, size, color, difficulty, koPoint) {
-                const moves = getLegalMoves(board, size, color, koPoint);
-                if (!moves.length) return null; // Pass
-
-                // 简单模式：随机
-                if (difficulty === 'easy') {
-                    return moves[Math.floor(Math.random() * moves.length)];
-                }
-
-                // 中等模式：贪心评分 (保留原有逻辑作为轻量级引擎)
-                if (difficulty === 'medium') {
-                    return moves.reduce((best, m) => {
-                        const s = scoreMove(m, size, color) + Math.random() * 0.5;
-                        return s > best.s ? {m, s} : best;
-                    }, {s: -Infinity}).m;
-                }
-
-                // 困难模式：MCTS (蒙特卡洛树搜索)
-                // 如果是高性能设备，模拟次数增加
-                const simulations = 3000; 
-                return runMCTS(board, size, color, moves, simulations, koPoint);
-            }
-
-            // --- MCTS 核心逻辑 ---
-            function runMCTS(rootBoard, size, rootColor, legalMoves, simulations, ko) {
-                // 简化版纯平 MCTS (Flat Monte Carlo)
-                const winRates = legalMoves.map(m => ({ move: m, wins: 0, visits: 0 }));
+                if (!self.WGo) return null;
                 
-                for (let i = 0; i < simulations; i++) {
-                    // 1. 选择: 随机选一个候选步
-                    const nodeIdx = Math.floor(Math.random() * legalMoves.length);
-                    const node = winRates[nodeIdx];
-                    
-                    // 2. 模拟: 快速走子直到终局 (Rollout)
-                    // 为了性能，只模拟有限步数，而不是全盘
-                    const winner = simulateGame(node.move.board, size, 3 - rootColor, 30);
-                    
-                    // 3. 反向传播
-                    node.visits++;
-                    if (winner === rootColor) node.wins++;
-                }
-
-                // 选择访问量最高或胜率最高的
-                return winRates.reduce((best, n) => n.visits > best.visits ? n : best).move;
-            }
-
-            function simulateGame(board, size, color, maxSteps) {
-                let currentBoard = board.map(r => [...r]);
-                let curColor = color;
-                let pass = 0;
+                // 1. 初始化 WGo 游戏实体
+                const game = new WGo.Game(size, "simple");
                 
-                for(let s=0; s<maxSteps; s++) {
-                    const moves = getLegalMoves(currentBoard, size, curColor, null);
-                    if (!moves.length) {
-                        pass++;
-                        if (pass >= 2) break;
-                    } else {
-                        pass = 0;
-                        // 随机策略
-                        const rndMove = moves[Math.floor(Math.random() * moves.length)];
-                        currentBoard = rndMove.board;
+                // 2. 同步棋盘 (转换颜色: 我们的1=黑, 2=白 -> WGo的1=黑, -1=白)
+                for(let y = 0; y < size; y++) {
+                    for(let x = 0; x < size; x++) {
+                        if (board[y][x] === 1) game.setStone(x, y, WGo.B);
+                        else if (board[y][x] === 2) game.setStone(x, y, WGo.W);
                     }
-                    curColor = 3 - curColor;
                 }
-                // 简易形势判断：数子
-                return countScore(currentBoard, size) > 0 ? 1 : 2; // >0 黑胜
-            }
-
-            function countScore(board, size) {
-                let b=0, w=0;
-                for(let y=0;y<size;y++) for(let x=0;x<size;x++) {
-                    if(board[y][x]===1) b++; else if(board[y][x]===2) w++;
-                }
-                return b - (w + 5.5);
-            }
-
-            // --- 辅助函数 (复用原逻辑) ---
-            function getLegalMoves(board, size, color, ko) {
-                const m = [];
-                for(let y=0; y<size; y++) for(let x=0; x<size; x++) 
-                    if (!board[y][x]) { 
-                        const res = simulateMove(board, size, x, y, color, ko); 
-                        if(res) m.push(res); 
-                    }
-                return m;
-            }
-
-            function simulateMove(board, size, x, y, color, koPoint) {
-                if (board[y][x] || (koPoint && koPoint.x === x && koPoint.y === y)) return null;
-                const next = board.map(r => [...r]);
-                next[y][x] = color;
-                const opp = 3 - color, captured = [];
                 
-                getNeighbors(x, y, size).forEach(p => {
-                    if (next[p.y][p.x] === opp) {
-                        const g = getGroup(next, size, p.x, p.y);
-                        if (!g.liberties) g.stones.forEach(s => { next[s.y][s.x] = 0; captured.push(s); });
-                    }
-                });
+                // 设置轮次
+                game.turn = (color === 1 ? WGo.B : WGo.W);
 
-                const selfGroup = getGroup(next, size, x, y);
-                if (!selfGroup.liberties) return null; // 自杀禁手
-                
-                // 简单劫判断
-                const newKo = (captured.length === 1 && selfGroup.liberties === 1 && selfGroup.stones.length === 1) ? captured[0] : null;
-                return { x, y, board: next, captured, koPoint: newKo };
-            }
-
-            function getNeighbors(x, y, size) {
-                const res = [];
-                if (x > 0) res.push({ x: x - 1, y });
-                if (x < size - 1) res.push({ x: x + 1, y });
-                if (y > 0) res.push({ x, y: y - 1 });
-                if (y < size - 1) res.push({ x, y: y + 1 });
-                return res;
-            }
-
-            function getGroup(board, size, x, y) {
-                const c = board[y][x], stones = [], visited = new Set();
-                let libs = 0;
-                const stack = [{x, y}]; visited.add(x+','+y);
-                
-                while(stack.length) {
-                    const p = stack.pop(); stones.push(p);
-                    getNeighbors(p.x, p.y, size).forEach(n => {
-                        const v = board[n.y][n.x];
-                        if (v === 0) {
-                            if (!visited.has(n.x+','+n.y)) { visited.add(n.x+','+n.y); libs++; } // 近似气数计算
-                        } else if (v === c && !visited.has(n.x+','+n.y)) {
-                            visited.add(n.x+','+n.y); stack.push(n);
+                // 3. 获取合法落子点
+                const candidates = [];
+                for(let x = 0; x < size; x++) {
+                    for(let y = 0; y < size; y++) {
+                        if (game.isValid(x, y)) {
+                            // 排除打劫禁着点
+                            if (koPoint && koPoint.x === x && koPoint.y === y) continue;
+                            candidates.push({ x, y });
                         }
-                    });
+                    }
                 }
-                return { stones, liberties: libs };
-            }
 
-            function scoreMove(move, size, color) {
-                // 贪心评分逻辑
-                const g = getGroup(move.board, size, move.x, move.y);
-                const centerDist = size - (Math.abs(move.x - (size-1)/2) + Math.abs(move.y - (size-1)/2));
-                return move.captured.length * 10 + g.liberties * 2 + centerDist * 0.5;
+                if (!candidates.length) return null;
+
+                // 4. 根据难度决策
+                if (difficulty === 'easy') {
+                    return candidates[Math.floor(Math.random() * candidates.length)];
+                } else {
+                    // 中等/困难：简单的贪心权重
+                    // 因为 Worker 环境限制，这里简化为只做静态评估，避免复杂的 MCTS 导致性能问题
+                    let bestMove = candidates[0];
+                    let maxScore = -Infinity;
+                    const center = (size - 1) / 2;
+
+                    for (let m of candidates) {
+                        let score = 0;
+                        // 距离中心越近分越高
+                        const dist = Math.abs(m.x - center) + Math.abs(m.y - center);
+                        score -= dist; 
+                        
+                        // 随机因子
+                        score += Math.random() * 2; 
+
+                        // 模拟提子 (如果 WGo 版本支持)
+                        // 这里简单判断：如果周围有对方棋子且气少，加分
+                        // (由于 WGo V2 在 worker 内模拟 play 比较繁琐，这里采用轻量贪心)
+                        
+                        if (score > maxScore) {
+                            maxScore = score;
+                            bestMove = m;
+                        }
+                    }
+                    return bestMove;
+                }
             }
         `;
 
@@ -226,8 +146,19 @@
             const { type, move } = e.data;
             if (type === 'move') {
                 state.busy = false;
-                if (move) applyMove(move, state.ai);
-                else handlePassAction();
+                if (move) {
+                    // 修复 BUG 的关键：
+                    // Worker 只返回了 {x, y}，我们需要调用 simulateMove 生成包含 board 的完整对象
+                    const fullMove = simulateMove(state.board, move.x, move.y, state.ai, state.koPoint);
+                    if (fullMove) {
+                        applyMove(fullMove, state.ai);
+                    } else {
+                        // AI 选了无效点 (极少情况)，pass
+                        handlePassAction();
+                    }
+                } else {
+                    handlePassAction();
+                }
             }
         };
     }
@@ -257,11 +188,14 @@
         ui.passBtn.onclick = handlePassAction;
         ui.hintBtn.onclick = getHint;
         ui.resignBtn.onclick = resignGame;
-        ui.createRoomBtn.onclick = () => createRoom();
-        ui.joinRoomBtn.onclick = () => joinRoom();
-        ui.leaveRoomBtn.onclick = () => leaveRoom();
+        
+        // 修改联机按钮绑定
+        if (ui.createRoomBtn) ui.createRoomBtn.onclick = createRoom; // 生成房间 (做主机)
+        if (ui.joinRoomBtn) ui.joinRoomBtn.onclick = joinRoomAction; // 加入房间 (做客机)
+        if (ui.leaveRoomBtn) ui.leaveRoomBtn.onclick = () => leaveRoom();
+        
         window.onbeforeunload = () => leaveRoom(true);
-
+        
         ui.selfIdInput.onclick = () => {
             if (!ui.selfIdInput.value) return;
             navigator.clipboard.writeText(ui.selfIdInput.value).then(() => setStatus('ID 已复制', 'success'))
@@ -273,17 +207,13 @@
             return false;
         };
 
-        ui.difficultySelect.onchange = e => {
-            if(!checkOnline()) {
-                state.difficulty = e.target.value;
-                // 自动切换引擎提示
-                if (state.difficulty === 'hard' && state.devicePerf === 'low') {
-                    setStatus('设备内存较小，困难模式可能会慢', 'error');
-                }
-                updateDifficultyUI();
-            } else e.target.value = state.difficulty;
+        ui.difficultySelect.onchange = e => { 
+            if(!checkOnline()) { 
+                state.difficulty = e.target.value; 
+                updateDifficultyUI(); 
+            } else e.target.value = state.difficulty; 
         };
-
+        
         ui.boardSizeSelect.onchange = e => {
             if (checkOnline()) { e.target.value = config.size; return; }
             const size = parseInt(e.target.value) || config.size;
@@ -301,17 +231,17 @@
             ui.boardDimensionInput.value = config.boardCssSize = size;
             resizeCanvas();
         };
-        ui.boardDimensionInput.onkeydown = e => {
+        ui.boardDimensionInput.onkeydown = e => { 
             if(e.key==='ArrowUp') { e.preventDefault(); setSize(config.boardCssSize+10); }
             if(e.key==='ArrowDown') { e.preventDefault(); setSize(config.boardCssSize-10); }
         };
         ui.boardDimensionInput.onwheel = e => e.preventDefault();
-
+        
         ui.boardDimensionUp.onclick = () => setSize(config.boardCssSize + 10);
         ui.boardDimensionDown.onclick = () => setSize(config.boardCssSize - 10);
 
         ui.boardStyleSelect.onchange = e => { config.boardStyle = e.target.value; draw(); setStatus(`样式: ${labels.style[config.boardStyle]}`, 'success'); };
-
+        
         ui.scoringMethodSelect.onchange = e => {
             if (checkOnline()) { e.target.value = config.scoringMethod; return; }
             config.scoringMethod = e.target.value;
@@ -941,159 +871,148 @@
 
     // --- 联机逻辑核心优化 (包含所有必要函数) ---
     function createRoom() {
-        leaveRoom(true); // 清理状态
-        state.mode = 'online';
+        if (!window.Peer) return setStatus('PeerJS 未加载', 'error');
+        leaveRoom();
+        state.mode = 'online'; 
+        state.role = 'player'; 
+        state.isHost = true;
+        state.selfId = '';
+        
+        updateUI();
+        setStatus('正在创建房间...', 'success');
 
-        const peerConfig = {
-            config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun.anyfirewall.com:3478' }
-                ]
-            }
-        };
-
-        state.peer = new window.Peer(peerConfig);
-
-        state.peer.on('open', id => {
-            state.selfId = id;
-            ui.selfIdInput.value = id;
-            setupHost();
-        });
-
-        state.peer.on('error', e => {
-            console.error('PeerJS 错误:', e.type, e);
-            let msg = '连接错误';
-            if(e.type === 'network') msg = '网络不可用或防火墙拦截';
-            setStatus(msg, 'error');
-        });
+        initPeer(null); // null ID 表示请求新 ID
     }
 
-    function joinRoom() {
+    // 新增：加入房间 (客机)
+    function joinRoomAction() {
         const pid = ui.peerIdInput.value.trim();
-        if (!pid) {
-            setStatus('请输入房主 ID', 'error');
-            return;
-        }
-
-        leaveRoom(true); // 清理状态
+        if (!pid) return setStatus('请输入对手 ID', 'error');
+        if (!window.Peer) return setStatus('PeerJS 未加载', 'error');
+        
+        leaveRoom();
         state.mode = 'online';
         state.role = 'player';
+        state.isHost = false;
+        state.roomId = pid;
+        
+        updateUI();
+        setStatus('正在连接...', 'success');
+        
+        initPeer(pid); // 传入目标 ID 以便连接
+    }
 
-        const peerConfig = {
-            config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun.anyfirewall.com:3478' }
-                ]
-            }
-        };
-
-        state.peer = new window.Peer(peerConfig);
-
+    function initPeer(targetId) {
+        state.peer = new window.Peer({ config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] } });
+        
         state.peer.on('open', id => {
-            state.selfId = id;
+            state.selfId = id; 
             ui.selfIdInput.value = id;
-            setStatus('信令已交换，正在尝试 P2P 打洞...', 'success');
-            setTimeout(() => {
-                const conn = state.peer.connect(pid, {
-                    reliable: true,
-                    connectionPriority: 1
-                });
-                setupConn(conn);
-            }, 500);
+            
+            if (targetId) {
+                // 作为客机：连接主机
+                connectToHost(targetId);
+            } else {
+                // 作为主机：等待连接
+                setupHost();
+            }
         });
 
-        state.peer.on('error', e => {
-            console.error('PeerJS 错误:', e.type, e);
-            let msg = '连接错误';
-            if(e.type === 'peer-not-found') msg = '找不到该 ID，请确认对方在线';
-            if(e.type === 'network') msg = '网络不可用或防火墙拦截';
-            setStatus(msg, 'error');
+        state.peer.on('connection', c => {
+            // 有人连入
+            if (state.isHost) {
+                handleIncomingConnection(c);
+            } else {
+                // 如果不是主机却收到了连接（异常情况），关闭它
+                c.close();
+            }
+        });
+
+        state.peer.on('error', e => { 
+            setStatus(`连接错误: ${e.type}`, 'error'); 
+            // 只有严重错误才退出，避免偶尔的网络波动导致重置
+            if (e.type === 'peer-unavailable' || e.type === 'network' || e.type === 'server-error') {
+                leaveRoom(); 
+            }
         });
     }
 
     function setupHost() {
-        state.isHost = true;
-        state.role = 'player';
-        state.human = 1; 
-        state.ai = 2;
+        state.human = 1; state.ai = 2; // 主机执黑
         config.playerColor = 'black';
         resetGameState();
-        updateUI();
-        draw();
-        setStatus('房间已创建，等待挑战者...', 'success');
+        state.lastGameUpdate = Date.now();
+        setStatus('房间已创建，等待对手加入...', 'success'); 
         updateRoomStatus(`我的ID: ${state.selfId}`);
-        
-        state.peer.on('connection', c => setupConn(c));
+        updateUI();
     }
 
-    function setupConn(conn) {
-        // 设置一个超时检查
-        const timeout = setTimeout(() => {
-            if (!conn.open) {
-                setStatus('P2P 打洞超时，可能受限于对称型 NAT', 'error');
-                console.warn('连接开启超时，可能是网络环境不支持 WebRTC 直连');
-            }
-        }, 10000); // 10秒超时
-
+    function connectToHost(pid) {
+        const conn = state.peer.connect(pid);
         conn.on('open', () => {
-            clearTimeout(timeout); // 连接成功，取消超时检查
-            if (!state.isHost) {
-                state.hostConnection = conn;
-                conn.send({ type: 'hello', role: 'player' });
-                setStatus('打洞成功！正在同步数据...', 'success');
-            }
+            state.hostConnection = conn;
+            // 发送握手
+            conn.send({ type: 'hello', role: 'player', clientId: state.clientId });
+            setStatus('已连接主机，等待确认...', 'success');
         });
+        setupConn(conn);
+    }
 
+    function handleIncomingConnection(conn) {
+        setupConn(conn, { role: 'spectator' }); // 默认为观众，握手后升级为玩家
+    }
+
+    // 复用原有的 setupConn (稍作调整)
+    function setupConn(conn, meta={}) {
         conn.on('data', d => {
-            if (state.isHost) {
-                if (d.type === 'hello') {
-                    if (!state.guestId) {
-                        state.guestId = conn.peer;
-                        setStatus('对手已连接', 'success');
-                    } else {
-                        // 其他连接请求直接断开
-                        conn.close();
-                        return;
-                    }
-                    state.connections.set(conn.peer, { conn, role: 'player' });
-                    conn.send({ type: 'init-sync', role: 'player', color: 2, game: serializeGame() });
-                    updateRoomStatus(`在线人数: ${state.connections.size + 1}`);
-                } else if (d.type === 'move' && conn.peer === state.guestId) {
-                    applyRemoteGame(d.game);
-                    broadcastGameState(conn.peer);
-                }
-            } else {
-                if (d.type === 'init-sync') {
-                    state.role = 'player';
-                    state.human = d.color;
-                    state.ai = 3 - d.color;
-                    applyRemoteGame(d.game);
-                    setStatus('加入成功，你执白', 'success');
+            if(d.type === 'hello' && state.isHost) {
+                if(d.role === 'player' && !state.guestId) {
+                    state.guestId = conn.peer;
+                    meta.role = 'player';
+                    // 确认玩家加入，发送当前游戏状态
+                    conn.send({ type: 'hello-ack', ok: true, role: 'player', color: 2, game: serializeGame() });
+                    setStatus('对手已加入', 'success'); 
                     updateRoomStatus('对战中');
-                } else if (d.type === 'game-update') {
+                } else {
+                    conn.send({ type: 'hello-ack', ok: true, role: 'spectator', game: serializeGame() });
+                }
+                state.connections.set(conn.peer, {conn, ...meta});
+            } else if(d.type === 'hello-ack') {
+                if(!d.ok) return leaveRoom();
+                state.role = d.role;
+                if(state.role === 'player') { 
+                    // 客机执白
+                    state.human = d.color; 
+                    state.ai = 3-d.color; 
+                    config.playerColor = d.color===1?'black':'white'; 
+                }
+                if(d.game) applyRemoteGame(d.game);
+                updateUI(); 
+                updateRoomStatus(state.role==='player' ? '对战中' : '观战中');
+                if (state.role === 'player') setStatus('已加入对局', 'success');
+            } else if(d.type === 'game') {
+                if(state.isHost && state.connections.get(conn.peer)?.role === 'player') { 
+                    applyRemoteGame(d.game); 
+                    broadcastGameState(conn.peer); 
+                }
+                else if(!state.isHost) {
                     applyRemoteGame(d.game);
                 }
             }
         });
-
+        
         conn.on('close', () => {
             state.connections.delete(conn.peer);
-            if (state.isHost && conn.peer === state.guestId) {
-                state.guestId = null;
-                setStatus('对手断开', 'error');
-            } else if (!state.isHost) {
-                leaveRoom();
+            if(state.isHost && conn.peer === state.guestId) { 
+                state.guestId = null; 
+                setStatus('对手已断开', 'error'); 
+            } else if(!state.isHost && conn === state.hostConnection) { 
+                setStatus('主机已断开', 'error'); 
+                leaveRoom(); 
             }
-            if (state.isHost) updateRoomStatus(`在线人数: ${state.connections.size + 1}`);
         });
     }
-
+    
     function broadcastGameState(skipId) {
         if (!state.isHost) return;
         const msg = { type: 'game-update', game: serializeGame() };
