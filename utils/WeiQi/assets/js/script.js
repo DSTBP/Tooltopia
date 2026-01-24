@@ -6,14 +6,14 @@
 
     // UI 元素引用
     const ui = [
-        'status', 'moveCount', 'blackScore', 'whiteScore', 'currentPlayer', 'lastMove', 
-        'aiHint', 'tipText', 'blackDetail', 'whiteDetail', 'newGameBtn', 'undoBtn', 
-        'passBtn', 'hintBtn', 'resignBtn', 'difficultySelect', 'boardSizeSelect', 
-        'boardDimensionInput', 'boardDimensionUp', 'boardDimensionDown', 'boardStyleSelect', 
-        'scoringMethodSelect', 'komiSelect', 'koRuleSelect', 'playerColorSelect', 
-        'showLibertiesCheck', 'showConnectionsCheck', 'showInfluenceCheck', 'showEyesCheck', 
-        'showHandAnimationCheck', 'blackLabel', 'whiteLabel', 'peerIdInput', 'selfIdInput', 
-        'joinRoomBtn', 'watchRoomBtn', 'leaveRoomBtn', 'roomStatus'
+        'status', 'moveCount', 'blackScore', 'whiteScore', 'currentPlayer', 'lastMove',
+        'aiHint', 'tipText', 'blackDetail', 'whiteDetail', 'newGameBtn', 'undoBtn',
+        'passBtn', 'hintBtn', 'resignBtn', 'difficultySelect', 'boardSizeSelect',
+        'boardDimensionInput', 'boardDimensionUp', 'boardDimensionDown', 'boardStyleSelect',
+        'scoringMethodSelect', 'komiSelect', 'koRuleSelect', 'playerColorSelect',
+        'showLibertiesCheck', 'showConnectionsCheck', 'showInfluenceCheck', 'showEyesCheck',
+        'showHandAnimationCheck', 'blackLabel', 'whiteLabel', 'peerIdInput', 'selfIdInput',
+        'createRoomBtn', 'joinRoomBtn', 'leaveRoomBtn', 'roomStatus'
     ].reduce((acc, id) => ({ ...acc, [id]: $(id) }), {});
 
     // 配置与状态
@@ -257,11 +257,11 @@
         ui.passBtn.onclick = handlePassAction;
         ui.hintBtn.onclick = getHint;
         ui.resignBtn.onclick = resignGame;
-        ui.joinRoomBtn.onclick = () => joinRoom(false);
-        ui.watchRoomBtn.onclick = () => joinRoom(true);
+        ui.createRoomBtn.onclick = () => createRoom();
+        ui.joinRoomBtn.onclick = () => joinRoom();
         ui.leaveRoomBtn.onclick = () => leaveRoom();
         window.onbeforeunload = () => leaveRoom(true);
-        
+
         ui.selfIdInput.onclick = () => {
             if (!ui.selfIdInput.value) return;
             navigator.clipboard.writeText(ui.selfIdInput.value).then(() => setStatus('ID 已复制', 'success'))
@@ -273,17 +273,17 @@
             return false;
         };
 
-        ui.difficultySelect.onchange = e => { 
-            if(!checkOnline()) { 
-                state.difficulty = e.target.value; 
+        ui.difficultySelect.onchange = e => {
+            if(!checkOnline()) {
+                state.difficulty = e.target.value;
                 // 自动切换引擎提示
                 if (state.difficulty === 'hard' && state.devicePerf === 'low') {
                     setStatus('设备内存较小，困难模式可能会慢', 'error');
                 }
-                updateDifficultyUI(); 
-            } else e.target.value = state.difficulty; 
+                updateDifficultyUI();
+            } else e.target.value = state.difficulty;
         };
-        
+
         ui.boardSizeSelect.onchange = e => {
             if (checkOnline()) { e.target.value = config.size; return; }
             const size = parseInt(e.target.value) || config.size;
@@ -301,17 +301,17 @@
             ui.boardDimensionInput.value = config.boardCssSize = size;
             resizeCanvas();
         };
-        ui.boardDimensionInput.onkeydown = e => { 
+        ui.boardDimensionInput.onkeydown = e => {
             if(e.key==='ArrowUp') { e.preventDefault(); setSize(config.boardCssSize+10); }
             if(e.key==='ArrowDown') { e.preventDefault(); setSize(config.boardCssSize-10); }
         };
         ui.boardDimensionInput.onwheel = e => e.preventDefault();
-        
+
         ui.boardDimensionUp.onclick = () => setSize(config.boardCssSize + 10);
         ui.boardDimensionDown.onclick = () => setSize(config.boardCssSize - 10);
 
         ui.boardStyleSelect.onchange = e => { config.boardStyle = e.target.value; draw(); setStatus(`样式: ${labels.style[config.boardStyle]}`, 'success'); };
-        
+
         ui.scoringMethodSelect.onchange = e => {
             if (checkOnline()) { e.target.value = config.scoringMethod; return; }
             config.scoringMethod = e.target.value;
@@ -940,25 +940,17 @@
     }
 
     // --- 联机逻辑核心优化 (包含所有必要函数) ---
-    function joinRoom(watch) {
-        const pid = ui.peerIdInput.value.trim();
-        if (!pid && (watch || ui.joinRoomBtn.innerText === '加入')) {
-            setStatus('请输入房主 ID', 'error');
-            return;
-        }
-
+    function createRoom() {
         leaveRoom(true); // 清理状态
         state.mode = 'online';
-        state.role = watch ? 'spectator' : 'player';
-        
-        // 1. 扩展 STUN 服务器列表，增加穿透成功率
+
         const peerConfig = {
             config: {
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:stun1.l.google.com:19302' },
                     { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun.anyfirewall.com:3478' } // 备用服务器
+                    { urls: 'stun:stun.anyfirewall.com:3478' }
                 ]
             }
         };
@@ -968,22 +960,54 @@
         state.peer.on('open', id => {
             state.selfId = id;
             ui.selfIdInput.value = id;
-            if (pid) {
-                setStatus('信令已交换，正在尝试 P2P 打洞...', 'success');
-                // 2. 稍微延迟连接，确保 Peer 状态稳定
-                setTimeout(() => {
-                    const conn = state.peer.connect(pid, { 
-                        reliable: true,
-                        connectionPriority: 1 // 提高优先级
-                    });
-                    setupConn(conn);
-                }, 500);
-            } else {
-                setupHost();
-            }
+            setupHost();
         });
 
-        // 增加错误监听，看看具体卡在哪
+        state.peer.on('error', e => {
+            console.error('PeerJS 错误:', e.type, e);
+            let msg = '连接错误';
+            if(e.type === 'network') msg = '网络不可用或防火墙拦截';
+            setStatus(msg, 'error');
+        });
+    }
+
+    function joinRoom() {
+        const pid = ui.peerIdInput.value.trim();
+        if (!pid) {
+            setStatus('请输入房主 ID', 'error');
+            return;
+        }
+
+        leaveRoom(true); // 清理状态
+        state.mode = 'online';
+        state.role = 'player';
+
+        const peerConfig = {
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun.anyfirewall.com:3478' }
+                ]
+            }
+        };
+
+        state.peer = new window.Peer(peerConfig);
+
+        state.peer.on('open', id => {
+            state.selfId = id;
+            ui.selfIdInput.value = id;
+            setStatus('信令已交换，正在尝试 P2P 打洞...', 'success');
+            setTimeout(() => {
+                const conn = state.peer.connect(pid, {
+                    reliable: true,
+                    connectionPriority: 1
+                });
+                setupConn(conn);
+            }, 500);
+        });
+
         state.peer.on('error', e => {
             console.error('PeerJS 错误:', e.type, e);
             let msg = '连接错误';
@@ -1021,7 +1045,7 @@
             clearTimeout(timeout); // 连接成功，取消超时检查
             if (!state.isHost) {
                 state.hostConnection = conn;
-                conn.send({ type: 'hello', role: state.role });
+                conn.send({ type: 'hello', role: 'player' });
                 setStatus('打洞成功！正在同步数据...', 'success');
             }
         });
@@ -1029,32 +1053,29 @@
         conn.on('data', d => {
             if (state.isHost) {
                 if (d.type === 'hello') {
-                    let finalRole = d.role;
-                    if (d.role === 'player') {
-                        if (!state.guestId) {
-                            state.guestId = conn.peer;
-                            setStatus('对手已连接', 'success');
-                        } else {
-                            finalRole = 'spectator';
-                        }
+                    if (!state.guestId) {
+                        state.guestId = conn.peer;
+                        setStatus('对手已连接', 'success');
+                    } else {
+                        // 其他连接请求直接断开
+                        conn.close();
+                        return;
                     }
-                    state.connections.set(conn.peer, { conn, role: finalRole });
-                    conn.send({ type: 'init-sync', role: finalRole, color: 2, game: serializeGame() });
+                    state.connections.set(conn.peer, { conn, role: 'player' });
+                    conn.send({ type: 'init-sync', role: 'player', color: 2, game: serializeGame() });
                     updateRoomStatus(`在线人数: ${state.connections.size + 1}`);
                 } else if (d.type === 'move' && conn.peer === state.guestId) {
                     applyRemoteGame(d.game);
-                    broadcastGameState(conn.peer); 
+                    broadcastGameState(conn.peer);
                 }
             } else {
                 if (d.type === 'init-sync') {
-                    state.role = d.role;
-                    if (state.role === 'player') {
-                        state.human = d.color;
-                        state.ai = 3 - d.color;
-                    }
+                    state.role = 'player';
+                    state.human = d.color;
+                    state.ai = 3 - d.color;
                     applyRemoteGame(d.game);
-                    setStatus(state.role === 'player' ? '加入成功，你执白' : '观战中...', 'success');
-                    updateRoomStatus(state.role === 'player' ? '对战中' : '观战中');
+                    setStatus('加入成功，你执白', 'success');
+                    updateRoomStatus('对战中');
                 } else if (d.type === 'game-update') {
                     applyRemoteGame(d.game);
                 }
@@ -1073,7 +1094,14 @@
         });
     }
 
-    // 补回被删除的 leaveRoom 函数
+    function broadcastGameState(skipId) {
+        if (!state.isHost) return;
+        const msg = { type: 'game-update', game: serializeGame() };
+        state.connections.forEach((v, k) => {
+            if (k !== skipId && v.conn.open) v.conn.send(msg);
+        });
+    }
+
     function leaveRoom(silent) {
         if(state.mode !== 'online') return;
         if(state.peer) state.peer.destroy();
@@ -1092,31 +1120,6 @@
         if(!silent) { setStatus('已断开', 'success'); startNewGame(); }
         updateUI(); 
         updateRoomStatus('未加入联机');
-    }
-
-    function broadcastGameState(skipId) {
-        if (!state.isHost) return;
-        const msg = { type: 'game-update', game: serializeGame() };
-        state.connections.forEach((v, k) => {
-            if (k !== skipId && v.conn.open) v.conn.send(msg);
-        });
-    }
-
-    function serializeGame() {
-        return {
-            size: config.size, komi: config.komi, scoringMethod: config.scoringMethod, koRule: config.koRule,
-            board: state.board, current: state.current, captures: state.captures, koPoint: state.koPoint,
-            passCount: state.passCount, moveCount: state.moveCount, lastMove: state.lastMove, gameOver: state.gameOver, updatedAt: Date.now()
-        };
-    }
-
-    function applyRemoteGame(g) {
-        if(g.moveCount < state.moveCount) return;
-        config.size = g.size; config.komi = g.komi; config.scoringMethod = g.scoringMethod; config.koRule = g.koRule;
-        Object.assign(state, { board: g.board, current: g.current, captures: g.captures, koPoint: g.koPoint, passCount: g.passCount, moveCount: g.moveCount, lastMove: g.lastMove, gameOver: g.gameOver });
-        state.positionKeys = new Set([boardKey(state.board)]);
-        updateUI(); draw(); resizeCanvas();
-        if(state.gameOver) endGame();
     }
 
     function serializeGame() {
@@ -1148,17 +1151,17 @@
     }
     
     function updateControlState() {
-        const on = state.mode === 'online', spec = on && state.role === 'spectator';
+        const on = state.mode === 'online';
         ui.difficultySelect.disabled = ui.boardSizeSelect.disabled = ui.playerColorSelect.disabled = ui.scoringMethodSelect.disabled = ui.komiSelect.disabled = ui.koRuleSelect.disabled = ui.undoBtn.disabled = on;
-        ui.newGameBtn.disabled = spec || (on && !state.isHost);
-        ui.passBtn.disabled = ui.resignBtn.disabled = ui.hintBtn.disabled = spec;
-        ui.joinRoomBtn.disabled = ui.watchRoomBtn.disabled = ui.peerIdInput.disabled = on;
+        ui.newGameBtn.disabled = on && !state.isHost;
+        ui.passBtn.disabled = ui.resignBtn.disabled = ui.hintBtn.disabled = false;
+        ui.createRoomBtn.disabled = ui.joinRoomBtn.disabled = ui.peerIdInput.disabled = on;
         ui.leaveRoomBtn.disabled = !on;
     }
 
     function updateGameInfo() {
         const rule = labels.rule[config.scoringMethod];
-        ui.tipText.textContent = `当前: ${rule}, 贴目 ${config.komi}。${state.mode==='online' ? (state.role==='spectator'?'观战模式':`ID: ${state.selfId}`) : '单机模式'}`;
+        ui.tipText.textContent = `当前: ${rule}, 贴目 ${config.komi}。${state.mode==='online' ? `ID: ${state.selfId}` : '单机模式'}`;
     }
 
     function applyPlayerColor() {
@@ -1168,7 +1171,7 @@
     }
     
     function getActorName(c) {
-        if(state.mode === 'online') return state.role==='spectator' ? (c===1?'黑':'白') : (c===state.human ? '你' : '对手');
+        if(state.mode === 'online') return c===state.human ? '你' : '对手';
         return c===state.human ? '玩家' : 'AI';
     }
 
