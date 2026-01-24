@@ -1034,37 +1034,10 @@
     function initPeer(targetId) {
         // --- 1. 定义庞大的公共 STUN 服务器列表 ---
         const rawStunList = [
-            "stun.12voip.com:3478", "stun.aa.net.uk:3478", "stun.acrobits.cz:3478",
-            "stun.actionvoip.com:3478", "stun.annatel.net:3478", "stun.antisip.com:3478",
-            "stun.cablenet-as.net:3478", "stun.cheapvoip.com:3478", "stun.commpeak.com:3478",
-            "stun.cope.es:3478", "stun.dcalling.de:3478", "stun.dus.net:3478",
-            "stun.easyvoip.com:3478", "stun.epygi.com:3478", "stun.freecall.com:3478",
-            "stun.freeswitch.org:3478", "stun.freevoipdeal.com:3478", "stun.halonet.pl:3478",
-            "stun.hoiio.com:3478", "stun.infra.net:3478", "stun.internetcalls.com:3478",
-            "stun.intervoip.com:3478", "stun.ipfire.org:3478", "stun.ippi.fr:3478",
-            "stun.it1.hr:3478", "stun.jumblo.com:3478", "stun.justvoip.com:3478",
-            "stun.l.google.com:19302", "stun.linphone.org:3478", "stun.liveo.fr:3478",
-            "stun.lowratevoip.com:3478", "stun.miwifi.com:3478", "stun.myvoiptraffic.com:3478",
-            "stun.mywatson.it:3478", "stun.netappel.com:3478", "stun.netgsm.com.tr:3478",
-            "stun.nfon.net:3478", "stun.nonoh.net:3478", "stun.ooma.com:3478",
-            "stun.pjsip.org:3478", "stun.poivy.com:3478", "stun.powervoip.com:3478",
-            "stun.ppdi.com:3478", "stun.rockenstein.de:3478", "stun.rolmail.net:3478",
-            "stun.rynga.com:3478", "stun.sip.us:3478", "stun.sipdiscount.com:3478",
-            "stun.siplogin.de:3478", "stun.sipnet.net:3478", "stun.sipnet.ru:3478",
-            "stun.siptraffic.com:3478", "stun.smartvoip.com:3478", "stun.smsdiscount.com:3478",
-            "stun.solcon.nl:3478", "stun.solnet.ch:3478", "stun.sonetel.com:3478",
-            "stun.sonetel.net:3478", "stun.srce.hr:3478", "stun.tel.lu:3478",
-            "stun.telbo.com:3478", "stun.t-online.de:3478", "stun.twt.it:3478",
-            "stun.uls.co.za:3478", "stun.usfamily.net:3478", "stun.vo.lu:3478",
-            "stun.voicetrading.com:3478", "stun.voip.aebc.com:3478", "stun.voip.blackberry.com:3478",
-            "stun.voip.eutelia.it:3478", "stun.voipblast.com:3478", "stun.voipbuster.com:3478",
-            "stun.voipbusterpro.com:3478", "stun.voipcheap.com:3478", "stun.voipfibre.com:3478",
-            "stun.voipgain.com:3478", "stun.voipinfocenter.com:3478", "stun.voipplanet.nl:3478",
-            "stun.voippro.com:3478", "stun.voipraider.com:3478", "stun.voipstunt.com:3478",
-            "stun.voipwise.com:3478", "stun.voipzoom.com:3478", "stun.voys.nl:3478",
-            "stun.voztele.com:3478", "stun.webcalldirect.com:3478", "stun.zadarma.com:3478",
-            "stun1.l.google.com:19302", "stun2.l.google.com:19302", 
-            "stun3.l.google.com:19302", "stun4.l.google.com:19302"
+            "stun.l.google.com:19302",
+            "stun1.l.google.com:19302",
+            "stun2.l.google.com:19302",
+            "stun.voip.blackberry.com:3478"
         ];
 
         // 格式化为 PeerJS 需要的对象结构 { urls: "stun:..." }
@@ -1078,7 +1051,7 @@
                 iceTransportPolicy: 'all', // 允许所有传输方式
                 iceCandidatePoolSize: 10   // 候选池大小，越大连接越快但越耗资源
             },
-            // debug: 2 // 如果连接有问题，取消注释这行看控制台报错
+            debug: 3 // 如果连接有问题，取消注释这行看控制台报错
         };
 
         try {
