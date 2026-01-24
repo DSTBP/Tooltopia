@@ -415,6 +415,25 @@
             if (k === 'showHandAnimation' && !state[k]) state.handAnimation = null;
             draw();
         });
+
+        document.querySelectorAll('h3, .fold-trigger').forEach(header => {
+            // 1. 设置鼠标样式，提示可点击
+            header.style.cursor = 'pointer';
+            header.style.userSelect = 'none';
+            
+            // 2. 添加点击事件
+            header.onclick = () => {
+                const content = header.nextElementSibling; // 获取标题下的内容容器
+                if (content) {
+                    // 切换显示状态
+                    const isHidden = content.style.display === 'none';
+                    content.style.display = isHidden ? '' : 'none';
+                    
+                    // 可选：切换标题的透明度或箭头方向来提示状态
+                    header.style.opacity = isHidden ? '1' : '0.6';
+                }
+            };
+        });
     }
 
     function handleNewGameClick() {
