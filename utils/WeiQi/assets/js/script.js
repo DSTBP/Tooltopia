@@ -942,18 +942,23 @@
     // --- 联机逻辑核心优化 (包含所有必要函数) ---
     function joinRoom(watch) {
         const pid = ui.peerIdInput.value.trim();
-        if (!pid && watch) return setStatus('观战需要输入房主 ID', 'error');
+        if (!pid && (watch || ui.joinRoomBtn.innerText === '加入')) {
+            setStatus('请输入房主 ID', 'error');
+            return;
+        }
 
-        // 现在 leaveRoom 已定义，不会报错
-        leaveRoom(true);
+        leaveRoom(true); // 清理状态
         state.mode = 'online';
         state.role = watch ? 'spectator' : 'player';
         
+        // 1. 扩展 STUN 服务器列表，增加穿透成功率
         const peerConfig = {
             config: {
                 iceServers: [
                     { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
+                    { urls: 'stun:stun1.l.google.com:19302' },
+                    { urls: 'stun:stun2.l.google.com:19302' },
+                    { urls: 'stun:stun.anyfirewall.com:3478' } // 备用服务器
                 ]
             }
         };
@@ -964,17 +969,27 @@
             state.selfId = id;
             ui.selfIdInput.value = id;
             if (pid) {
-                setStatus('正在穿越网络连接房主...', 'success');
-                const conn = state.peer.connect(pid, { reliable: true });
-                setupConn(conn);
+                setStatus('信令已交换，正在尝试 P2P 打洞...', 'success');
+                // 2. 稍微延迟连接，确保 Peer 状态稳定
+                setTimeout(() => {
+                    const conn = state.peer.connect(pid, { 
+                        reliable: true,
+                        connectionPriority: 1 // 提高优先级
+                    });
+                    setupConn(conn);
+                }, 500);
             } else {
                 setupHost();
             }
         });
 
+        // 增加错误监听，看看具体卡在哪
         state.peer.on('error', e => {
-            setStatus(`连接失败: ${e.type}`, 'error');
-            leaveRoom(true);
+            console.error('PeerJS 错误:', e.type, e);
+            let msg = '连接错误';
+            if(e.type === 'peer-not-found') msg = '找不到该 ID，请确认对方在线';
+            if(e.type === 'network') msg = '网络不可用或防火墙拦截';
+            setStatus(msg, 'error');
         });
     }
 
@@ -994,10 +1009,20 @@
     }
 
     function setupConn(conn) {
+        // 设置一个超时检查
+        const timeout = setTimeout(() => {
+            if (!conn.open) {
+                setStatus('P2P 打洞超时，可能受限于对称型 NAT', 'error');
+                console.warn('连接开启超时，可能是网络环境不支持 WebRTC 直连');
+            }
+        }, 10000); // 10秒超时
+
         conn.on('open', () => {
+            clearTimeout(timeout); // 连接成功，取消超时检查
             if (!state.isHost) {
                 state.hostConnection = conn;
                 conn.send({ type: 'hello', role: state.role });
+                setStatus('打洞成功！正在同步数据...', 'success');
             }
         });
 
