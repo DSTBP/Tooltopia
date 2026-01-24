@@ -960,12 +960,12 @@
     function drawHand() {
         if(!state.handAnimation) return;
         
-        // 核心修改：根据时间差计算进度，彻底解决快慢不一的问题
-        const now = Date.now();
+        const now = performance.now();
         const elapsed = now - state.handAnimation.startTime;
+        
+        // 使用动态计算出来的 duration
         let progress = elapsed / state.handAnimation.duration;
 
-        // 动画结束处理
         if(progress >= 1) { 
             state.handAnimation = null; 
             if (state.nextHandAnimation) {
@@ -973,7 +973,7 @@
                 state.nextHandAnimation = null;
                 startHandAnimation(next.x, next.y, next.color);
             } else { 
-                draw(); // 最后重绘一次确保棋子显示出来
+                draw(); 
             }
             return; 
         }
@@ -982,12 +982,15 @@
         let x = targetX, y = targetY, s = 1, a = 1;
         const edge = isBlack ? render.size : 0;
         
-        // 插值逻辑保持不变，但现在的 progress 是绝对平滑的
+        // 动画插值逻辑
         if(progress < 0.4) { 
+            // 进场
             const t = progress / 0.4; 
-            y = edge + (targetY - edge) * t; 
-            s = 0.8 + 0.2 * t; 
+            const easeT = t * (2 - t); 
+            y = edge + (targetY - edge) * easeT; 
+            s = 0.8 + 0.2 * easeT; 
         } else if(progress > 0.6) { 
+            // 离场
             const t = (progress - 0.6) / 0.4; 
             y = targetY + (edge - targetY) * t; 
             a = 1 - t; 
@@ -998,18 +1001,16 @@
         ctx.globalAlpha = a; 
         ctx.translate(x, y); 
         ctx.scale(s, s);
-        
-        // 旋转处理：白棋从上方落下，黑棋从下方落下
-        // 注意：这里旋转的是贴图上下文，确保手部图片方向正确
         if(!isBlack) ctx.rotate(Math.PI);
         
         const img = render.handImage;
-        const ratio = (img.naturalWidth || 1) / (img.naturalHeight || 1);
-        const baseSize = render.cell * 1.5; 
-        const w = ratio >= 1 ? baseSize : baseSize * ratio;
-        const h = ratio >= 1 ? baseSize / ratio : baseSize;
-        
-        ctx.drawImage(img, -w/2, -h/2, w, h);
+        if (img.complete && img.naturalWidth > 0) {
+            const ratio = img.naturalWidth / img.naturalHeight;
+            const baseSize = render.cell * 1.5; 
+            const w = ratio >= 1 ? baseSize : baseSize * ratio;
+            const h = ratio >= 1 ? baseSize / ratio : baseSize;
+            ctx.drawImage(img, -w/2, -h/2, w, h);
+        }
         ctx.restore();
         
         requestAnimationFrame(draw);
@@ -1017,18 +1018,47 @@
     
     function startHandAnimation(x, y, color) {
         if (!state.showHandAnimation) return false;
-        // 如果当前已有动画在播放，存入队列并在当前动画结束后播放
+
+        // 防抖：如果是同一个棋子的重复调用，忽略
+        if (state.handAnimation && 
+            state.handAnimation.gridX === x && 
+            state.handAnimation.gridY === y && 
+            state.handAnimation.color === color) {
+            return true;
+        }
+
+        // 队列处理
         if (state.handAnimation) { 
             state.nextHandAnimation = { x, y, color }; 
             return true; 
         }
 
-        const { pad, cell } = render;
+        const { pad, cell, size } = render;
         const targetX = pad + x * cell;
         const targetY = pad + y * cell;
         const isBlack = color === 1;
 
-        // 核心修改：不再计算 step，而是记录开始时间
+        // --- 核心计算开始 ---
+        
+        // 1. 确定手的起始位置 (黑棋从底部size处出现，白棋从顶部0处出现)
+        const startY = isBlack ? size : 0;
+        
+        // 2. 计算垂直移动距离 (像素)
+        const distance = Math.abs(targetY - startY);
+        
+        // 3. 根据距离计算时长 (固定配速)
+        // 你的要求: 100px 耗时 600ms => 速度系数 = 6 ms/px
+        const msPerPixel = 6; 
+        
+        // 计算出的理论时长
+        let calcDuration = distance * msPerPixel;
+        
+        // *优化体验*：设置一个最小并底时长 (比如 250ms)
+        // 否则当棋子下在边缘(距离极短)时，动画会瞬间闪过，看起来像bug
+        const finalDuration = Math.max(250, calcDuration);
+
+        // --- 核心计算结束 ---
+
         state.handAnimation = {
             gridX: x, 
             gridY: y, 
@@ -1036,8 +1066,8 @@
             targetY,
             color, 
             isBlack, 
-            startTime: Date.now(), // 记录启动时间戳
-            duration: 600          // 固定动画时长 600ms
+            startTime: performance.now(), // 记录高精度开始时间
+            duration: finalDuration       // 使用动态计算的时长
         };
         draw(); 
         return true;
@@ -1287,7 +1317,6 @@
     function applyRemoteGame(g) {
         if(g.moveCount < state.moveCount) return;
         
-        // 只有当棋盘尺寸真正改变时才 resize，避免闪烁
         const sizeChanged = config.size !== g.size;
         
         config.size = g.size; 
@@ -1311,18 +1340,14 @@
         updateUI(); 
         if (sizeChanged) resizeCanvas();
 
-        // 核心修改：优先触发动画，使用 g.lastMove.color 数据源
-        // 检查 g.lastMove 是否存在且不是停手(pass)
-        if(g.lastMove && !g.lastMove.pass && g.lastMove.x !== undefined && g.lastMove.y !== undefined) {
-            // 优先使用 lastMove 自带的 color，如果没有则回退到 g.lastMoveColor
-            const moveColor = g.lastMove.color || g.lastMoveColor;
-            if (moveColor) {
-                startHandAnimation(g.lastMove.x, g.lastMove.y, moveColor);
-            } else {
-                draw(); // 没有颜色信息，直接画
-            }
+        // 【核心修改】确保有落子才播放动画，并使用正确的数据源
+        // 优先使用 lastMove 里的 color，因为它是落子瞬间确定的
+        if(g.lastMove && !g.lastMove.pass && !g.lastMove.resign && g.lastMove.x !== undefined) {
+            const moveColor = g.lastMove.color || (g.moveCount % 2 === 0 ? 2 : 1); // 兜底计算颜色
+            startHandAnimation(g.lastMove.x, g.lastMove.y, moveColor);
         } else {
-            draw(); // 没有新落子（可能是悔棋或同步），直接重绘
+            // 如果只是普通同步（没有新落子），或者悔棋了，直接重绘
+            draw();
         }
 
         if(state.gameOver) endGame();
