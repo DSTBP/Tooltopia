@@ -939,16 +939,16 @@
         return pts;
     }
 
-    // --- 联机逻辑核心优化 ---
+    // --- 联机逻辑核心优化 (包含所有必要函数) ---
     function joinRoom(watch) {
         const pid = ui.peerIdInput.value.trim();
         if (!pid && watch) return setStatus('观战需要输入房主 ID', 'error');
 
+        // 现在 leaveRoom 已定义，不会报错
         leaveRoom(true);
         state.mode = 'online';
         state.role = watch ? 'spectator' : 'player';
         
-        // 强制使用公共 STUN 服务器确保不同网络互通
         const peerConfig = {
             config: {
                 iceServers: [
@@ -981,7 +981,7 @@
     function setupHost() {
         state.isHost = true;
         state.role = 'player';
-        state.human = 1; // 房主执黑
+        state.human = 1; 
         state.ai = 2;
         config.playerColor = 'black';
         resetGameState();
@@ -1003,7 +1003,6 @@
 
         conn.on('data', d => {
             if (state.isHost) {
-                // 房主处理逻辑
                 if (d.type === 'hello') {
                     let finalRole = d.role;
                     if (d.role === 'player') {
@@ -1011,19 +1010,17 @@
                             state.guestId = conn.peer;
                             setStatus('对手已连接', 'success');
                         } else {
-                            finalRole = 'spectator'; // 玩家位满，自动转观战
+                            finalRole = 'spectator';
                         }
                     }
                     state.connections.set(conn.peer, { conn, role: finalRole });
-                    // 发送当前棋局完整快照给新加入的人
                     conn.send({ type: 'init-sync', role: finalRole, color: 2, game: serializeGame() });
                     updateRoomStatus(`在线人数: ${state.connections.size + 1}`);
                 } else if (d.type === 'move' && conn.peer === state.guestId) {
                     applyRemoteGame(d.game);
-                    broadcastGameState(conn.peer); // 转发给所有观战者
+                    broadcastGameState(conn.peer); 
                 }
             } else {
-                // 客户端/观战者处理逻辑
                 if (d.type === 'init-sync') {
                     state.role = d.role;
                     if (state.role === 'player') {
@@ -1043,12 +1040,33 @@
             state.connections.delete(conn.peer);
             if (state.isHost && conn.peer === state.guestId) {
                 state.guestId = null;
-                setStatus('对手已断开', 'error');
+                setStatus('对手断开', 'error');
             } else if (!state.isHost) {
                 leaveRoom();
             }
             if (state.isHost) updateRoomStatus(`在线人数: ${state.connections.size + 1}`);
         });
+    }
+
+    // 补回被删除的 leaveRoom 函数
+    function leaveRoom(silent) {
+        if(state.mode !== 'online') return;
+        if(state.peer) state.peer.destroy();
+        Object.assign(state, { 
+            mode: 'solo', 
+            role: 'player', 
+            roomId: '', 
+            selfId: '', 
+            isHost: false, 
+            guestId: null, 
+            connections: new Map(),
+            hostConnection: null
+        });
+        config.playerColor = 'black'; 
+        applyPlayerColor();
+        if(!silent) { setStatus('已断开', 'success'); startNewGame(); }
+        updateUI(); 
+        updateRoomStatus('未加入联机');
     }
 
     function broadcastGameState(skipId) {
@@ -1057,6 +1075,23 @@
         state.connections.forEach((v, k) => {
             if (k !== skipId && v.conn.open) v.conn.send(msg);
         });
+    }
+
+    function serializeGame() {
+        return {
+            size: config.size, komi: config.komi, scoringMethod: config.scoringMethod, koRule: config.koRule,
+            board: state.board, current: state.current, captures: state.captures, koPoint: state.koPoint,
+            passCount: state.passCount, moveCount: state.moveCount, lastMove: state.lastMove, gameOver: state.gameOver, updatedAt: Date.now()
+        };
+    }
+
+    function applyRemoteGame(g) {
+        if(g.moveCount < state.moveCount) return;
+        config.size = g.size; config.komi = g.komi; config.scoringMethod = g.scoringMethod; config.koRule = g.koRule;
+        Object.assign(state, { board: g.board, current: g.current, captures: g.captures, koPoint: g.koPoint, passCount: g.passCount, moveCount: g.moveCount, lastMove: g.lastMove, gameOver: g.gameOver });
+        state.positionKeys = new Set([boardKey(state.board)]);
+        updateUI(); draw(); resizeCanvas();
+        if(state.gameOver) endGame();
     }
 
     function serializeGame() {
