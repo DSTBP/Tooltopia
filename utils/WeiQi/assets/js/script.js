@@ -1113,14 +1113,15 @@
         });
 
         state.peer.on('error', e => { 
-            // 忽略一些非致命的 ICE 错误，因为列表太大，总会有几个连不上的
-            if (e.type === 'peer-unavailable' || e.type === 'network' || e.type === 'server-error') {
-                setStatus(`连接严重错误: ${e.type}`, 'error'); 
-                console.error("Critical Peer Error:", e);
-                leaveRoom(); 
+            console.error("PeerJS Error Type:", e.type);
+            if (e.type === 'peer-unavailable') {
+                setStatus('连接失败：找不到对手 ID，请确认 ID 输入正确且对方在线', 'error');
+            } else if (e.type === 'network') {
+                setStatus('连接失败：网络连接异常，请检查是否被防火墙拦截', 'error');
             } else {
-                console.warn("Minor Peer Warning:", e);
+                setStatus(`连接错误: ${e.type}`, 'error');
             }
+            leaveRoom(); 
         });
     }
 
