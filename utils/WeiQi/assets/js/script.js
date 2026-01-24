@@ -1002,7 +1002,7 @@
         const dist = Math.abs(targetY - edge);
         const maxDist = size || 1;
         const normalizedDist = dist / maxDist;
-        const duration = 1500 + normalizedDist * 1500;
+        const duration = 2500 + normalizedDist * 1500;
         const step = 16.7 / duration;
 
         state.handAnimation = {
