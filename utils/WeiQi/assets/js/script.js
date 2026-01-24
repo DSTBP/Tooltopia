@@ -1042,12 +1042,22 @@
         const { pad, cell, size } = render;
         const targetX = pad + x * cell;
         const targetY = pad + y * cell;
-        const isBlack = color === 1;
+        
+        // --- 核心修改开始 ---
+        // 逻辑修正：不再单纯根据黑白决定方向，而是根据是否为“己方”
+        // isFromBottom: 如果落子颜色等于当前玩家控制的颜色(state.human)，则从底部伸出
+        const isFromBottom = (color === state.human); 
+
+        // 为了复用 drawHand 中现有的逻辑（它使用 isBlack 属性来决定 render.size 还是 0，以及是否旋转），
+        // 我们这里复用 isBlack 这个属性名，但赋予它“方向”的含义。
+        // drawHand 逻辑: isBlack=true -> 底部(y=size), 不旋转; isBlack=false -> 顶部(y=0), 旋转180度。
+        const animDirectionParam = isFromBottom; 
+        // --- 核心修改结束 ---
 
         // --- 固定步伐时间 (Pace-based) 计算 ---
-        const startY = isBlack ? size : 0;
+        const startY = isFromBottom ? size : 0;
         const distance = Math.abs(targetY - startY);
-        const msPerPixel = 6; // 设定速度：每像素6毫秒
+        const msPerPixel = 3; // 设定速度：每像素3毫秒
         let calcDuration = distance * msPerPixel;
         const finalDuration = Math.max(250, calcDuration); // 最小不少于250ms
 
@@ -1057,7 +1067,7 @@
             targetX, 
             targetY,
             color, 
-            isBlack, 
+            isBlack: animDirectionParam, // 将计算好的方向参数传给渲染层
             startTime: performance.now(),
             duration: finalDuration,
             progress: 0
