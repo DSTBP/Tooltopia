@@ -723,19 +723,6 @@
 
     function draw() {
         if (!render.size) return;
-
-        // 【新增】保存画布状态，防止旋转叠加
-        ctx.save();
-
-        // 【核心修改】如果是联机模式且自己执白，旋转棋盘 180 度
-        // 这样你的棋子（白子）就会显示在屏幕下方，对手（黑子）在上方
-        if (state.mode === 'online' && state.human === 2) {
-            const center = render.size / 2;
-            ctx.translate(center, center);
-            ctx.rotate(Math.PI);
-            ctx.translate(-center, -center);
-        }
-
         drawBg();
         drawGrid();
         if (state.showInfluence) drawInfl();
@@ -744,14 +731,7 @@
         if (state.showEyes) drawEyes();
         if (state.showLiberties) drawLibs();
         drawLast();
-        
-        // 如果有手部动画，它也会继承这个旋转
-        // 白子手部动画原本从逻辑上的 Top(0) 伸出，旋转后变成了屏幕下方的 Bottom
-        // 完美符合“执白时手从下面伸出”的要求
         if (state.handAnimation) drawHand();
-
-        // 【新增】恢复画布状态
-        ctx.restore();
     }
 
     function drawBg() {
@@ -982,8 +962,6 @@
         
         const now = performance.now();
         const elapsed = now - state.handAnimation.startTime;
-        
-        // 使用动态计算出来的 duration
         let progress = elapsed / state.handAnimation.duration;
 
         if(progress >= 1) { 
@@ -998,19 +976,19 @@
             return; 
         }
         
-        const { targetX, targetY, isBlack } = state.handAnimation;
+        // 从 state 中获取我们刚才存入的 isFromBottom
+        const { targetX, targetY, isFromBottom } = state.handAnimation;
         let x = targetX, y = targetY, s = 1, a = 1;
-        const edge = isBlack ? render.size : 0;
         
-        // 动画插值逻辑
+        // 边缘坐标取决于方向
+        const edge = isFromBottom ? render.size : 0;
+        
         if(progress < 0.4) { 
-            // 进场
             const t = progress / 0.4; 
             const easeT = t * (2 - t); 
             y = edge + (targetY - edge) * easeT; 
             s = 0.8 + 0.2 * easeT; 
         } else if(progress > 0.6) { 
-            // 离场
             const t = (progress - 0.6) / 0.4; 
             y = targetY + (edge - targetY) * t; 
             a = 1 - t; 
@@ -1021,7 +999,11 @@
         ctx.globalAlpha = a; 
         ctx.translate(x, y); 
         ctx.scale(s, s);
-        if(!isBlack) ctx.rotate(Math.PI);
+        
+        // --- 核心修改：旋转逻辑 ---
+        // 如果是从上面伸出来的 (!isFromBottom)，需要旋转 180度 让手指向下
+        // 如果是从下面伸出来的 (isFromBottom)，默认手指向上，无需旋转
+        if(!isFromBottom) ctx.rotate(Math.PI);
         
         const img = render.handImage;
         if (img.complete && img.naturalWidth > 0) {
@@ -1037,10 +1019,10 @@
     }
     
     function startHandAnimation(x, y, color) {
-        // 1. 本地开关检查：如果用户没开动画，直接拒绝，互不干扰
+        // 1. 本地开关检查
         if (!state.showHandAnimation) return false;
 
-        // 防抖与队列处理
+        // 防抖
         if (state.handAnimation && 
             state.handAnimation.gridX === x && 
             state.handAnimation.gridY === y && 
@@ -1048,6 +1030,7 @@
             return true;
         }
 
+        // 队列处理
         if (state.handAnimation) { 
             state.nextHandAnimation = { x, y, color }; 
             return true; 
@@ -1056,14 +1039,28 @@
         const { pad, cell, size } = render;
         const targetX = pad + x * cell;
         const targetY = pad + y * cell;
-        const isBlack = color === 1;
 
-        // --- 固定步伐时间 (Pace-based) 计算 ---
-        const startY = isBlack ? size : 0;
+        // --- 核心修改：判断手从哪个方向伸出 ---
+        let isFromBottom;
+        
+        if (state.mode === 'online') {
+            // 【联机模式】：如果是“我”落子，从下面伸出；如果是“对手”，从上面伸出
+            // state.human 存储的是当前玩家的执子颜色 (1或2)
+            isFromBottom = (color === state.human);
+        } else {
+            // 【单机模式】：保持默认习惯，黑棋在下，白棋在上
+            isFromBottom = (color === 1);
+        }
+        // ------------------------------------
+
+        // 根据方向确定起点 (下面是 size, 上面是 0)
+        const startY = isFromBottom ? size : 0;
+        
+        // 计算距离与时间 (固定配速逻辑)
         const distance = Math.abs(targetY - startY);
-        const msPerPixel = 6; // 设定速度：每像素6毫秒
+        const msPerPixel = 6; 
         let calcDuration = distance * msPerPixel;
-        const finalDuration = Math.max(250, calcDuration); // 最小不少于250ms
+        const finalDuration = Math.max(250, calcDuration); 
 
         state.handAnimation = {
             gridX: x, 
@@ -1071,13 +1068,13 @@
             targetX, 
             targetY,
             color, 
-            isBlack, 
+            isFromBottom, // 【重要】记录方向，供绘制时使用
             startTime: performance.now(),
             duration: finalDuration
         };
         
-        draw(); // 启动第一帧
-        return true; // 告诉调用者：动画已接管渲染
+        draw(); 
+        return true; 
     }
 
     function getStars() {
@@ -1428,27 +1425,21 @@
         }
     }
     function getPoint(e) {
-        const r = canvas.getBoundingClientRect();
-        // 计算缩放比例
-        const s = render.size / r.width;
-        // 计算相对于 Canvas 的像素坐标
-        const x = (e.clientX - r.left) * s;
-        const y = (e.clientY - r.top) * s;
-        
-        // 转换为网格坐标
-        let col = Math.round((x - render.pad) / render.cell);
-        let row = Math.round((y - render.pad) / render.cell);
-        
-        // 【核心修改】如果棋盘是旋转显示的，点击坐标也要对称翻转
-        if (state.mode === 'online' && state.human === 2) {
-            col = config.size - 1 - col;
-            row = config.size - 1 - row;
-        }
-
-        // 边界检查
-        const valid = (col >= 0 && col < config.size && row >= 0 && row < config.size && 
-                       Math.hypot(render.pad + col * render.cell - x, render.pad + row * render.cell - y) < render.cell * 0.45);
-        return valid ? {x: col, y: row} : null;
+        const r = canvas.getBoundingClientRect(), s = render.size/r.width, x = (e.clientX-r.left)*s, y = (e.clientY-r.top)*s;
+        const col = Math.round((x-render.pad)/render.cell), row = Math.round((y-render.pad)/render.cell);
+        return (col>=0 && col<config.size && row>=0 && row<config.size && Math.hypot(render.pad+col*render.cell-x, render.pad+row*render.cell-y) < render.cell*0.45) ? {x:col, y:row} : null;
+    }
+    function setupResizeListener() {
+        let t, mobile = window.innerWidth<=768;
+        window.onresize = () => {
+            const m = window.innerWidth<=768;
+            if(m !== mobile || m) { mobile = m; clearTimeout(t); t = setTimeout(resizeCanvas, 150); }
+        };
+    }
+    function getClientId() {
+        let id = localStorage.getItem('weiqi-cid');
+        if(!id) { id = Math.random().toString(36).slice(2); localStorage.setItem('weiqi-cid', id); }
+        return id;
     }
 
     init();
