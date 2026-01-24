@@ -25,7 +25,8 @@
       "Bash(fi)",
       "Bash(ls -lh '/d/Github/Tooltopia/utils/WeiQi/assets/js/'*.js)",
       "Bash(ls -lh assets/js/{script,ui-adapter}.js)",
-      "Bash(ls -1 assets/js/*.js)"
+      "Bash(ls -1 assets/js/*.js)",
+      "Bash(git add utils/WeiQi/assets/js/script.js)"
     ]
   }
 }

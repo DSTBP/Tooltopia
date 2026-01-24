@@ -327,8 +327,17 @@
         
         ui.selfIdInput.onclick = () => {
             if (!ui.selfIdInput.value) return;
-            navigator.clipboard.writeText(ui.selfIdInput.value).then(() => setStatus('ID 已复制', 'success'))
-                .catch(() => { ui.selfIdInput.select(); document.execCommand('copy'); setStatus('ID 已复制', 'success'); });
+            const copySuccess = () => {
+                ui.selfIdInput.style.borderColor = '#0f0';
+                ui.selfIdInput.style.boxShadow = '0 0 8px rgba(0, 255, 0, 0.6)';
+                setStatus('ID 已复制到剪贴板 ✓', 'success');
+                setTimeout(() => {
+                    ui.selfIdInput.style.borderColor = '';
+                    ui.selfIdInput.style.boxShadow = '';
+                }, 1500);
+            };
+            navigator.clipboard.writeText(ui.selfIdInput.value).then(copySuccess)
+                .catch(() => { ui.selfIdInput.select(); document.execCommand('copy'); copySuccess(); });
         };
 
         const checkOnline = (msg) => {
@@ -1113,7 +1122,7 @@
         config.playerColor = 'black';
         resetGameState();
         state.lastGameUpdate = Date.now();
-        setStatus('房间已创建，等待对手加入...', 'success');
+        setStatus('🎯 房间已创建！你执黑子，等待对手加入...', 'success');
         updateRoomStatus(`我的ID: ${state.selfId}`);
         applyPlayerColor();
         updateUI();
@@ -1146,8 +1155,10 @@
                     meta.role = 'player';
                     // 确认玩家加入，发送当前游戏状态
                     conn.send({ type: 'hello-ack', ok: true, role: 'player', color: 2, game: serializeGame() });
-                    setStatus('对手已加入', 'success'); 
+                    setStatus('✓ 对手已加入！对方执白子，开始对局...', 'success');
                     updateRoomStatus('对战中');
+                    applyPlayerColor();
+                    updateUI();
                 } else {
                     conn.send({ type: 'hello-ack', ok: true, role: 'spectator', game: serializeGame() });
                 }
@@ -1161,12 +1172,15 @@
                     state.ai = 3-d.color;
                     config.playerColor = d.color===1?'black':'white';
                     applyPlayerColor();
+                    const colorText = d.color===1 ? '黑子' : '白子';
+                    setStatus(`✓ 已加入对局！你执${colorText}，准备开始...`, 'success');
+                } else {
+                    setStatus('✓ 已作为观战者加入', 'success');
                 }
                 if(d.game) applyRemoteGame(d.game);
                 updateUI();
                 draw();
                 updateRoomStatus(state.role==='player' ? '对战中' : '观战中');
-                if (state.role === 'player') setStatus('已加入对局，可开始落子', 'success');
             } else if(d.type === 'game') {
                 if(state.isHost && state.connections.get(conn.peer)?.role === 'player') { 
                     applyRemoteGame(d.game); 
@@ -1276,8 +1290,10 @@
     }
     
     function getActorName(c) {
-        if(state.mode === 'online') return c===state.human ? '你' : '对手';
-        return c===state.human ? '玩家' : 'AI';
+        if(state.mode === 'online') {
+            return c === state.human ? '你' : '对手';
+        }
+        return c === state.human ? '玩家' : 'AI';
     }
 
     function updateRoomStatus(t) { if(ui.roomStatus) ui.roomStatus.textContent = t; }
