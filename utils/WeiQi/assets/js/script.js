@@ -59,83 +59,208 @@
     }
 
     // 核心修改：初始化 Web Worker AI 引擎
+    // 核心修改：使用 WGo 库实现蒙特卡洛模拟 (MCTS) 以提升困难模式智商
     function initAIWorker() {
         if (state.aiWorker) state.aiWorker.terminate();
 
-        const workerScript = `
-            importScripts('https://fastly.jsdelivr.net/gh/waltheri/wgo.js@master/wgo/wgo.min.js');
+        // 1. 获取本地 wgo.min.js 的完整绝对路径
+        const wgoUrl = new URL('./assets/js/wgo.min.js', document.baseURI).href;
 
+        const workerScript = `
+            // --- 1. 环境伪造 (Mock) ---
+            // WGo.js 是为浏览器设计的，直接在 Worker 运行会报错。
+            // 我们需要伪造 window, document 等对象来"欺骗"库文件。
+            self.window = self;
+            
+            self.document = {
+                readyState: 'complete',
+                // 关键：防止访问 currentScript.src 报错
+                currentScript: { src: '${wgoUrl}' },
+                // 欺骗 getElementsByTagName 查找 script 标签
+                getElementsByTagName: function(tag) { 
+                    return (tag === 'script') ? [{ src: '${wgoUrl}' }] : []; 
+                },
+                // 欺骗元素创建
+                createElement: function() { 
+                    return { 
+                        style: {}, 
+                        appendChild: function(){}, 
+                        setAttribute: function(){} 
+                    }; 
+                },
+                body: { appendChild: function(){} },
+                documentElement: { style: {} },
+                head: { appendChild: function(){} },
+                getElementById: function() { return null; }
+            };
+
+            self.navigator = { userAgent: 'Worker' };
+
+            // --- 2. 加载 WGo 库 ---
+            try {
+                importScripts('${wgoUrl}');
+            } catch (e) {
+                console.error("WGo script load failed:", e);
+            }
+
+            // --- 3. 消息处理 ---
             self.onmessage = function(e) {
                 const { type, board, size, color, difficulty, koPoint } = e.data;
                 if (type === 'think') {
                     const start = Date.now();
-                    const move = calculateMove(board, size, color, difficulty, koPoint);
+                    let move = null;
+                    try {
+                        move = calculateMove(board, size, color, difficulty, koPoint);
+                    } catch (err) {
+                        console.error("AI Calc Error:", err);
+                    }
                     const time = Date.now() - start;
                     self.postMessage({ type: 'move', move, time });
                 }
             };
 
+            // --- 4. AI 核心逻辑 ---
             function calculateMove(board, size, color, difficulty, koPoint) {
-                if (!self.WGo) return null;
+                const WGoLib = self.WGo || self.window.WGo;
+                if (!WGoLib) return null;
+
+                // 初始化当前局面的 Game 对象
+                const game = new WGoLib.Game(size, "simple");
                 
-                // 1. 初始化 WGo 游戏实体
-                const game = new WGo.Game(size, "simple");
-                
-                // 2. 同步棋盘 (转换颜色: 我们的1=黑, 2=白 -> WGo的1=黑, -1=白)
+                // 同步主线程传来的棋盘状态到 WGo 对象
+                // 主线程: 1=黑, 2=白; WGo: B(1)=黑, W(-1)=白
                 for(let y = 0; y < size; y++) {
                     for(let x = 0; x < size; x++) {
-                        if (board[y][x] === 1) game.setStone(x, y, WGo.B);
-                        else if (board[y][x] === 2) game.setStone(x, y, WGo.W);
+                        if (board[y][x] === 1) game.setStone(x, y, WGoLib.B);
+                        else if (board[y][x] === 2) game.setStone(x, y, WGoLib.W);
                     }
                 }
-                
-                // 设置轮次
-                game.turn = (color === 1 ? WGo.B : WGo.W);
+                game.turn = (color === 1 ? WGoLib.B : WGoLib.W);
 
-                // 3. 获取合法落子点
+                // 获取所有合法落子点
                 const candidates = [];
                 for(let x = 0; x < size; x++) {
                     for(let y = 0; y < size; y++) {
                         if (game.isValid(x, y)) {
-                            // 排除打劫禁着点
+                            // 过滤打劫禁着点
                             if (koPoint && koPoint.x === x && koPoint.y === y) continue;
                             candidates.push({ x, y });
                         }
                     }
                 }
 
-                if (!candidates.length) return null;
+                if (candidates.length === 0) return null;
 
-                // 4. 根据难度决策
+                // --- 难度分级 ---
+                
+                // [简单]: 纯随机
                 if (difficulty === 'easy') {
                     return candidates[Math.floor(Math.random() * candidates.length)];
-                } else {
-                    // 中等/困难：简单的贪心权重
-                    // 因为 Worker 环境限制，这里简化为只做静态评估，避免复杂的 MCTS 导致性能问题
-                    let bestMove = candidates[0];
-                    let maxScore = -Infinity;
-                    const center = (size - 1) / 2;
+                } 
+                
+                // [中等/困难]: 蒙特卡洛模拟 (Random Playouts)
+                // 困难模式模拟更多次，更聪明但思考时间稍长
+                const roundsPerMove = difficulty === 'hard' ? 20 : 5; 
+                const timeLimit = difficulty === 'hard' ? 2500 : 1000; // 毫秒超时限制
 
-                    for (let m of candidates) {
-                        let score = 0;
-                        // 距离中心越近分越高
-                        const dist = Math.abs(m.x - center) + Math.abs(m.y - center);
-                        score -= dist; 
-                        
-                        // 随机因子
-                        score += Math.random() * 2; 
+                return runMCTS(WGoLib, game, candidates, size, color, roundsPerMove, timeLimit);
+            }
 
-                        // 模拟提子 (如果 WGo 版本支持)
-                        // 这里简单判断：如果周围有对方棋子且气少，加分
-                        // (由于 WGo V2 在 worker 内模拟 play 比较繁琐，这里采用轻量贪心)
+            // 简易蒙特卡洛搜索：让 WGo 自己左右互搏，模拟出胜率最高的点
+            function runMCTS(WGoLib, originalGame, candidates, size, myColor, rounds, timeLimit) {
+                const startTime = Date.now();
+                let bestMove = candidates[0];
+                let bestScore = -Infinity;
+
+                // 随机打乱候选点，避免相同分数时总是选左上角
+                candidates.sort(() => Math.random() - 0.5);
+
+                for (let move of candidates) {
+                    let totalWinPoints = 0; // 累计胜负分
+
+                    // 对每个候选点进行 N 轮模拟
+                    for (let r = 0; r < rounds; r++) {
+                        // 1. 克隆局面 (通过新建 Game 并复制棋子，这是最稳妥的方式)
+                        const simGame = new WGoLib.Game(size, "simple");
+                        const rawBoard = originalGame.getPosition(); // 获取当前棋盘数据
                         
-                        if (score > maxScore) {
-                            maxScore = score;
-                            bestMove = m;
+                        // 快速复制棋盘 (仅复制非空点)
+                        for(let i=0; i < size*size; i++) {
+                            const val = rawBoard.schema[i]; // WGo 内部直接访问 schema 数组最快
+                            if(val) {
+                                // 将一维索引转回二维
+                                const sx = i % size;
+                                const sy = Math.floor(i / size);
+                                simGame.setStone(sx, sy, val);
+                            }
                         }
+                        simGame.turn = originalGame.turn; // 继承轮次
+
+                        // 2. 尝试走这一步
+                        simGame.play(move.x, move.y);
+
+                        // 3. 快速随机模拟直到终局 (Rollout)
+                        let passCount = 0;
+                        let steps = 0;
+                        const maxSteps = size * size * 1.5; // 防止死循环
+
+                        while (passCount < 2 && steps < maxSteps) {
+                            // 随机找一个合法点落子
+                            // 为了性能，采用"拒绝采样"：随机生成坐标，直到合法或尝试次数耗尽
+                            let found = false;
+                            for(let k=0; k<15; k++) {
+                                const rx = Math.floor(Math.random() * size);
+                                const ry = Math.floor(Math.random() * size);
+                                if(simGame.isValid(rx, ry)) {
+                                    simGame.play(rx, ry);
+                                    passCount = 0;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            
+                            if (!found) {
+                                simGame.pass();
+                                passCount++;
+                            }
+                            steps++;
+                        }
+
+                        // 4. 结算当前模拟盘的胜负 (简单子数统计)
+                        let balance = 0;
+                        const finalBoard = simGame.getPosition().schema;
+                        for(let i=0; i<finalBoard.length; i++) {
+                            balance += finalBoard[i]; // 黑+1, 白-1
+                        }
+                        // 减去贴目 (5.5)
+                        balance -= 5.5;
+
+                        // 转换为视角得分 (如果是黑棋，balance>0是好事；白棋反之)
+                        // WGo: 黑=1, 白=-1. 我们的 color: 黑=1, 白=2
+                        const amIBlack = (myColor === 1);
+                        if (amIBlack) totalWinPoints += balance;
+                        else totalWinPoints -= balance;
                     }
-                    return bestMove;
+
+                    // 计算该点的平均表现
+                    const avgScore = totalWinPoints / rounds;
+                    
+                    // 加上一点位置权重 (鼓励占角和边，避免开局全填天元)
+                    // 9路盘中心是 4,4
+                    const center = (size - 1) / 2;
+                    const distToCenter = Math.abs(move.x - center) + Math.abs(move.y - center);
+                    const heuristic = avgScore - (distToCenter * 0.1); // 距离惩罚很小，主要看胜率
+
+                    if (heuristic > bestScore) {
+                        bestScore = heuristic;
+                        bestMove = move;
+                    }
+
+                    // 超时保护
+                    if (Date.now() - startTime > timeLimit) break;
                 }
+
+                return bestMove;
             }
         `;
 
@@ -147,19 +272,23 @@
             if (type === 'move') {
                 state.busy = false;
                 if (move) {
-                    // 修复 BUG 的关键：
-                    // Worker 只返回了 {x, y}，我们需要调用 simulateMove 生成包含 board 的完整对象
+                    // Worker 返回的是决策坐标，主线程负责验证和生成完整数据
                     const fullMove = simulateMove(state.board, move.x, move.y, state.ai, state.koPoint);
                     if (fullMove) {
                         applyMove(fullMove, state.ai);
                     } else {
-                        // AI 选了无效点 (极少情况)，pass
+                        // 理论上 WGo 的 isValid 已经过滤了，防止万一
                         handlePassAction();
                     }
                 } else {
                     handlePassAction();
                 }
             }
+        };
+        
+        state.aiWorker.onerror = (e) => {
+            console.error("Worker Error:", e.message);
+            state.busy = false;
         };
     }
 
