@@ -444,7 +444,17 @@
     }
 
     function onBoardClick(e) {
-        if (state.gameOver || state.busy || (state.mode === 'online' && (state.role !== 'player' || (state.isHost && !state.guestId) || state.current !== state.human)) || (state.mode !== 'online' && state.current !== state.human)) return;
+        if (state.gameOver || state.busy) return;
+
+        // 检查是否有权限落子
+        if (state.mode === 'online') {
+            // 联机模式：检查是否为玩家角色，且轮到自己
+            if (state.role !== 'player' || state.current !== state.human) return;
+        } else {
+            // 单机模式：检查轮到人类玩家
+            if (state.current !== state.human) return;
+        }
+
         const pt = getPoint(e);
         if (!pt) return;
         if (state.board[pt.y][pt.x] !== 0) return setStatus('此处已有子', 'error');
@@ -1103,9 +1113,11 @@
         config.playerColor = 'black';
         resetGameState();
         state.lastGameUpdate = Date.now();
-        setStatus('房间已创建，等待对手加入...', 'success'); 
+        setStatus('房间已创建，等待对手加入...', 'success');
         updateRoomStatus(`我的ID: ${state.selfId}`);
+        applyPlayerColor();
         updateUI();
+        draw();
     }
 
     function connectToHost(pid) {
@@ -1143,16 +1155,18 @@
             } else if(d.type === 'hello-ack') {
                 if(!d.ok) return leaveRoom();
                 state.role = d.role;
-                if(state.role === 'player') { 
+                if(state.role === 'player') {
                     // 客机执白
-                    state.human = d.color; 
-                    state.ai = 3-d.color; 
-                    config.playerColor = d.color===1?'black':'white'; 
+                    state.human = d.color;
+                    state.ai = 3-d.color;
+                    config.playerColor = d.color===1?'black':'white';
+                    applyPlayerColor();
                 }
                 if(d.game) applyRemoteGame(d.game);
-                updateUI(); 
+                updateUI();
+                draw();
                 updateRoomStatus(state.role==='player' ? '对战中' : '观战中');
-                if (state.role === 'player') setStatus('已加入对局', 'success');
+                if (state.role === 'player') setStatus('已加入对局，可开始落子', 'success');
             } else if(d.type === 'game') {
                 if(state.isHost && state.connections.get(conn.peer)?.role === 'player') { 
                     applyRemoteGame(d.game); 
