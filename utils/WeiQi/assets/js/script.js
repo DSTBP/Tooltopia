@@ -997,17 +997,17 @@
         const targetX = pad + x * cell;
         const targetY = pad + y * cell;
         const isBlack = color === 1;
-        const edge = isBlack ? size : 0; 
+        const edge = isBlack ? size : 0;
 
         const dist = Math.abs(targetY - edge);
-        const maxDist = size || 1; 
-        const normalizedDist = dist / maxDist; 
-        const duration = 1500 + normalizedDist * 1500; 
+        const maxDist = size || 1;
+        const normalizedDist = dist / maxDist;
+        const duration = 800 + normalizedDist * 400;
         const step = 16.7 / duration;
 
-        state.handAnimation = { 
-            gridX: x, gridY: y, targetX, targetY, 
-            color, isBlack, progress: 0, step: step 
+        state.handAnimation = {
+            gridX: x, gridY: y, targetX, targetY,
+            color, isBlack, progress: 0, step: step
         };
         draw(); return true;
     }
