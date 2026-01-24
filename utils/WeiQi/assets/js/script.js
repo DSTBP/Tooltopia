@@ -959,53 +959,88 @@
 
     function drawHand() {
         if(!state.handAnimation) return;
-        const {progress, targetX, targetY, isBlack, step} = state.handAnimation;
-        state.handAnimation.progress += (step || 0.008); 
         
+        // 核心修改：根据时间差计算进度，彻底解决快慢不一的问题
+        const now = Date.now();
+        const elapsed = now - state.handAnimation.startTime;
+        let progress = elapsed / state.handAnimation.duration;
+
+        // 动画结束处理
         if(progress >= 1) { 
             state.handAnimation = null; 
             if (state.nextHandAnimation) {
                 const next = state.nextHandAnimation;
                 state.nextHandAnimation = null;
                 startHandAnimation(next.x, next.y, next.color);
-            } else { draw(); }
+            } else { 
+                draw(); // 最后重绘一次确保棋子显示出来
+            }
             return; 
         }
         
+        const { targetX, targetY, isBlack } = state.handAnimation;
         let x = targetX, y = targetY, s = 1, a = 1;
         const edge = isBlack ? render.size : 0;
-        if(progress < 0.4) { const t = progress/0.4; y = edge + (targetY-edge)*t; s = 0.8+0.2*t; }
-        else if(progress > 0.6) { const t = (progress-0.6)/0.4; y = targetY + (edge-targetY)*t; a = 1-t; s = 1-0.2*t; }
         
-        ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.scale(s,s);
+        // 插值逻辑保持不变，但现在的 progress 是绝对平滑的
+        if(progress < 0.4) { 
+            const t = progress / 0.4; 
+            y = edge + (targetY - edge) * t; 
+            s = 0.8 + 0.2 * t; 
+        } else if(progress > 0.6) { 
+            const t = (progress - 0.6) / 0.4; 
+            y = targetY + (edge - targetY) * t; 
+            a = 1 - t; 
+            s = 1 - 0.2 * t; 
+        }
+        
+        ctx.save(); 
+        ctx.globalAlpha = a; 
+        ctx.translate(x, y); 
+        ctx.scale(s, s);
+        
+        // 旋转处理：白棋从上方落下，黑棋从下方落下
+        // 注意：这里旋转的是贴图上下文，确保手部图片方向正确
         if(!isBlack) ctx.rotate(Math.PI);
+        
         const img = render.handImage;
         const ratio = (img.naturalWidth || 1) / (img.naturalHeight || 1);
         const baseSize = render.cell * 1.5; 
         const w = ratio >= 1 ? baseSize : baseSize * ratio;
         const h = ratio >= 1 ? baseSize / ratio : baseSize;
+        
         ctx.drawImage(img, -w/2, -h/2, w, h);
         ctx.restore();
+        
         requestAnimationFrame(draw);
     }
     
     function startHandAnimation(x, y, color) {
         if (!state.showHandAnimation) return false;
-        if (state.handAnimation) { state.nextHandAnimation = { x, y, color }; return true; }
+        // 如果当前已有动画在播放，存入队列并在当前动画结束后播放
+        if (state.handAnimation) { 
+            state.nextHandAnimation = { x, y, color }; 
+            return true; 
+        }
 
-        const { pad, cell, size } = render;
+        const { pad, cell } = render;
         const targetX = pad + x * cell;
         const targetY = pad + y * cell;
         const isBlack = color === 1;
 
-        const duration = 600;
-        const step = 16.7 / duration;
-
+        // 核心修改：不再计算 step，而是记录开始时间
         state.handAnimation = {
-            gridX: x, gridY: y, targetX, targetY,
-            color, isBlack, progress: 0, step: step
+            gridX: x, 
+            gridY: y, 
+            targetX, 
+            targetY,
+            color, 
+            isBlack, 
+            startTime: Date.now(), // 记录启动时间戳
+            duration: 600          // 固定动画时长 600ms
         };
-        draw(); return true;
+        draw(); 
+        return true;
     }
 
     function getStars() {
@@ -1251,13 +1286,45 @@
 
     function applyRemoteGame(g) {
         if(g.moveCount < state.moveCount) return;
-        config.size = g.size; config.komi = g.komi; config.scoringMethod = g.scoringMethod; config.koRule = g.koRule;
-        Object.assign(state, { board: g.board, current: g.current, captures: g.captures, koPoint: g.koPoint, passCount: g.passCount, moveCount: g.moveCount, lastMove: g.lastMove, gameOver: g.gameOver });
+        
+        // 只有当棋盘尺寸真正改变时才 resize，避免闪烁
+        const sizeChanged = config.size !== g.size;
+        
+        config.size = g.size; 
+        config.komi = g.komi; 
+        config.scoringMethod = g.scoringMethod; 
+        config.koRule = g.koRule;
+        
+        Object.assign(state, { 
+            board: g.board, 
+            current: g.current, 
+            captures: g.captures, 
+            koPoint: g.koPoint, 
+            passCount: g.passCount, 
+            moveCount: g.moveCount, 
+            lastMove: g.lastMove, 
+            gameOver: g.gameOver 
+        });
+        
         state.positionKeys = new Set([boardKey(state.board)]);
-        updateUI(); draw(); resizeCanvas();
-        if(g.lastMove && g.lastMove.x !== undefined && g.lastMove.y !== undefined && g.lastMoveColor) {
-            startHandAnimation(g.lastMove.x, g.lastMove.y, g.lastMoveColor);
+        
+        updateUI(); 
+        if (sizeChanged) resizeCanvas();
+
+        // 核心修改：优先触发动画，使用 g.lastMove.color 数据源
+        // 检查 g.lastMove 是否存在且不是停手(pass)
+        if(g.lastMove && !g.lastMove.pass && g.lastMove.x !== undefined && g.lastMove.y !== undefined) {
+            // 优先使用 lastMove 自带的 color，如果没有则回退到 g.lastMoveColor
+            const moveColor = g.lastMove.color || g.lastMoveColor;
+            if (moveColor) {
+                startHandAnimation(g.lastMove.x, g.lastMove.y, moveColor);
+            } else {
+                draw(); // 没有颜色信息，直接画
+            }
+        } else {
+            draw(); // 没有新落子（可能是悔棋或同步），直接重绘
         }
+
         if(state.gameOver) endGame();
     }
 
