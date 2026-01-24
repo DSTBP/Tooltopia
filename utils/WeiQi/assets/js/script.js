@@ -1109,7 +1109,9 @@
     }
 
     function connectToHost(pid) {
-        const conn = state.peer.connect(pid);
+        const conn = state.peer.connect(pid, {
+            reliable: true 
+        });
         conn.on('open', () => {
             state.hostConnection = conn;
             // 发送握手
