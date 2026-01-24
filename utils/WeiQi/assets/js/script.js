@@ -776,7 +776,10 @@
         for(let y=0; y<config.size; y++) for(let x=0; x<config.size; x++) {
             const val = state.board[y][x];
             
-            const isAnimating = state.handAnimation && state.handAnimation.gridX === x && state.handAnimation.gridY === y && state.handAnimation.progress < 0.4;
+            const isAnimating = state.handAnimation && 
+                                state.handAnimation.gridX === x && 
+                                state.handAnimation.gridY === y && 
+                                (state.handAnimation.progress || 0) < 0.55;
             const isPending = state.nextHandAnimation && state.nextHandAnimation.x === x && state.nextHandAnimation.y === y;
 
             if(!val || isAnimating || isPending) continue;
@@ -965,6 +968,9 @@
         
         // 使用动态计算出来的 duration
         let progress = elapsed / state.handAnimation.duration;
+        
+        // 【添加这一行】关键：将进度保存到 state 中，让 drawStones 能读取到
+        state.handAnimation.progress = progress;
 
         if(progress >= 1) { 
             state.handAnimation = null; 
@@ -1053,7 +1059,8 @@
             color, 
             isBlack, 
             startTime: performance.now(),
-            duration: finalDuration
+            duration: finalDuration,
+            progress: 0
         };
         
         draw(); // 启动第一帧
