@@ -27,7 +27,7 @@
         showHandAnimation: true, handAnimation: null, nextHandAnimation: null,
         mode: 'solo', role: 'player', roomId: '', selfId: '', peer: null, connections: new Map(),
         hostConnection: null, isHost: false, guestId: null, clientId: getClientId(), lastGameUpdate: 0,
-        devicePerf: 'unknown'
+        devicePerf: 'unknown', clientId: ''
     };
     
     let render = { size: 0, pad: 0, cell: 0, handImage: new Image() };
@@ -41,6 +41,7 @@
 
     // --- 初始化与事件 ---
     function init() {
+        state.clientId = getClientId();
         checkDevicePerformance();
         initAIWorker();
         bindEvents();
@@ -49,6 +50,15 @@
         startNewGame();
         resizeCanvas();
         setupResizeListener();
+    }
+
+    function getClientId() {
+        let id = localStorage.getItem('weiqi-cid');
+        if(!id) { 
+            id = Math.random().toString(36).slice(2); 
+            localStorage.setItem('weiqi-cid', id); 
+        }
+        return id;
     }
 
     function checkDevicePerformance() {
