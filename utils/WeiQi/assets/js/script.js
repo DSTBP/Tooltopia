@@ -1017,9 +1017,10 @@
     }
     
     function startHandAnimation(x, y, color) {
+        // 1. 本地开关检查：如果用户没开动画，直接拒绝，互不干扰
         if (!state.showHandAnimation) return false;
 
-        // 防抖：如果是同一个棋子的重复调用，忽略
+        // 防抖与队列处理
         if (state.handAnimation && 
             state.handAnimation.gridX === x && 
             state.handAnimation.gridY === y && 
@@ -1027,7 +1028,6 @@
             return true;
         }
 
-        // 队列处理
         if (state.handAnimation) { 
             state.nextHandAnimation = { x, y, color }; 
             return true; 
@@ -1038,26 +1038,12 @@
         const targetY = pad + y * cell;
         const isBlack = color === 1;
 
-        // --- 核心计算开始 ---
-        
-        // 1. 确定手的起始位置 (黑棋从底部size处出现，白棋从顶部0处出现)
+        // --- 固定步伐时间 (Pace-based) 计算 ---
         const startY = isBlack ? size : 0;
-        
-        // 2. 计算垂直移动距离 (像素)
         const distance = Math.abs(targetY - startY);
-        
-        // 3. 根据距离计算时长 (固定配速)
-        // 你的要求: 100px 耗时 600ms => 速度系数 = 6 ms/px
-        const msPerPixel = 6; 
-        
-        // 计算出的理论时长
+        const msPerPixel = 6; // 设定速度：每像素6毫秒
         let calcDuration = distance * msPerPixel;
-        
-        // *优化体验*：设置一个最小并底时长 (比如 250ms)
-        // 否则当棋子下在边缘(距离极短)时，动画会瞬间闪过，看起来像bug
-        const finalDuration = Math.max(250, calcDuration);
-
-        // --- 核心计算结束 ---
+        const finalDuration = Math.max(250, calcDuration); // 最小不少于250ms
 
         state.handAnimation = {
             gridX: x, 
@@ -1066,11 +1052,12 @@
             targetY,
             color, 
             isBlack, 
-            startTime: performance.now(), // 记录高精度开始时间
-            duration: finalDuration       // 使用动态计算的时长
+            startTime: performance.now(),
+            duration: finalDuration
         };
-        draw(); 
-        return true;
+        
+        draw(); // 启动第一帧
+        return true; // 告诉调用者：动画已接管渲染
     }
 
     function getStars() {
@@ -1315,15 +1302,18 @@
     }
 
     function applyRemoteGame(g) {
+        // 1. 只有步数更新时才处理（防止旧数据覆盖）
         if(g.moveCount < state.moveCount) return;
         
         const sizeChanged = config.size !== g.size;
         
+        // 2. 同步基础配置
         config.size = g.size; 
         config.komi = g.komi; 
         config.scoringMethod = g.scoringMethod; 
         config.koRule = g.koRule;
         
+        // 3. 立即同步游戏核心数据（逻辑状态瞬间同步，不受动画影响）
         Object.assign(state, { 
             board: g.board, 
             current: g.current, 
@@ -1337,18 +1327,30 @@
         
         state.positionKeys = new Set([boardKey(state.board)]);
         
+        // 4. 更新界面文字
         updateUI(); 
         if (sizeChanged) resizeCanvas();
 
-        // 【核心修改】确保有落子才播放动画，并使用正确的数据源
-        // 优先使用 lastMove 里的 color，因为它是落子瞬间确定的
+        // --- 核心修复开始 ---
+        let animationStarted = false;
+
+        // 判断是否有新落子需要表现
         if(g.lastMove && !g.lastMove.pass && !g.lastMove.resign && g.lastMove.x !== undefined) {
-            const moveColor = g.lastMove.color || (g.moveCount % 2 === 0 ? 2 : 1); // 兜底计算颜色
-            startHandAnimation(g.lastMove.x, g.lastMove.y, moveColor);
-        } else {
-            // 如果只是普通同步（没有新落子），或者悔棋了，直接重绘
+            // 获取颜色：优先用记录的，没有则推算
+            const moveColor = g.lastMove.color || (g.moveCount % 2 === 0 ? 2 : 1);
+            
+            // 尝试启动动画
+            // startHandAnimation 会根据 state.showHandAnimation 决定是否真的启动
+            // 如果本地关闭了动画，这里会返回 false
+            animationStarted = startHandAnimation(g.lastMove.x, g.lastMove.y, moveColor);
+        }
+
+        // 【关键修复】：如果动画没有启动（比如开关没开，或者只是悔棋同步），
+        // 必须强制重绘一次！否则不开动画的一方屏幕不会更新。
+        if (!animationStarted) {
             draw();
         }
+        // --- 核心修复结束 ---
 
         if(state.gameOver) endGame();
     }
