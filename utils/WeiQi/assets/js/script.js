@@ -786,7 +786,10 @@
         for(let y=0; y<config.size; y++) for(let x=0; x<config.size; x++) {
             const val = state.board[y][x];
             
-            const isAnimating = state.handAnimation && state.handAnimation.gridX === x && state.handAnimation.gridY === y && state.handAnimation.progress < 0.4;
+            // --- 核心修改：只要当前位置有手部动画，就不画棋子 ---
+            // 之前是 progress < 0.4，现在去掉了这个条件，
+            // 意味着直到手彻底离开并销毁动画对象前，棋子都不会出现。
+            const isAnimating = state.handAnimation && state.handAnimation.gridX === x && state.handAnimation.gridY === y;
             const isPending = state.nextHandAnimation && state.nextHandAnimation.x === x && state.nextHandAnimation.y === y;
 
             if(!val || isAnimating || isPending) continue;
@@ -981,38 +984,39 @@
                 state.nextHandAnimation = null;
                 startHandAnimation(next.x, next.y, next.color);
             } else { 
-                draw(); 
+                draw(); // 动画结束，最后重绘一次，此时 drawStones 会把棋子画出来
             }
             return; 
         }
         
-        // 从 state 中获取我们刚才存入的 isFromBottom
         const { targetX, targetY, isFromBottom } = state.handAnimation;
         let x = targetX, y = targetY, s = 1, a = 1;
         
-        // 边缘坐标取决于方向
         const edge = isFromBottom ? render.size : 0;
         
+        // --- 核心修改：移除缓动 (Easing)，改为线性移动 ---
+        // 这样视觉速度就是绝对均匀的
         if(progress < 0.4) { 
+            // 进场阶段 (0% - 40%)
             const t = progress / 0.4; 
-            const easeT = t * (2 - t); 
-            y = edge + (targetY - edge) * easeT; 
-            s = 0.8 + 0.2 * easeT; 
+            // 线性插值：
+            y = edge + (targetY - edge) * t; 
+            s = 0.8 + 0.2 * t; 
         } else if(progress > 0.6) { 
+            // 离场阶段 (60% - 100%)
             const t = (progress - 0.6) / 0.4; 
+            // 线性插值：
             y = targetY + (edge - targetY) * t; 
             a = 1 - t; 
             s = 1 - 0.2 * t; 
         }
+        // 40%-60% 期间是停顿期，坐标保持在 targetY 不变
         
         ctx.save(); 
         ctx.globalAlpha = a; 
         ctx.translate(x, y); 
         ctx.scale(s, s);
         
-        // --- 核心修改：旋转逻辑 ---
-        // 如果是从上面伸出来的 (!isFromBottom)，需要旋转 180度 让手指向下
-        // 如果是从下面伸出来的 (isFromBottom)，默认手指向上，无需旋转
         if(!isFromBottom) ctx.rotate(Math.PI);
         
         const img = render.handImage;
@@ -1029,10 +1033,8 @@
     }
     
     function startHandAnimation(x, y, color) {
-        // 1. 本地开关检查
         if (!state.showHandAnimation) return false;
 
-        // 防抖
         if (state.handAnimation && 
             state.handAnimation.gridX === x && 
             state.handAnimation.gridY === y && 
@@ -1040,7 +1042,6 @@
             return true;
         }
 
-        // 队列处理
         if (state.handAnimation) { 
             state.nextHandAnimation = { x, y, color }; 
             return true; 
@@ -1050,27 +1051,22 @@
         const targetX = pad + x * cell;
         const targetY = pad + y * cell;
 
-        // --- 核心修改：判断手从哪个方向伸出 ---
         let isFromBottom;
-        
         if (state.mode === 'online') {
-            // 【联机模式】：如果是“我”落子，从下面伸出；如果是“对手”，从上面伸出
-            // state.human 存储的是当前玩家的执子颜色 (1或2)
             isFromBottom = (color === state.human);
         } else {
-            // 【单机模式】：保持默认习惯，黑棋在下，白棋在上
             isFromBottom = (color === 1);
         }
-        // ------------------------------------
 
-        // 根据方向确定起点 (下面是 size, 上面是 0)
         const startY = isFromBottom ? size : 0;
         
-        // 计算距离与时间 (固定配速逻辑)
+        // --- 核心修改：严格匀速计算 ---
+        // 计算绝对距离
         const distance = Math.abs(targetY - startY);
+        // 设定速度：每像素 6 毫秒
         const msPerPixel = 6; 
-        let calcDuration = distance * msPerPixel;
-        const finalDuration = Math.max(250, calcDuration); 
+        // 直接计算时长，移除 Math.max 限制，确保无论远近速度都一致
+        const finalDuration = distance * msPerPixel;
 
         state.handAnimation = {
             gridX: x, 
@@ -1078,7 +1074,7 @@
             targetX, 
             targetY,
             color, 
-            isFromBottom, // 【重要】记录方向，供绘制时使用
+            isFromBottom,
             startTime: performance.now(),
             duration: finalDuration
         };
