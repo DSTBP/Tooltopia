@@ -1156,8 +1156,10 @@
             } else if(d.type === 'game') {
                 if(state.isHost && state.connections.get(conn.peer)?.role === 'player') { 
                     applyRemoteGame(d.game); 
+                    // 主机收到后，要广播给其他可能的观战者
                     broadcastGameState(conn.peer); 
                 }
+                // 如果是客机接收到主机的同步
                 else if(!state.isHost) {
                     applyRemoteGame(d.game);
                 }
@@ -1177,11 +1179,18 @@
     }
     
     function broadcastGameState(skipId) {
-        if (!state.isHost) return;
-        const msg = { type: 'game-update', game: serializeGame() };
-        state.connections.forEach((v, k) => {
-            if (k !== skipId && v.conn.open) v.conn.send(msg);
-        });
+        // 统一将消息类型改为 'game'
+        const msg = { type: 'game', game: serializeGame() }; 
+        
+        if (state.isHost) {
+            // 主机逻辑：转发给所有连接的人（除了跳过的那个）
+            state.connections.forEach((v, k) => {
+                if (k !== skipId && v.conn.open) v.conn.send(msg);
+            });
+        } else if (state.hostConnection && state.hostConnection.open) {
+            // 客机逻辑：必须将自己的落子状态发送给主机
+            state.hostConnection.send(msg);
+        }
     }
 
     function leaveRoom(silent) {
