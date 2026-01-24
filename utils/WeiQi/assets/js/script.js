@@ -27,7 +27,7 @@
         showHandAnimation: true, handAnimation: null, nextHandAnimation: null,
         mode: 'solo', role: 'player', roomId: '', selfId: '', peer: null, connections: new Map(),
         hostConnection: null, isHost: false, guestId: null, clientId: getClientId(), lastGameUpdate: 0,
-        devicePerf: 'unknown', clientId: ''
+        devicePerf: 'unknown'
     };
     
     let render = { size: 0, pad: 0, cell: 0, handImage: new Image() };
@@ -41,7 +41,6 @@
 
     // --- 初始化与事件 ---
     function init() {
-        state.clientId = getClientId();
         checkDevicePerformance();
         initAIWorker();
         bindEvents();
@@ -50,15 +49,6 @@
         startNewGame();
         resizeCanvas();
         setupResizeListener();
-    }
-
-    function getClientId() {
-        let id = localStorage.getItem('weiqi-cid');
-        if(!id) { 
-            id = Math.random().toString(36).slice(2); 
-            localStorage.setItem('weiqi-cid', id); 
-        }
-        return id;
     }
 
     function checkDevicePerformance() {
@@ -786,10 +776,7 @@
         for(let y=0; y<config.size; y++) for(let x=0; x<config.size; x++) {
             const val = state.board[y][x];
             
-            // --- 核心修改：只要当前位置有手部动画，就不画棋子 ---
-            // 之前是 progress < 0.4，现在去掉了这个条件，
-            // 意味着直到手彻底离开并销毁动画对象前，棋子都不会出现。
-            const isAnimating = state.handAnimation && state.handAnimation.gridX === x && state.handAnimation.gridY === y;
+            const isAnimating = state.handAnimation && state.handAnimation.gridX === x && state.handAnimation.gridY === y && state.handAnimation.progress < 0.4;
             const isPending = state.nextHandAnimation && state.nextHandAnimation.x === x && state.nextHandAnimation.y === y;
 
             if(!val || isAnimating || isPending) continue;
@@ -975,6 +962,8 @@
         
         const now = performance.now();
         const elapsed = now - state.handAnimation.startTime;
+        
+        // 使用动态计算出来的 duration
         let progress = elapsed / state.handAnimation.duration;
 
         if(progress >= 1) { 
@@ -984,40 +973,35 @@
                 state.nextHandAnimation = null;
                 startHandAnimation(next.x, next.y, next.color);
             } else { 
-                draw(); // 动画结束，最后重绘一次，此时 drawStones 会把棋子画出来
+                draw(); 
             }
             return; 
         }
         
-        const { targetX, targetY, isFromBottom } = state.handAnimation;
+        const { targetX, targetY, isBlack } = state.handAnimation;
         let x = targetX, y = targetY, s = 1, a = 1;
+        const edge = isBlack ? render.size : 0;
         
-        const edge = isFromBottom ? render.size : 0;
-        
-        // --- 核心修改：移除缓动 (Easing)，改为线性移动 ---
-        // 这样视觉速度就是绝对均匀的
+        // 动画插值逻辑
         if(progress < 0.4) { 
-            // 进场阶段 (0% - 40%)
+            // 进场
             const t = progress / 0.4; 
-            // 线性插值：
-            y = edge + (targetY - edge) * t; 
-            s = 0.8 + 0.2 * t; 
+            const easeT = t * (2 - t); 
+            y = edge + (targetY - edge) * easeT; 
+            s = 0.8 + 0.2 * easeT; 
         } else if(progress > 0.6) { 
-            // 离场阶段 (60% - 100%)
+            // 离场
             const t = (progress - 0.6) / 0.4; 
-            // 线性插值：
             y = targetY + (edge - targetY) * t; 
             a = 1 - t; 
             s = 1 - 0.2 * t; 
         }
-        // 40%-60% 期间是停顿期，坐标保持在 targetY 不变
         
         ctx.save(); 
         ctx.globalAlpha = a; 
         ctx.translate(x, y); 
         ctx.scale(s, s);
-        
-        if(!isFromBottom) ctx.rotate(Math.PI);
+        if(!isBlack) ctx.rotate(Math.PI);
         
         const img = render.handImage;
         if (img.complete && img.naturalWidth > 0) {
@@ -1033,8 +1017,10 @@
     }
     
     function startHandAnimation(x, y, color) {
+        // 1. 本地开关检查：如果用户没开动画，直接拒绝，互不干扰
         if (!state.showHandAnimation) return false;
 
+        // 防抖与队列处理
         if (state.handAnimation && 
             state.handAnimation.gridX === x && 
             state.handAnimation.gridY === y && 
@@ -1050,23 +1036,14 @@
         const { pad, cell, size } = render;
         const targetX = pad + x * cell;
         const targetY = pad + y * cell;
+        const isBlack = color === 1;
 
-        let isFromBottom;
-        if (state.mode === 'online') {
-            isFromBottom = (color === state.human);
-        } else {
-            isFromBottom = (color === 1);
-        }
-
-        const startY = isFromBottom ? size : 0;
-        
-        // --- 核心修改：严格匀速计算 ---
-        // 计算绝对距离
+        // --- 固定步伐时间 (Pace-based) 计算 ---
+        const startY = isBlack ? size : 0;
         const distance = Math.abs(targetY - startY);
-        // 设定速度：每像素 6 毫秒
-        const msPerPixel = 6; 
-        // 直接计算时长，移除 Math.max 限制，确保无论远近速度都一致
-        const finalDuration = distance * msPerPixel;
+        const msPerPixel = 6; // 设定速度：每像素6毫秒
+        let calcDuration = distance * msPerPixel;
+        const finalDuration = Math.max(250, calcDuration); // 最小不少于250ms
 
         state.handAnimation = {
             gridX: x, 
@@ -1074,13 +1051,13 @@
             targetX, 
             targetY,
             color, 
-            isFromBottom,
+            isBlack, 
             startTime: performance.now(),
             duration: finalDuration
         };
         
-        draw(); 
-        return true; 
+        draw(); // 启动第一帧
+        return true; // 告诉调用者：动画已接管渲染
     }
 
     function getStars() {
