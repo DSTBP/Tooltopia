@@ -62,6 +62,7 @@ body {
     max-width: 1280px;
     position: relative;
     z-index: 1;
+    flex: 1;
 }
 
 .back-btn {
@@ -902,5 +903,37 @@ body.day-mode .wrap-card {
     top: 10px;
     right: 10px;
     transform: scale(0.58);
+  }
+}
+
+/* ===== 页脚样式 ===== */
+.footer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.footer p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 300ms ease-out;
+}
+
+/* 日间模式页脚样式 */
+body.day-mode .footer p {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+/* 页脚响应式 */
+@media (max-width: 768px) {
+  .footer {
+    padding: 1.5rem 1rem;
+  }
+
+  .footer p {
+    font-size: 0.75rem;
   }
 }

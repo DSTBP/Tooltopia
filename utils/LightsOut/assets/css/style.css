@@ -20,6 +20,8 @@ body {
     min-height: 100vh;
     color: hsl(0 0% 90%);
     line-height: 1.6;
+    display: flex;
+    flex-direction: column;
 }
 
 /* ===== Header 样式 ===== */
@@ -515,9 +517,11 @@ body {
 
 /* ===== 变体中心样式 ===== */
 .variant-container {
+    width: 100%;
     max-width: 1200px;
     margin: 0 auto;
     padding: 1rem;
+    flex: 1 1 auto;
 }
 
 .variant-grid {
@@ -1241,5 +1245,38 @@ body.day-mode .alien-purple {
     top: 10px;
     right: 140px; /* 移动端也要调整位置避免重叠 */
     transform: scale(0.58);
+  }
+}
+
+/* ===== 页脚样式 ===== */
+.footer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 2rem 1rem;
+  text-align: center;
+  margin-top: auto;
+}
+
+.footer p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 300ms ease-out;
+}
+
+/* 日间模式页脚样式 */
+body.day-mode .footer p {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+/* 页脚响应式 */
+@media (max-width: 768px) {
+  .footer {
+    padding: 1.5rem 1rem;
+  }
+
+  .footer p {
+    font-size: 0.75rem;
   }
 }

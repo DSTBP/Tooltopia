@@ -24,7 +24,7 @@
 }
 
 body {
-    font-family: "Righteous", "Microsoft YaHei", "微软雅黑", sans-serif;
+    font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
     line-height: 1.6;
     color: var(--text-color);
     background:
@@ -39,7 +39,6 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     overflow-x: hidden; /* 防止大标题导致横向滚动 */
 }
 
@@ -55,6 +54,7 @@ body {
     position: relative;
     z-index: 2;
     width: 100%;
+    flex: 1;
 }
 
 /* Landing page layout */
@@ -64,6 +64,10 @@ body.landing-page .page-container {
     width: 100%;
     position: relative;
     z-index: 2;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 body.landing-page .header {
@@ -958,5 +962,37 @@ body.day-mode .description {
     top: 10px;
     right: 10px;
     transform: scale(0.58);
+  }
+}
+
+/* ===== 页脚样式 ===== */
+.footer {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.footer p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 300ms ease-out;
+}
+
+/* 日间模式页脚样式 */
+body.day-mode .footer p {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+/* 页脚响应式 */
+@media (max-width: 768px) {
+  .footer {
+    padding: 1.5rem 1rem;
+  }
+
+  .footer p {
+    font-size: 0.75rem;
   }
 }
