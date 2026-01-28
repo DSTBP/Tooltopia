@@ -972,6 +972,7 @@ body.day-mode .description {
   width: 100%;
   padding: 2rem 1rem;
   text-align: center;
+  margin-top: auto;
 }
 
 .footer p {

@@ -15,7 +15,7 @@ body {
     color: hsl(0 0% 90%);
 }
 
-.page-container { max-width: 1200px; width: 100%; position: relative; z-index: 2; }
+.page-container { max-width: 1200px; width: 100%; position: relative; z-index: 2; flex: 1; }
 .container { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px) saturate(1.2); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); overflow: hidden; }
 
 /* --- 头部与导航 --- */
@@ -231,3 +231,36 @@ body.day-mode ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); }
 .theme-toggle__checkbox:checked + .theme-toggle__btn::before { left: 57px; background-color: #ffdf6d; border-color: #e1c348; }
 .theme-toggle__checkbox:checked + .theme-toggle__btn::after { opacity: 1; animation: bounceIn 0.6s 0.1s backwards ease-in-out; }
 .theme-toggle__checkbox:checked + .theme-toggle__btn .theme-toggle__feature { opacity: 0; animation: none; }
+
+/* ===== 页脚样式 ===== */
+.footer {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    padding: 2rem 1rem;
+    text-align: center;
+    margin-top: auto;
+}
+
+.footer p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.4);
+    transition: color 300ms ease-out;
+}
+
+/* 日间模式页脚样式 */
+body.day-mode .footer p {
+    color: rgba(0, 0, 0, 0.5);
+}
+
+/* 页脚响应式 */
+@media (max-width: 768px) {
+    .footer {
+        padding: 1.5rem 1rem;
+    }
+
+    .footer p {
+        font-size: 0.75rem;
+    }
+}
