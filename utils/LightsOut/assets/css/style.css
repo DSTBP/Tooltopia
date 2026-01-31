@@ -1280,3 +1280,27 @@ body.day-mode .footer p {
     font-size: 0.75rem;
   }
 }
+
+/* =========================================
+   修复：日间模式下语言选择框样式
+   ========================================= */
+body.day-mode .language-selector select {
+    /* 将背景改为深色半透明，以便在浅色背景上显示 */
+    background-color: rgba(0, 0, 0, 0.05);
+    /* 将边框改为深色半透明 */
+    border-color: rgba(0, 0, 0, 0.15);
+    /* 确保文字颜色跟随主题变量 */
+    color: var(--text-color);
+}
+
+/* 鼠标悬停时的加深效果 */
+body.day-mode .language-selector select:hover {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-color: rgba(0, 0, 0, 0.3);
+}
+
+/* 修复下拉选项菜单的颜色（防止白底白字） */
+body.day-mode .language-selector select option {
+    background-color: #ffffff;
+    color: #1d1d1f;
+}
