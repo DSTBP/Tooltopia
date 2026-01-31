@@ -1304,3 +1304,23 @@ body.day-mode .language-selector select option {
     background-color: #ffffff;
     color: #1d1d1f;
 }
+
+/* ===== 移动端适配修改 ===== */
+@media (max-width: 768px) {
+  .theme-toggle {
+    /* 1. 解除固定定位：改为 absolute，按钮会随页面滚动，不再一直挡在屏幕上 */
+    position: absolute;
+
+    /* 2. 调整位置：避免与右上角的语言选择框重叠 */
+    /* 语言框在 right: 20px，宽度约 120px，所以这里设为 150px 或更多 */
+    top: 20px;
+    right: 150px; 
+    
+    /* 3. 调整大小：修改 scale 的数值 (0.1 ~ 1.0) 即可改变大小 */
+    /* 原来是 0.58 (较小)，改大一点例如 0.65 或 0.7 方便点击 */
+    transform: scale(0.65);
+    
+    /* 确保原点在右上角，位置调整更直观 */
+    transform-origin: top right;
+  }
+}
