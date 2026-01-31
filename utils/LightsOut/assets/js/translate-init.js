@@ -26,22 +26,38 @@
     };
 
     const forceLanguageSelectorStyle = () => {
+        // [关键修改] 检测当前是否为日间模式
+        const isDayMode = document.body.classList.contains('day-mode');
+
+        // [关键修改] 根据模式定义颜色变量
+        const styles = {
+            bg: isDayMode ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.15)',
+            text: isDayMode ? '#333333' : 'white',
+            border: isDayMode ? '1px solid rgba(0, 0, 0, 0.1)' : '1px solid rgba(255, 255, 255, 0.3)',
+            shadow: isDayMode ? '0 4px 12px rgba(0, 0, 0, 0.1)' : '0 4px 12px rgba(0, 0, 0, 0.15)',
+            optionBg: isDayMode ? '#ffffff' : '#1e1e1e', // 确保下拉菜单背景不透明且颜色正确
+            optionText: isDayMode ? '#333333' : 'white'
+        };
+
         SELECTORS.forEach(selector => {
             document.querySelectorAll(selector).forEach(element => {
+                // 应用动态颜色
+                element.style.setProperty('background', styles.bg, 'important');
+                element.style.setProperty('color', styles.text, 'important');
+                element.style.setProperty('border', styles.border, 'important');
+                element.style.setProperty('box-shadow', styles.shadow, 'important');
+
+                // 保持原有的布局样式
                 element.style.setProperty('position', 'fixed', 'important');
                 element.style.setProperty('top', '20px', 'important');
                 element.style.setProperty('right', '20px', 'important');
                 element.style.setProperty('z-index', '9999', 'important');
-                element.style.setProperty('background', 'rgba(255, 255, 255, 0.15)', 'important');
-                element.style.setProperty('color', 'white', 'important');
                 element.style.setProperty('padding', '0', 'important');
                 element.style.setProperty('border-radius', '20px', 'important');
-                element.style.setProperty('border', '1px solid rgba(255, 255, 255, 0.3)', 'important');
                 element.style.setProperty('backdrop-filter', 'blur(10px)', 'important');
                 element.style.setProperty('cursor', 'pointer', 'important');
                 element.style.setProperty('font-size', '0.9rem', 'important');
                 element.style.setProperty('font-family', "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", 'important');
-                element.style.setProperty('box-shadow', '0 4px 12px rgba(0, 0, 0, 0.15)', 'important');
                 element.style.setProperty('transition', 'all 0.3s ease', 'important');
                 element.style.setProperty('display', 'inline-block', 'important');
                 element.style.setProperty('margin', '0', 'important');
@@ -51,9 +67,11 @@
 
                 const selectEl = element.querySelector('select');
                 if (selectEl) {
+                    // 下拉框文字颜色跟随主题
+                    selectEl.style.setProperty('color', styles.text, 'important');
+                    
                     selectEl.style.setProperty('background', 'transparent', 'important');
                     selectEl.style.setProperty('border', 'none', 'important');
-                    selectEl.style.setProperty('color', 'white', 'important');
                     selectEl.style.setProperty('font-size', '0.9rem', 'important');
                     selectEl.style.setProperty('cursor', 'pointer', 'important');
                     selectEl.style.setProperty('outline', 'none', 'important');
@@ -70,8 +88,8 @@
                     selectEl.style.setProperty('-moz-appearance', 'none', 'important');
 
                     selectEl.querySelectorAll('option').forEach(option => {
-                        option.style.setProperty('background', 'white', 'important');
-                        option.style.setProperty('color', '#333', 'important');
+                        option.style.setProperty('background', styles.optionBg, 'important');
+                        option.style.setProperty('color', styles.optionText, 'important');
                     });
                 }
             });
@@ -92,6 +110,15 @@
         configureTranslate();
         translate.execute();
         forceLanguageSelectorStyle();
+
+        // [关键修改] 监听主题切换按钮，实现即时变色
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('change', () => {
+                // 给予微小延迟等待 body class 变化
+                setTimeout(forceLanguageSelectorStyle, 50);
+            });
+        }
 
         setTimeout(() => {
             translate.execute();
