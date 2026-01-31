@@ -161,9 +161,12 @@ class PixelCanvas extends HTMLElement {
   }
 
   onmouseleave() {
-    this.handleAnimation("disappear");
+      this.handleAnimation("disappear");
+      // 显式强制失焦，防止 focus-within 影响 CSS
+      if (document.activeElement && this._parent.contains(document.activeElement)) {
+          document.activeElement.blur();
+      }
   }
-
   onfocusin(e) {
     if (e.currentTarget.contains(e.relatedTarget)) return;
     this.handleAnimation("appear");
@@ -175,26 +178,25 @@ class PixelCanvas extends HTMLElement {
   }
 
   handleAnimation(name) {
-    // 如果动画类型没有改变，不重新启动
-    if (this.currentAnimationType === name && this.animation !== null) {
-      return;
-    }
+      // 移除这个 return 限制，允许强制切换状态
+      // if (this.currentAnimationType === name && this.animation !== null) return;
 
-    cancelAnimationFrame(this.animation);
+      cancelAnimationFrame(this.animation);
 
-    // 如果从 appear 切换到 disappear，需要确保像素状态正确
-    if (name === "disappear") {
-      for (let i = 0; i < this.pixels.length; i++) {
-        this.pixels[i].isIdle = false;
-        this.pixels[i].isShimmer = false;
+      if (name === "disappear") {
+          for (let i = 0; i < this.pixels.length; i++) {
+              this.pixels[i].isIdle = false;
+              this.pixels[i].isShimmer = false;
+              // 确保像素开始缩小
+          }
+      } else if (name === "appear") {
+          for (let i = 0; i < this.pixels.length; i++) {
+              this.pixels[i].isIdle = false;
+              this.pixels[i].counter = 0; // 重置延迟计数器
+          }
       }
-    } else if (name === "appear") {
-      for (let i = 0; i < this.pixels.length; i++) {
-        this.pixels[i].isIdle = false;
-      }
-    }
 
-    this.animation = this.animate(name);
+      this.animation = this.animate(name);
   }
 
   init() {

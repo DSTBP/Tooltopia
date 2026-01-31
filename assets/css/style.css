@@ -317,9 +317,13 @@ h1:after {
 }
 
 /* Hover 和 Focus 效果 */
-.card:where(:hover, :focus-within) {
+.card:where {
   border-color: var(--active-color, var(--primary));
   transition: border-color 800ms var(--ease-in-out);
+}
+
+.card:focus-within {
+  outline: 2px solid var(--active-color);
 }
 
 .card:where(:hover, :focus-within) .card-icon {
