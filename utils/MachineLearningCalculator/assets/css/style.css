@@ -1,5 +1,8 @@
 @import url(https://fonts.googleapis.com/css?family=Righteous);
 
+/* =========================================
+   1. 全局重置与基础样式
+   ========================================= */
 * {
     margin: 0;
     padding: 0;
@@ -38,6 +41,9 @@ body {
     flex: 1;
 }
 
+/* =========================================
+   2. 头部与导航样式
+   ========================================= */
 .back-btn {
     display: inline-block;
     margin-bottom: 1.5rem;
@@ -51,7 +57,29 @@ body {
     color: hsl(0 0% 100%);
 }
 
-/* 标题区域 */
+.navigation-links {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+.navigation-links a, .navigation-links button {
+    color: hsl(0 0% 85%);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    font-size: 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+}
+
+.navigation-links a:hover, .navigation-links button:hover {
+    color: hsl(0 0% 100%);
+}
+
 .header {
     text-align: center;
     margin-bottom: 2rem;
@@ -68,6 +96,7 @@ body {
     margin-bottom: 1rem;
 }
 
+/* h1 特有的 data-shadow 动画效果 */
 .header h1::after {
     content: attr(data-shadow);
     position: absolute;
@@ -106,14 +135,33 @@ body {
     margin-top: 0.5rem;
 }
 
-/* 容器 */
+/* =========================================
+   3. 通用容器与视图控制
+   ========================================= */
 .container {
     background: transparent;
     border-radius: 16px;
     overflow: visible;
 }
 
-/* 计算器网格布局 */
+/* 视图切换动画 */
+.view-section {
+    display: none;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.view-section.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================
+   4. 基础计算器组件 (Index页)
+   ========================================= */
 .calc-grid {
     display: grid;
     grid-template-columns: 1fr 380px;
@@ -121,7 +169,6 @@ body {
     align-items: start;
 }
 
-/* 计算器主面板 */
 .calculator {
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(20px) saturate(1.2);
@@ -131,7 +178,6 @@ body {
     padding: 25px;
 }
 
-/* 显示屏 */
 .display {
     background: rgba(0, 0, 0, 0.3);
     color: hsl(0 0% 95%);
@@ -154,14 +200,12 @@ body {
     background: rgba(0, 0, 0, 0.4);
 }
 
-/* 操作按钮区域 */
 .action-buttons {
     display: flex;
     gap: 10px;
     margin-bottom: 15px;
 }
 
-/* 数字键盘 */
 .buttons {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -234,270 +278,7 @@ body {
     margin-top: 6px;
 }
 
-.converter-grid {
-    margin-top: 30px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 20px;
-}
-
-.converter-panel {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
-    padding: 20px;
-    backdrop-filter: blur(18px);
-}
-
-.converter-panel h2 {
-    font-size: 1.2rem;
-    color: hsl(0 0% 92%);
-    margin-bottom: 6px;
-}
-
-.panel-desc {
-    color: hsl(0 0% 70%);
-    font-size: 0.9rem;
-    margin-bottom: 14px;
-}
-
-.converter-panel .input-field {
-    width: 100%;
-}
-
-.converter-actions {
-    margin-top: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.converter-panel .unit-row {
-    gap: 18px;
-    margin-bottom: 18px;
-}
-
-.converter-panel .unit-row:last-child {
-    margin-bottom: 0;
-}
-
-.converter-panel .unit-row .input-field {
-    flex: 1 1 50%;
-    min-width: 180px;
-}
-
-.converter-panel .unit-row .base-select {
-    flex: 1 1 45%;
-    min-width: 150px;
-}
-
-.converter-panel .unit-row.two-cols,
-.converter-panel .unit-row.select-pair {
-    flex-wrap: nowrap;
-    gap: 12px;
-}
-
-.converter-panel .unit-row.single-input {
-    margin-bottom: 20px;
-}
-
-.converter-panel .unit-row.two-cols .input-field,
-.converter-panel .unit-row.two-cols select,
-.converter-panel .unit-row.select-pair .input-field,
-.converter-panel .unit-row.select-pair select {
-    min-width: 0;
-    flex: 1 1 0;
-}
-/* 计算器按钮 */
-.btn-calc {
-    padding: 14px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.05);
-    color: hsl(0 0% 90%);
-    font-weight: 700;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all 0.3s;
-}
-
-.btn-calc:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: translateY(-2px);
-}
-
-.btn-calc:active {
-    transform: translateY(0);
-}
-
-.btn-calc.btn-op {
-    background: rgba(102, 126, 234, 0.3);
-    color: hsl(0 0% 95%);
-    border-color: rgba(102, 126, 234, 0.5);
-}
-
-.btn-calc.btn-op:hover {
-    background: rgba(102, 126, 234, 0.5);
-    border-color: rgba(102, 126, 234, 0.7);
-}
-
-/* 高级控制 */
-.advanced-controls {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-}
-
-/* 通用按钮样式 */
-.btn {
-    -webkit-tap-highlight-color: #0000;
-    cursor: pointer;
-    border-radius: 12px;
-    padding: 12px 24px;
-    font-size: 1rem;
-    background: #0000;
-    border: 1px solid #0000;
-    position: relative;
-    color: white;
-    transition-property: translate, scale;
-    transition-duration: 0.1s;
-    transition-timing-function: ease-out;
-    font-weight: 500;
-    text-decoration: none;
-    display: inline-block;
-}
-
-.btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.btn:active:not(:disabled) {
-    scale: 0.98;
-    translate: 0 1px;
-}
-
-.btn::before,
-.btn::after {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    pointer-events: none;
-}
-
-.btn::before {
-    z-index: -1;
-    background: linear-gradient(
-        hsl(0 0% 100% / 0.18),
-        hsl(0 0% 4% / 0.7)
-    );
-    backdrop-filter: saturate(2) contrast(1) blur(10px);
-}
-
-.btn::after {
-    box-shadow: 0 0 1px 0.8px hsl(0 0% 100% / 0.8) inset;
-    mask: linear-gradient(-35deg, #ffffff80, #ffffff30 30% 60%, #fff);
-}
-
-.btn:hover:not(:disabled) {
-    scale: 1.02;
-}
-
-.btn-primary {
-    /* 使用毛玻璃效果 */
-}
-
-.btn-secondary {
-    /* 使用毛玻璃效果 */
-}
-
-/* 输入字段 */
-.input-field {
-    padding: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    color: hsl(0 0% 95%);
-    font-size: 0.95rem;
-    transition: all 0.3s;
-}
-
-.input-field:focus {
-    outline: none;
-    border-color: rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.08);
-}
-
-.input-field.small {
-    width: 80px;
-    padding: 8px;
-}
-
-.input-field::placeholder {
-    color: hsl(0 0% 60%);
-}
-
-select.input-field option {
-    background: #2a2a2a;
-    color: white;
-}
-
-.unit-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.unit-row .input-field {
-    flex: 1 1 120px;
-}
-
-.unit-row.two-cols {
-    gap: 20px;
-    flex-wrap: nowrap;
-}
-
-.unit-row.two-cols .input-field,
-.unit-row.two-cols select {
-    flex: 1 1 calc(50% - 10px);
-}
-
-.unit-row.two-cols .unit-arrow {
-    flex: 0 0 auto;
-    margin: 0 6px;
-}
-
-.unit-row.single-input {
-    flex-wrap: nowrap;
-}
-
-.unit-row.single-input .input-field {
-    flex: 1 1 100%;
-}
-
-.unit-row.select-pair {
-    flex-wrap: nowrap;
-    gap: 12px;
-}
-
-.unit-row.select-pair .input-field {
-    flex: 1 1 45%;
-}
-
-.unit-row.select-pair .unit-arrow {
-    flex: 0 0 auto;
-}
-
-.unit-arrow {
-    color: hsl(0 0% 70%);
-    font-weight: 700;
-}
-
-/* 侧边面板 */
+/* 侧边面板与历史记录 */
 .side-panel {
     background: rgba(255, 255, 255, 0.03);
     backdrop-filter: blur(20px) saturate(1.2);
@@ -562,7 +343,6 @@ select.input-field option {
     visibility: hidden;
 }
 
-/* 历史记录 */
 .history {
     max-height: 180px;
     height: 180px;
@@ -604,7 +384,444 @@ select.input-field option {
     word-break: break-all;
 }
 
-/* 结果文本 */
+/* =========================================
+   5. 高级功能组件 (More 页)
+   ========================================= */
+
+/* 特性选择网格 (Feature Grid) */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.feature-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px) saturate(1.2);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    padding: 30px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: block;
+    text-align: left;
+}
+
+.feature-card:hover:not(.disabled) {
+    transform: translateY(-5px);
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.feature-card h3 {
+    color: hsl(0 0% 95%);
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.feature-card p {
+    color: hsl(0 0% 80%);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.feature-card.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 矩阵与算法通用面板 */
+.matrix-panel, .simplex-panel {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px) saturate(1.2);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    padding: 25px;
+    margin-bottom: 20px;
+}
+
+.matrix-panel p, .simplex-panel > p {
+    color: hsl(0 0% 85%);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.matrix-panel label, .input-group label {
+    display: block;
+    color: hsl(0 0% 90%);
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 1rem;
+}
+
+/* 矩阵输入框 */
+.matrix-input, .input-group textarea {
+    width: 100%;
+    font-family: 'Courier New', monospace;
+    font-size: 1rem;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    color: hsl(0 0% 95%);
+    transition: all 0.3s;
+    resize: vertical;
+}
+
+.matrix-input { min-height: 140px; }
+.input-group textarea { min-height: 80px; padding: 12px; }
+
+.matrix-input:focus, .input-group textarea:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.button-group {
+    display: flex;
+    gap: 12px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+/* 结果展示区 */
+.results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 25px;
+}
+
+.result-section h3 {
+    color: hsl(0 0% 95%);
+    font-size: 1.2rem;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.result-output {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: auto;
+    color: hsl(0 0% 90%);
+    font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+    min-height: 60px;
+    margin-bottom: 20px;
+}
+
+.small-label {
+    color: hsl(0 0% 80%);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+/* 单纯形法特定样式 */
+.input-group { margin-bottom: 18px; }
+.small-text { color: hsl(0 0% 75%); font-size: 0.85rem; margin-top: 6px; }
+
+.radio-group { display: flex; gap: 20px; margin-top: 10px; }
+.radio-group label { display: flex; align-items: center; gap: 8px; cursor: pointer; color: hsl(0 0% 85%); }
+.radio-group input[type="radio"] { width: 18px; height: 18px; accent-color: hsl(0 0% 80%); }
+
+.step-section {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border-left: 4px solid rgba(102, 126, 234, 0.7);
+    color: hsl(0 0% 90%);
+}
+
+.step-title { font-size: 1.2rem; font-weight: 700; color: hsl(0 0% 95%); margin-bottom: 15px; }
+
+.tableau {
+    overflow-x: auto; margin: 15px 0;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px; border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.tableau table { border-collapse: collapse; margin: 0 auto; font-size: 0.9rem; color: hsl(0 0% 90%); }
+.tableau th, .tableau td {
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    text-align: center; min-width: 60px;
+}
+.tableau th { background: rgba(255, 255, 255, 0.1); font-weight: 600; color: hsl(0 0% 95%); }
+
+.pivot-cell { background: rgba(255, 193, 7, 0.3); font-weight: 700; color: hsl(45 100% 80%); }
+.pivot-row, .pivot-col { background: rgba(255, 193, 7, 0.1); }
+
+.result-box {
+    background: rgba(102, 126, 234, 0.15);
+    padding: 18px; border-radius: 12px;
+    border: 2px solid rgba(102, 126, 234, 0.5);
+    margin-top: 15px; color: hsl(0 0% 90%);
+}
+
+/* =========================================
+   6. 通用 UI 组件 (按钮、输入框、转换器)
+   ========================================= */
+
+/* 按钮通用 */
+.btn {
+    -webkit-tap-highlight-color: #0000;
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    background: #0000;
+    border: 1px solid #0000;
+    position: relative;
+    color: white;
+    transition-property: translate, scale;
+    transition-duration: 0.1s;
+    transition-timing-function: ease-out;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn:active:not(:disabled) {
+    scale: 0.98;
+    translate: 0 1px;
+}
+
+.btn::before,
+.btn::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.btn::before {
+    z-index: -1;
+    background: linear-gradient(
+        hsl(0 0% 100% / 0.18),
+        hsl(0 0% 4% / 0.7)
+    );
+    backdrop-filter: saturate(2) contrast(1) blur(10px);
+}
+
+.btn::after {
+    box-shadow: 0 0 1px 0.8px hsl(0 0% 100% / 0.8) inset;
+    mask: linear-gradient(-35deg, #ffffff80, #ffffff30 30% 60%, #fff);
+}
+
+.btn:hover:not(:disabled) {
+    scale: 1.02;
+}
+
+/* 计算器专用按钮 */
+.btn-calc {
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+    color: hsl(0 0% 90%);
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+
+.btn-calc:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.btn-calc:active {
+    transform: translateY(0);
+}
+
+.btn-calc.btn-op {
+    background: rgba(102, 126, 234, 0.3);
+    color: hsl(0 0% 95%);
+    border-color: rgba(102, 126, 234, 0.5);
+}
+
+.btn-calc.btn-op:hover {
+    background: rgba(102, 126, 234, 0.5);
+    border-color: rgba(102, 126, 234, 0.7);
+}
+
+/* 输入框通用 */
+.input-field {
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    color: hsl(0 0% 95%);
+    font-size: 0.95rem;
+    transition: all 0.3s;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.input-field.small {
+    width: 80px;
+    padding: 8px;
+}
+
+.input-field::placeholder {
+    color: hsl(0 0% 60%);
+}
+
+select.input-field option {
+    background: #2a2a2a;
+    color: white;
+}
+
+/* 转换器组件 */
+.converter-grid {
+    margin-top: 30px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+.converter-panel {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 20px;
+    backdrop-filter: blur(18px);
+}
+
+.converter-panel h2 {
+    font-size: 1.2rem;
+    color: hsl(0 0% 92%);
+    margin-bottom: 6px;
+}
+
+.panel-desc {
+    color: hsl(0 0% 70%);
+    font-size: 0.9rem;
+    margin-bottom: 14px;
+}
+
+.converter-panel .input-field {
+    width: 100%;
+}
+
+.converter-actions {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.unit-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.converter-panel .unit-row {
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.converter-panel .unit-row:last-child {
+    margin-bottom: 0;
+}
+
+.unit-row .input-field {
+    flex: 1 1 120px;
+}
+
+.converter-panel .unit-row .input-field {
+    flex: 1 1 50%;
+    min-width: 180px;
+}
+
+.converter-panel .unit-row .base-select {
+    flex: 1 1 45%;
+    min-width: 150px;
+}
+
+.unit-row.two-cols,
+.converter-panel .unit-row.two-cols {
+    flex-wrap: nowrap;
+    gap: 20px;
+}
+
+.unit-row.two-cols .input-field,
+.unit-row.two-cols select,
+.converter-panel .unit-row.two-cols .input-field,
+.converter-panel .unit-row.two-cols select {
+    min-width: 0;
+    flex: 1 1 0;
+}
+
+.unit-row.two-cols .unit-arrow {
+    flex: 0 0 auto;
+    margin: 0 6px;
+}
+
+.unit-row.single-input,
+.converter-panel .unit-row.single-input {
+    flex-wrap: nowrap;
+    margin-bottom: 20px;
+}
+
+.unit-row.single-input .input-field {
+    flex: 1 1 100%;
+}
+
+.unit-row.select-pair,
+.converter-panel .unit-row.select-pair {
+    flex-wrap: nowrap;
+    gap: 12px;
+}
+
+.unit-row.select-pair .input-field,
+.converter-panel .unit-row.select-pair .input-field {
+    flex: 1 1 45%;
+}
+
+.unit-row.select-pair .unit-arrow,
+.converter-panel .unit-row.select-pair .unit-arrow {
+    flex: 0 0 auto;
+}
+
+.unit-arrow {
+    color: hsl(0 0% 70%);
+    font-weight: 700;
+}
+
+/* 高级控制容器 */
+.advanced-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* 文本样式 */
 .result-text {
     margin-top: 10px;
     color: hsl(122 40% 70%);
@@ -613,7 +830,6 @@ select.input-field option {
     min-height: 20px;
 }
 
-/* 信息文本 */
 .info-text {
     color: hsl(0 0% 80%);
     font-size: 0.95rem;
@@ -628,7 +844,34 @@ select.input-field option {
     color: hsl(122 40% 70%);
 }
 
-/* 响应式设计 */
+.color-output-row {
+    display: flex;
+    align-items: center; /* 垂直居中 */
+    gap: 12px;           /* 预览块和文字的间距 */
+    margin-top: 15px;    /* 整体与按钮的间距 */
+    min-height: 32px;    /* 最小高度，防止未显示时塌陷严重 */
+}
+
+/* 修改：.color-preview 变小，去掉原来的 margin-top */
+.color-preview {
+    width: 32px;         /* 宽度改小 */
+    height: 32px;        /* 高度改小 */
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    /* margin-top: 15px;  <-- 删除或覆盖这行 */
+    margin-top: 0;       /* 设为 0，由容器控制间距 */
+    flex-shrink: 0;      /* 防止被压缩 */
+}
+
+.color-output-row .result-text {
+    margin-top: 0;
+    padding-top: 2px;    /* 微调文字垂直位置 */
+}
+
+/* =========================================
+   7. 响应式设计
+   ========================================= */
 @media screen and (max-width: 1024px) {
     .calc-grid {
         grid-template-columns: 1fr;
@@ -674,6 +917,12 @@ select.input-field option {
     .function-grid {
         grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
     }
+
+    /* 合并自 more.html 的响应式 */
+    .features-grid { grid-template-columns: 1fr; }
+    .results-grid { grid-template-columns: 1fr; }
+    .button-group { flex-direction: column; }
+    .tableau th, .tableau td { padding: 6px 8px; min-width: 50px; }
 }
 
 @media screen and (max-width: 480px) {
@@ -729,7 +978,9 @@ select.input-field option {
     background: rgba(255, 255, 255, 0.3);
 }
 
-/* ===== 日间模式样式 ===== */
+/* =========================================
+   8. 日间模式样式
+   ========================================= */
 body.day-mode {
     background: #f0f4f8;
     background-image: url(../../../../assets/image/day-background.png);
@@ -742,19 +993,45 @@ body.day-mode #background-wrapper {
     background-color: transparent;
 }
 
+/* 通用日间面板 */
 body.day-mode .calculator,
-body.day-mode .side-panel {
-    background: hsla(0, 0%, 100%, 0.4);
+body.day-mode .side-panel,
+body.day-mode .feature-card, 
+body.day-mode .matrix-panel, 
+body.day-mode .simplex-panel {
+    background: rgba(255, 255, 255, 0.4);
     border: none;
+    border-color: rgba(0, 0, 0, 0.1);
     box-shadow: 5px 3px 30px rgba(0, 0, 0, 0.1);
+    color: #2d3748;
 }
 
+/* 日间 H1 标题 (保留投影效果) */
 body.day-mode .header h1 {
     color: #2d3748;
     text-shadow: .03em .03em 0 hsla(200, 60%, 60%, 1);
 }
 
-body.day-mode .back-btn {
+/* 日间其他标题 (移除投影，保留颜色) */
+body.day-mode .feature-card h3,
+body.day-mode .result-section h3,
+body.day-mode .matrix-panel label,
+body.day-mode .simplex-panel label,
+body.day-mode .step-title {
+    color: #2d3748;
+    text-shadow: none;
+}
+
+body.day-mode .back-btn,
+body.day-mode .subtitle,
+body.day-mode .section-heading small,
+body.day-mode .panel-desc,
+body.day-mode .feature-card p,
+body.day-mode .matrix-panel p,
+body.day-mode .simplex-panel p,
+body.day-mode .small-label,
+body.day-mode .radio-group label,
+body.day-mode .step-section p {
     color: #4a5568;
 }
 
@@ -762,21 +1039,32 @@ body.day-mode .back-btn:hover {
     color: #1d4ed8;
 }
 
-body.day-mode .subtitle {
+body.day-mode .small-text {
     color: #4a5568;
 }
 
-body.day-mode .display {
+/* 日间输入框与显示区 */
+body.day-mode .display,
+body.day-mode .input-field,
+body.day-mode select,
+body.day-mode .matrix-input,
+body.day-mode .result-output,
+body.day-mode .input-group textarea {
     background: rgba(255, 255, 255, 0.7);
     color: #1a202c;
     border-color: rgba(0, 0, 0, 0.15);
 }
 
-body.day-mode .display:focus {
+body.day-mode .display:focus,
+body.day-mode .input-field:focus,
+body.day-mode select:focus,
+body.day-mode .matrix-input:focus,
+body.day-mode .input-group textarea:focus {
     background: rgba(255, 255, 255, 0.9);
     border-color: rgba(0, 0, 0, 0.25);
 }
 
+/* 日间按钮 */
 body.day-mode .btn-calc {
     background: rgba(255, 255, 255, 0.7);
     color: #1a202c;
@@ -799,7 +1087,6 @@ body.day-mode .btn-calc.btn-op:hover {
     border-color: rgba(59, 130, 246, 0.6);
 }
 
-/* 基础按钮样式 */
 body.day-mode .btn {
     background: #ffffff;
     color: #1a202c;
@@ -830,6 +1117,7 @@ body.day-mode .btn-secondary:hover:not(:disabled) {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* 日间其他组件 */
 body.day-mode .advanced-controls {
     background: rgba(255, 255, 255, 0.5);
     border-color: rgba(0, 0, 0, 0.1);
@@ -842,21 +1130,13 @@ body.day-mode .field {
 
 body.day-mode .field label {
     color: #1a202c;
-    font-weight: 600;
 }
 
 body.day-mode .setting-item label {
     color: #1a202c;
 }
 
-body.day-mode .section-heading {
-    color: #1a202c;
-}
-
-body.day-mode .section-heading small {
-    color: #4a5568;
-}
-
+body.day-mode .section-heading,
 body.day-mode .trig-title {
     color: #1a202c;
 }
@@ -872,23 +1152,6 @@ body.day-mode .converter-panel {
 
 body.day-mode .converter-panel h2 {
     color: #1a202c;
-}
-
-body.day-mode .panel-desc {
-    color: #4a5568;
-}
-
-body.day-mode .input-field,
-body.day-mode select {
-    background: rgba(255, 255, 255, 0.7);
-    color: #1a202c;
-    border-color: rgba(0, 0, 0, 0.15);
-}
-
-body.day-mode .input-field:focus,
-body.day-mode select:focus {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(0, 0, 0, 0.25);
 }
 
 body.day-mode .result-text,
@@ -924,6 +1187,51 @@ body.day-mode .history-result {
     color: #2d3748;
 }
 
+body.day-mode .navigation-links a,
+body.day-mode .navigation-links button {
+    color: #4a5568;
+}
+
+body.day-mode .navigation-links a:hover,
+body.day-mode .navigation-links button:hover {
+    color: #1a202c;
+}
+
+/* 日间模式：单纯形法表格 */
+body.day-mode .tableau { background: rgba(255, 255, 255, 0.8); }
+body.day-mode .tableau table { color: #1a202c; }
+body.day-mode .tableau th { background: rgba(59, 130, 246, 0.25); color: #1e40af; }
+body.day-mode .pivot-cell { background: rgba(251, 191, 36, 0.5); color: #92400e; }
+body.day-mode .step-section {
+    background: rgba(255, 255, 255, 0.85); /* 提高不透明度，使卡片更明显 */
+    border: 1px solid rgba(0, 0, 0, 0.08); /* 增加微弱边框界定范围 */
+    border-left: 4px solid rgba(59, 130, 246, 0.8); /* 保持左侧强调色，但调整为适合日间的蓝色 */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* 添加轻微阴影增加层次感 */
+    color: #2d3748;
+    margin-bottom: 20px;
+}
+
+body.day-mode .tableau {
+    background: rgba(0, 0, 50, 0.05); /* 使用微带蓝色的浅灰背景，与白色面板形成对比 */
+    border: 1px solid rgba(0, 0, 0, 0.15); /* 加深边框颜色 */
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03); /* 添加轻微内阴影，增加层次感 */
+    margin: 15px 0;
+}
+
+/* 确保表头在深色背景上依然清晰 */
+body.day-mode .tableau th {
+    background: rgba(59, 130, 246, 0.2);
+    color: #1e3a8a;
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+/* 确保单元格边框清晰 */
+body.day-mode .tableau td {
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.day-mode .result-box { background: rgba(59, 130, 246, 0.2); color: #1e40af; }
+
 body.day-mode ::-webkit-scrollbar-track {
     background: rgba(0, 0, 0, 0.05);
 }
@@ -936,7 +1244,9 @@ body.day-mode ::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 0, 0, 0.3);
 }
 
-/* ===== 日夜切换器样式 ===== */
+/* =========================================
+   9. 主题切换器 (Theme Toggle)
+   ========================================= */
 .theme-toggle {
   position: fixed;
   top: 20px;
@@ -1134,7 +1444,9 @@ body.day-mode ::-webkit-scrollbar-thumb:hover {
   }
 }
 
-/* ===== 页脚样式 ===== */
+/* =========================================
+   10. 页脚样式
+   ========================================= */
 .footer {
     position: relative;
     z-index: 1;
@@ -1151,12 +1463,10 @@ body.day-mode ::-webkit-scrollbar-thumb:hover {
     transition: color 300ms ease-out;
 }
 
-/* 日间模式页脚样式 */
 body.day-mode .footer p {
     color: rgba(0, 0, 0, 0.5);
 }
 
-/* 页脚响应式 */
 @media (max-width: 768px) {
     .footer {
         padding: 1.5rem 1rem;

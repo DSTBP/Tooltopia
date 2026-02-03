@@ -8,17 +8,24 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#667eea">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
-    <title>更多功能 - MachineLearningCalculator</title>
+    <title>高级数学工具 - MachineLearningCalculator</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" crossorigin="anonymous">
     <link rel="stylesheet" href="assets/css/style.css">
+    
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+    <script src="assets/js/matrix-utils.js"></script>
 </head>
 <body>
 <script>
-    // 在 body 内容渲染前立即执行，避免闪烁
+    // 立即执行避免闪烁
     if (localStorage.getItem('tooltopia-theme') === 'day') {
         document.body.classList.add('day-mode');
     }
 </script>
-    <!-- 日夜切换器 -->
+
     <div class="theme-toggle">
         <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
         <label for="themeToggle" class="theme-toggle__btn">
@@ -27,131 +34,669 @@
     </div>
 
     <div id="background-wrapper"></div>
+    
     <div class="page-container">
-        <a href="index.html" class="back-btn">← 返回计算器</a>
+        <div id="nav-bar" class="navigation-links" style="display:none;">
+            <button onclick="switchView('menu')">← 返回更多</button>
+            <span style="color: hsl(0 0% 60%)">|</span>
+            <a href="index.html">返回计算器</a>
+        </div>
+        
+        <div id="menu-back-btn">
+            <a href="index.html" class="back-btn">← 返回计算器</a>
+        </div>
+
         <div class="header">
-            <h1 data-shadow='更多功能'>更多功能</h1>
-            <p class="subtitle">矩阵运算、优化算法等高级数学工具</p>
+            <h1 id="page-title" data-shadow='更多功能'>更多功能</h1>
+            <p id="page-subtitle" class="subtitle">矩阵运算、优化算法等高级数学工具</p>
         </div>
 
         <div class="container">
-            <div class="features-grid">
-                <a href="more/fullrank.html" class="feature-card">
-                    <h3>矩阵满秩分解</h3>
-                    <p>计算矩阵的满秩分解 A = F · G</p>
-                </a>
+            <div id="view-menu" class="view-section active">
+                <div class="features-grid">
+                    <div class="feature-card" onclick="switchView('fullrank')">
+                        <h3>矩阵满秩分解</h3>
+                        <p>计算矩阵的满秩分解 A = F · G</p>
+                    </div>
 
-                <a href="more/pseudoinverse.html" class="feature-card">
-                    <h3>Moore-Penrose 伪逆</h3>
-                    <p>计算矩阵的 Moore-Penrose 伪逆 A⁺</p>
-                </a>
+                    <div class="feature-card" onclick="switchView('pseudoinverse')">
+                        <h3>Moore-Penrose 伪逆</h3>
+                        <p>计算矩阵的 Moore-Penrose 伪逆 A⁺</p>
+                    </div>
 
-                <a href="more/simplex.html" class="feature-card">
-                    <h3>单纯形法</h3>
-                    <p>线性规划问题求解（约束优化）</p>
-                </a>
+                    <div class="feature-card" onclick="switchView('simplex')">
+                        <h3>单纯形法</h3>
+                        <p>线性规划问题求解（约束优化）</p>
+                    </div>
 
-                <div class="feature-card disabled">
-                    <h3>功能开发中</h3>
-                    <p>更多功能即将上线...</p>
+                    <div class="feature-card disabled">
+                        <h3>功能开发中</h3>
+                        <p>更多功能即将上线...</p>
+                    </div>
                 </div>
+            </div>
+
+            <div id="view-fullrank" class="view-section">
+                <div class="matrix-panel">
+                    <p>输入矩阵 \(A\)，每行一行，元素用空格或逗号分隔。点击"分解"将在下方显示 \(F\) 与 \(G\)。</p>
+                    <div>
+                        <label>矩阵 A：</label>
+                        <textarea id="fr-matrixA" class="matrix-input">2 4 1 1
+1 2 -1 2
+-1 -2 -2 1</textarea>
+                    </div>
+                    <div class="button-group">
+                        <button id="fr-decomp" class="btn btn-primary">分解</button>
+                        <button id="fr-sample" class="btn btn-secondary">载入示例</button>
+                    </div>
+
+                    <div class="result-section">
+                        <h3>结果 \(F\)：</h3>
+                        <pre id="fr-outF" class="result-output">-</pre>
+                        <h3>结果 \(G\)：</h3>
+                        <pre id="fr-outG" class="result-output">-</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-pseudoinverse" class="view-section">
+                <div class="matrix-panel">
+                    <p>输入矩阵 A（每行一行，元素空格或逗号分隔）。流程：解析 A → 计算满秩分解 \(A = F\cdot G\) → 计算中间矩阵并展示 → 用公式 \(A^{+} = G^{H} (G G^{H})^{-1} (F^{H} F)^{-1} F^{H}\) 计算 A⁺（对实数矩阵即转置代替共轭转置）。</p>
+                    <div>
+                        <label>矩阵 A：</label>
+                        <textarea id="pi-matrixA" class="matrix-input">2 4 1 1
+1 2 -1 2
+-1 -2 -2 1</textarea>
+                    </div>
+                    <div class="button-group">
+                        <button id="pi-compute" class="btn btn-primary">计算 A⁺</button>
+                        <button id="pi-loadSample" class="btn btn-secondary">载入示例</button>
+                    </div>
+
+                    <div class="results-grid">
+                        <div class="result-section">
+                            <h3>步骤 1 — 满秩分解 \(F\)：</h3>
+                            <pre id="pi-outF" class="result-output">-</pre>
+                            <h3>步骤 2 — 满秩分解 \(G\)：</h3>
+                            <pre id="pi-outG" class="result-output">-</pre>
+                        </div>
+                        <div class="result-section">
+                            <h3>步骤 3 — 中间矩阵</h3>
+                            <div class="small-label">\(F^{H}F\)：</div>
+                            <pre id="pi-outFHF" class="result-output">-</pre>
+                            <div class="small-label">\((F^{H}F)^{-1}\)：</div>
+                            <pre id="pi-outInvFHF" class="result-output">-</pre>
+                            <div class="small-label">\(G G^{H}\)：</div>
+                            <pre id="pi-outGGH" class="result-output">-</pre>
+                            <div class="small-label">\((G G^{H})^{-1}\)：</div>
+                            <pre id="pi-outInvGGH" class="result-output">-</pre>
+                        </div>
+                    </div>
+
+                    <div class="result-section" style="margin-top: 20px;">
+                        <h3>最终结果 \(A^{+}\)：</h3>
+                        <pre id="pi-outApinv" class="result-output">-</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-simplex" class="view-section">
+                <div class="simplex-panel">
+                    <p>输入线性规划问题，使用单纯形法求解。本工具将展示完整的求解步骤，包括引入松弛变量、构建初始单纯形表、每次迭代的详细过程。</p>
+
+                    <div class="input-group">
+                        <label>问题类型：</label>
+                        <div class="radio-group">
+                            <label>
+                                <input type="radio" name="sx-problemType" value="min" checked> 最小化 (min)
+                            </label>
+                            <label>
+                                <input type="radio" name="sx-problemType" value="max"> 最大化 (max)
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>目标函数系数（空格或逗号分隔）：</label>
+                        <textarea id="sx-objective" placeholder="例如：-4 -6 -18 表示 min -4x₁ - 6x₂ - 18x₃">-4 -6 -18</textarea>
+                        <div class="small-text">输入目标函数 z = c₁x₁ + c₂x₂ + ... 的系数 c₁, c₂, ...</div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>约束条件左侧系数矩阵 A（每行一个约束，元素空格或逗号分隔）：</label>
+                        <textarea id="sx-constraints" placeholder="例如：\n1 0 3\n1 2 0">1 0 3
+1 2 0</textarea>
+                        <div class="small-text">每行对应一个约束条件的系数</div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>约束条件右侧常数 b（空格或逗号分隔）：</label>
+                        <textarea id="sx-rhs" placeholder="例如：3 3">3 3</textarea>
+                        <div class="small-text">每个约束条件的右侧常数（需要 ≥ 0）</div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>约束类型（每个约束一个符号，空格分隔）：</label>
+                        <textarea id="sx-inequalities" placeholder="例如：<= <= 表示两个 ≤ 约束"><= <=</textarea>
+                        <div class="small-text">支持: <= (小于等于), >= (大于等于), = (等于)</div>
+                    </div>
+
+                    <div class="button-group">
+                        <button id="sx-solve" class="btn btn-primary">求解</button>
+                        <button id="sx-loadExample" class="btn btn-secondary">载入示例</button>
+                    </div>
+                </div>
+
+                <div id="sx-output"></div>
             </div>
         </div>
     </div>
 
-    <style>
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            padding: 20px 0;
-        }
-
-        .feature-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(20px) saturate(1.2);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            padding: 30px;
-            text-decoration: none;
-            color: inherit;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .feature-card:hover:not(.disabled) {
-            transform: translateY(-5px);
-            border-color: rgba(255, 255, 255, 0.3);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
-        }
-
-        .feature-card h3 {
-            color: hsl(0 0% 95%);
-            font-size: 1.3rem;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        .feature-card p {
-            color: hsl(0 0% 80%);
-            font-size: 1rem;
-            line-height: 1.6;
-            margin: 0;
-        }
-
-        .feature-card.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .feature-card.disabled:hover {
-            transform: none;
-            border-color: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-
-        @media screen and (max-width: 768px) {
-            .features-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .feature-card {
-                padding: 25px;
-            }
-        }
-
-        /* 日间模式样式 */
-        body.day-mode .feature-card {
-            background: rgba(255, 255, 255, 0.4);
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            box-shadow: 5px 3px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        body.day-mode .feature-card:hover:not(.disabled) {
-            border-color: rgba(0, 0, 0, 0.25);
-            box-shadow: 5px 5px 35px rgba(0, 0, 0, 0.15);
-        }
-
-        body.day-mode .feature-card h3 {
-            color: #2d3748;
-        }
-
-        body.day-mode .feature-card p {
-            color: #4a5568;
-        }
-
-        body.day-mode .feature-card.disabled {
-            opacity: 0.6;
-        }
-    </style>
-
-    <!-- 页脚 -->
     <footer class="footer">
         <p>Copyright © 2024 Tooltopia. All Rights Reserved.</p>
-                <p>Designed by DSTBP</p>
+        <p>Designed by DSTBP</p>
     </footer>
 
     <script src="assets/js/theme-toggle.js"></script>
+
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$','$'], ['\\(','\\)']] },
+            svg: { fontCache: 'global' }
+        };
+        (function(){
+            function tryRender(){
+                try{
+                    if (window.renderMathInElement) {
+                        renderMathInElement(document.body, {
+                            delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],
+                            throwOnError:false
+                        });
+                        return;
+                    }
+                } catch(e){ console.warn('KaTeX render failed', e); }
+                if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+            }
+            // 每次视图切换后也可以调用
+            window.renderMathAll = tryRender;
+            if (document.readyState==='complete' || document.readyState==='interactive') tryRender(); else document.addEventListener('DOMContentLoaded', tryRender);
+        })();
+    </script>
+
+    <script>
+        const views = {
+            'menu': { id: 'view-menu', title: '更多功能', subtitle: '矩阵运算、优化算法等高级数学工具' },
+            'fullrank': { id: 'view-fullrank', title: '矩阵满秩分解', subtitle: '将矩阵分解为 A = F · G 的形式' },
+            'pseudoinverse': { id: 'view-pseudoinverse', title: 'Moore-Penrose 伪逆', subtitle: '计算矩阵的 Moore-Penrose 伪逆 A⁺' },
+            'simplex': { id: 'view-simplex', title: '单纯形法', subtitle: '线性规划问题求解（约束优化）' }
+        };
+
+        function switchView(viewName) {
+            // 隐藏所有视图
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            
+            // 显示目标视图
+            const target = views[viewName];
+            if(target) {
+                document.getElementById(target.id).classList.add('active');
+                
+                // 更新标题
+                const h1 = document.getElementById('page-title');
+                h1.textContent = target.title;
+                h1.setAttribute('data-shadow', target.title);
+                document.getElementById('page-subtitle').textContent = target.subtitle;
+
+                // 切换导航栏状态
+                if(viewName === 'menu') {
+                    document.getElementById('nav-bar').style.display = 'none';
+                    document.getElementById('menu-back-btn').style.display = 'block';
+                } else {
+                    document.getElementById('nav-bar').style.display = 'flex';
+                    document.getElementById('menu-back-btn').style.display = 'none';
+                    // 重新渲染公式，防止隐藏元素渲染问题
+                    setTimeout(window.renderMathAll, 100);
+                }
+            }
+        }
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const textarea = document.getElementById('fr-matrixA');
+        const decompBtn = document.getElementById('fr-decomp');
+        const sampleBtn = document.getElementById('fr-sample');
+        const outF = document.getElementById('fr-outF');
+        const outG = document.getElementById('fr-outG');
+        const utils = window.MatrixUtils;
+
+        if (sampleBtn) {
+            sampleBtn.addEventListener('click', () => {
+                textarea.value = '2 4 1 1\n1 2 -1 2\n-1 -2 -2 1';
+            });
+        }
+
+        if (decompBtn) {
+            decompBtn.addEventListener('click', async () => {
+                try {
+                    if (!utils) throw new Error('MatrixUtils not loaded');
+                    const A = utils.parseMatrix(textarea.value);
+                    const { F, G } = utils.computeFullRank(A);
+                    outF.innerHTML = `\\[F = ${utils.matrixToLatex(F)}\\]`;
+                    outG.innerHTML = `\\[G = ${utils.matrixToLatex(G)}\\]`;
+                    await utils.renderLatex([outF, outG]);
+                } catch (e) {
+                    outF.textContent = '错误: ' + e.message;
+                    outG.textContent = '';
+                }
+            });
+        }
+    });
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const ta = document.getElementById('pi-matrixA');
+        const computeBtn = document.getElementById('pi-compute');
+        const loadBtn = document.getElementById('pi-loadSample');
+        const outF = document.getElementById('pi-outF');
+        const outG = document.getElementById('pi-outG');
+        const outFHF = document.getElementById('pi-outFHF');
+        const outInvFHF = document.getElementById('pi-outInvFHF');
+        const outGGH = document.getElementById('pi-outGGH');
+        const outInvGGH = document.getElementById('pi-outInvGGH');
+        const outApinv = document.getElementById('pi-outApinv');
+        const utils = window.MatrixUtils;
+
+        if (loadBtn) {
+            loadBtn.addEventListener('click', () => {
+                ta.value = '2 4 1 1\n1 2 -1 2\n-1 -2 -2 1';
+            });
+        }
+
+        function conjTranspose(M) {
+            try {
+                return math.transpose(math.conj(M));
+            } catch (e) {
+                return math.transpose(M);
+            }
+        }
+
+        function handleError(message) {
+            const text = '错误: ' + message;
+            if (outF) outF.textContent = text;
+            [outG, outFHF, outInvFHF, outGGH, outInvGGH, outApinv].forEach(el => {
+                if (el) el.textContent = '';
+            });
+        }
+
+        if (computeBtn) {
+            computeBtn.addEventListener('click', async () => {
+                try {
+                    if (!utils) throw new Error('MatrixUtils not loaded');
+                    const A = utils.parseMatrix(ta.value);
+                    const { F, G } = utils.computeFullRank(A);
+                    if (outF) outF.innerHTML = `\\[F = ${utils.matrixToLatex(F)}\\]`;
+                    if (outG) outG.innerHTML = `\\[G = ${utils.matrixToLatex(G)}\\]`;
+                    await utils.renderLatex([outF, outG]);
+
+                    const Fh = conjTranspose(F);
+                    const Gh = conjTranspose(G);
+                    const FhF = math.multiply(Fh, F);
+                    const FhFInv = math.inv(FhF);
+                    const GGh = math.multiply(G, Gh);
+                    const GGhInv = math.inv(GGh);
+
+                    if (outFHF) outFHF.innerHTML = `\\[F^{H}F = ${utils.matrixToLatex(FhF)}\\]`;
+                    if (outInvFHF) outInvFHF.innerHTML = `\\[(F^{H}F)^{-1} = ${utils.matrixToLatex(FhFInv)}\\]`;
+                    if (outGGH) outGGH.innerHTML = `\\[GG^{H} = ${utils.matrixToLatex(GGh)}\\]`;
+                    if (outInvGGH) outInvGGH.innerHTML = `\\[(GG^{H})^{-1} = ${utils.matrixToLatex(GGhInv)}\\]`;
+
+                    const term = math.multiply(Gh, GGhInv);
+                    const term2 = math.multiply(term, FhFInv);
+                    const Aplus = math.multiply(term2, Fh);
+                    if (outApinv) outApinv.innerHTML = `\\[A^{+} = ${utils.matrixToLatex(Aplus)}\\]`;
+
+                    await utils.renderLatex([outFHF, outInvFHF, outGGH, outInvGGH, outApinv]);
+                } catch (e) {
+                    handleError(e.message);
+                }
+            });
+        }
+    });
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const objectiveInput = document.getElementById('sx-objective');
+        const constraintsInput = document.getElementById('sx-constraints');
+        const rhsInput = document.getElementById('sx-rhs');
+        const inequalitiesInput = document.getElementById('sx-inequalities');
+        const solveBtn = document.getElementById('sx-solve');
+        const loadExampleBtn = document.getElementById('sx-loadExample');
+        const outputDiv = document.getElementById('sx-output');
+        const problemTypeRadios = document.getElementsByName('sx-problemType');
+
+        if (loadExampleBtn) {
+            loadExampleBtn.addEventListener('click', () => {
+                const radio = document.querySelector('input[name="sx-problemType"][value="min"]');
+                if(radio) radio.checked = true;
+                objectiveInput.value = '-4 -6 -18';
+                constraintsInput.value = '1 0 3\n1 2 0';
+                rhsInput.value = '3 3';
+                inequalitiesInput.value = '<= <=';
+            });
+        }
+
+        // --- Simplex Helper Functions ---
+        function parseArray(text) {
+            text = text.replace(/[－−—‒–]/g, '-');
+            return text.trim().split(/[,\s]+/).map(x => parseFloat(x)).filter(x => !isNaN(x));
+        }
+
+        function parseMatrix(text) {
+            text = text.replace(/[－−—‒–]/g, '-');
+            const rows = text.trim().split(/\n+/).map(r => r.trim()).filter(r => r.length > 0);
+            return rows.map(r => r.split(/[,\s]+/).map(x => parseFloat(x)));
+        }
+
+        function parseInequalities(text) {
+            return text.trim().split(/\s+/).map(s => s.trim());
+        }
+
+        function getProblemType() {
+            for (const radio of problemTypeRadios) {
+                if (radio.checked) return radio.value;
+            }
+            return 'min';
+        }
+
+        function formatNumber(num) {
+            if (Math.abs(num) < 1e-10) return '0';
+            if (Math.abs(num - Math.round(num)) < 1e-10) return Math.round(num).toString();
+            return num.toFixed(3);
+        }
+
+        function fractionString(num, wrapMath = false) {
+            if (Math.abs(num) < 1e-10) return wrapMath ? '\\(0\\)' : '0';
+            if (Math.abs(num - Math.round(num)) < 1e-10) {
+                const val = Math.round(num).toString();
+                return wrapMath ? `\\(${val}\\)` : val;
+            }
+            const sign = num < 0 ? -1 : 1;
+            const absNum = Math.abs(num);
+            for (let d = 2; d <= 20; d++) {
+                for (let n = 1; n < d * 10; n++) {
+                    if (Math.abs(n / d - absNum) < 1e-9) {
+                        const frac = sign < 0 ? `-\\frac{${n}}{${d}}` : `\\frac{${n}}{${d}}`;
+                        return wrapMath ? `\\(${frac}\\)` : frac;
+                    }
+                }
+            }
+            const val = formatNumber(num);
+            return wrapMath ? `\\(${val}\\)` : val;
+        }
+
+        function createTableau(tableau, basicVars, iteration, cOriginal, n, pivotRow = -1, pivotCol = -1) {
+            const numRows = tableau.length;
+            const numCols = tableau[0].length;
+            const numVars = numCols - 1;
+
+            function getCoeffDisplay(varIndex, isSlack) {
+                if (isSlack) return '\\((0)\\)';
+                if (varIndex < cOriginal.length) {
+                    const coeff = cOriginal[varIndex];
+                    return `\\((${formatNumber(coeff)})\\)`;
+                }
+                return '';
+            }
+
+            let html = '<div class="tableau">';
+            html += `<p style="font-weight:600; margin-bottom:8px">单纯形表 ${iteration}：</p>`;
+            html += '<table>';
+            html += '<tr><th>基变量</th>';
+            for (let j = 0; j < numVars; j++) {
+                let varName, coeffDisplay;
+                if (j < n) {
+                    varName = `\\(x_{${j + 1}}\\)`;
+                    coeffDisplay = getCoeffDisplay(j, false);
+                } else {
+                    varName = `\\(s_{${j - n + 1}}\\)`;
+                    coeffDisplay = '\\((0)\\)';
+                }
+                const className = (j === pivotCol) ? 'pivot-col' : '';
+                html += `<th class="${className}">${varName} ${coeffDisplay}</th>`;
+            }
+            html += '<th>RHS</th></tr>';
+
+            for (let i = 0; i < numRows - 1; i++) {
+                const rowClass = (i === pivotRow) ? 'pivot-row' : '';
+                html += `<tr class="${rowClass}">`;
+                const basicVar = basicVars[i];
+                // 这里的basicVar现在是LaTeX格式，如 \(x_{1}\)
+                // 从LaTeX字符串中提取下标需要适应新格式
+                const xMatch = basicVar.match(/x_\{(\d+)\}/);
+                let coeffDisplay = '\\((0)\\)';
+                if (xMatch) {
+                    const varIndex = parseInt(xMatch[1]) - 1;
+                    coeffDisplay = getCoeffDisplay(varIndex, false);
+                }
+                html += `<td style="font-weight:600">${basicVar} ${coeffDisplay}</td>`;
+                for (let j = 0; j < numCols; j++) {
+                    const cellClass = (i === pivotRow && j === pivotCol) ? 'pivot-cell' : '';
+                    html += `<td class="${cellClass}">${fractionString(tableau[i][j], true)}</td>`;
+                }
+                html += '</tr>';
+            }
+
+            html += '<tr style="border-top: 2px solid #667eea">';
+            html += '<td style="font-weight:600">z</td>';
+            for (let j = 0; j < numCols; j++) {
+                const cellClass = (j === pivotCol) ? 'pivot-col' : '';
+                html += `<td class="${cellClass}" style="font-weight:600">${fractionString(tableau[numRows - 1][j], true)}</td>`;
+            }
+            html += '</tr>';
+            html += '</table></div>';
+            return html;
+        }
+
+        async function renderMath(element) {
+            if (window.renderMathInElement) {
+                try {
+                    renderMathInElement(element, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '\\[', right: '\\]', display: true},
+                            {left: '\\(', right: '\\)', display: false}
+                        ],
+                        throwOnError: false
+                    });
+                } catch (e) { console.warn('KaTeX render failed', e); }
+            }
+            if (window.MathJax && MathJax.typesetPromise) {
+                await MathJax.typesetPromise([element]);
+            }
+        }
+
+        async function simplex(c, A, b, inequalities, isMin) {
+            const m = A.length; const n = c.length;
+            let output = '';
+
+            // 适应LaTeX变量名的辅助函数
+            function getObjectiveCoeff(varName, cOriginal) {
+                // varName现在是 \(x_{...}\) 格式
+                const xMatch = varName.match(/x_\{(\d+)\}/);
+                if (xMatch) { return cOriginal[parseInt(xMatch[1]) - 1]; }
+                return 0;
+            }
+
+            function recalculateZRow(tableau, basicVars, cOriginal, n, m) {
+                const totalVars = tableau[0].length - 1;
+                const zRow = tableau[m];
+                for (let j = 0; j <= totalVars; j++) {
+                    let sum = 0;
+                    for (let i = 0; i < m; i++) {
+                        const cB = getObjectiveCoeff(basicVars[i], cOriginal);
+                        sum += cB * tableau[i][j];
+                    }
+                    if (j < n) { zRow[j] = sum - cOriginal[j]; } 
+                    else if (j < totalVars) { zRow[j] = sum; } 
+                    else { zRow[j] = sum; }
+                }
+            }
+
+            output += '<div class="panel step-section">';
+            output += '<div class="step-title">步骤 1：原始问题</div>';
+            output += '<p>';
+            output += isMin ? '\\[\\min z = ' : '\\[\\max z = ';
+            output += c.map((ci, i) => {
+                const sign = ci >= 0 ? (i === 0 ? '' : '+') : '';
+                return `${sign}${formatNumber(ci)}x_{${i + 1}}`;
+            }).join(' ');
+            output += '\\]</p>';
+
+            output += '<p>约束条件：</p><p>\\[\\begin{aligned}';
+            for (let i = 0; i < m; i++) {
+                output += A[i].map((aij, j) => {
+                    const sign = aij >= 0 ? (j === 0 ? '' : '+') : '';
+                    return `${sign}${formatNumber(aij)}x_{${j + 1}}`;
+                }).join(' ');
+                let ineqSymbol = inequalities[i];
+                if (ineqSymbol === '<=') ineqSymbol = '\\le';
+                else if (ineqSymbol === '>=') ineqSymbol = '\\ge';
+                else if (ineqSymbol === '=') ineqSymbol = '=';
+                output += ` &${ineqSymbol} ${formatNumber(b[i])}\\\\`;
+            }
+            output += 'x_i &\\geq 0, \\forall i\\end{aligned}\\]</p></div>';
+
+            output += '<div class="panel step-section"><div class="step-title">步骤 2：引入松弛变量</div>';
+            const slackVars = []; const artificialVars = [];
+            let numSlack = 0; let numArtificial = 0;
+
+            for (let i = 0; i < m; i++) {
+                if (inequalities[i] === '<=') {
+                    slackVars.push({ row: i, type: 'slack', index: numSlack }); numSlack++;
+                } else if (inequalities[i] === '>=') {
+                    slackVars.push({ row: i, type: 'surplus', index: numSlack }); numSlack++;
+                    artificialVars.push({ row: i, index: numArtificial }); numArtificial++;
+                } else if (inequalities[i] === '=') {
+                    artificialVars.push({ row: i, index: numArtificial }); numArtificial++;
+                }
+            }
+
+            if (numArtificial > 0) {
+                output += '<p style="color:#dc2626; font-weight:600">当前版本仅完整支持所有约束为 ≤ 的情况。</p></div>';
+                outputDiv.innerHTML = output; renderMath(outputDiv); return;
+            }
+            output += '<p>转换为标准型...</p></div>';
+
+            output += '<div class="panel step-section"><div class="step-title">步骤 3：构建初始单纯形表</div>';
+            const tableau = [];
+            const totalVars = n + m; 
+            for (let i = 0; i < m; i++) {
+                const row = [];
+                for (let j = 0; j < n; j++) row.push(A[i][j]);
+                for (let j = 0; j < m; j++) row.push(i === j ? 1 : 0);
+                row.push(b[i]);
+                tableau.push(row);
+            }
+            const zRow = [];
+            for (let j = 0; j < n; j++) zRow.push(-c[j]);
+            for (let j = 0; j < m; j++) zRow.push(0);
+            zRow.push(0);
+            tableau.push(zRow);
+
+            const basicVars = [];
+            // 初始化基变量，使用LaTeX格式
+            for (let i = 0; i < m; i++) basicVars.push(`\\(s_{${i + 1}}\\)`);
+            output += createTableau(tableau, basicVars, 0, c, n);
+            output += '</div>';
+
+            let iteration = 1; const maxIterations = 20;
+            while (iteration <= maxIterations) {
+                const zRow = tableau[m];
+                let enteringCol = -1; let maxValue = 0;
+                for (let j = 0; j < totalVars; j++) {
+                    if (zRow[j] > maxValue) { maxValue = zRow[j]; enteringCol = j; }
+                }
+
+                if (enteringCol === -1) {
+                    output += '<div class="panel step-section"><div class="step-title">✓ 找到最优解</div><p>所有检验数均为负数，达到最优解。</p></div>';
+                    break;
+                }
+
+                output += `<div class="panel step-section"><div class="step-title">步骤 ${3 + iteration}：迭代 ${iteration}</div>`;
+                // 进基变量使用LaTeX
+                const enteringVarName = enteringCol < n ? `\\(x_{${enteringCol + 1}}\\) ` : `\\(s_{${enteringCol - n + 1}}\\) `;
+                output += `<p><strong>进基变量：</strong>${enteringVarName}</p>`;
+
+                let leavingRow = -1; let minRatio = Infinity;
+                for (let i = 0; i < m; i++) {
+                    if (tableau[i][enteringCol] > 1e-10) {
+                        const ratio = tableau[i][totalVars] / tableau[i][enteringCol];
+                        if (ratio < minRatio) { minRatio = ratio; leavingRow = i; }
+                    }
+                }
+
+                if (leavingRow === -1) {
+                    output += '<p style="color:#dc2626">问题无界！</p></div>'; break;
+                }
+
+                output += `<p><strong>出基变量：</strong>${basicVars[leavingRow]}</p>`;
+                output += createTableau(tableau, basicVars, iteration, c, n, leavingRow, enteringCol);
+
+                const pivotElement = tableau[leavingRow][enteringCol];
+                for (let j = 0; j <= totalVars; j++) tableau[leavingRow][j] /= pivotElement;
+                for (let i = 0; i < m; i++) {
+                    if (i === leavingRow) continue;
+                    const factor = tableau[i][enteringCol];
+                    for (let j = 0; j <= totalVars; j++) tableau[i][j] -= factor * tableau[leavingRow][j];
+                }
+                basicVars[leavingRow] = enteringVarName;
+                recalculateZRow(tableau, basicVars, c, n, m);
+                output += '</div>';
+                iteration++;
+            }
+
+            output += '<div class="panel step-section"><div class="step-title">最终单纯形表</div>';
+            output += createTableau(tableau, basicVars, '最终', c, n);
+            output += '</div>';
+
+            output += '<div class="panel"><div class="result-box"><p style="font-size:1.2rem; font-weight:700; margin-bottom:12px">最优解：</p>';
+            const solution = new Array(n).fill(0);
+            for (let i = 0; i < m; i++) {
+                // 结果解析也需要匹配LaTeX格式
+                const match = basicVars[i].match(/x_\{(\d+)\}/);
+                if (match) solution[parseInt(match[1]) - 1] = tableau[i][totalVars];
+            }
+            output += '<p>';
+            for (let i = 0; i < n; i++) output += `\\(x_{${i + 1}} = ${fractionString(solution[i])}\\)${i < n - 1 ? ', ' : ''}`;
+            output += '</p>';
+            const optimalValue = tableau[m][totalVars];
+            output += `<p style="margin-top:12px"><strong>最优值：</strong> \\(z^* = ${fractionString(optimalValue)}\\)</p></div></div>`;
+
+            outputDiv.innerHTML = output;
+            await renderMath(outputDiv);
+        }
+
+        if (solveBtn) {
+            solveBtn.addEventListener('click', async () => {
+                try {
+                    const c = parseArray(objectiveInput.value);
+                    const A = parseMatrix(constraintsInput.value);
+                    const b = parseArray(rhsInput.value);
+                    const inequalities = parseInequalities(inequalitiesInput.value);
+                    const isMin = getProblemType() === 'min';
+
+                    if (c.length === 0) throw new Error('请输入目标函数系数');
+                    if (A.length === 0) throw new Error('请输入约束条件矩阵');
+                    
+                    await simplex(c, A, b, inequalities, isMin);
+                } catch (e) {
+                    outputDiv.innerHTML = `<div class="panel"><p style="color:#dc2626; font-weight:600">错误：${e.message}</p></div>`;
+                }
+            });
+        }
+    });
+    </script>
 </body>
 </html>

@@ -18,7 +18,6 @@
         document.body.classList.add('day-mode');
     }
 </script>
-    <!-- 日夜切换器 -->
     <div class="theme-toggle">
         <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
         <label for="themeToggle" class="theme-toggle__btn">
@@ -46,7 +45,6 @@
                     </div>
 
                     <div class="buttons">
-                        <!-- 行1 -->
                         <button class="btn-calc" data-val="7">7</button>
                         <button class="btn-calc" data-val="8">8</button>
                         <button class="btn-calc" data-val="9">9</button>
@@ -57,7 +55,6 @@
                         <button class="btn-calc btn-op" data-val="*"
                             title="乘法：两个数相乘">×</button>
 
-                        <!-- 行2 -->
                         <button class="btn-calc" data-val="4">4</button>
                         <button class="btn-calc" data-val="5">5</button>
                         <button class="btn-calc" data-val="6">6</button>
@@ -68,7 +65,6 @@
                         <button class="btn-calc btn-op" data-fn="mod"
                             title="取模：返回 a 除以 b 的余数">mod</button>
 
-                        <!-- 行3 -->
                         <button class="btn-calc" data-val="1">1</button>
                         <button class="btn-calc" data-val="2">2</button>
                         <button class="btn-calc" data-val="3">3</button>
@@ -79,7 +75,6 @@
                         <button class="btn-calc btn-op" data-fn="ln"
                             title="自然对数：以 e 为底的对数">ln</button>
 
-                        <!-- 行4 -->
                         <button class="btn-calc" data-val="0">0</button>
                         <button class="btn-calc" data-val=".">.</button>
                         <button class="btn-calc" data-val=",">,</button>
@@ -88,7 +83,6 @@
                         <button class="btn-calc btn-op" data-fn="root"
                             title="自定义 n 次方根：次数由“开方次数”设置">√</button>
 
-                        <!-- 行5 -->
                         <button class="btn-calc btn-op" data-fn="abs"
                             title="绝对值：返回 |x|">| x |</button>
                         <button class="btn-calc btn-op" data-fn="primeFactors"
@@ -128,7 +122,7 @@
                     </details>
                     <details class="function-section">
                         <summary class="section-heading">
-                            <span class="trig-title">&#25968;&#23398;&#24120;&#37327;</span>
+                            <span class="trig-title">数学常量</span>
                             <small>单击插入</small>
                         </summary>
                         <div class="function-grid const-grid">
@@ -320,18 +314,36 @@
                         <div id="baseResult" class="result-text"></div>
                     </div>
                 </section>
+
+                <section class="converter-panel">
+                    <h2>颜色转换</h2>
+                    <p class="panel-desc">支持 HEX, RGB, RGBA, HSL, HSLA, HSV, HSVA, CMYK, CMYKA 互转。</p>
+                    <div class="unit-row single-input">
+                        <input id="colorValue" type="text" placeholder="输入颜色 (例如 #667eea, rgb(100,50,20))" class="input-field" />
+                    </div>
+                    <div class="unit-row two-cols select-pair">
+                        <select id="colorFrom" class="input-field base-select"></select>
+                        <span class="unit-arrow">→</span>
+                        <select id="colorTo" class="input-field base-select"></select>
+                    </div>
+                    <div class="converter-actions">
+                        <button id="colorConvertBtn" class="btn btn-secondary">转换</button>
+                        <div class="color-output-row">
+                            <div id="colorPreview" class="color-preview" style="display:none;"></div>
+                            <div id="colorResult" class="result-text"></div>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
     </div>
 
-        <!-- 页脚 -->
         <footer class="footer">
             <p>Copyright © 2024 Tooltopia. All Rights Reserved.</p>
                 <p>Designed by DSTBP</p>
         </footer>
     </div>
 
-    <!-- 引入 math.js（数值/单位/分数）以及本地逻辑脚本 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
     <script src="assets/js/theme-toggle.js"></script>
     <script src="assets/js/calculator.js"></script>

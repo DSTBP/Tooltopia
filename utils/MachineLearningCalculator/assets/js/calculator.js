@@ -21,6 +21,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const baseToEl = document.getElementById('baseTo');
     const baseConvertBtn = document.getElementById('baseConvertBtn');
     const baseResultEl = document.getElementById('baseResult');
+    
+    // 颜色转换相关元素
+    const colorValueEl = document.getElementById('colorValue');
+    const colorFromEl = document.getElementById('colorFrom');
+    const colorToEl = document.getElementById('colorTo');
+    const colorConvertBtn = document.getElementById('colorConvertBtn');
+    const colorResultEl = document.getElementById('colorResult');
+    const colorPreviewEl = document.getElementById('colorPreview');
 
     let lastAns = 0;
     const MAX_HISTORY = 50;
@@ -926,6 +934,241 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // --- Color Conversion Logic Start ---
+    const COLOR_FORMATS = [
+        { value: 'hex', label: 'HEX' },
+        { value: 'rgb', label: 'RGB' },
+        { value: 'rgba', label: 'RGBA' },
+        { value: 'hsl', label: 'HSL' },
+        { value: 'hsla', label: 'HSLA' },
+        { value: 'hsv', label: 'HSV' },
+        { value: 'hsva', label: 'HSVA' },
+        { value: 'cmyk', label: 'CMYK' },
+        { value: 'cmyka', label: 'CMYKA' }
+    ];
+
+    if (colorFromEl && colorToEl) {
+        const populate = (sel) => {
+            sel.innerHTML = '';
+            COLOR_FORMATS.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f.value;
+                opt.textContent = f.label;
+                sel.appendChild(opt);
+            });
+        };
+        populate(colorFromEl);
+        populate(colorToEl);
+        colorFromEl.value = 'hex';
+        colorToEl.value = 'rgb';
+    }
+
+    function clamp(val, min, max) {
+        return Math.min(Math.max(val, min), max);
+    }
+
+    // RGBA Struct: {r: 0-255, g: 0-255, b: 0-255, a: 0-1}
+    function parseColorInput(input, format) {
+        let s = input.trim();
+        const nums = (s.match(/-?\d+(\.\d+)?/g) || []).map(Number);
+        
+        if (format === 'hex') {
+            if (s.startsWith('#')) s = s.slice(1);
+            if (s.length === 3) {
+                s = s[0]+s[0] + s[1]+s[1] + s[2]+s[2];
+            }
+            if (s.length !== 6) throw new Error('无效的 HEX 格式');
+            const r = parseInt(s.substring(0,2), 16);
+            const g = parseInt(s.substring(2,4), 16);
+            const b = parseInt(s.substring(4,6), 16);
+            return { r, g, b, a: 1 };
+        } 
+        else if (format.startsWith('rgb')) {
+            if (nums.length < 3) throw new Error('RGB 需要 3 个数值');
+            return {
+                r: clamp(nums[0], 0, 255),
+                g: clamp(nums[1], 0, 255),
+                b: clamp(nums[2], 0, 255),
+                a: nums.length > 3 ? clamp(nums[3], 0, 1) : 1
+            };
+        }
+        else if (format.startsWith('hsl')) {
+            // HSL to RGB
+            if (nums.length < 3) throw new Error('HSL 需要 3 个数值');
+            const h = nums[0] % 360;
+            const sVal = clamp(nums[1], 0, 100) / 100;
+            const l = clamp(nums[2], 0, 100) / 100;
+            const a = nums.length > 3 ? clamp(nums[3], 0, 1) : 1;
+            
+            const c = (1 - Math.abs(2 * l - 1)) * sVal;
+            const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+            const m = l - c / 2;
+            let r=0, g=0, b=0;
+
+            if (h < 60) { r=c; g=x; b=0; }
+            else if (h < 120) { r=x; g=c; b=0; }
+            else if (h < 180) { r=0; g=c; b=x; }
+            else if (h < 240) { r=0; g=x; b=c; }
+            else if (h < 300) { r=x; g=0; b=c; }
+            else { r=c; g=0; b=x; }
+
+            return {
+                r: Math.round((r + m) * 255),
+                g: Math.round((g + m) * 255),
+                b: Math.round((b + m) * 255),
+                a: a
+            };
+        }
+        else if (format.startsWith('hsv')) {
+            // HSV to RGB
+            if (nums.length < 3) throw new Error('HSV 需要 3 个数值');
+            const h = nums[0] % 360;
+            const sVal = clamp(nums[1], 0, 100) / 100;
+            const v = clamp(nums[2], 0, 100) / 100;
+            const a = nums.length > 3 ? clamp(nums[3], 0, 1) : 1;
+
+            const c = v * sVal;
+            const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+            const m = v - c;
+            let r=0, g=0, b=0;
+
+            if (h < 60) { r=c; g=x; b=0; }
+            else if (h < 120) { r=x; g=c; b=0; }
+            else if (h < 180) { r=0; g=c; b=x; }
+            else if (h < 240) { r=0; g=x; b=c; }
+            else if (h < 300) { r=x; g=0; b=c; }
+            else { r=c; g=0; b=x; }
+
+            return {
+                r: Math.round((r + m) * 255),
+                g: Math.round((g + m) * 255),
+                b: Math.round((b + m) * 255),
+                a: a
+            };
+        }
+        else if (format.startsWith('cmyk')) {
+            // CMYK to RGB
+            if (nums.length < 4) throw new Error('CMYK 需要 4 个数值');
+            const c = clamp(nums[0], 0, 100) / 100;
+            const m = clamp(nums[1], 0, 100) / 100;
+            const y = clamp(nums[2], 0, 100) / 100;
+            const k = clamp(nums[3], 0, 100) / 100;
+            const a = nums.length > 4 ? clamp(nums[4], 0, 1) : 1;
+
+            const r = 255 * (1 - c) * (1 - k);
+            const g = 255 * (1 - m) * (1 - k);
+            const b = 255 * (1 - y) * (1 - k);
+
+            return {
+                r: Math.round(r),
+                g: Math.round(g),
+                b: Math.round(b),
+                a: a
+            };
+        }
+        throw new Error('不支持的输入格式');
+    }
+
+    function formatColorOutput(rgba, format) {
+        const { r, g, b, a } = rgba;
+
+        if (format === 'hex') {
+            const toHex = (n) => n.toString(16).padStart(2, '0').toUpperCase();
+            return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+        }
+        if (format === 'rgb') return `rgb(${r}, ${g}, ${b})`;
+        if (format === 'rgba') return `rgba(${r}, ${g}, ${b}, ${a})`;
+
+        if (format.startsWith('hsl')) {
+            const rN = r / 255, gN = g / 255, bN = b / 255;
+            const max = Math.max(rN, gN, bN), min = Math.min(rN, gN, bN);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case rN: h = (gN - bN) / d + (gN < bN ? 6 : 0); break;
+                    case gN: h = (bN - rN) / d + 2; break;
+                    case bN: h = (rN - gN) / d + 4; break;
+                }
+                h *= 60;
+            }
+            const sP = (s * 100).toFixed(1);
+            const lP = (l * 100).toFixed(1);
+            h = Math.round(h);
+            if (format === 'hsla') return `hsla(${h}, ${sP}%, ${lP}%, ${a})`;
+            return `hsl(${h}, ${sP}%, ${lP}%)`;
+        }
+
+        if (format.startsWith('hsv')) {
+            const rN = r / 255, gN = g / 255, bN = b / 255;
+            const max = Math.max(rN, gN, bN), min = Math.min(rN, gN, bN);
+            let h, s, v = max;
+            const d = max - min;
+            s = max === 0 ? 0 : d / max;
+            
+            if (max === min) {
+                h = 0;
+            } else {
+                switch (max) {
+                    case rN: h = (gN - bN) / d + (gN < bN ? 6 : 0); break;
+                    case gN: h = (bN - rN) / d + 2; break;
+                    case bN: h = (rN - gN) / d + 4; break;
+                }
+                h *= 60;
+            }
+            const sP = (s * 100).toFixed(1);
+            const vP = (v * 100).toFixed(1);
+            h = Math.round(h);
+            if (format === 'hsva') return `hsva(${h}, ${sP}%, ${vP}%, ${a})`;
+            return `hsv(${h}, ${sP}%, ${vP}%)`;
+        }
+
+        if (format.startsWith('cmyk')) {
+            let c = 0, m = 0, y = 0, k = 0;
+            const rN = r / 255, gN = g / 255, bN = b / 255;
+            k = 1 - Math.max(rN, gN, bN);
+            if (k < 1) {
+                c = (1 - rN - k) / (1 - k);
+                m = (1 - gN - k) / (1 - k);
+                y = (1 - bN - k) / (1 - k);
+            }
+            const p = (n) => Math.round(n * 100);
+            if (format === 'cmyka') return `cmyka(${p(c)}%, ${p(m)}%, ${p(y)}%, ${p(k)}%, ${a})`;
+            return `cmyk(${p(c)}%, ${p(m)}%, ${p(y)}%, ${p(k)}%)`;
+        }
+        return '';
+    }
+
+    if (colorConvertBtn) {
+        colorConvertBtn.addEventListener('click', () => {
+            if (!colorValueEl || !colorFromEl || !colorToEl) return;
+            const raw = colorValueEl.value;
+            if (!raw) {
+                colorResultEl.innerText = '请输入颜色值';
+                colorPreviewEl.style.display = 'none';
+                return;
+            }
+            try {
+                const rgba = parseColorInput(raw, colorFromEl.value);
+                const result = formatColorOutput(rgba, colorToEl.value);
+                colorResultEl.innerText = result;
+                
+                // 设置预览条颜色
+                const previewColor = `rgba(${rgba.r}, ${rgba.g}, ${rgba.b}, ${rgba.a})`;
+                colorPreviewEl.style.backgroundColor = previewColor;
+                colorPreviewEl.style.display = 'block';
+            } catch (e) {
+                colorResultEl.innerText = '转换失败: ' + e.message;
+                colorPreviewEl.style.display = 'none';
+            }
+        });
+    }
+    // --- Color Conversion Logic End ---
 
     // allow pressing Enter in display to evaluate
     displayEl.addEventListener('keydown', (e) => {
