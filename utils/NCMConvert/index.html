@@ -8,7 +8,6 @@
     <title>NCM 多格式转换工具</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
 </head>
 <body>
     <div class="theme-toggle">
@@ -44,9 +43,7 @@
                                 <option value="wav">WAV</option>
                                 <option value="aac">AAC (m4a)</option>
                                 <option value="ogg">OGG</option>
-                                <option value="wma">WMA</option>
-                                <option value="alac">ALAC (m4a)</option>
-                                <option value="ape">APE</option>
+                                <!-- <option value="alac">ALAC (m4a)</option> -->
                             </select>
                         </div>
 
@@ -125,20 +122,13 @@
                                 <td>音质无损，体积适中</td>
                                 <td>压缩率不如有损格式</td>
                             </tr>
-                            <tr>
+                            <!-- <tr>
                                 <td>ALAC</td>
                                 <td><span class="tag lossless">无损</span></td>
                                 <td>苹果无损格式</td>
                                 <td>音质无损，元数据支持</td>
                                 <td>兼容性差，限于苹果设备</td>
-                            </tr>
-                            <tr>
-                                <td>APE</td>
-                                <td><span class="tag lossless">无损</span></td>
-                                <td>高压缩率</td>
-                                <td>音质无损，体积小</td>
-                                <td>解码慢，兼容性差</td>
-                            </tr>
+                            </tr> -->
                             <tr>
                                 <td>MP3</td>
                                 <td><span class="tag lossy">有损</span></td>
@@ -152,13 +142,6 @@
                                 <td>音质优于MP3</td>
                                 <td>音质好，支持多声道</td>
                                 <td>兼容性不如MP3</td>
-                            </tr>
-                            <tr>
-                                <td>WMA</td>
-                                <td><span class="tag lossy">有损</span></td>
-                                <td>支持DRM</td>
-                                <td>音质好，体积小</td>
-                                <td>限于Windows平台</td>
                             </tr>
                             <tr>
                                 <td>OGG</td>
