@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#667eea">
+    <title>NCM 多格式转换工具</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+</head>
+<body>
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+
+    <div id="background-wrapper"></div>
+
+    <div class="page-container">
+        <a href="../../index.html" class="back-btn">← 返回首页</a>
+        
+        <div class="container">
+            <header>
+                <h1 data-shadow='NCM 格式转换'>NCM 格式转换</h1>
+                <p class="description">
+                    网易云音乐 NCM 格式本地解锁与格式转换工具。
+                    <br>支持导出为 MP3, FLAC, WAV, OGG, AAC, WMA, ALAC, APE 等多种格式。
+                </p>
+            </header>
+
+            <div class="main-container">
+                <div class="input-section">
+                    <div class="input-card">
+                        <h2>上传设置</h2>
+                        
+                        <div class="format-selection-area">
+                            <label for="formatSelect">选择导出格式：</label>
+                            <select id="formatSelect" class="format-select">
+                                <option value="mp3" selected>MP3 (默认)</option>
+                                <option value="flac">FLAC</option>
+                                <option value="wav">WAV</option>
+                                <option value="aac">AAC (m4a)</option>
+                                <option value="ogg">OGG</option>
+                                <option value="wma">WMA</option>
+                                <option value="alac">ALAC (m4a)</option>
+                                <option value="ape">APE</option>
+                            </select>
+                        </div>
+
+                        <div class="tab-content active" id="fileContent">
+                            <div class="file-upload-area" id="fileUploadArea">
+                                <input type="file" id="fileInput" accept=".ncm" multiple style="display: none;">
+                                <div class="upload-icon">🎵</div>
+                                <p class="upload-text">点击选择或拖拽 NCM 文件到此处</p>
+                                <p class="upload-hint">支持批量多选</p>
+                                <span id="fileName" class="file-name"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="output-section">
+                    <div class="output-card">
+                        <div class="output-header">
+                            <h2>转换列表</h2>
+                            <div class="output-info">
+                                <span id="statusCount">0 首</span>
+                                <span id="statusState">等待任务</span>
+                            </div>
+                        </div>
+                        
+                        <div id="outputList" class="music-list-container">
+                            <div class="empty-placeholder">
+                                暂无转换记录
+                            </div>
+                        </div>
+
+                        <div class="output-buttons">
+                            <button id="downloadAllBtn" class="btn btn-primary" disabled>下载全部</button>
+                            <button id="clearBtn" class="btn btn-secondary">清空列表</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="explanation">
+                <h2>格式对比与说明</h2>
+                <div class="explanation-content">
+                    <div class="explanation-item">
+                        <h3>关于 NCM 格式</h3>
+                        <p>NCM 是网易云音乐的加密音频格式。本工具通过本地算法解锁，并结合 FFmpeg 技术实现格式转换。所有转换过程完全在您的浏览器本地进行（使用 Web Worker 技术），您的文件不会被上传到任何服务器。</p>
+                    </div>
+                    <div class="explanation-item">
+                        <h3>转换须知</h3>
+                        <p>选择“保持原始格式”速度最快且无音质损失（直接还原为 NCM 内封装的 MP3 或 FLAC）。如需将 NCM 转换为其他特定格式（如 WAV、AAC），浏览器需要下载转换组件，初次加载可能较慢。</p>
+                    </div>
+                </div>
+                
+                <div class="format-table-container">
+                    <table class="format-table">
+                        <thead>
+                            <tr>
+                                <th>音频格式</th>
+                                <th>类型</th>
+                                <th>特点</th>
+                                <th>优点</th>
+                                <th>缺点</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>WAV</td>
+                                <td><span class="tag lossless">无损</span></td>
+                                <td>音质高，文件体积大</td>
+                                <td>音质无损，兼容性极佳</td>
+                                <td>文件体积大</td>
+                            </tr>
+                            <tr>
+                                <td>FLAC</td>
+                                <td><span class="tag lossless">无损</span></td>
+                                <td>无损压缩，文件较小</td>
+                                <td>音质无损，体积适中</td>
+                                <td>压缩率不如有损格式</td>
+                            </tr>
+                            <tr>
+                                <td>ALAC</td>
+                                <td><span class="tag lossless">无损</span></td>
+                                <td>苹果无损格式</td>
+                                <td>音质无损，元数据支持</td>
+                                <td>兼容性差，限于苹果设备</td>
+                            </tr>
+                            <tr>
+                                <td>APE</td>
+                                <td><span class="tag lossless">无损</span></td>
+                                <td>高压缩率</td>
+                                <td>音质无损，体积小</td>
+                                <td>解码慢，兼容性差</td>
+                            </tr>
+                            <tr>
+                                <td>MP3</td>
+                                <td><span class="tag lossy">有损</span></td>
+                                <td>文件小，音质较好</td>
+                                <td>兼容性最好</td>
+                                <td>低比特率下音质差</td>
+                            </tr>
+                            <tr>
+                                <td>AAC</td>
+                                <td><span class="tag lossy">有损</span></td>
+                                <td>音质优于MP3</td>
+                                <td>音质好，支持多声道</td>
+                                <td>兼容性不如MP3</td>
+                            </tr>
+                            <tr>
+                                <td>WMA</td>
+                                <td><span class="tag lossy">有损</span></td>
+                                <td>支持DRM</td>
+                                <td>音质好，体积小</td>
+                                <td>限于Windows平台</td>
+                            </tr>
+                            <tr>
+                                <td>OGG</td>
+                                <td><span class="tag lossy">有损</span></td>
+                                <td>开放源代码</td>
+                                <td>无专利限制</td>
+                                <td>兼容性一般</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="metadataModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>歌曲详情</h3>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-cover-wrapper">
+                    <img id="modalCover" src="" alt="Album Cover">
+                </div>
+                <div class="modal-info-list" id="modalInfoList">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>Copyright © 2024 Tooltopia. All Rights Reserved.</p>
+        <p>Designed by DSTBP</p>
+    </footer>
+
+    <script src="assets/js/theme-toggle.js"></script>
+    <script src="assets/js/script.js"></script>
+</body>
+</html>
