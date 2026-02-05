@@ -1,6 +1,6 @@
 /*
- * @Description: NCM 转 MP3/FLAC... 核心逻辑 (Vanilla JS + FFmpeg.wasm 0.11.x 单线程版)
- * @Updated: 采用“一任务一重建”策略 (One Instance Per Task)，彻底解决连续转换卡死/状态残留问题
+ * @Description: NCM 转 MP3/FLAC... 核心逻辑 (包含 LRC 歌词匹配与合并)
+ * @Updated: 增加 LRC 自动/手动匹配及元数据注入功能
  */
 
 const WORKER_CODE = `
@@ -92,12 +92,18 @@ class NCMConverter {
         this.activeTaskKeys = new Set();
         this.taskIdToKey = {};
 
+        // 歌词存储逻辑
+        this.lrcStore = new Map(); // 存储上传的歌词内容: 文件名 -> 内容
+        this.taskLrcMap = new Map(); // 任务ID -> 关联的歌词内容
+
         this.transcodeQueue = [];
         this.isProcessing = false;
 
         this.initWorker();
-        // 注意：我们不再在构造函数里预加载 FFmpeg，改为在任务开始时按需加载
         this.bindEvents();
+
+        // 暴露实例给全局，以便 HTML 中的 onclick 事件调用
+        window.ncmConverter = this;
     }
 
     initWorker() {
@@ -125,7 +131,6 @@ class NCMConverter {
     }
 
     async initFFmpeg() {
-        // 如果已经有实例，先销毁
         if (this.ffmpeg) {
             try { this.ffmpeg.exit(); } catch(e) { console.warn(e); }
             this.ffmpeg = null;
@@ -139,7 +144,6 @@ class NCMConverter {
 
             const { createFFmpeg } = FFmpeg;
 
-            // 初始化新实例
             this.ffmpeg = createFFmpeg({
                 log: true,
                 mainName: 'main', 
@@ -179,6 +183,11 @@ class NCMConverter {
                 e.stopPropagation();
                 const id = parseInt(e.target.closest('.music-item').id.replace('task-', ''));
                 this.deleteTask(id);
+            } else if (e.target.classList.contains('lrc-tag') && e.target.classList.contains('unmatched')) {
+                // 处理点击手动匹配歌词
+                e.stopPropagation();
+                const id = parseInt(e.target.closest('.music-item').id.replace('task-', ''));
+                this.bindManualMatch(id);
             } else {
                 const item = e.target.closest('.music-item');
                 if (item && !item.classList.contains('error-item')) {
@@ -194,20 +203,46 @@ class NCMConverter {
         };
     }
 
-    handleFiles(fileList) {
-        const files = Array.from(fileList).filter(f => f.name.toLowerCase().endsWith('.ncm'));
-        if (!files.length) return;
+    async handleFiles(fileList) {
+        const allFiles = Array.from(fileList);
+        const ncmFiles = allFiles.filter(f => f.name.toLowerCase().endsWith('.ncm'));
+        const lrcFiles = allFiles.filter(f => f.name.toLowerCase().endsWith('.lrc'));
+
+        // 1. 预处理上传的歌词文件
+        for (const file of lrcFiles) {
+            const text = await file.text();
+            const baseName = file.name.replace(/\.lrc$/i, '');
+            this.lrcStore.set(baseName, text);
+        }
+
+        // 2. 如果只上传了歌词，尝试重新匹配现有任务
+        if (!ncmFiles.length && lrcFiles.length > 0) {
+            this.reMatchExistingTasks();
+            this.fileInput.value = '';
+            return;
+        }
+
         const currentTargetFormat = this.formatSelect.value;
         const payload = [];
-        files.forEach(file => {
+        
+        ncmFiles.forEach(file => {
             const key = `${file.name}_${currentTargetFormat}`;
             if (this.activeTaskKeys.has(key)) return;
+            
             const id = this.taskIdCounter++;
             this.activeTaskKeys.add(key);
             this.taskIdToKey[id] = key;
+
+            // 自动匹配歌词 (根据 NCM 文件名)
+            const baseName = file.name.replace(/\.ncm$/i, '');
+            if (this.lrcStore.has(baseName)) {
+                this.taskLrcMap.set(id, this.lrcStore.get(baseName));
+            }
+
             this.createCard(id, file.name);
             payload.push({ id, file });
         });
+
         if (payload.length) this.worker.postMessage(payload);
         this.fileInput.value = '';
     }
@@ -217,17 +252,61 @@ class NCMConverter {
         const div = document.createElement('div');
         div.className = 'music-item';
         div.id = `task-${id}`;
+
+        const lrcStatus = this.taskLrcMap.has(id) 
+            ? '<span class="lrc-tag matched">歌词: 已匹配</span>' 
+            : '<span class="lrc-tag unmatched">歌词: 未匹配 (点击手动上传)</span>';
+
         div.innerHTML = `
             <div class="album-cover" style="display:flex;align-items:center;justify-content:center;color:#666">⏳</div>
             <div class="music-info">
                 <div class="music-title">${fileName}</div>
                 <div class="music-artist">等待解密...</div>
+                <div class="lrc-status-container">${lrcStatus}</div>
             </div>
             <div class="music-actions">
                 <div class="delete-btn">×</div>
             </div>`;
         this.outputList.insertBefore(div, this.outputList.firstChild);
         this.updateStatus();
+    }
+
+    bindManualMatch(id) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.lrc';
+        input.onchange = async (e) => {
+            if (e.target.files.length > 0) {
+                const text = await e.target.files[0].text();
+                this.taskLrcMap.set(id, text);
+                const card = document.getElementById(`task-${id}`);
+                const tag = card?.querySelector('.lrc-tag');
+                if (tag) {
+                    tag.className = 'lrc-tag matched';
+                    tag.textContent = '歌词: 手动关联';
+                }
+            }
+        };
+        input.click();
+    }
+
+    reMatchExistingTasks() {
+        this.taskIdToKey && Object.keys(this.taskIdToKey).forEach(idKey => {
+            const id = parseInt(idKey);
+            const card = document.getElementById(`task-${id}`);
+            if (card && !this.taskLrcMap.has(id)) {
+                const title = card.querySelector('.music-title').textContent;
+                const baseName = title.replace(/\.ncm$/i, '');
+                if (this.lrcStore.has(baseName)) {
+                    this.taskLrcMap.set(id, this.lrcStore.get(baseName));
+                    const tag = card.querySelector('.lrc-tag');
+                    if (tag) {
+                        tag.className = 'lrc-tag matched';
+                        tag.textContent = '歌词: 自动匹配';
+                    }
+                }
+            }
+        });
     }
 
     async handleDecryptionSuccess(id, data) {
@@ -251,18 +330,12 @@ class NCMConverter {
         while (this.transcodeQueue.length > 0) {
             const task = this.transcodeQueue.shift();
             try {
-                // 执行转换
                 await this.transcodeAudio(task);
-                
-                // 转换后，强制等待一小会，让浏览器 UI 刷新
                 await new Promise(r => setTimeout(r, 200)); 
             } catch (error) {
                 console.error("Transcode Error:", error);
                 this.handleError(task.id, `转换失败: ${error.message || '未知错误'}`);
             } finally {
-                // === 核心修改 ===
-                // 无论成功还是失败，在处理完一个任务后，彻底销毁 FFmpeg 实例
-                // 确保下一个任务在一个全新的环境中运行
                 if (this.ffmpeg) {
                     try { 
                         this.ffmpeg.exit(); 
@@ -277,7 +350,6 @@ class NCMConverter {
     }
 
     async transcodeAudio({ id, data, target, original }) {
-        // 每次都初始化新的 FFmpeg
         await this.initFFmpeg();
 
         const card = document.getElementById(`task-${id}`);
@@ -295,6 +367,13 @@ class NCMConverter {
         this.ffmpeg.FS('writeFile', inName, buf);
 
         const args = ['-i', inName];
+        
+        // 注入歌词元数据
+        const lrcText = this.taskLrcMap.get(id);
+        if (lrcText) {
+            args.push('-metadata', `lyrics=${lrcText}`);
+        }
+
         if (target === 'mp3') args.push('-c:a', 'libmp3lame', '-q:a', '2');
         else if (target === 'aac') args.push('-c:a', 'aac', '-b:a', '192k');
         else if (target === 'wav') args.push('-c:a', 'pcm_s16le');
@@ -307,7 +386,6 @@ class NCMConverter {
         try {
             await this.ffmpeg.run(...args);
         } catch (e) {
-            // 捕获 exit(0)
             if (e.message === 'Program terminated with exit(0)' || (e.name === 'ExitStatus' && e.status === 0)) {
                 console.log("FFmpeg success (exit 0).");
             } else {
@@ -315,7 +393,6 @@ class NCMConverter {
             }
         }
 
-        // 读取结果
         let result;
         try {
             result = this.ffmpeg.FS('readFile', outName);
@@ -324,8 +401,6 @@ class NCMConverter {
         }
 
         const newUrl = URL.createObjectURL(new Blob([result.buffer], { type: `audio/${target}` }));
-
-        // 此时不需要手动 unlink 了，因为 finally 块会直接销毁整个 FFmpeg 内存
         URL.revokeObjectURL(data.url);
 
         this.renderSuccessCard(id, newUrl, data.meta, outExt, data.fileName);
@@ -339,6 +414,10 @@ class NCMConverter {
         const dName = `${artist} - ${title}.${ext}`;
         const coverSrc = meta.albumPic || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NiIgaGVpZ2h0PSI1NiIgdmlld0JveD0iMCAwIDU2IDU2Ij48cmVjdCB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIGZpbGw9IiMzMzMiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIyNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iIGZpbGw9IiM2NjYiPvCfjbc8L3RleHQ+PC9zdmc+';
         
+        const lrcStatus = this.taskLrcMap.has(id) 
+            ? '<span class="lrc-tag matched">歌词: 已合并</span>' 
+            : '<span class="lrc-tag unmatched">歌词: 未关联</span>';
+
         this.convertedFiles.push({ id, url, name: dName, meta });
 
         card.innerHTML = `
@@ -346,6 +425,7 @@ class NCMConverter {
             <div class="music-info">
                 <div class="music-title">${title}</div>
                 <div class="music-artist">${artist} [${ext.toUpperCase()}]</div>
+                <div class="lrc-status-container">${lrcStatus}</div>
             </div>
             <div class="music-actions">
                 <audio controls src="${url}" class="music-player"></audio>
@@ -373,6 +453,7 @@ class NCMConverter {
         if (file) URL.revokeObjectURL(file.url);
 
         this.convertedFiles = this.convertedFiles.filter(f => f.id !== id);
+        this.taskLrcMap.delete(id);
         if (this.taskIdToKey[id]) this.activeTaskKeys.delete(this.taskIdToKey[id]);
         
         if (this.outputList.children.length === 0) {
@@ -400,6 +481,7 @@ class NCMConverter {
         this.convertedFiles.forEach(f => URL.revokeObjectURL(f.url));
         this.convertedFiles = [];
         this.activeTaskKeys.clear();
+        this.taskLrcMap.clear();
         this.outputList.innerHTML = '<div class="empty-placeholder">暂无转换记录</div>';
         this.updateDownloadBtn();
         this.updateStatus();

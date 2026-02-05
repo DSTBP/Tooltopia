@@ -772,3 +772,32 @@ body.day-mode .info-value { color: #2d3748; }
     .music-player { flex: 1; max-width: none; margin-right: 0; }
     .delete-btn { position: static; transform: none; margin-left: 10px; opacity: 1; }
 }
+
+/* 歌词状态标签 */
+.lrc-tag {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 4px;
+    display: inline-block;
+}
+.lrc-tag.matched {
+    background: rgba(72, 187, 120, 0.2);
+    color: #48bb78;
+    border: 1px solid rgba(72, 187, 120, 0.3);
+}
+.lrc-tag.unmatched {
+    background: rgba(255, 255, 255, 0.05);
+    color: #a0aec0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+}
+.lrc-tag.unmatched:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+/* 隐藏用于手动触发单文件匹配的隐藏 input */
+.manual-lrc-input {
+    display: none;
+}
