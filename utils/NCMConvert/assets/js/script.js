@@ -183,7 +183,8 @@ class NCMConverter {
             const { createFFmpeg } = FFmpeg;
             this.ffmpeg = createFFmpeg({ 
                 log: false,
-                corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js' 
+                // Use the single-threaded (st) core to fix SharedArrayBuffer errors
+                corePath: 'https://unpkg.com/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js'
             });
         } catch (e) {
             console.error("FFmpeg init error:", e);

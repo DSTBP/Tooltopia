@@ -500,7 +500,7 @@ body.day-mode .format-select option {
 /* ===== 日间模式样式 ===== */
 body.day-mode {
     background: #f0f4f8;
-    background-image: url(../image/day-background.png);
+    background-image: url(../../../../assets/image/day-background.png);
     background-repeat: repeat;
     background-size: auto;
 }
