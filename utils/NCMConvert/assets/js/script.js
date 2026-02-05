@@ -368,7 +368,15 @@ class NCMConverter {
         args.push('-map_metadata', '0');
         args.push(outputName);
 
-        await this.ffmpeg.run(...args);
+        try {
+            await this.ffmpeg.run(...args);
+        } catch (e) {
+            // If the error is just an ExitStatus with code 0, it means success.
+            // We ignore it and continue.
+            if (e.name !== 'ExitStatus' || e.status !== 0) {
+                throw e;
+            }
+        }
 
         const data = this.ffmpeg.FS('readFile', outputName);
         
