@@ -1,0 +1,1106 @@
+@import url(https://fonts.googleapis.com/css?family=Righteous);
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background:
+        radial-gradient(at 50% 0, transparent, #080808),
+        repeating-conic-gradient(
+            hsla(0, 0%, 0%, .235) 0% 25%,
+            transparent 0% 50%
+        ) 0 0 / 0.375em 0.375em,
+        #3b3b3b;
+    min-height: 100vh;
+    padding: 20px;
+    color: #333;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 移除网格线背景 wrapper，不再需要 */
+#background-wrapper {
+    display: none;
+}
+
+.page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    position: relative;
+    z-index: 2;
+    flex: 1;
+}
+
+.back-btn {
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    color: hsl(0 0% 85%);
+    text-decoration: none;
+    transition: color 0.3s ease;
+    font-size: 1rem;
+}
+
+.back-btn:hover {
+    color: hsl(0 0% 100%);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+header h1 {
+    display: inline-block;
+    color: hsl(0 0% 90%);
+    font-family: 'Righteous', 'Microsoft YaHei', serif;
+    font-size: 3.5em;
+    text-shadow: .03em .03em 0 hsla(230,40%,50%,1);
+    position: relative;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+
+header h1::after {
+    content: attr(data-shadow);
+    position: absolute;
+    top: .06em;
+    left: .06em;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    text-shadow: none;
+    background-image: linear-gradient(
+        45deg,
+        transparent 45%,
+        hsla(48,20%,90%,1) 45%,
+        hsla(48,20%,90%,1) 55%,
+        transparent 0
+    );
+    background-size: .05em .05em;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    white-space: nowrap;
+    animation: shad-anim 60s linear infinite;
+}
+
+@keyframes shad-anim {
+    0% { background-position: 0 0; }
+    100% { background-position: 100% -100%; }
+}
+
+.description {
+    font-size: 1rem;
+    color: hsl(0 0% 75%);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.main-container {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.input-section,
+.output-section {
+    flex: 1;
+    min-width: 300px;
+}
+
+.input-card,
+.output-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px) saturate(1.2);
+    border-radius: 16px;
+    padding: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.input-card h2,
+.output-header h2 {
+    font-size: 1.5rem;
+    color: hsl(0 0% 95%);
+    margin-bottom: 20px;
+}
+
+.output-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.output-info {
+    display: flex;
+    gap: 15px;
+    font-size: 0.9rem;
+    color: hsl(0 0% 80%);
+    font-weight: 600;
+}
+
+.input-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    color: hsl(0 0% 70%);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+    margin-bottom: -2px;
+}
+
+.tab-btn:hover {
+    color: hsl(0 0% 90%);
+}
+
+.tab-btn.active {
+    color: hsl(0 0% 95%);
+    border-bottom-color: hsl(0 0% 80%);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.file-upload-area {
+    border: 3px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.file-upload-area:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.file-upload-area.drag-over {
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.08);
+    transform: scale(1.02);
+}
+
+.upload-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.upload-text {
+    font-size: 1.1rem;
+    color: hsl(0 0% 90%);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.upload-hint {
+    font-size: 0.9rem;
+    color: hsl(0 0% 70%);
+}
+
+.file-name {
+    display: block;
+    margin-top: 15px;
+    color: hsl(122 40% 70%);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.paste-input {
+    width: 100%;
+    min-height: 400px;
+    height: 400px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: 'Courier New', monospace;
+    resize: vertical;
+    transition: border-color 0.3s;
+    background: rgba(255, 255, 255, 0.05);
+    color: hsl(0 0% 95%);
+}
+
+.paste-input::placeholder {
+    color: hsl(0 0% 60%);
+}
+
+.paste-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.format-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+}
+
+.format-group {
+    display: flex;
+    gap: 20px;
+}
+
+.separator-options {
+    display: flex;
+    gap: 20px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.format-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: hsl(0 0% 80%);
+    transition: color 0.3s;
+}
+
+.format-option:hover {
+    color: hsl(0 0% 95%);
+}
+
+.format-option input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: hsl(0 0% 80%);
+}
+
+.format-option input[type="radio"]:checked + span {
+    color: hsl(0 0% 95%);
+}
+
+.output-text {
+    width: 100%;
+    min-height: 400px;
+    height: 400px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: 'Courier New', monospace;
+    resize: vertical;
+    background: rgba(0, 0, 0, 0.3);
+    color: hsl(0 0% 90%);
+}
+
+.output-text:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.output-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    -webkit-tap-highlight-color: #0000;
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    background: #0000;
+    border: 1px solid #0000;
+    position: relative;
+    color: white;
+    transition-property: translate, scale;
+    transition-duration: 0.1s;
+    transition-timing-function: ease-out;
+    font-weight: 500;
+    flex: 1;
+    min-width: 120px;
+}
+
+.btn:active:not(:disabled) {
+    scale: 0.98;
+    translate: 0 1px;
+}
+
+.btn::before,
+.btn::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.btn::before {
+    z-index: -1;
+    background: linear-gradient(
+        hsl(0 0% 100% / 0.18),
+        hsl(0 0% 4% / 0.7)
+    );
+    backdrop-filter: saturate(2) contrast(1) blur(10px);
+}
+
+.btn::after {
+    box-shadow: 0 0 1px 0.8px hsl(0 0% 100% / 0.8) inset;
+    mask: linear-gradient(-35deg, #ffffff80, #ffffff30 30% 60%, #fff);
+}
+
+.btn:hover:not(:disabled) {
+    scale: 1.02;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.explanation {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px) saturate(1.2);
+    border-radius: 16px;
+    padding: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.explanation h2 {
+    text-align: center;
+    margin-bottom: 25px;
+    color: hsl(0 0% 95%);
+    font-size: 1.8rem;
+}
+
+.explanation-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+}
+
+.explanation-item {
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.explanation-item h3 {
+    color: hsl(0 0% 90%);
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+}
+
+.explanation-item p {
+    color: hsl(0 0% 80%);
+    line-height: 1.6;
+}
+
+/* 通知样式 */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-weight: 600;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification.success {
+    background: #4ECDC4;
+    color: white;
+}
+
+.notification.error {
+    background: #FF6B6B;
+    color: white;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    header h1 {
+        font-size: 2em;
+    }
+
+    .main-container {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .input-section,
+    .output-section {
+        width: 100%;
+    }
+
+    .output-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .output-buttons {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+    }
+
+    .explanation-content {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .notification {
+        right: 10px;
+        left: 10px;
+        transform: translateY(-100%);
+    }
+
+    .notification.show {
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 480px) {
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    .input-card,
+    .output-card {
+        padding: 15px;
+    }
+
+    .tab-btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+
+    .paste-input,
+    .output-text {
+        min-height: 300px;
+        height: 300px;
+        font-size: 0.9rem;
+    }
+
+    .format-group {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .separator-options {
+        flex-direction: column;
+        gap: 12px;
+    }
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* ===== 日间模式样式 ===== */
+body.day-mode {
+    background: #f0f4f8;
+    background-image: url(../../../../assets/image/day-background.png);
+    background-size: auto;
+    background-repeat: repeat;
+}
+
+body.day-mode #background-wrapper {
+    background-color: transparent;
+}
+
+body.day-mode .back-btn {
+    color: #4a5568;
+}
+
+body.day-mode .back-btn:hover {
+    color: #1a202c;
+}
+
+body.day-mode .container {
+    border: none;
+}
+
+body.day-mode header h1 {
+    color: #2d3748;
+    text-shadow: .03em .03em 0 hsla(200, 60%, 60%, 1);
+}
+
+body.day-mode .description {
+    color: #4a5568;
+}
+
+body.day-mode .input-card,
+body.day-mode .output-card {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.day-mode .input-card h2,
+body.day-mode .output-card h2 {
+    color: #2d3748;
+}
+
+body.day-mode .tab-btn {
+    background: rgba(255, 255, 255, 0.4);
+    color: #4a5568;
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.day-mode .tab-btn.active {
+    background: rgba(59, 130, 246, 0.2);
+    color: #1e40af;
+    border-color: #3b82f6;
+}
+
+body.day-mode .file-upload-area {
+    background: rgba(255, 255, 255, 0.6);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+body.day-mode .file-upload-area:hover {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(0, 0, 0, 0.25);
+}
+
+body.day-mode .upload-text {
+    color: #2d3748;
+}
+
+body.day-mode .upload-hint {
+    color: #718096;
+}
+
+body.day-mode .file-name {
+    color: #2d3748;
+}
+
+body.day-mode .paste-input,
+body.day-mode .output-text {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(0, 0, 0, 0.15);
+    color: #1a202c;
+}
+
+body.day-mode .paste-input::placeholder,
+body.day-mode .output-text::placeholder {
+    color: #a0aec0;
+}
+
+body.day-mode .output-info span {
+    background: rgba(59, 130, 246, 0.15);
+    color: #1e40af;
+}
+
+body.day-mode .format-option span {
+    color: #1a202c;
+    font-weight: 500;
+}
+
+body.day-mode .format-option input[type="radio"]:checked + span {
+    color: #1e40af;
+    font-weight: 600;
+}
+
+/* 1. 修改基础按钮样式 */
+body.day-mode .btn {
+    background: #ffffff; /* 改为纯白色 */
+    color: #1a202c;
+    border: 2px solid #cbd5e0; /* 稍微深一点的边框，让白色按钮在浅色背景下更清晰 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+/* 2. 必须清除伪元素的背景渐变，否则白色会被遮盖 */
+body.day-mode .btn::before {
+    background: none;
+    backdrop-filter: none;
+}
+
+/* 3. 如果你的"载入文本"按钮使用了 btn-primary 等类，也要同步改为白色 */
+body.day-mode .btn-primary,
+body.day-mode .btn-secondary {
+    background: #ffffff;
+    color: #1a202c;
+}
+
+/* 4. 悬停效果：增加一点灰色或加深边框 */
+body.day-mode .btn:hover:not(:disabled),
+body.day-mode .btn-primary:hover:not(:disabled),
+body.day-mode .btn-secondary:hover:not(:disabled) {
+    background: #f7fafc; /* 悬停时微灰 */
+    border-color: #a0aec0;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+body.day-mode .explanation {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+body.day-mode .explanation h2,
+body.day-mode .explanation h3 {
+    color: #1a202c;
+    font-weight: 600;
+}
+
+body.day-mode .explanation p {
+    color: #1a202c;
+    font-weight: 500;
+}
+
+body.day-mode ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+body.day-mode ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+body.day-mode ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* ===== 日夜切换器样式 ===== */
+.theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  user-select: none;
+  transform: scale(0.64);
+  transform-origin: top right;
+}
+
+.theme-toggle__checkbox {
+  display: none;
+}
+
+.theme-toggle__btn {
+  display: block;
+  position: relative;
+  width: 125px;
+  height: 70px;
+  border-radius: 70px;
+  border: 5px solid #1c1c1c;
+  background-color: #3c4145;
+  cursor: pointer;
+  transition: all 350ms ease-in;
+}
+
+.theme-toggle__btn::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 5px solid #e3e3c7;
+  transition: all 250ms ease-in;
+}
+
+.theme-toggle__btn::after {
+  content: '';
+  position: absolute;
+  top: 62%;
+  left: 39px;
+  z-index: 10;
+  width: 9.2px;
+  height: 9.2px;
+  opacity: 0;
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow:
+    #fff 0 0,
+    #fff 2.5px 0,
+    #fff 5px 0,
+    #fff 7.5px 0,
+    #fff 9px 0,
+    #fff 11.5px 0,
+    #fff 13px 0,
+    #fff 17px -1px 0 1px,
+    #fff 13px -6px 0 -2px,
+    #fff 6px -6px 0 1px,
+    #d3d3d3 0 0 0 3.5px,
+    #d3d3d3 5px 0 0 3.5px,
+    #d3d3d3 9px 0 0 3.5px,
+    #d3d3d3 13px 0 0 3.5px,
+    #d3d3d3 17px -1px 0 4.5px,
+    #d3d3d3 13px -6px 0 1px,
+    #d3d3d3 6px -6px 0 4.5px;
+  transition: opacity 100ms ease-in;
+}
+
+.theme-toggle__feature {
+  display: block;
+  position: absolute;
+  top: 9px;
+  left: 52.5%;
+  z-index: 20;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #fff;
+  box-shadow:
+    rgba(255,255,255,0.1) 30px -3px 0 0,
+    rgba(255,255,255,0.1) 12px 10px 0 -1px,
+    #fff 38px 18px 0 1px,
+    rgba(255,255,255,0.1) 32px 34px 0 0,
+    #fff 20px 24px 0 -1.5px,
+    rgba(255,255,255,0.1) 5px 38px 0 1px;
+  animation: starry_star 5s ease-in-out infinite;
+}
+
+.theme-toggle__feature::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -25px;
+  width: 15px;
+  height: 15px;
+  background-color: #fff;
+  border-radius: 50%;
+  border: 4px solid #e3e3c7;
+  box-shadow:
+    #e3e3c7 -28px 0 0 -3px,
+    #e3e3c7 -8px 24px 0 -2px;
+  transform-origin: -6px 130%;
+  transition: all 250ms ease-in;
+}
+
+@keyframes starry_star {
+  50% {
+    background-color: rgba(255,255,255,0.1);
+    box-shadow:
+      #fff 30px -3px 0 0,
+      #fff 12px 10px 0 -1px,
+      rgba(255,255,255,0.1) 38px 18px 0 1px,
+      #fff 32px 34px 0 0,
+      rgba(255,255,255,0.1) 20px 24px 0 -1.5px,
+      #fff 5px 38px 0 1px;
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  55% {
+    transform: scale(1.1);
+  }
+  75% {
+    transform: scale(.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn {
+  background-color: #9ee3fb;
+  border: 5px solid #86c3d7;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn::before {
+  left: 57px;
+  background-color: #ffdf6d;
+  border: 5px solid #e1c348;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn::after {
+  opacity: 1;
+  animation-name: bounceIn;
+  animation-duration: 0.60s;
+  animation-delay: 0.10s;
+  animation-fill-mode: backwards;
+  animation-timing-function: ease-in-out;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn .theme-toggle__feature {
+  opacity: 0;
+  box-shadow:
+    rgba(255,255,255,0.1) 30px -3px 0 -4px,
+    rgba(255,255,255,0.1) 12px 10px 0 -5px,
+    #fff 38px 18px 0 -3px,
+    rgba(255,255,255,0.1) 32px 34px 0 -4px,
+    #fff 20px 24px 0 -5.5px,
+    rgba(255,255,255,0.1) 5px 38px 0 -3px;
+  animation: none;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn .theme-toggle__feature::before {
+  left: 25px;
+  transform: rotate(70deg);
+}
+
+@media (max-width: 768px) {
+  .theme-toggle {
+    top: 10px;
+    right: 10px;
+    transform: scale(0.58);
+  }
+}
+
+/* ===== 页脚样式 ===== */
+.footer {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 2rem 1rem;
+  text-align: center;
+  margin-top: auto;
+}
+
+.footer p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 300ms ease-out;
+}
+
+/* 日间模式页脚样式 */
+body.day-mode .footer p {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+/* 页脚响应式 */
+@media (max-width: 768px) {
+  .footer {
+    padding: 1.5rem 1rem;
+  }
+
+  .footer p {
+    font-size: 0.75rem;
+  }
+}
+
+/* ==========================================================================
+   输入框样式优化 & 主题适配 (添加到 style.css)
+   ========================================================================== */
+
+/* 1. 修复主输入框样式 (对应 HTML 的 .code-input) */
+.code-input {
+    width: 100%;
+    min-height: 400px;
+    height: 400px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: 'Courier New', monospace; /* 保持等宽字体 */
+    resize: vertical;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: rgba(255, 255, 255, 0.05); /* 深色模式半透明背景 */
+    color: hsl(0 0% 95%);
+    line-height: 1.6;
+}
+
+.code-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1); /* 聚焦光环 */
+}
+
+.code-input::placeholder {
+    color: hsl(0 0% 60%);
+}
+
+/* 2. 底部元数据输入框样式 (Author/Editor) */
+.meta-options {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.meta-inputs {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+    flex-wrap: wrap; /* 适配移动端 */
+}
+
+.input-field {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.input-field label {
+    font-size: 0.85rem;
+    color: hsl(0 0% 80%);
+    font-weight: 600;
+    margin-left: 2px;
+}
+
+.input-field input {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: hsl(0 0% 95%);
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.input-field input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+/* Checkbox 样式微调 */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: hsl(0 0% 85%);
+    font-size: 0.95rem;
+    user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #4a5568; 
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   日间模式适配 (Day Mode Overrides)
+   ========================================================================== */
+
+/* 主输入框 - 日间模式 */
+body.day-mode .code-input {
+    background: rgba(255, 255, 255, 0.7);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #1a202c; /* 深灰色字体 */
+}
+
+body.day-mode .code-input::placeholder {
+    color: #a0aec0;
+}
+
+body.day-mode .code-input:focus {
+    background: #ffffff;
+    border-color: #3b82f6; /* 蓝色高亮 */
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+/* 元数据区域 - 日间模式 */
+body.day-mode .meta-options {
+    border-top-color: rgba(0, 0, 0, 0.08);
+}
+
+body.day-mode .input-field label {
+    color: #4a5568;
+}
+
+body.day-mode .input-field input {
+    background: rgba(255, 255, 255, 0.6);
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #1a202c;
+}
+
+body.day-mode .input-field input:focus {
+    background: #ffffff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+body.day-mode .checkbox-label {
+    color: #2d3748;
+}
+
+body.day-mode .checkbox-label input[type="checkbox"] {
+    accent-color: #3b82f6;
+}

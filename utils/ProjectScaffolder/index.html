@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Project Scaffolder - 项目结构生成工具</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+
+    <div class="page-container">
+        <a href="../../index.html" class="back-btn">← 返回首页</a>
+        <div class="container">
+            <header>
+                <h1 data-shadow='Project Scaffolder'>Project Scaffolder</h1>
+                <p class="description">
+                    项目结构初始化与逆向生成工具。支持“目录树文本 ⇄ 压缩包”互转，并自动管理文件头注释。
+                </p>
+            </header>
+
+        <div class="main-container">
+            <div class="input-section">
+                <div class="input-card">
+                    <h2>功能模式</h2>
+                    <div class="input-tabs">
+                        <button class="tab-btn active" id="genTab">生成项目 (Text → Zip)</button>
+                        <button class="tab-btn" id="parseTab">解析项目 (Zip → Text)</button>
+                    </div>
+                    
+                    <div class="tab-content active" id="genContent">
+                        <div class="input-group">
+                            <label>输入目录结构树：</label>
+                            <textarea id="treeInput" class="code-input" placeholder="粘贴目录树结构...
+DeepFMMPC-v4.0/
+├── config/                 # 配置文件
+│   └── model.yaml          # 模型参数
+└── main.py                 # 入口文件"></textarea>
+                        </div>
+                        
+                        <div class="meta-options">
+                            <div class="option-row">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="addHeaderComments" checked>
+                                    <span>生成文件头注释</span>
+                                </label>
+                            </div>
+                            <div class="meta-inputs" id="metaInputs">
+                                <div class="input-field">
+                                    <label>Author:</label>
+                                    <input type="text" id="inputAuthor" placeholder="Your Name" value="Developer">
+                                </div>
+                                <div class="input-field">
+                                    <label>LastEditors:</label>
+                                    <input type="text" id="inputEditor" placeholder="Editor Name" value="Developer">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-content" id="parseContent">
+                        <div class="file-upload-area" id="fileUploadArea">
+                            <input type="file" id="fileInput" accept=".zip" style="display: none;">
+                            <div class="upload-icon">📦</div>
+                            <p class="upload-text">点击选择或拖拽 ZIP 压缩包</p>
+                            <p class="upload-hint">支持包含项目代码的 .zip 文件</p>
+                            <span id="fileName" class="file-name"></span>
+                        </div>
+                        <div class="option-row" style="margin-top: 15px;">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="extractHeaderComments" checked>
+                                <span>从文件头提取描述(Description)到目录树</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <div class="output-card">
+                    <div class="output-header">
+                        <h2 id="outputTitle">生成结果</h2>
+                        <div class="output-info">
+                            <span id="statusInfo">就绪</span>
+                        </div>
+                    </div>
+
+                    <div id="outputArea" class="output-area">
+                        <div id="genResult" class="result-placeholder">
+                            <p>配置好左侧结构后点击下方按钮生成</p>
+                        </div>
+                        <textarea id="parseResult" class="output-text" readonly style="display: none;" placeholder="解析后的目录树将显示在这里..."></textarea>
+                    </div>
+
+                    <div class="output-buttons">
+                        <button id="actionBtn" class="btn btn-primary">生成 ZIP压缩包</button>
+                        <button id="copyBtn" class="btn btn-secondary" style="display: none;">复制目录树</button>
+                        <button id="clearBtn" class="btn btn-secondary">清空</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="explanation">
+            <h2>使用说明</h2>
+            <div class="explanation-content">
+                <div class="explanation-item">
+                    <h3>Text → Zip (生成模式)</h3>
+                    <p>1. 粘贴带有缩进或 `├──` 符号的目录树文本。<br>
+                    2. 支持在行尾使用 `#` 添加注释，这将被提取为文件的 Description。<br>
+                    3. 勾选"生成文件头注释"，工具会自动根据文件类型生成规范的 Header。</p>
+                </div>
+                <div class="explanation-item">
+                    <h3>Zip → Text (解析模式)</h3>
+                    <p>1. 上传项目的 ZIP 压缩包。<br>
+                    2. 工具会递归扫描目录结构。<br>
+                    3. 如果勾选提取功能，会自动读取代码文件的头部注释，将 Description 字段追加到目录树中。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <footer class="footer">
+        <p>Copyright © 2024 Tooltopia. All Rights Reserved.</p>
+        <p>Designed by DSTBP</p>
+    </footer>
+
+    <script src="assets/js/theme-toggle.js"></script>
+    <script src="assets/js/script.js"></script>
+</body>
+</html>
