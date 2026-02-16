@@ -1424,6 +1424,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fromBits = parseInt(signExtFromEl.value, 10);
                 const toBits = parseInt(signExtToEl.value, 10);
 
+                // 验证位宽
+                if (isNaN(fromBits) || isNaN(toBits)) {
+                    throw new Error('请输入有效的位宽');
+                }
+                if (fromBits < 1 || fromBits > 128 || toBits < 1 || toBits > 128) {
+                    throw new Error('位宽必须在 1-128 之间');
+                }
+                if (fromBits >= toBits) {
+                    throw new Error('目标位宽必须大于源位宽');
+                }
+
                 const extended = signExtend(value, fromBits, toBits);
                 const result = formatSignedOutput(extended, toBits);
 
@@ -1432,7 +1443,7 @@ document.addEventListener('DOMContentLoaded', () => {
 十进制: ${result.decimal}<br>
 十六进制: ${result.hex}<br>
 无符号: ${result.unsigned}<br>
-二进制: ${result.binary.slice(0, 32)}${result.binary.length > 32 ? '...' : ''}
+二进制: ${result.binary.length <= 64 ? result.binary : result.binary.slice(0, 64) + '...'}
                 `.trim();
             } catch (e) {
                 signExtResultEl.innerText = '转换失败: ' + e.message;

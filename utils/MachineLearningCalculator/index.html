@@ -373,17 +373,9 @@
                         <input id="signExtValue" type="text" placeholder="输入数值 (十进制或 0x 开头的十六进制)" class="input-field" />
                     </div>
                     <div class="unit-row two-cols select-pair">
-                        <select id="signExtFrom" class="input-field base-select">
-                            <option value="8">8 位</option>
-                            <option value="16">16 位</option>
-                            <option value="32" selected>32 位</option>
-                        </select>
+                        <input id="signExtFrom" type="number" min="1" max="128" value="32" placeholder="源位宽" class="input-field base-select" />
                         <span class="unit-arrow">→</span>
-                        <select id="signExtTo" class="input-field base-select">
-                            <option value="16">16 位</option>
-                            <option value="32">32 位</option>
-                            <option value="64" selected>64 位</option>
-                        </select>
+                        <input id="signExtTo" type="number" min="1" max="128" value="64" placeholder="目标位宽" class="input-field base-select" />
                     </div>
                     <div class="converter-actions">
                         <button id="signExtConvertBtn" class="btn btn-secondary">扩展</button>
