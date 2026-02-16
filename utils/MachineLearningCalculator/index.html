@@ -249,7 +249,10 @@
                                     <label>开方次数</label>
                                     <input id="rootDegree" type="number" min="2" step="1" value="2" class="input-field small" />
                                 </div>
-                                <div class="setting-item setting-spacer"></div>
+                                <div class="setting-item">
+                                    <label>计算精度</label>
+                                    <input id="calcPrecision" type="number" min="1" max="1000" value="64" class="input-field small" title="BigNumber 计算精度（位数）" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -331,6 +334,60 @@
                             <div id="colorPreview" class="color-preview" style="display:none;"></div>
                             <div id="colorResult" class="result-text"></div>
                         </div>
+                    </div>
+                </section>
+
+                <section class="converter-panel">
+                    <h2>时间戳转换</h2>
+                    <p class="panel-desc">Unix 时间戳与日期时间互转，支持秒和毫秒。</p>
+                    <div class="unit-row single-input">
+                        <input id="timestampValue" type="text" placeholder="输入时间戳或日期 (例如 1234567890 或 2024-01-01)" class="input-field" />
+                    </div>
+                    <div class="unit-row two-cols select-pair">
+                        <select id="timestampFrom" class="input-field base-select">
+                            <option value="unix_s">Unix 时间戳（秒）</option>
+                            <option value="unix_ms">Unix 时间戳（毫秒）</option>
+                            <option value="iso">ISO 8601</option>
+                            <option value="local">本地日期时间</option>
+                        </select>
+                        <span class="unit-arrow">→</span>
+                        <select id="timestampTo" class="input-field base-select">
+                            <option value="unix_s">Unix 时间戳（秒）</option>
+                            <option value="unix_ms">Unix 时间戳（毫秒）</option>
+                            <option value="iso">ISO 8601</option>
+                            <option value="local">本地日期时间</option>
+                            <option value="utc">UTC 日期时间</option>
+                        </select>
+                    </div>
+                    <div class="converter-actions">
+                        <button id="timestampConvertBtn" class="btn btn-secondary">转换</button>
+                        <button id="timestampNowBtn" class="btn btn-secondary">当前时间</button>
+                        <div id="timestampResult" class="result-text"></div>
+                    </div>
+                </section>
+
+                <section class="converter-panel">
+                    <h2>有符号数扩展</h2>
+                    <p class="panel-desc">将有符号整数从低位宽扩展到高位宽，保持数值含义。</p>
+                    <div class="unit-row single-input">
+                        <input id="signExtValue" type="text" placeholder="输入数值 (十进制或 0x 开头的十六进制)" class="input-field" />
+                    </div>
+                    <div class="unit-row two-cols select-pair">
+                        <select id="signExtFrom" class="input-field base-select">
+                            <option value="8">8 位</option>
+                            <option value="16">16 位</option>
+                            <option value="32" selected>32 位</option>
+                        </select>
+                        <span class="unit-arrow">→</span>
+                        <select id="signExtTo" class="input-field base-select">
+                            <option value="16">16 位</option>
+                            <option value="32">32 位</option>
+                            <option value="64" selected>64 位</option>
+                        </select>
+                    </div>
+                    <div class="converter-actions">
+                        <button id="signExtConvertBtn" class="btn btn-secondary">扩展</button>
+                        <div id="signExtResult" class="result-text"></div>
                     </div>
                 </section>
             </div>

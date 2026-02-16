@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const displayModeEl = document.getElementById('displayMode');
     const logBaseEl = document.getElementById('logBase');
     const rootDegreeEl = document.getElementById('rootDegree');
+    const calcPrecisionEl = document.getElementById('calcPrecision');
     const unitCategoryEl = document.getElementById('unitCategory');
     const unitFromEl = document.getElementById('unitFrom');
     const unitToEl = document.getElementById('unitTo');
@@ -21,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const baseToEl = document.getElementById('baseTo');
     const baseConvertBtn = document.getElementById('baseConvertBtn');
     const baseResultEl = document.getElementById('baseResult');
-    
+
     // 颜色转换相关元素
     const colorValueEl = document.getElementById('colorValue');
     const colorFromEl = document.getElementById('colorFrom');
@@ -30,7 +31,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const colorResultEl = document.getElementById('colorResult');
     const colorPreviewEl = document.getElementById('colorPreview');
 
+    // 时间戳转换相关元素
+    const timestampValueEl = document.getElementById('timestampValue');
+    const timestampFromEl = document.getElementById('timestampFrom');
+    const timestampToEl = document.getElementById('timestampTo');
+    const timestampConvertBtn = document.getElementById('timestampConvertBtn');
+    const timestampNowBtn = document.getElementById('timestampNowBtn');
+    const timestampResultEl = document.getElementById('timestampResult');
+
+    // 有符号数扩展相关元素
+    const signExtValueEl = document.getElementById('signExtValue');
+    const signExtFromEl = document.getElementById('signExtFrom');
+    const signExtToEl = document.getElementById('signExtTo');
+    const signExtConvertBtn = document.getElementById('signExtConvertBtn');
+    const signExtResultEl = document.getElementById('signExtResult');
+
     let lastAns = 0;
+
+    // 配置 math.js 使用 BigNumber 进行高精度计算
+    function configureMathPrecision() {
+        const precision = parseInt(calcPrecisionEl?.value || '64', 10);
+        math.config({
+            number: 'BigNumber',
+            precision: Math.max(1, Math.min(1000, precision))
+        });
+    }
+
+    // 初始化精度配置
+    configureMathPrecision();
+
+    // 监听精度变化
+    if (calcPrecisionEl) {
+        calcPrecisionEl.addEventListener('change', configureMathPrecision);
+    }
     const MAX_HISTORY = 50;
     setDisplay('0', 1, false);
     const FN_INSERTS = Object.freeze({
@@ -122,12 +155,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // wrapper math functions to honor degree/radian setting
     function makeScope() {
         const mode = angleModeEl.value || 'rad';
-        const toRad = (x) => mode === 'deg' ? x * Math.PI / 180 : x;
-        const toAngle = (val) => mode === 'deg' ? val * 180 / Math.PI : val;
+        const toRad = (x) => {
+            if (mode === 'deg') {
+                return math.multiply(x, math.divide(math.pi, 180));
+            }
+            return x;
+        };
+        const toAngle = (val) => {
+            if (mode === 'deg') {
+                return math.multiply(val, math.divide(180, math.pi));
+            }
+            return val;
+        };
         const trigWrap = (fn) => (x) => fn(toRad(x));
         const invWrap = (fn) => (x) => toAngle(fn(x));
         const hyperWrap = (fn) => (x) => fn(toRad(x));
-        const hyperInvWrap = (fn) => (x) => mode === 'deg' ? fn(x) * 180 / Math.PI : fn(x);
+        const hyperInvWrap = (fn) => (x) => {
+            if (mode === 'deg') {
+                return math.multiply(fn(x), math.divide(180, math.pi));
+            }
+            return fn(x);
+        };
         const getValidLogBase = () => {
             const raw = logBaseEl ? Number(logBaseEl.value) : 10;
             const base = Number.isFinite(raw) ? raw : 10;
@@ -396,53 +444,62 @@ document.addEventListener('DOMContentLoaded', () => {
             return uniqueByKey([...left, ...right]);
         };
         return {
-            sin: trigWrap(Math.sin),
-            cos: trigWrap(Math.cos),
-            tan: trigWrap(Math.tan),
-            cot: (x) => 1 / Math.tan(toRad(x)),
-            sec: (x) => 1 / Math.cos(toRad(x)),
-            csc: (x) => 1 / Math.sin(toRad(x)),
-            asin: invWrap(Math.asin),
-            acos: invWrap(Math.acos),
-            atan: invWrap(Math.atan),
-            sinh: hyperWrap(Math.sinh),
-            cosh: hyperWrap(Math.cosh),
-            tanh: hyperWrap(Math.tanh),
-            asinh: hyperInvWrap(Math.asinh),
-            acosh: hyperInvWrap(Math.acosh),
-            atanh: hyperInvWrap(Math.atanh),
+            sin: trigWrap(math.sin),
+            cos: trigWrap(math.cos),
+            tan: trigWrap(math.tan),
+            cot: (x) => math.divide(1, math.tan(toRad(x))),
+            sec: (x) => math.divide(1, math.cos(toRad(x))),
+            csc: (x) => math.divide(1, math.sin(toRad(x))),
+            asin: invWrap(math.asin),
+            acos: invWrap(math.acos),
+            atan: invWrap(math.atan),
+            sinh: hyperWrap(math.sinh),
+            cosh: hyperWrap(math.cosh),
+            tanh: hyperWrap(math.tanh),
+            asinh: hyperInvWrap(math.asinh),
+            acosh: hyperInvWrap(math.acosh),
+            atanh: hyperInvWrap(math.atanh),
             log: logWithBase,
             logb: logWithBase,
             ln: (x) => math.log(x),
             root: (x) => rootWithDegree(x),
-            floor: (x) => Math.floor(x),
-            ceil: (x) => Math.ceil(x),
+            floor: (x) => math.floor(x),
+            ceil: (x) => math.ceil(x),
             pi: math.pi,
             e: math.e,
             i: math.complex(0, 1),
-            phi: (1 + Math.sqrt(5)) / 2,
-            gamma: 0.5772156649015329,
-            sqrt2: Math.SQRT2,
-            ln2: Math.LN2,
-            zeta3: 1.202056903159594,
-            G: 0.915965594177219,
-            K: 2.685452001065306,
-            delta: 4.66920160910299,
-            alpha: -2.5029078750958928,
-            tau: Math.PI * 2,
-            Omega: 0.5671432904097838,
-            C: 0.12345678910111213,
-            rho: 1.3247179572447458,
-            B: 1.902160583104,
-            zeta2: (Math.PI * Math.PI) / 6,
+            phi: math.divide(math.add(1, math.sqrt(5)), 2),
+            gamma: math.bignumber('0.5772156649015329'),
+            sqrt2: math.sqrt(2),
+            ln2: math.log(2),
+            zeta3: math.bignumber('1.202056903159594'),
+            G: math.bignumber('0.915965594177219'),
+            K: math.bignumber('2.685452001065306'),
+            delta: math.bignumber('4.66920160910299'),
+            alpha: math.bignumber('-2.5029078750958928'),
+            tau: math.multiply(math.pi, 2),
+            Omega: math.bignumber('0.5671432904097838'),
+            C: math.bignumber('0.12345678910111213'),
+            rho: math.bignumber('1.3247179572447458'),
+            B: math.bignumber('1.902160583104'),
+            zeta2: math.divide(math.multiply(math.pi, math.pi), 6),
             ans: lastAns,
             primeFactors: (value) => {
-                const num = Number(value);
+                // 尝试转换为数字进行质因数分解
+                let num;
+                if (math.typeOf(value) === 'BigNumber') {
+                    num = value.toNumber();
+                } else {
+                    num = Number(value);
+                }
                 if (!Number.isFinite(num)) {
                     throw new Error('请输入有限数字');
                 }
                 if (!Number.isInteger(num)) {
                     throw new Error('质因数分解仅支持整数');
+                }
+                if (num > Number.MAX_SAFE_INTEGER || num < Number.MIN_SAFE_INTEGER) {
+                    throw new Error('数字超出质因数分解范围（±2^53）');
                 }
                 if (Math.abs(num) < 2) return String(num);
                 const factors = typeof math.primeFactors === 'function'
@@ -452,11 +509,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return formatPrimeFactors(result);
             },
             pow10: (exponent) => {
-                const x = Number(exponent);
-                if (!Number.isFinite(x)) {
-                    throw new Error('请输入有限指数');
-                }
-                return Math.pow(10, x);
+                // 使用 BigNumber 计算 10^x
+                return math.pow(10, exponent);
             },
             vecAdd: (a, b) => math.add(a, b),
             vecSub: (a, b) => math.subtract(a, b),
@@ -572,6 +626,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function formatNumber(val) {
         const prec = parseInt(precisionEl.value || '6', 10);
+
+        // 处理 BigNumber 类型
+        if (math.typeOf(val) === 'BigNumber') {
+            // 使用 BigNumber 的 toFixed 方法
+            try {
+                const str = val.toFixed(prec);
+                // 移除尾部的零和小数点
+                return str.replace(/\.?0+$/, '');
+            } catch (e) {
+                // 如果数字太大，直接返回字符串表示
+                return val.toString();
+            }
+        }
+
         if (typeof val === 'number' && isFinite(val)) {
             return Number(val).toFixed(prec).replace(/\.?(0+)$/, '');
         }
@@ -632,11 +700,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return formatNumber(value.valueOf());
         }
         if (valueType === 'BigNumber') {
-            const numeric = Number(value);
-            if (Number.isFinite(numeric)) {
-                return formatNumber(numeric);
-            }
-            return value.toString();
+            // 直接格式化 BigNumber
+            return formatNumber(value);
         }
         if (valueType === 'Complex') {
             return formatComplexValue(value);
@@ -727,6 +792,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (resType === 'Complex' || resType === 'BigNumber') {
                 const text = formatScalarValue(res);
+                // 存储 BigNumber 或转换为数字
+                if (resType === 'BigNumber') {
+                    lastAns = res; // 保留 BigNumber 以保持精度
+                } else {
+                    lastAns = res;
+                }
                 pushHistory(expr, text);
                 setDisplay(text);
                 return;
@@ -1169,6 +1240,206 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     // --- Color Conversion Logic End ---
+
+    // --- Timestamp Conversion Logic Start ---
+    function parseTimestampInput(input, format) {
+        const trimmed = input.trim();
+
+        if (format === 'unix_s') {
+            const timestamp = parseFloat(trimmed);
+            if (isNaN(timestamp)) throw new Error('无效的时间戳');
+            return new Date(timestamp * 1000);
+        }
+
+        if (format === 'unix_ms') {
+            const timestamp = parseFloat(trimmed);
+            if (isNaN(timestamp)) throw new Error('无效的时间戳');
+            return new Date(timestamp);
+        }
+
+        if (format === 'iso' || format === 'local') {
+            const date = new Date(trimmed);
+            if (isNaN(date.getTime())) throw new Error('无效的日期格式');
+            return date;
+        }
+
+        throw new Error('不支持的输入格式');
+    }
+
+    function formatTimestampOutput(date, format) {
+        if (format === 'unix_s') {
+            return Math.floor(date.getTime() / 1000).toString();
+        }
+
+        if (format === 'unix_ms') {
+            return date.getTime().toString();
+        }
+
+        if (format === 'iso') {
+            return date.toISOString();
+        }
+
+        if (format === 'local') {
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+        }
+
+        if (format === 'utc') {
+            return date.toUTCString();
+        }
+
+        return date.toString();
+    }
+
+    if (timestampConvertBtn) {
+        timestampConvertBtn.addEventListener('click', () => {
+            if (!timestampValueEl || !timestampFromEl || !timestampToEl || !timestampResultEl) return;
+            const raw = timestampValueEl.value;
+            if (!raw) {
+                timestampResultEl.innerText = '请输入时间戳或日期';
+                return;
+            }
+            try {
+                const date = parseTimestampInput(raw, timestampFromEl.value);
+                const result = formatTimestampOutput(date, timestampToEl.value);
+                const fromLabel = timestampFromEl.options[timestampFromEl.selectedIndex]?.textContent || '';
+                const toLabel = timestampToEl.options[timestampToEl.selectedIndex]?.textContent || '';
+                timestampResultEl.innerText = `${fromLabel} → ${toLabel}\n${result}`;
+            } catch (e) {
+                timestampResultEl.innerText = '转换失败: ' + e.message;
+            }
+        });
+    }
+
+    if (timestampNowBtn) {
+        timestampNowBtn.addEventListener('click', () => {
+            if (!timestampValueEl || !timestampFromEl || !timestampResultEl) return;
+            const now = new Date();
+            const format = timestampFromEl.value;
+
+            // 根据当前选择的输入格式设置当前时间
+            if (format === 'unix_s') {
+                timestampValueEl.value = Math.floor(now.getTime() / 1000).toString();
+            } else if (format === 'unix_ms') {
+                timestampValueEl.value = now.getTime().toString();
+            } else if (format === 'iso') {
+                timestampValueEl.value = now.toISOString();
+            } else if (format === 'local') {
+                timestampValueEl.value = now.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).replace(/\//g, '-');
+            }
+
+            timestampResultEl.innerText = '已填入当前时间';
+        });
+    }
+    // --- Timestamp Conversion Logic End ---
+
+    // --- Sign Extension Logic Start ---
+    function parseSignedInput(input) {
+        const trimmed = input.trim();
+
+        // 支持十六进制输入
+        if (trimmed.startsWith('0x') || trimmed.startsWith('0X')) {
+            const hex = trimmed.slice(2);
+            return BigInt('0x' + hex);
+        }
+
+        // 十进制输入
+        return BigInt(trimmed);
+    }
+
+    function signExtend(value, fromBits, toBits) {
+        if (fromBits >= toBits) {
+            throw new Error('目标位宽必须大于源位宽');
+        }
+
+        // 获取源位宽的掩码
+        const fromMask = (1n << BigInt(fromBits)) - 1n;
+
+        // 将值限制在源位宽范围内
+        let maskedValue = value & fromMask;
+
+        // 检查符号位
+        const signBit = 1n << BigInt(fromBits - 1);
+        const isNegative = (maskedValue & signBit) !== 0n;
+
+        if (isNegative) {
+            // 负数：扩展时填充1
+            const extMask = ((1n << BigInt(toBits)) - 1n) ^ fromMask;
+            maskedValue = maskedValue | extMask;
+        }
+
+        return maskedValue;
+    }
+
+    function formatSignedOutput(value, bits) {
+        // 转换为有符号数显示
+        const maxValue = 1n << BigInt(bits - 1);
+        const mask = (1n << BigInt(bits)) - 1n;
+        const maskedValue = value & mask;
+
+        let signedValue;
+        if (maskedValue >= maxValue) {
+            // 负数
+            signedValue = maskedValue - (1n << BigInt(bits));
+        } else {
+            signedValue = maskedValue;
+        }
+
+        const hex = maskedValue.toString(16).toUpperCase().padStart(Math.ceil(bits / 4), '0');
+        const binary = maskedValue.toString(2).padStart(bits, '0');
+
+        return {
+            decimal: signedValue.toString(),
+            hex: '0x' + hex,
+            binary: binary,
+            unsigned: maskedValue.toString()
+        };
+    }
+
+    if (signExtConvertBtn) {
+        signExtConvertBtn.addEventListener('click', () => {
+            if (!signExtValueEl || !signExtFromEl || !signExtToEl || !signExtResultEl) return;
+            const raw = signExtValueEl.value;
+            if (!raw) {
+                signExtResultEl.innerText = '请输入数值';
+                return;
+            }
+            try {
+                const value = parseSignedInput(raw);
+                const fromBits = parseInt(signExtFromEl.value, 10);
+                const toBits = parseInt(signExtToEl.value, 10);
+
+                const extended = signExtend(value, fromBits, toBits);
+                const result = formatSignedOutput(extended, toBits);
+
+                signExtResultEl.innerHTML = `
+<strong>${fromBits} 位 → ${toBits} 位</strong><br>
+十进制: ${result.decimal}<br>
+十六进制: ${result.hex}<br>
+无符号: ${result.unsigned}<br>
+二进制: ${result.binary.slice(0, 32)}${result.binary.length > 32 ? '...' : ''}
+                `.trim();
+            } catch (e) {
+                signExtResultEl.innerText = '转换失败: ' + e.message;
+            }
+        });
+    }
+    // --- Sign Extension Logic End ---
 
     // allow pressing Enter in display to evaluate
     displayEl.addEventListener('keydown', (e) => {
