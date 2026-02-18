@@ -1468,6 +1468,11 @@ async function saveChanges() {
         return;
     }
 
+    if (isKittensGame(selectedGame)) {
+        await saveKittensChanges();
+        return;
+    }
+
     const password = keyInput.value.trim();
     if (!password) {
         alert('请先输入密钥。');
