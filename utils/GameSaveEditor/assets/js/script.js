@@ -1,6 +1,7 @@
 ﻿const PHASMO_GAME_LABEL = '恐鬼症（Phasmophobia）';
 const PHASMO_KEY = 't36gref9u84y7f43g';
 const YORG_GAME_LABEL = 'yorg.io';
+const KITTENS_GAME_LABEL = '猫国建设者（Kittens Game）';
 
 const GAME_PATHS = {
     [PHASMO_GAME_LABEL]: {
@@ -10,12 +11,17 @@ const GAME_PATHS = {
     [YORG_GAME_LABEL]: {
         windows: 'Steam/steamapps/common/yorg.io/gamesave/data.bin 或游戏内导出为 .bin 文件',
         description: 'yorg.io 存档格式'
+    },
+    [KITTENS_GAME_LABEL]: { // 新增
+        windows: '游戏内选择 选项 -> 导出，将复制的文本保存为 .txt 文件上传',
+        description: '猫国建设者存档'
     }
 };
 
 const GAME_CONFIG_PATHS = {
     [PHASMO_GAME_LABEL]: './assets/data/phasmophobia.json',
-    [YORG_GAME_LABEL]: './assets/data/yorg.json'
+    [YORG_GAME_LABEL]: './assets/data/yorg.json',
+    [KITTENS_GAME_LABEL]: './assets/data/kittens.json'
 };
 
 const fileInput = document.getElementById('fileInput');
@@ -51,6 +57,11 @@ function isPhasmoGame(selectedGame) {
 function isYorgGame(selectedGame) {
     const normalized = (selectedGame || '').toLowerCase();
     return selectedGame === YORG_GAME_LABEL || normalized === 'yorg.io' || normalized.includes('yorg');
+}
+
+function isKittensGame(selectedGame) {
+    const normalized = (selectedGame || '').toLowerCase();
+    return selectedGame === KITTENS_GAME_LABEL || normalized.includes('kittens');
 }
 
 function clearEditTable() {
@@ -122,6 +133,10 @@ function applyGameKey() {
         keyInput.value = '';
         keyInput.disabled = true;
         keyInput.placeholder = 'yorg.io 不需要密钥';
+    } else if (isKittensGame(selectedGame)) {
+        keyInput.value = '';
+        keyInput.disabled = true;
+        keyInput.placeholder = '猫国建设者不需要密钥';
     } else {
         keyInput.disabled = false;
         keyInput.placeholder = '输入解密/加密密钥';
@@ -189,6 +204,7 @@ function buildResultName(originalName, suffix, extensionOverride) {
 const LZString = (() => {
     const f = String.fromCharCode;
     const keyStrUriSafe = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$';
+    const keyStrBase64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     const baseReverseDic = {};
 
     function getBaseValue(alphabet, character) {
@@ -439,6 +455,23 @@ const LZString = (() => {
             return _decompress(normalized.length, 32, (index) =>
                 getBaseValue(keyStrUriSafe, normalized.charAt(index))
             );
+        },
+        compressToBase64(input) {
+            if (input == null) return '';
+            const res = _compress(input, 6, (a) => keyStrBase64.charAt(a));
+            // 补齐等号 padding
+            switch (res.length % 4) {
+                default:
+                case 0: return res;
+                case 1: return res + '===';
+                case 2: return res + '==';
+                case 3: return res + '=';
+            }
+        },
+        decompressFromBase64(input) {
+            if (input == null) return '';
+            if (input === '') return null;
+            return _decompress(input.length, 32, (index) => getBaseValue(keyStrBase64, input.charAt(index)));
         }
     };
 })();
@@ -990,6 +1023,44 @@ async function encryptFile() {
     }
 }
 
+async function decryptKittensFile() {
+    setBusy(true);
+    setStatus('正在解密，请稍候...');
+
+    try {
+        const buffer = await currentFile.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        // 读取外部 txt 内包裹的 Base64 文本
+        let rawText = decodeUtf8(bytes).trim();
+
+        // 尝试使用猫国专属的 Base64 解压缩
+        const plainText = LZString.decompressFromBase64(rawText);
+        if (!plainText) {
+            throw new Error('LZ-String 解压失败，可能不是有效的猫国建设者存档');
+        }
+
+        const plainBytes = encodeUtf8(plainText);
+        // 提供直接下载解密后 JSON 的文件
+        setResult(plainBytes.buffer, buildResultName(currentFile.name, 'decrypted', '.json'));
+
+        try {
+            const parsed = JSON.parse(plainText);
+            decryptedData = parsed;
+            decryptedJsonText = plainText;
+            setStatus('解密成功，存档数据已解析并显示在下方。', 'success');
+            await loadConfigAndDisplayTable();
+        } catch (parseError) {
+            console.error('解密后 JSON 解析失败:', parseError);
+            setStatus('解密成功，但无法解析为 JSON 格式。您仍可以下载纯文本。', 'error');
+        }
+    } catch (error) {
+        console.error('Decrypt failed:', error);
+        setStatus(`解密失败：${error.message || '未知错误'}`, 'error');
+    } finally {
+        setBusy(false);
+    }
+}
+
 async function decryptYorgFile() {
     setBusy(true);
     setStatus('正在解密，请稍候...');
@@ -1176,6 +1247,7 @@ function displayEditTable() {
 
     const selectedGame = getSelectedGame();
     const isYorgSelected = isYorgGame(selectedGame);
+    const isKittensSelected = isKittensGame(selectedGame);
 
     if (isYorgSelected && Array.isArray(yorgSaveEntries) && yorgSaveEntries.length > 0) {
         tableContainer.innerHTML = yorgSaveEntries
@@ -1421,6 +1493,65 @@ async function saveChanges() {
         // 更新内存中的数据
         decryptedData = updatedData;
 
+        setStatus('保存成功！修改已加密，可以下载新的存档文件。', 'success');
+    } catch (error) {
+        console.error('保存失败:', error);
+        setStatus(`保存失败：${error.message || '未知错误'}`, 'error');
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function saveKittensChanges() {
+    const inputs = document.querySelectorAll('.field-input');
+    setBusy(true);
+    setStatus('正在保存并加密，请稍候...');
+
+    try {
+        // 利用 JSON 对象回注来规避格式问题
+        let jsonText = decryptedJsonText || JSON.stringify(decryptedData);
+        const updates = {};
+
+        inputs.forEach(input => {
+            const fieldName = input.dataset.field;
+            const newValue = input.value.trim();
+            if (newValue !== '') {
+                let parsedValue = newValue;
+                if (input.classList.contains('field-textarea')) {
+                    try { parsedValue = JSON.parse(newValue); } catch (e) { parsedValue = newValue; }
+                } else if (!isNaN(newValue) && newValue !== '') {
+                    parsedValue = Number(newValue);
+                } else if (newValue.toLowerCase() === 'true') {
+                    parsedValue = true;
+                } else if (newValue.toLowerCase() === 'false') {
+                    parsedValue = false;
+                }
+                updates[fieldName] = parsedValue;
+            }
+        });
+
+        if (Object.keys(updates).length > 0) {
+            const jsonObj = JSON.parse(jsonText);
+            for (const [fieldName, newValue] of Object.entries(updates)) {
+                // 如果在配置文件里的字段配成了深度获取(如 'resources.0.val')，则用嵌套方法覆盖
+                if (fieldName.includes('.')) {
+                    setNestedValue(jsonObj, fieldName, newValue);
+                } else {
+                    jsonObj[fieldName] = newValue;
+                }
+            }
+            jsonText = JSON.stringify(jsonObj);
+        }
+
+        // 调用 LZ-String Base64 算法重新压缩存档
+        const compressedText = LZString.compressToBase64(jsonText);
+        const compressedBytes = encodeUtf8(compressedText);
+
+        const originalName = currentFile ? currentFile.name : 'savefile';
+        setResult(compressedBytes.buffer, buildResultName(originalName, 'modified', '.txt'));
+
+        // 刷新缓存数据
+        decryptedData = JSON.parse(jsonText);
         setStatus('保存成功！修改已加密，可以下载新的存档文件。', 'success');
     } catch (error) {
         console.error('保存失败:', error);
