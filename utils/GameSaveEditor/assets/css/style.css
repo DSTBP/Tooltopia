@@ -1505,3 +1505,46 @@ body.day-mode .footer p {
         font-size: 0.75rem;
     }
 }
+
+
+/* 表格外部滚动容器 */
+.table-wrapper {
+    max-height: 65vh; /* 限制最大高度为屏幕高度的 65%，可根据需要调整 */
+    overflow-y: auto; /* 内容超出时自动显示垂直滚动条 */
+    border: 1px solid var(--border-color, #444); /* 增加一个细边框包裹 */
+    border-radius: 8px;
+    margin-top: 16px;
+    background-color: var(--panel-bg, #1e1e24); 
+}
+
+/* 取消原本 table 可能自带的 margin-top，交给 wrapper 管理 */
+.table-wrapper .edit-table {
+    margin-top: 0;
+    border: none;
+}
+
+/* 固定表头在顶部 */
+.edit-table th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    /* 必须给表头设置背景色，防止滚动时下方文字透过来 */
+    background-color: var(--bg-color, #2b2b36); 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* 滚动时底部带一点阴影，更有层级感 */
+}
+
+/* 美化滚动条 (针对 Webkit 内核的浏览器: Chrome, Edge, Safari) */
+.table-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+.table-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+.table-wrapper::-webkit-scrollbar-thumb {
+    background-color: #666;
+    border-radius: 4px;
+}
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background-color: #888;
+}

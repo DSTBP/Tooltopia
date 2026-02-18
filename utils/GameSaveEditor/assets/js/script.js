@@ -1295,18 +1295,19 @@ function displayEditTable() {
                 <button class="btn btn-primary save-changes-btn">保存修改并加密</button>
             </div>
         </div>
-        <table class="edit-table">
-            <thead>
-                <tr>
-                    <th>分类</th>
-                    <th>字段名</th>
-                    <th>字段含义</th>
-                    <th>当前值</th>
-                    <th>修改值</th>
-                    <th>修改建议</th>
-                </tr>
-            </thead>
-            <tbody>
+        <div class="table-wrapper"> 
+            <table class="edit-table">
+                <thead>
+                    <tr>
+                        <th>分类</th>
+                        <th>字段名</th>
+                        <th>字段含义</th>
+                        <th>当前值</th>
+                        <th>修改值</th>
+                        <th>修改建议</th>
+                    </tr>
+                </thead>
+                <tbody>
     `;
 
     // 遍历配置数据生成表格行
@@ -1384,10 +1385,7 @@ function displayEditTable() {
         `;
     });
 
-    html += `
-            </tbody>
-        </table>
-    `;
+    html += `</tbody></table></div>`;
 
     tableContainer.innerHTML = html;
 
