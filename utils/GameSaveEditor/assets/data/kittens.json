@@ -1,0 +1,79 @@
+[
+  {
+    "Categorization": "基础资源",
+    "FieldName": "catnip",
+    "Description": "猫薄荷数量",
+    "CurrentValue": 0,
+    "Suggestion": "食物基础，可适当改大"
+  },
+  {
+    "Categorization": "基础资源",
+    "FieldName": "wood",
+    "Description": "木材数量",
+    "CurrentValue": 0,
+    "Suggestion": "基础建材"
+  },
+  {
+    "Categorization": "基础资源",
+    "FieldName": "minerals",
+    "Description": "矿物数量",
+    "CurrentValue": 0,
+    "Suggestion": ""
+  },
+  {
+    "Categorization": "基础资源",
+    "FieldName": "science",
+    "Description": "科学点数",
+    "CurrentValue": 0,
+    "Suggestion": "用于解锁科技"
+  },
+  {
+    "Categorization": "高级资源",
+    "FieldName": "titanium",
+    "Description": "钛",
+    "CurrentValue": 0,
+    "Suggestion": "中期卡脖子资源"
+  },
+  {
+    "Categorization": "高级资源",
+    "FieldName": "unobtainium",
+    "Description": "难得素",
+    "CurrentValue": 0,
+    "Suggestion": "后期核心资源"
+  },
+  {
+    "Categorization": "特殊资源",
+    "FieldName": "timeCrystal",
+    "Description": "时间水晶",
+    "CurrentValue": 0,
+    "Suggestion": "极难获取，推荐修改"
+  },
+  {
+    "Categorization": "特殊资源",
+    "FieldName": "paragon",
+    "Description": "典范(领导力)",
+    "CurrentValue": 0,
+    "Suggestion": "全局生产力加成"
+  },
+  {
+    "Categorization": "特殊资源",
+    "FieldName": "karma",
+    "Description": "业力",
+    "CurrentValue": 0,
+    "Suggestion": "全局幸福度加成"
+  },
+  {
+    "Categorization": "人口",
+    "FieldName": "kittens",
+    "Description": "当前小猫数量",
+    "CurrentValue": 0,
+    "Suggestion": "不要超过人口上限"
+  },
+  {
+    "Categorization": "人口",
+    "FieldName": "maxKittens",
+    "Description": "人口上限",
+    "CurrentValue": 0,
+    "Suggestion": "建议适度修改"
+  }
+]

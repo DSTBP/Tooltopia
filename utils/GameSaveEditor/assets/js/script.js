@@ -771,6 +771,46 @@ function extractYorgCompressedText(rawText) {
     return normalized;
 }
 
+function getValueFromText(text, fieldName) {
+    if (!text) return undefined;
+    // 匹配常规资源、职业、建筑 (如 "name":"catnip", ... "value":123 或 "val":123)
+    // [^}]*? 确保跨度不会跳出当前对象
+    let regex = new RegExp(`"name"\\s*:\\s*"${fieldName}"[^}]*?"(?:value|val)"\\s*:\\s*([0-9.]+)`);
+    let match = text.match(regex);
+    if (match) return Number(match[1]);
+
+    // 匹配全局根属性 (如 "maxKittens": 2)
+    let rootRegex = new RegExp(`"${fieldName}"\\s*:\\s*([0-9.]+)`);
+    let rootMatch = text.match(rootRegex);
+    if (rootMatch) return Number(rootMatch[1]);
+
+    return undefined;
+}
+
+function setValueInText(text, fieldName, newValue) {
+    // 1. 替换资源、职业、建筑中的 value 或 val
+    let regex = new RegExp(`("name"\\s*:\\s*"${fieldName}"[^}]*?"(?:value|val)"\\s*:\\s*)([0-9.]+)`, 'g');
+    let newText = text;
+    if (regex.test(text)) {
+        newText = text.replace(regex, `$1${newValue}`);
+        
+        // 可选：部分建筑不仅有 val，还有 on（启用数量），同步修改防止游戏内未启用
+        let onRegex = new RegExp(`("name"\\s*:\\s*"${fieldName}"[^}]*?"on"\\s*:\\s*)([0-9.]+)`, 'g');
+        if (onRegex.test(newText)) {
+            newText = newText.replace(onRegex, `$1${newValue}`);
+        }
+        return newText;
+    }
+
+    // 2. 替换全局根属性
+    let rootRegex = new RegExp(`("${fieldName}"\\s*:\\s*)([0-9.]+)`, 'g');
+    if (rootRegex.test(text)) {
+        return text.replace(rootRegex, `$1${newValue}`);
+    }
+
+    return text;
+}
+
 async function deriveKey(password, iv) {
     const encoder = new TextEncoder();
     const baseKey = await crypto.subtle.importKey(
@@ -1040,32 +1080,63 @@ async function decryptKittensFile() {
     try {
         const buffer = await currentFile.arrayBuffer();
         const bytes = new Uint8Array(buffer);
-        // 读取外部 txt 内包裹的 Base64 文本
         let rawText = decodeUtf8(bytes).trim();
 
-        // 尝试使用猫国专属的 Base64 解压缩
+        // 使用猫国专属的 Base64 解压缩
         const plainText = LZString.decompressFromBase64(rawText);
         if (!plainText) {
             throw new Error('LZ-String 解压失败，可能不是有效的猫国建设者存档');
         }
 
         const plainBytes = encodeUtf8(plainText);
-        // 提供直接下载解密后 JSON 的文件
-        setResult(plainBytes.buffer, buildResultName(currentFile.name, 'decrypted', '.json'));
+        // 直接提供 txt 文件下载，保证原始破损格式不丢失
+        setResult(plainBytes.buffer, buildResultName(currentFile.name, 'decrypted', '.txt'));
 
-        try {
-            const parsed = JSON.parse(plainText);
-            decryptedData = parsed;
-            decryptedJsonText = plainText;
-            setStatus('解密成功，存档数据已解析并显示在下方。', 'success');
-            await loadConfigAndDisplayTable();
-        } catch (parseError) {
-            console.error('解密后 JSON 解析失败:', parseError);
-            setStatus('解密成功，但无法解析为 JSON 格式。您仍可以下载纯文本。', 'error');
-        }
+        // 【核心修改】：不进行 JSON 解析，直接存入原始字符串
+        decryptedJsonText = plainText;
+        decryptedData = { isTextMode: true }; // 放入一个假对象，用来骗过后续的防空检查
+
+        setStatus('解密成功，存档数据已读取并显示在下方。', 'success');
+        await loadConfigAndDisplayTable();
     } catch (error) {
         console.error('Decrypt failed:', error);
         setStatus(`解密失败：${error.message || '未知错误'}`, 'error');
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function saveKittensChanges() {
+    const inputs = document.querySelectorAll('.field-input');
+    setBusy(true);
+    setStatus('正在保存并加密，请稍候...');
+
+    try {
+        // 【核心修改】：直接基于原始字符串文本进行替换，不经过 JSON 序列化
+        let modifiedText = decryptedJsonText; 
+
+        inputs.forEach(input => {
+            const fieldName = input.dataset.field;
+            const newValue = input.value.trim();
+            if (newValue !== '' && !isNaN(newValue)) {
+                // 使用我们写的纯文本正则替换工具写入新值
+                modifiedText = setValueInText(modifiedText, fieldName, Number(newValue));
+            }
+        });
+
+        // 调用 LZ-String Base64 算法重新压缩替换后的破损文本
+        const compressedText = LZString.compressToBase64(modifiedText);
+        const compressedBytes = encodeUtf8(compressedText);
+
+        const originalName = currentFile ? currentFile.name : 'savefile';
+        setResult(compressedBytes.buffer, buildResultName(originalName, 'modified', '.txt'));
+
+        // 刷新缓存数据
+        decryptedJsonText = modifiedText;
+        setStatus('保存成功！修改已加密，可以下载新的存档文件。', 'success');
+    } catch (error) {
+        console.error('保存失败:', error);
+        setStatus(`保存失败：${error.message || '未知错误'}`, 'error');
     } finally {
         setBusy(false);
     }
@@ -1308,6 +1379,16 @@ function displayEditTable() {
             displayValue = info.displayValue;
             inputValue = info.inputValue;
             isComplexType = info.isComplexType;
+        } else if (isKittensSelected) {
+            // 【核心修改】：猫国建设者：为了保留不完整的JSON原格式，使用正则直接从文本读取
+            const val = getValueFromText(decryptedJsonText, field.FieldName);
+            if (val !== undefined) {
+                displayValue = val;
+                inputValue = val;
+            } else {
+                displayValue = '未找到/未解锁';
+                inputValue = '';
+            }
         } else if (decryptedData[field.FieldName] !== undefined) {
             const fieldData = decryptedData[field.FieldName];
 
@@ -1512,64 +1593,6 @@ async function saveChanges() {
     }
 }
 
-async function saveKittensChanges() {
-    const inputs = document.querySelectorAll('.field-input');
-    setBusy(true);
-    setStatus('正在保存并加密，请稍候...');
-
-    try {
-        // 利用 JSON 对象回注来规避格式问题
-        let jsonText = decryptedJsonText || JSON.stringify(decryptedData);
-        const updates = {};
-
-        inputs.forEach(input => {
-            const fieldName = input.dataset.field;
-            const newValue = input.value.trim();
-            if (newValue !== '') {
-                let parsedValue = newValue;
-                if (input.classList.contains('field-textarea')) {
-                    try { parsedValue = JSON.parse(newValue); } catch (e) { parsedValue = newValue; }
-                } else if (!isNaN(newValue) && newValue !== '') {
-                    parsedValue = Number(newValue);
-                } else if (newValue.toLowerCase() === 'true') {
-                    parsedValue = true;
-                } else if (newValue.toLowerCase() === 'false') {
-                    parsedValue = false;
-                }
-                updates[fieldName] = parsedValue;
-            }
-        });
-
-        if (Object.keys(updates).length > 0) {
-            const jsonObj = JSON.parse(jsonText);
-            for (const [fieldName, newValue] of Object.entries(updates)) {
-                // 如果在配置文件里的字段配成了深度获取(如 'resources.0.val')，则用嵌套方法覆盖
-                if (fieldName.includes('.')) {
-                    setNestedValue(jsonObj, fieldName, newValue);
-                } else {
-                    jsonObj[fieldName] = newValue;
-                }
-            }
-            jsonText = JSON.stringify(jsonObj);
-        }
-
-        // 调用 LZ-String Base64 算法重新压缩存档
-        const compressedText = LZString.compressToBase64(jsonText);
-        const compressedBytes = encodeUtf8(compressedText);
-
-        const originalName = currentFile ? currentFile.name : 'savefile';
-        setResult(compressedBytes.buffer, buildResultName(originalName, 'modified', '.txt'));
-
-        // 刷新缓存数据
-        decryptedData = JSON.parse(jsonText);
-        setStatus('保存成功！修改已加密，可以下载新的存档文件。', 'success');
-    } catch (error) {
-        console.error('保存失败:', error);
-        setStatus(`保存失败：${error.message || '未知错误'}`, 'error');
-    } finally {
-        setBusy(false);
-    }
-}
 
 function parseYorgInputValue(input) {
     const newValue = input.value.trim();
