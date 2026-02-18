@@ -204,7 +204,8 @@ function buildResultName(originalName, suffix, extensionOverride) {
 const LZString = (() => {
     const f = String.fromCharCode;
     const keyStrUriSafe = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$';
-    const keyStrBase64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    // 修复：补齐末尾的 '=' 避免解析越界
+    const keyStrBase64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
     const baseReverseDic = {};
 
     function getBaseValue(alphabet, character) {
@@ -218,23 +219,14 @@ const LZString = (() => {
     }
 
     function _compress(uncompressed, bitsPerChar, getCharFromInt) {
-        if (uncompressed == null) {
-            return '';
-        }
-
-        let i;
-        let value;
+        if (uncompressed == null) return '';
+        let i, value;
         const dictionary = {};
         const dictionaryToCreate = {};
-        let c = '';
-        let wc = '';
-        let w = '';
-        let enlargeIn = 2;
-        let dictSize = 3;
-        let numBits = 2;
+        let c = '', wc = '', w = '';
+        let enlargeIn = 2, dictSize = 3, numBits = 2;
         const data = [];
-        let dataVal = 0;
-        let dataPosition = 0;
+        let dataVal = 0, dataPosition = 0;
 
         function writeBit(bit) {
             dataVal = (dataVal << 1) | bit;
@@ -261,7 +253,6 @@ const LZString = (() => {
                 dictionary[c] = dictSize++;
                 dictionaryToCreate[c] = true;
             }
-
             wc = w + c;
             if (Object.prototype.hasOwnProperty.call(dictionary, wc)) {
                 w = wc;
@@ -317,9 +308,7 @@ const LZString = (() => {
                 numBits += 1;
             }
         }
-
         writeBits(numBits, 2);
-
         while (true) {
             dataVal <<= 1;
             if (dataPosition === bitsPerChar - 1) {
@@ -329,34 +318,18 @@ const LZString = (() => {
                 dataPosition += 1;
             }
         }
-
         return data.join('');
     }
 
     function _decompress(length, resetValue, getNextValue) {
         const dictionary = [];
-        let next;
-        let enlargeIn = 4;
-        let dictSize = 4;
-        let numBits = 3;
-        let entry = '';
+        let next, enlargeIn = 4, dictSize = 4, numBits = 3, entry = '';
         const result = [];
-        let i;
-        let w;
-        let bits;
-        let resb;
-        let maxpower;
-        let power;
-        const data = {
-            val: getNextValue(0),
-            position: resetValue,
-            index: 1
-        };
+        let i, w, bits, resb;
+        const data = { val: getNextValue(0), position: resetValue, index: 1 };
 
         function readBits(numBitsToRead) {
-            let bitsValue = 0;
-            let maxpowerValue = Math.pow(2, numBitsToRead);
-            let powerValue = 1;
+            let bitsValue = 0, maxpowerValue = Math.pow(2, numBitsToRead), powerValue = 1;
             while (powerValue !== maxpowerValue) {
                 resb = data.val & data.position;
                 data.position >>= 1;
@@ -377,25 +350,21 @@ const LZString = (() => {
         next = readBits(2);
         switch (next) {
             case 0:
-                dictionary[3] = f(readBits(8));
-                next = 3;
+                w = f(readBits(8));
+                dictionary[3] = w;
                 break;
             case 1:
-                dictionary[3] = f(readBits(16));
-                next = 3;
+                w = f(readBits(16));
+                dictionary[3] = w;
                 break;
             case 2:
                 return '';
         }
-
-        w = f(dictionary[next]);
+        // 修复：上面直接赋值给 w，避免了原先通过 dictionary[next] 造成的 \0 空字符污染
         result.push(w);
 
         while (true) {
-            if (data.index > length) {
-                return '';
-            }
-
+            if (data.index > length) return '';
             bits = readBits(numBits);
             switch (next = bits) {
                 case 0:
@@ -439,27 +408,18 @@ const LZString = (() => {
 
     return {
         compressToEncodedURIComponent(input) {
-            if (input == null) {
-                return '';
-            }
+            if (input == null) return '';
             return _compress(input, 6, (a) => keyStrUriSafe.charAt(a));
         },
         decompressFromEncodedURIComponent(input) {
-            if (input == null) {
-                return '';
-            }
-            if (input === '') {
-                return null;
-            }
+            if (input == null) return '';
+            if (input === '') return null;
             const normalized = input.replace(/ /g, '+');
-            return _decompress(normalized.length, 32, (index) =>
-                getBaseValue(keyStrUriSafe, normalized.charAt(index))
-            );
+            return _decompress(normalized.length, 32, (index) => getBaseValue(keyStrUriSafe, normalized.charAt(index)));
         },
         compressToBase64(input) {
             if (input == null) return '';
             const res = _compress(input, 6, (a) => keyStrBase64.charAt(a));
-            // 补齐等号 padding
             switch (res.length % 4) {
                 default:
                 case 0: return res;
@@ -773,13 +733,10 @@ function extractYorgCompressedText(rawText) {
 
 function getValueFromText(text, fieldName) {
     if (!text) return undefined;
-    // 匹配常规资源、职业、建筑 (如 "name":"catnip", ... "value":123 或 "val":123)
-    // [^}]*? 确保跨度不会跳出当前对象
     let regex = new RegExp(`"name"\\s*:\\s*"${fieldName}"[^}]*?"(?:value|val)"\\s*:\\s*([0-9.]+)`);
     let match = text.match(regex);
     if (match) return Number(match[1]);
 
-    // 匹配全局根属性 (如 "maxKittens": 2)
     let rootRegex = new RegExp(`"${fieldName}"\\s*:\\s*([0-9.]+)`);
     let rootMatch = text.match(rootRegex);
     if (rootMatch) return Number(rootMatch[1]);
@@ -788,13 +745,10 @@ function getValueFromText(text, fieldName) {
 }
 
 function setValueInText(text, fieldName, newValue) {
-    // 1. 替换资源、职业、建筑中的 value 或 val
     let regex = new RegExp(`("name"\\s*:\\s*"${fieldName}"[^}]*?"(?:value|val)"\\s*:\\s*)([0-9.]+)`, 'g');
     let newText = text;
     if (regex.test(text)) {
         newText = text.replace(regex, `$1${newValue}`);
-        
-        // 可选：部分建筑不仅有 val，还有 on（启用数量），同步修改防止游戏内未启用
         let onRegex = new RegExp(`("name"\\s*:\\s*"${fieldName}"[^}]*?"on"\\s*:\\s*)([0-9.]+)`, 'g');
         if (onRegex.test(newText)) {
             newText = newText.replace(onRegex, `$1${newValue}`);
@@ -802,12 +756,10 @@ function setValueInText(text, fieldName, newValue) {
         return newText;
     }
 
-    // 2. 替换全局根属性
     let rootRegex = new RegExp(`("${fieldName}"\\s*:\\s*)([0-9.]+)`, 'g');
     if (rootRegex.test(text)) {
         return text.replace(rootRegex, `$1${newValue}`);
     }
-
     return text;
 }
 
@@ -1082,24 +1034,19 @@ async function decryptKittensFile() {
         const bytes = new Uint8Array(buffer);
         let rawText = decodeUtf8(bytes).trim();
 
-        // 使用猫国专属的 Base64 解压缩
         const plainText = LZString.decompressFromBase64(rawText);
-        if (!plainText) {
-            throw new Error('LZ-String 解压失败，可能不是有效的猫国建设者存档');
-        }
+        if (!plainText) throw new Error('解压失败，可能不是有效的存档');
 
         const plainBytes = encodeUtf8(plainText);
-        // 直接提供 txt 文件下载，保证原始破损格式不丢失
         setResult(plainBytes.buffer, buildResultName(currentFile.name, 'decrypted', '.txt'));
 
-        // 【核心修改】：不进行 JSON 解析，直接存入原始字符串
+        // 【核心】：不转换为 JSON，直接把原封不动的文本赋值
         decryptedJsonText = plainText;
-        decryptedData = { isTextMode: true }; // 放入一个假对象，用来骗过后续的防空检查
+        decryptedData = { isTextMode: true }; // 假对象绕过代码其它地方的非空校验
 
         setStatus('解密成功，存档数据已读取并显示在下方。', 'success');
         await loadConfigAndDisplayTable();
     } catch (error) {
-        console.error('Decrypt failed:', error);
         setStatus(`解密失败：${error.message || '未知错误'}`, 'error');
     } finally {
         setBusy(false);
@@ -1112,30 +1059,26 @@ async function saveKittensChanges() {
     setStatus('正在保存并加密，请稍候...');
 
     try {
-        // 【核心修改】：直接基于原始字符串文本进行替换，不经过 JSON 序列化
         let modifiedText = decryptedJsonText; 
 
         inputs.forEach(input => {
             const fieldName = input.dataset.field;
             const newValue = input.value.trim();
             if (newValue !== '' && !isNaN(newValue)) {
-                // 使用我们写的纯文本正则替换工具写入新值
                 modifiedText = setValueInText(modifiedText, fieldName, Number(newValue));
             }
         });
 
-        // 调用 LZ-String Base64 算法重新压缩替换后的破损文本
+        // 将保持原破损格式的文本，重新压缩
         const compressedText = LZString.compressToBase64(modifiedText);
         const compressedBytes = encodeUtf8(compressedText);
 
         const originalName = currentFile ? currentFile.name : 'savefile';
         setResult(compressedBytes.buffer, buildResultName(originalName, 'modified', '.txt'));
 
-        // 刷新缓存数据
         decryptedJsonText = modifiedText;
         setStatus('保存成功！修改已加密，可以下载新的存档文件。', 'success');
     } catch (error) {
-        console.error('保存失败:', error);
         setStatus(`保存失败：${error.message || '未知错误'}`, 'error');
     } finally {
         setBusy(false);
