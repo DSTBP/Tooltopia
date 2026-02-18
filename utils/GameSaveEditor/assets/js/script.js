@@ -810,6 +810,11 @@ async function decryptFile() {
         return;
     }
 
+    if (isKittensGame(selectedGame)) {
+        await decryptKittensFile();
+        return;
+    }
+
     const password = keyInput.value.trim();
     if (!password) {
         alert('请先输入密钥。');
@@ -980,6 +985,11 @@ async function encryptFile() {
     const selectedGame = getSelectedGame();
     if (isYorgGame(selectedGame)) {
         await encryptYorgFile();
+        return;
+    }
+
+    if (isKittensGame(selectedGame)) {
+        await encryptKittensFile();
         return;
     }
 
