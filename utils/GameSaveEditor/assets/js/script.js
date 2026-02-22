@@ -2,6 +2,7 @@
 const PHASMO_KEY = 't36gref9u84y7f43g';
 const YORG_GAME_LABEL = 'yorg.io';
 const KITTENS_GAME_LABEL = '猫国建设者（Kittens Game）';
+const EVOLVE_GAME_LABEL = 'Evolve';
 
 const GAME_PATHS = {
     [PHASMO_GAME_LABEL]: {
@@ -12,16 +13,21 @@ const GAME_PATHS = {
         windows: 'Steam/steamapps/common/yorg.io/gamesave/data.bin 或游戏内导出为 .bin 文件',
         description: 'yorg.io 存档格式'
     },
-    [KITTENS_GAME_LABEL]: { // 新增
+    [KITTENS_GAME_LABEL]: {
         windows: '游戏内选择 选项 -> 导出，将复制的文本保存为 .txt 文件上传',
         description: '猫国建设者存档'
+    },
+    [EVOLVE_GAME_LABEL]: {
+        windows: '游戏内选择 设置 -> 导出存档，保存为 .txt 文件上传',
+        description: 'Evolve 存档'
     }
 };
 
 const GAME_CONFIG_PATHS = {
     [PHASMO_GAME_LABEL]: './assets/data/phasmophobia.json',
     [YORG_GAME_LABEL]: './assets/data/yorg.json',
-    [KITTENS_GAME_LABEL]: './assets/data/kittens.json'
+    [KITTENS_GAME_LABEL]: './assets/data/kittens.json',
+    [EVOLVE_GAME_LABEL]: './assets/data/evolve.json'
 };
 
 const fileInput = document.getElementById('fileInput');
@@ -137,6 +143,10 @@ function applyGameKey() {
         keyInput.value = '';
         keyInput.disabled = true;
         keyInput.placeholder = '猫国建设者不需要密钥';
+    } else if (isEvolveGame(selectedGame)) {
+            keyInput.value = '';
+            keyInput.disabled = true;
+            keyInput.placeholder = 'Evolve 不需要密钥';
     } else {
         keyInput.disabled = false;
         keyInput.placeholder = '输入解密/加密密钥';
@@ -802,7 +812,7 @@ async function decryptFile() {
         return;
     }
 
-    if (isKittensGame(selectedGame)) {
+    if (isKittensGame(selectedGame) || isEvolveGame(selectedGame)) {
         await decryptKittensFile();
         return;
     }
@@ -980,7 +990,7 @@ async function encryptFile() {
         return;
     }
 
-    if (isKittensGame(selectedGame)) {
+    if (isKittensGame(selectedGame)|| isEvolveGame(selectedGame)) {
         await encryptKittensFile();
         return;
     }
@@ -1271,7 +1281,7 @@ function displayEditTable() {
 
     const selectedGame = getSelectedGame();
     const isYorgSelected = isYorgGame(selectedGame);
-    const isKittensSelected = isKittensGame(selectedGame);
+    const isKittensSelected = isKittensGame(selectedGame)|| isEvolveGame(selectedGame);
 
     if (isYorgSelected && Array.isArray(yorgSaveEntries) && yorgSaveEntries.length > 0) {
         tableContainer.innerHTML = yorgSaveEntries
@@ -1409,7 +1419,7 @@ async function saveChanges() {
         return;
     }
 
-    if (isKittensGame(selectedGame)) {
+    if (isKittensGame(selectedGame)|| isEvolveGame(selectedGame)) {
         await saveKittensChanges();
         return;
     }
@@ -1701,4 +1711,14 @@ async function encryptKittensFile() {
     } finally {
         setBusy(false);
     }
+}
+
+
+
+
+
+
+function isEvolveGame(selectedGame) {
+    const normalized = (selectedGame || '').toLowerCase();
+    return selectedGame === EVOLVE_GAME_LABEL || normalized.includes('evolve');
 }
