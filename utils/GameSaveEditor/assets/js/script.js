@@ -70,6 +70,11 @@ function isKittensGame(selectedGame) {
     return selectedGame === KITTENS_GAME_LABEL || normalized.includes('kittens');
 }
 
+function isEvolveGame(selectedGame) {
+    const normalized = (selectedGame || '').toLowerCase();
+    return selectedGame === EVOLVE_GAME_LABEL || normalized.includes('evolve');
+}
+
 function clearEditTable() {
     const tableContainer = document.getElementById('editTableContainer');
     if (tableContainer) {
@@ -144,9 +149,9 @@ function applyGameKey() {
         keyInput.disabled = true;
         keyInput.placeholder = '猫国建设者不需要密钥';
     } else if (isEvolveGame(selectedGame)) {
-            keyInput.value = '';
-            keyInput.disabled = true;
-            keyInput.placeholder = 'Evolve 不需要密钥';
+        keyInput.value = '';
+        keyInput.disabled = true;
+        keyInput.placeholder = 'Evolve 不需要密钥';
     } else {
         keyInput.disabled = false;
         keyInput.placeholder = '输入解密/加密密钥';
@@ -211,10 +216,10 @@ function buildResultName(originalName, suffix, extensionOverride) {
     const extension = extensionOverride || (dotIndex > 0 ? originalName.slice(dotIndex) : '.txt');
     return `${base}-${suffix}${extension}`;
 }
+
 const LZString = (() => {
     const f = String.fromCharCode;
     const keyStrUriSafe = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$';
-    // 修复：补齐末尾的 '=' 避免解析越界
     const keyStrBase64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
     const baseReverseDic = {};
 
@@ -370,7 +375,7 @@ const LZString = (() => {
             case 2:
                 return '';
         }
-        // 修复：上面直接赋值给 w，避免了原先通过 dictionary[next] 造成的 \0 空字符污染
+        
         result.push(w);
 
         while (true) {
@@ -812,8 +817,13 @@ async function decryptFile() {
         return;
     }
 
-    if (isKittensGame(selectedGame) || isEvolveGame(selectedGame)) {
+    if (isKittensGame(selectedGame)) {
         await decryptKittensFile();
+        return;
+    }
+
+    if (isEvolveGame(selectedGame)) {
+        await decryptEvolveFile();
         return;
     }
 
@@ -850,20 +860,16 @@ async function decryptFile() {
 
         setResult(plainBuffer, buildResultName(currentFile.name, 'decrypted'));
 
-        // 尝试将解密数据解析为JSON
         const decoder = new TextDecoder('utf-8');
         let jsonText = decoder.decode(plainBuffer);
 
-        // 显示原始文本的前500个字符用于调试
         console.log('解密后的原始文本（前500字符）:', jsonText.substring(0, 500));
         console.log('文本总长度:', jsonText.length);
 
-        // 尝试多种方式解析JSON
         let jsonData = null;
         let parseMethod = '';
-        let parsedJsonText = null; // 保存解析成功时使用的文本
+        let parsedJsonText = null; 
 
-        // 方法1: 尝试标准JSON解析
         try {
             console.log('尝试方法1: 标准JSON解析...');
             jsonData = JSON.parse(jsonText);
@@ -873,20 +879,15 @@ async function decryptFile() {
         } catch (e1) {
             console.log('✗ 标准JSON解析失败:', e1.message);
 
-            // 方法2: 清理后再解析
             try {
                 console.log('尝试方法2: 清理后的JSON解析...');
                 let cleanedText = jsonText;
 
-                // 去除BOM
                 if (cleanedText.charCodeAt(0) === 0xFEFF) {
                     cleanedText = cleanedText.substring(1);
                 }
 
-                // 去除首尾空白
                 cleanedText = cleanedText.trim();
-
-                // 去除空字节
                 cleanedText = cleanedText.replace(/\0/g, '');
 
                 jsonData = JSON.parse(cleanedText);
@@ -896,28 +897,21 @@ async function decryptFile() {
             } catch (e2) {
                 console.log('✗ 清理后JSON解析失败:', e2.message);
 
-                // 方法3: 尝试修复C#序列化格式的JSON
                 try {
                     console.log('尝试方法3: 修复C#序列化格式...');
                     let fixedText = jsonText.trim();
 
-                    // 去除BOM和空字节
                     if (fixedText.charCodeAt(0) === 0xFEFF) {
                         fixedText = fixedText.substring(1);
                     }
                     fixedText = fixedText.replace(/\0/g, '');
 
-                    // 移除末尾多余的逗号 (trailing commas)
                     fixedText = fixedText.replace(/,(\s*[}\]])/g, '$1');
 
-                    // 修复C#字典格式：{11:15,5:1} -> {"11":15,"5":1}
-                    // 匹配 "value" : {数字:数字,...} 格式
                     fixedText = fixedText.replace(
                         /"value"\s*:\s*\{([^{}]+)\}/g,
                         (match, content) => {
-                            // 检查是否是数字键值对格式
                             if (/^\d+:\d+/.test(content.trim())) {
-                                // 将 11:15,5:1 转换为 "11":15,"5":1
                                 const fixed = content.replace(/(\d+):/g, '"$1":');
                                 return `"value" : {${fixed}}`;
                             }
@@ -932,7 +926,6 @@ async function decryptFile() {
                 } catch (e3) {
                     console.log('✗ 修复C#格式后JSON解析失败:', e3.message);
 
-                    // 方法4: 尝试不同的编码
                     try {
                         console.log('尝试方法4: 使用不同编码...');
                         const decoder2 = new TextDecoder('utf-16le');
@@ -942,14 +935,9 @@ async function decryptFile() {
                         parsedJsonText = altText;
                         console.log('✓ UTF-16编码JSON解析成功');
                     } catch (e4) {
-                        console.log('✗ UTF-16编码JSON解析失败:', e4.message);
-
-                        // 所有方法都失败
                         console.error('所有JSON解析方法都失败了');
                         console.error('最后的错误:', e4);
-
                         let errorMsg = '解密成功，但无法将数据解析为JSON格式。您仍可以下载解密结果。';
-
                         setStatus(errorMsg, 'error');
                         return;
                     }
@@ -957,17 +945,13 @@ async function decryptFile() {
             }
         }
 
-        // 如果成功解析
         if (jsonData) {
             decryptedData = jsonData;
-            decryptedJsonText = parsedJsonText; // 保存原始的JSON文本格式
+            decryptedJsonText = parsedJsonText; 
             console.log('JSON解析成功！使用方法:', parseMethod);
             console.log('数据结构键值:', Object.keys(jsonData).slice(0, 10));
 
-            // 先设置状态消息
             setStatus(`解密成功，存档数据已解析（使用${parseMethod}）并显示在下方。`, 'success');
-
-            // 然后加载配置文件并显示表格
             await loadConfigAndDisplayTable();
         }
     } catch (error) {
@@ -990,8 +974,13 @@ async function encryptFile() {
         return;
     }
 
-    if (isKittensGame(selectedGame)|| isEvolveGame(selectedGame)) {
+    if (isKittensGame(selectedGame)) {
         await encryptKittensFile();
+        return;
+    }
+
+    if (isEvolveGame(selectedGame)) {
+        await encryptEvolveFile();
         return;
     }
 
@@ -1050,14 +1039,32 @@ async function decryptKittensFile() {
         const plainBytes = encodeUtf8(plainText);
         setResult(plainBytes.buffer, buildResultName(currentFile.name, 'decrypted', '.txt'));
 
-        // 【核心】：不转换为 JSON，直接把原封不动的文本赋值
         decryptedJsonText = plainText;
-        decryptedData = { isTextMode: true }; // 假对象绕过代码其它地方的非空校验
+        decryptedData = { isTextMode: true }; 
 
         setStatus('解密成功，存档数据已读取并显示在下方。', 'success');
         await loadConfigAndDisplayTable();
     } catch (error) {
         setStatus(`解密失败：${error.message || '未知错误'}`, 'error');
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function encryptKittensFile() {
+    setBusy(true);
+    setStatus('正在加密，请稍候...');
+    try {
+        const buffer = await currentFile.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        const plainText = decodeUtf8(bytes);
+        const compressedText = LZString.compressToBase64(plainText);
+        const compressedBytes = encodeUtf8(compressedText);
+        setResult(compressedBytes.buffer, buildResultName(currentFile.name, 'encrypted', '.txt'));
+        setStatus('加密成功，可以下载结果。', 'success');
+    } catch (error) {
+        console.error('加密失败:', error);
+        setStatus(`加密失败：${error.message || '未知错误'}`, 'error');
     } finally {
         setBusy(false);
     }
@@ -1079,7 +1086,6 @@ async function saveKittensChanges() {
             }
         });
 
-        // 将保持原破损格式的文本，重新压缩
         const compressedText = LZString.compressToBase64(modifiedText);
         const compressedBytes = encodeUtf8(compressedText);
 
@@ -1207,6 +1213,7 @@ async function encryptYorgFile() {
         setBusy(false);
     }
 }
+
 function downloadResult() {
     if (!resultBuffer) {
         alert('暂无可下载的结果。');
@@ -1239,7 +1246,6 @@ encryptBtn.addEventListener('click', encryptFile);
 
 downloadBtn.addEventListener('click', downloadResult);
 
-// 加载配置文件并显示表格
 async function loadConfigAndDisplayTable() {
     try {
         const selectedGame = getSelectedGame();
@@ -1263,25 +1269,23 @@ async function loadConfigAndDisplayTable() {
     }
 }
 
-// 显示编辑表格
 function displayEditTable() {
     if (!decryptedData || !configData) {
         return;
     }
 
-    // 创建表格容器
     let tableContainer = document.getElementById('editTableContainer');
     if (!tableContainer) {
         tableContainer = document.createElement('div');
         tableContainer.id = 'editTableContainer';
         tableContainer.className = 'edit-table-container';
-        // 追加到 statusMessage 元素之后
         statusMessage.insertAdjacentElement('afterend', tableContainer);
     }
 
     const selectedGame = getSelectedGame();
     const isYorgSelected = isYorgGame(selectedGame);
-    const isKittensSelected = isKittensGame(selectedGame)|| isEvolveGame(selectedGame);
+    const isKittensSelected = isKittensGame(selectedGame);
+    const isEvolveSelected = isEvolveGame(selectedGame);
 
     if (isYorgSelected && Array.isArray(yorgSaveEntries) && yorgSaveEntries.length > 0) {
         tableContainer.innerHTML = yorgSaveEntries
@@ -1297,7 +1301,6 @@ function displayEditTable() {
 
     const saveIdAttr = isYorgSelected ? ' data-save-id="single"' : '';
 
-    // 构建表格HTML
     let html = `
         <div class="edit-table-header">
             <div class="edit-table-title">存档数据编辑</div>
@@ -1320,9 +1323,7 @@ function displayEditTable() {
                 <tbody>
     `;
 
-    // 遍历配置数据生成表格行
     configData.forEach((field, index) => {
-        // 获取当前值，支持嵌套的 {__type, value} 格式
         let currentValue = field.CurrentValue;
         let displayValue = currentValue;
         let inputValue = currentValue;
@@ -1334,8 +1335,16 @@ function displayEditTable() {
             inputValue = info.inputValue;
             isComplexType = info.isComplexType;
         } else if (isKittensSelected) {
-            // 【核心修改】：猫国建设者：为了保留不完整的JSON原格式，使用正则直接从文本读取
             const val = getValueFromText(decryptedJsonText, field.FieldName);
+            if (val !== undefined) {
+                displayValue = val;
+                inputValue = val;
+            } else {
+                displayValue = '未找到/未解锁';
+                inputValue = '';
+            }
+        } else if (isEvolveSelected) {
+            const val = getNestedValue(decryptedData, field.FieldName);
             if (val !== undefined) {
                 displayValue = val;
                 inputValue = val;
@@ -1346,11 +1355,9 @@ function displayEditTable() {
         } else if (decryptedData[field.FieldName] !== undefined) {
             const fieldData = decryptedData[field.FieldName];
 
-            // 检查是否为嵌套格式 {__type: "...", value: ...}
             if (typeof fieldData === 'object' && fieldData !== null && 'value' in fieldData) {
                 currentValue = fieldData.value;
 
-                // 如果value是对象（如Dictionary），转换为JSON字符串显示
                 if (typeof currentValue === 'object' && currentValue !== null) {
                     displayValue = JSON.stringify(currentValue);
                     inputValue = displayValue;
@@ -1399,14 +1406,12 @@ function displayEditTable() {
 
     tableContainer.innerHTML = html;
 
-    // 绑定保存按钮事件
     const saveButtons = tableContainer.querySelectorAll('.save-changes-btn');
     saveButtons.forEach((button) => {
         button.addEventListener('click', saveChanges);
     });
 }
 
-// 保存修改并重新加密
 async function saveChanges() {
     if (!decryptedData || !configData) {
         alert('没有可保存的数据。');
@@ -1419,8 +1424,13 @@ async function saveChanges() {
         return;
     }
 
-    if (isKittensGame(selectedGame)|| isEvolveGame(selectedGame)) {
+    if (isKittensGame(selectedGame)) {
         await saveKittensChanges();
+        return;
+    }
+
+    if (isEvolveGame(selectedGame)) {
+        await saveEvolveChanges();
         return;
     }
 
@@ -1430,7 +1440,6 @@ async function saveChanges() {
         return;
     }
 
-    // 收集所有修改的值
     const inputs = document.querySelectorAll('.field-input');
     const updatedData = { ...decryptedData };
 
@@ -1439,30 +1448,24 @@ async function saveChanges() {
         const newValue = input.value.trim();
 
         if (newValue !== '') {
-            // 尝试将值转换为适当的类型
             let parsedValue = newValue;
 
-            // 检查是否为数字
             if (!isNaN(newValue) && newValue !== '') {
                 parsedValue = Number(newValue);
             }
-            // 检查是否为布尔值
             else if (newValue.toLowerCase() === 'true') {
                 parsedValue = true;
             } else if (newValue.toLowerCase() === 'false') {
                 parsedValue = false;
             }
 
-            // 检查原数据是否为嵌套格式 {__type, value}
             const originalData = decryptedData[fieldName];
             if (typeof originalData === 'object' && originalData !== null && 'value' in originalData) {
-                // 保持原有的结构，只更新 value
                 updatedData[fieldName] = {
                     ...originalData,
                     value: parsedValue
                 };
             } else {
-                // 直接赋值
                 updatedData[fieldName] = parsedValue;
             }
         }
@@ -1472,10 +1475,8 @@ async function saveChanges() {
     setStatus('正在保存并加密，请稍候...');
 
     try {
-        // 使用原始的JSON文本格式，通过替换的方式更新值
         let jsonText = decryptedJsonText || JSON.stringify(decryptedData);
 
-        // 收集修改的值
         const updates = {};
         inputs.forEach(input => {
             const fieldName = input.dataset.field;
@@ -1497,9 +1498,7 @@ async function saveChanges() {
             }
         });
 
-        // 如果有修改，在原始JSON文本中替换值
         if (Object.keys(updates).length > 0) {
-            // 通过JSON对象更新后重新序列化，保持原有的格式结构
             const jsonObj = JSON.parse(jsonText);
             for (const [fieldName, newValue] of Object.entries(updates)) {
                 const originalData = decryptedData[fieldName];
@@ -1518,7 +1517,6 @@ async function saveChanges() {
         const encoder = new TextEncoder();
         const buffer = encoder.encode(jsonText);
 
-        // 加密数据
         const iv = crypto.getRandomValues(new Uint8Array(16));
         const key = await deriveKey(password, iv);
 
@@ -1533,11 +1531,9 @@ async function saveChanges() {
         combined.set(iv, 0);
         combined.set(cipherBytes, iv.length);
 
-        // 设置结果
         const originalName = currentFile ? currentFile.name : 'savefile';
         setResult(combined.buffer, buildResultName(originalName, 'modified'));
 
-        // 更新内存中的数据
         decryptedData = updatedData;
 
         setStatus('保存成功！修改已加密，可以下载新的存档文件。', 'success');
@@ -1688,37 +1684,91 @@ async function saveYorgChanges() {
     }
 }
 
-async function encryptKittensFile() {
+// ====== Evolve 专属函数 ======
+
+async function decryptEvolveFile() {
+    setBusy(true);
+    setStatus('正在解密，请稍候...');
+    try {
+        const buffer = await currentFile.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        let rawText = decodeUtf8(bytes).trim();
+
+        const plainText = LZString.decompressFromBase64(rawText);
+        if (!plainText) throw new Error('解压失败，可能不是有效的存档');
+
+        const plainBytes = encodeUtf8(plainText);
+        setResult(plainBytes.buffer, buildResultName(currentFile.name, 'decrypted', '.txt'));
+
+        // 核心：Evolve 是完美 JSON，直接解析为对象
+        decryptedData = JSON.parse(plainText);
+        
+        setStatus('解密成功，存档数据已读取并显示在下方。', 'success');
+        await loadConfigAndDisplayTable();
+    } catch (error) {
+        setStatus(`解密失败：${error.message || '未知错误'}`, 'error');
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function encryptEvolveFile() {
     setBusy(true);
     setStatus('正在加密，请稍候...');
-
     try {
-        // 读取上传的解密后文件
         const buffer = await currentFile.arrayBuffer();
         const bytes = new Uint8Array(buffer);
         const plainText = decodeUtf8(bytes);
-
-        // 使用 LZString 进行 Base64 压缩（猫国建设者的加密方式）
         const compressedText = LZString.compressToBase64(plainText);
         const compressedBytes = encodeUtf8(compressedText);
-
-        // 设置结果以便下载
         setResult(compressedBytes.buffer, buildResultName(currentFile.name, 'encrypted', '.txt'));
         setStatus('加密成功，可以下载结果。', 'success');
     } catch (error) {
-        console.error('加密失败:', error);
         setStatus(`加密失败：${error.message || '未知错误'}`, 'error');
     } finally {
         setBusy(false);
     }
 }
 
+async function saveEvolveChanges() {
+    const inputs = document.querySelectorAll('.field-input');
+    setBusy(true);
+    setStatus('正在保存并加密，请稍候...');
+    try {
+        // 进行深拷贝，防止直接修改原对象导致的数据污染
+        const updatedData = JSON.parse(JSON.stringify(decryptedData));
 
+        inputs.forEach(input => {
+            const fieldName = input.dataset.field;
+            const newValue = input.value.trim();
 
+            if (newValue !== '') {
+                let parsedValue = newValue;
+                if (!isNaN(newValue) && newValue !== '') {
+                    parsedValue = Number(newValue);
+                } else if (newValue.toLowerCase() === 'true') {
+                    parsedValue = true;
+                } else if (newValue.toLowerCase() === 'false') {
+                    parsedValue = false;
+                }
+                // 使用现成的深度嵌套赋值函数
+                setNestedValue(updatedData, fieldName, parsedValue); 
+            }
+        });
 
+        // 重新转回文本并压缩
+        const jsonText = JSON.stringify(updatedData);
+        const compressedText = LZString.compressToBase64(jsonText);
+        const compressedBytes = encodeUtf8(compressedText);
 
+        const originalName = currentFile ? currentFile.name : 'savefile';
+        setResult(compressedBytes.buffer, buildResultName(originalName, 'modified', '.txt'));
 
-function isEvolveGame(selectedGame) {
-    const normalized = (selectedGame || '').toLowerCase();
-    return selectedGame === EVOLVE_GAME_LABEL || normalized.includes('evolve');
+        decryptedData = updatedData;
+        setStatus('保存成功！修改已加密，可以下载新的存档文件。', 'success');
+    } catch (error) {
+        setStatus(`保存失败：${error.message || '未知错误'}`, 'error');
+    } finally {
+        setBusy(false);
+    }
 }
