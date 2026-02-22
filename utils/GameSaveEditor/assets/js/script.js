@@ -1678,3 +1678,27 @@ async function saveYorgChanges() {
     }
 }
 
+async function encryptKittensFile() {
+    setBusy(true);
+    setStatus('正在加密，请稍候...');
+
+    try {
+        // 读取上传的解密后文件
+        const buffer = await currentFile.arrayBuffer();
+        const bytes = new Uint8Array(buffer);
+        const plainText = decodeUtf8(bytes);
+
+        // 使用 LZString 进行 Base64 压缩（猫国建设者的加密方式）
+        const compressedText = LZString.compressToBase64(plainText);
+        const compressedBytes = encodeUtf8(compressedText);
+
+        // 设置结果以便下载
+        setResult(compressedBytes.buffer, buildResultName(currentFile.name, 'encrypted', '.txt'));
+        setStatus('加密成功，可以下载结果。', 'success');
+    } catch (error) {
+        console.error('加密失败:', error);
+        setStatus(`加密失败：${error.message || '未知错误'}`, 'error');
+    } finally {
+        setBusy(false);
+    }
+}
