@@ -6,15 +6,22 @@ const AppState = {
     selectedStyleId: null,
     selectedStyleCoverUrl: null,
     uploadedImage: null,
-    drag: {
-        x: 0,
-        y: 0,
-        imgWidth: 0,
-        imgHeight: 0,
-        scale: 1, // 新增：用于记录当前的缩放倍率
-        isDragging: false,
-        startX: 0,
-        startY: 0
+    drag: { x: 0, y: 0, imgWidth: 0, imgHeight: 0, scale: 1, isDragging: false, startX: 0, startY: 0 },
+    // 【修改点】：将坐标改为数组，每一列对应一个独立坐标！
+    baimaDrag: {
+        titlePos: [
+            {x: 320, y: 30},   // 第1列 "白马村" 默认坐标
+            {x: 180, y: 120},  // 第2列 "游记" 默认坐标
+            {x: 80,  y: 80}    // 预留第3列默认坐标
+        ],
+        subPos: [
+            {x: 120, y: 220},  // 副标题第1列
+            {x: 80,  y: 220},  // 副标题第2列
+            {x: 40,  y: 220}   // 预留第3列
+        ],
+        activeType: null, // 'title' 或 'sub'
+        activeCol: -1,    // 当前正在拖动哪一列
+        startX: 0, startY: 0
     }
 };
 
@@ -34,9 +41,15 @@ function selectStyle(styleId, styleName, coverUrl) {
     document.getElementById('currentStyleName').textContent = styleName;
     document.getElementById('currentStyleImg').src = coverUrl;
     
+    document.getElementById('imOkSettings').style.display = 'none';
+    const baimaSettings = document.getElementById('baimaSettings');
+    if(baimaSettings) baimaSettings.style.display = 'none';
+
     // 显示特定的设置面板
     if (styleId === 'im_ok') {
         document.getElementById('imOkSettings').style.display = 'block';
+    } else if (styleId === 'baima') {
+        document.getElementById('baimaSettings').style.display = 'block';
     }
     
     document.getElementById('resultSection').style.display = 'none';
@@ -228,42 +241,45 @@ async function renderImOkStyle() {
 // 3. 交互与生成逻辑
 // =========================================
 async function handleGenerate() {
-    const generateBtn = document.getElementById('generateBtn');
+    // 根据当前选中的风格，决定禁用哪个按钮并显示 Loading
+    const activeBtnId = AppState.selectedStyleId === 'baima' ? 'generateBtnBaima' : 'generateBtn';
+    const generateBtn = document.getElementById(activeBtnId);
+    
     const resultSection = document.getElementById('resultSection');
     const loadingIndicator = document.getElementById('loadingIndicator');
     const resultPreview = document.getElementById('resultPreview');
     const generatedImg = document.getElementById('generatedImg');
 
     generateBtn.disabled = true;
-    generateBtn.textContent = "正在运用像素级网点算法...";
+    generateBtn.textContent = "AI 正在绘制...";
     resultSection.style.display = 'block';
     loadingIndicator.style.display = 'block';
     resultPreview.style.display = 'none';
 
     try {
-        let finalImageUrl = AppState.selectedStyleCoverUrl; // 默认 fallback
+        let finalImageUrl = AppState.selectedStyleCoverUrl;
 
+        // 路由分发算法
         if (AppState.selectedStyleId === 'im_ok') {
-            // 调用 Canvas 算法生成图片
             finalImageUrl = await renderImOkStyle();
+        } else if (AppState.selectedStyleId === 'baima') {
+            finalImageUrl = await renderBaimaStyle();
         }
 
-        // 渲染生成结果
         generatedImg.src = finalImageUrl;
         loadingIndicator.style.display = 'none';
         resultPreview.style.display = 'block';
         
-        // 绑定下载按钮
         document.getElementById('downloadBtn').onclick = () => {
             const link = document.createElement('a');
-            link.download = `cover_${new Date().getTime()}.png`;
+            link.download = `${AppState.selectedStyleId}_cover_${new Date().getTime()}.png`;
             link.href = finalImageUrl;
             link.click();
         };
 
         resultSection.scrollIntoView({ behavior: 'smooth' });
     } catch (err) {
-        alert("生成出错，请确保上传了正确的图片格式！\n" + err.message);
+        alert("生成出错！\n" + err.message);
         loadingIndicator.style.display = 'none';
     } finally {
         generateBtn.disabled = false;
@@ -279,8 +295,12 @@ window.addEventListener('load', function() {
     document.getElementById('mainHomeLink').addEventListener('click', resetApp);
     document.getElementById('generateBtn').addEventListener('click', handleGenerate);
     
+    const btnBaima = document.getElementById('generateBtnBaima');
+    if(btnBaima) btnBaima.addEventListener('click', handleGenerate);
+
     // 初始化图片拖拽与缩放逻辑
     initImageUploaderAndDrag();
+    initBaimaDrag();
 
     // 监听文字输入，实时同步到微缩预览框
     const titleInput = document.getElementById('titleInput');
@@ -393,8 +413,313 @@ function initImageUploaderAndDrag() {
     });
 }
 
-function updateDragPosition() {
-    const dragImg = document.getElementById('dragImg');
-    // 同时应用 translate 位移 和 scale 缩放
-    dragImg.style.transform = `translate(${AppState.drag.x}px, ${AppState.drag.y}px) scale(${AppState.drag.scale})`;
+// =========================================
+// 6. 白马村风格 - 文字排版与拖拽引擎
+// =========================================
+
+// 辅助函数：取消自动转换，完全尊重用户输入的文本
+function getBaimaProcessedText(inputId, defaultText) {
+    return document.getElementById(inputId).value || defaultText;
+}
+
+function updateTradReference() {
+    const refBox = document.getElementById('tradReferenceBox');
+    if (!refBox || typeof cnchar === 'undefined') return;
+
+    const title = document.getElementById('baimaTitleInput').value || "白马村\n游记";
+    const sub = document.getElementById('baimaSubtitleInput').value || "上海彩虹\n室内合唱团";
+    const combinedText = title + sub;
+
+    // 提取所有唯一的中文字符 (过滤掉换行、空格、标点等)
+    const uniqueChars = [...new Set(combinedText.replace(/[\n\sa-zA-Z0-9]/g, ''))];
+    
+    const mapping = [];
+    uniqueChars.forEach(char => {
+        // 调用第三方库检测对应的繁体字
+        const trad = cnchar.convert.simpleToTrad(char);
+        // 如果繁体字和简体字长得不一样，才展示出来
+        if (trad !== char) {
+            mapping.push(`<span style="background: rgba(255,255,255,0.08); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);">${char} ➔ <b style="color: #FFE000; cursor: pointer;" title="可直接手动复制" onclick="navigator.clipboard.writeText('${trad}')">${trad}</b></span>`);
+        }
+    });
+
+    if (mapping.length > 0) {
+        refBox.innerHTML = mapping.join('');
+    } else {
+        refBox.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">当前文本没有对应的繁体字，或已全部为繁体。</span>';
+    }
+}
+
+function updateBaimaPreview() {
+    const dragArea = document.getElementById('baimaDragArea');
+    if (!dragArea) return;
+
+    // 直接获取原始输入
+    const titleLines = getBaimaProcessedText('baimaTitleInput', "白马村\n游记").split('\n');
+    const subLines = getBaimaProcessedText('baimaSubtitleInput', "上海彩虹\n室内合唱团").split('\n');
+    
+    const titleBaseSize = (parseInt(document.getElementById('baimaTitleSize').value) || 320) * 0.5;
+    const subBaseSize = (parseInt(document.getElementById('baimaSubSize').value) || 75) * 0.5;
+    const titleSpacing = parseFloat(document.getElementById('baimaTitleSpacing').value) || 0.85;
+    const subSpacing = parseFloat(document.getElementById('baimaSubSpacing').value) || 0.95;
+
+    while(AppState.baimaDrag.titlePos.length < titleLines.length) AppState.baimaDrag.titlePos.push({x: 200, y: 100});
+    while(AppState.baimaDrag.subPos.length < subLines.length) AppState.baimaDrag.subPos.push({x: 100, y: 200});
+
+    let html = '';
+
+    titleLines.forEach((col, idx) => {
+        const pos = AppState.baimaDrag.titlePos[idx];
+        let size = titleBaseSize;
+        if (idx === 1) size = titleBaseSize * 0.8; 
+        else if (idx > 1) size = titleBaseSize * 0.8;
+
+        let colHtml = `<div class="drag-baima-col" data-type="title" data-col="${idx}" style="position:absolute; left:${pos.x}px; top:${pos.y}px; cursor:grab; padding: 10px; margin: -10px;">`;
+        let curY = 0;
+        for(let i=0; i<col.length; i++) {
+            colHtml += `<div style="position:absolute; left:10px; top:${curY + 10}px; transform:translate(-50%, 0); font-size:${size}px; font-family:'ShanHaiTaoYuan', serif; color:#1A1C1A; line-height:1; white-space:pre; user-select:none;">${col[i]}</div>`;
+            curY += size * titleSpacing; 
+        }
+        colHtml += `<div style="width: ${size}px; height: ${curY}px; transform:translate(-50%, 0);"></div></div>`;
+        html += colHtml;
+    });
+
+    subLines.forEach((col, idx) => {
+        const pos = AppState.baimaDrag.subPos[idx];
+        let size = subBaseSize;
+
+        let colHtml = `<div class="drag-baima-col" data-type="sub" data-col="${idx}" style="position:absolute; left:${pos.x}px; top:${pos.y}px; cursor:grab; padding: 10px; margin: -10px;">`;
+        let curY = 0;
+        for(let i=0; i<col.length; i++) {
+            colHtml += `<div style="position:absolute; left:10px; top:${curY + 10}px; transform:translate(-50%, 0); font-size:${size}px; font-family:'ShanHaiTaoYuan', serif; color:#1A1C1A; line-height:1; white-space:pre; user-select:none;">${col[i]}</div>`;
+            curY += size * subSpacing;
+        }
+        colHtml += `<div style="width: ${size}px; height: ${curY}px; transform:translate(-50%, 0);"></div></div>`;
+        html += colHtml;
+    });
+
+    dragArea.innerHTML = html;
+}
+
+function initBaimaDrag() {
+    const previewBox = document.getElementById('baimaPreviewBox');
+    if(!previewBox) return;
+
+    // 初始加载时也要计算一次简繁参考
+    updateTradReference();
+    updateBaimaPreview();
+
+    previewBox.addEventListener('pointerdown', (e) => {
+        const targetCol = e.target.closest('.drag-baima-col');
+        if (!targetCol) return;
+        
+        AppState.baimaDrag.activeType = targetCol.getAttribute('data-type');
+        AppState.baimaDrag.activeCol = parseInt(targetCol.getAttribute('data-col'));
+        previewBox.style.cursor = 'grabbing';
+        
+        const pos = AppState.baimaDrag.activeType === 'title' 
+            ? AppState.baimaDrag.titlePos[AppState.baimaDrag.activeCol] 
+            : AppState.baimaDrag.subPos[AppState.baimaDrag.activeCol];
+        
+        AppState.baimaDrag.startX = e.clientX - pos.x;
+        AppState.baimaDrag.startY = e.clientY - pos.y;
+        
+        previewBox.setPointerCapture(e.pointerId);
+        e.preventDefault();
+    });
+
+    previewBox.addEventListener('pointermove', (e) => {
+        if (!AppState.baimaDrag.activeType) return;
+        const newX = e.clientX - AppState.baimaDrag.startX;
+        const newY = e.clientY - AppState.baimaDrag.startY;
+        
+        if (AppState.baimaDrag.activeType === 'title') {
+            AppState.baimaDrag.titlePos[AppState.baimaDrag.activeCol].x = newX;
+            AppState.baimaDrag.titlePos[AppState.baimaDrag.activeCol].y = newY;
+        } else {
+            AppState.baimaDrag.subPos[AppState.baimaDrag.activeCol].x = newX;
+            AppState.baimaDrag.subPos[AppState.baimaDrag.activeCol].y = newY;
+        }
+        updateBaimaPreview();
+    });
+
+    previewBox.addEventListener('pointerup', (e) => {
+        AppState.baimaDrag.activeType = null;
+        AppState.baimaDrag.activeCol = -1;
+        previewBox.style.cursor = 'default';
+        previewBox.releasePointerCapture(e.pointerId);
+    });
+
+    // 绑定所有的输入框事件
+    ['baimaTitleInput', 'baimaSubtitleInput'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) {
+            el.addEventListener('input', () => {
+                updateTradReference(); // 更新提示框
+                updateBaimaPreview();  // 重绘排版
+            });
+        }
+    });
+
+    // 其他滑块只触发排版重绘
+    ['baimaTitleSize', 'baimaSubSize', 'baimaTitleSpacing', 'baimaSubSpacing'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.addEventListener('input', updateBaimaPreview);
+    });
+}
+
+async function renderBaimaStyle() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const size = 800; 
+    canvas.width = size;
+    canvas.height = size;
+
+    ctx.fillStyle = '#F2EFE8';
+    ctx.fillRect(0, 0, size, size);
+
+    const textCanvas = document.createElement('canvas');
+    textCanvas.width = size;
+    textCanvas.height = size;
+    const tCtx = textCanvas.getContext('2d');
+
+    try {
+        await document.fonts.load('320px "ShanHaiTaoYuan"');
+    } catch (e) {
+        console.warn("字体加载失败", e);
+    }
+
+    // 【修改点】：直接读取输入框的 value。因为输入框里已经是用户肉眼可见的繁体/简体了
+    const titleText = document.getElementById('baimaTitleInput').value || "白马村\n游记";
+    const subtitleText = document.getElementById('baimaSubtitleInput').value || "上海彩虹\n室内合唱团";
+    
+    const titleSpacing = parseFloat(document.getElementById('baimaTitleSpacing').value) || 0.85;
+    const subSpacing = parseFloat(document.getElementById('baimaSubSpacing').value) || 0.95;
+
+    tCtx.fillStyle = '#1A1C1A'; 
+    tCtx.textAlign = 'center';
+    tCtx.textBaseline = 'middle'; 
+
+    const charPosInfo = []; 
+
+    // --- 映射主标题 ---
+    const titleLines = titleText.split('\n');
+    const titleBaseSize = parseInt(document.getElementById('baimaTitleSize').value) || 320;
+
+    titleLines.forEach((col, idx) => {
+        const pos = AppState.baimaDrag.titlePos[idx] || {x: 200, y: 100};
+        let size = titleBaseSize;
+        if (idx === 1) size = titleBaseSize * 0.8; 
+        else if (idx > 1) size = titleBaseSize * 0.8;
+
+        const finalColX = pos.x * 2; 
+        const finalColY = pos.y * 2;
+        let curY = finalColY;
+
+        for(let i=0; i<col.length; i++) {
+            const char = col[i];
+            const angle = (Math.random() - 0.5) * 0.16; 
+            const offsetX = (Math.random() - 0.5) * 30;
+            const offsetY = (Math.random() - 0.5) * 30;
+            
+            const finalX = finalColX + offsetX;
+            const finalY = curY + size / 2 + offsetY; 
+            
+            tCtx.save();
+            tCtx.translate(finalX, finalY);
+            tCtx.rotate(angle);
+            tCtx.font = `${size}px "ShanHaiTaoYuan", serif`;
+            tCtx.fillText(char, 0, 0);
+            tCtx.restore();
+            
+            charPosInfo.push({char: char, cx: finalX, cy: finalY, size: size, textAngle: angle});
+            curY += size * titleSpacing; 
+        }
+    });
+
+    // --- 映射副标题 ---
+    const subLines = subtitleText.split('\n');
+    const subBaseSize = parseInt(document.getElementById('baimaSubSize').value) || 75;
+
+    subLines.forEach((col, idx) => {
+        const pos = AppState.baimaDrag.subPos[idx] || {x: 100, y: 200};
+        let size = subBaseSize;
+
+        const finalColX = pos.x * 2;
+        const finalColY = pos.y * 2;
+        let curY = finalColY;
+
+        for(let i=0; i<col.length; i++) {
+            const char = col[i];
+            const angle = (Math.random() - 0.5) * 0.08;
+            const offsetX = (Math.random() - 0.5) * 10;
+            const offsetY = (Math.random() - 0.5) * 10;
+
+            const finalX = finalColX + offsetX;
+            const finalY = curY + size / 2 + offsetY;
+
+            tCtx.save();
+            tCtx.translate(finalX, finalY);
+            tCtx.rotate(angle);
+            tCtx.font = `${size}px "ShanHaiTaoYuan", serif`;
+            tCtx.fillText(char, 0, 0);
+            tCtx.restore();
+            
+            charPosInfo.push({char: char, cx: finalX, cy: finalY, size: size, textAngle: angle});
+            curY += size * subSpacing; 
+        }
+    });
+
+    // --- 定向枯笔飞白渲染 ---
+    tCtx.globalCompositeOperation = 'destination-out';
+
+    function drawDryBrush(ctx, x, y, length, angle, intensity, thickness) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+        ctx.fillStyle = `rgba(0, 0, 0, ${intensity})`;
+        
+        for(let b = 0; b < 20; b++) {
+            const bristleY = (Math.random() - 0.5) * thickness;
+            const bristleLength = length * (0.4 + Math.random() * 0.6); 
+            for(let l = 0; l < bristleLength; l += 2) {
+                if (Math.random() < 0.9 - (l / bristleLength) * 0.7) { 
+                    ctx.fillRect(l, bristleY + (Math.random() - 0.5) * 4, Math.random() * 4 + 1, Math.random() * 2 + 0.5);
+                }
+            }
+        }
+        ctx.restore();
+    }
+
+    charPosInfo.forEach(info => {
+        const { char, cx, cy, size: s, textAngle } = info;
+        
+        if (char === '白') drawDryBrush(tCtx, cx - s*0.2, cy + s*0.35, s*0.4, textAngle + 0, 0.9, s*0.1);
+        else if (char === '馬' || char === '马') {
+            drawDryBrush(tCtx, cx + s*0.1, cy - s*0.3, s*0.5, textAngle - 0.05, 0.95, s*0.15);
+            drawDryBrush(tCtx, cx - s*0.25, cy + s*0.4, s*0.5, textAngle + 0.05, 0.8, s*0.1);
+            drawDryBrush(tCtx, cx + s*0.15, cy + s*0.1, s*0.3, textAngle + Math.PI/2, 0.8, s*0.1);
+        } 
+        else if (char === '村') {
+            drawDryBrush(tCtx, cx - s*0.25, cy + s*0.1, s*0.4, textAngle + Math.PI/2.5, 0.85, s*0.1);
+        } 
+        else if (char === '遊' || char === '游') {
+            drawDryBrush(tCtx, cx - s*0.35, cy + s*0.35, s*0.9, textAngle - 0.15, 0.98, s*0.25);
+        } 
+        else if (char === '記' || char === '记') {
+            drawDryBrush(tCtx, cx + s*0.1, cy + s*0.2, s*0.4, textAngle + 0.2, 0.85, s*0.15);
+        } 
+        else {
+            // 普通字体大幅降低飞白概率
+            if (Math.random() < 0.25) {
+                drawDryBrush(tCtx, cx - s*0.2, cy, s*0.5, textAngle + (Math.random() - 0.5) * Math.PI, 0.7, s*0.15);
+            }
+        }
+    });
+
+    tCtx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+    for(let i = 0; i < 15000; i++) tCtx.fillRect(Math.random() * size, Math.random() * size, 1, Math.random() > 0.5 ? 2 : 1);
+
+    ctx.drawImage(textCanvas, 0, 0);
+    return canvas.toDataURL('image/png');
 }

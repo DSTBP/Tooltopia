@@ -7,6 +7,11 @@
     font-style: italic;
 }
 
+@font-face {
+    font-family: 'ShanHaiTaoYuan';
+    src: url('../font/ShanHaiTaoYuanW-2.ttf') format('truetype');
+}
+
 :root {
     /* 核心颜色变量 */
     --bg-dark: #080808;
