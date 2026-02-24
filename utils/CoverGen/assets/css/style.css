@@ -1243,3 +1243,67 @@ body.day-mode .btn-secondary {
     border-color: #cbd5e0;
 }
 body.day-mode .btn-secondary:hover { background: #f7fafc; }
+
+@font-face {
+    font-family: 'BrushScriptMT';
+    src: url('../font/Brush Script MT Italic.ttf') format('truetype');
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'ShanHaiTaoYuan';
+    src: url('../font/ShanHaiTaoYuanW-2.ttf') format('truetype');
+}
+
+/* ================= 新增字体开始 ================= */
+@font-face {
+    font-family: 'MuLanTi';
+    src: url('../font/字小魂木兰体.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'XinJian';
+    src: url('../font/TengXiangXinJian-1.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'XinHeiTi';
+    src: url('../font/WenYiKongXinHeiTi-2.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'ShangShouHaoRan';
+    src: url('../font/No.406-ShangShouHaoRanShuFaTi-2.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+body.day-mode .section input[type="text"],
+body.day-mode .section input[type="number"],
+body.day-mode .section input[type="file"] {
+    color: var(--text-primary) !important;
+    background: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+}
+
+/* 强制覆盖各个层级的标题与副标题颜色 */
+body.day-mode .section h2,
+body.day-mode .section h3 {
+    color: var(--text-primary) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 强制覆盖所有说明文本、标签和带白字内联样式的元素 */
+body.day-mode .section label,
+body.day-mode .section span,
+body.day-mode .text-muted,
+body.day-mode .section div[style*="color: white"],
+body.day-mode .section div[style*="color: #fff"] {
+    color: var(--text-secondary) !important;
+}
+
+/* 让滑动条在日间模式更显眼 */
+body.day-mode input[type="range"] {
+    accent-color: #3182ce !important; /* 替换为更深的蓝色以提高对比度 */
+}

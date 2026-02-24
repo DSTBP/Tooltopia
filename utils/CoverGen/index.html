@@ -53,6 +53,17 @@
                     <p>水墨书法粗体排版</p>
                 </div>
 
+                <div class="album-showcase" onclick="selectStyle('dt_blue', '陶喆 - 陶喆', './assets/cover/陶喆.jpg')">
+                    <div class="album-card">
+                        <div class="vinyl-record">
+                            <div class="vinyl-label" style="background-image: url('./assets/cover/陶喆.jpg');"></div>
+                        </div>
+                        <div class="album-cover" style="background-image: url('./assets/cover/陶喆.jpg');"></div>
+                    </div>
+                    <h3>陶喆</h3>
+                    <p>克莱因蓝剪影拼贴</p>
+                </div>
+
             </div>
 
             <div id="tool-interface" style="display: none; padding: 2rem;">
@@ -123,7 +134,7 @@
                 </div>
                 
                 <div class="section" id="baimaSettings" style="display: none;">
-                    <h2>配置您的封面参数 (水墨排版)</h2>
+                    <h2>配置您的封面参数</h2>
                     
                     <div class="input-group" style="margin-bottom: 15px;">
                         <label class="text-muted" style="display: block; margin-bottom: 8px;">简繁体排版参考 (点击黄字复制)：</label>
@@ -152,6 +163,98 @@
                     </div>
 
                     <button id="generateBtnBaima" class="btn btn-primary" style="width: 100%;">生成水墨封面</button>
+                </div>
+
+                <div class="section" id="dtBlueSettings" style="display: none;">
+                    <h2 style="margin-bottom: 20px; border-bottom: 1px solid var(--input-border); padding-bottom: 10px;">配置您的封面参数</h2>
+                    
+                    <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="font-size: 1rem; color: var(--accent-highlight); margin-bottom: 15px;">① 图像与底图</h3>
+                        <label class="text-muted" style="display: block; margin-bottom: 8px;">上传主体照片 (自动处理为高反差剪影)：</label>
+                        <input type="file" id="dtBlueImage" accept="image/*" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px dashed var(--accent-highlight); border-radius: 8px; color: #fff; margin-bottom: 15px;">
+                        
+                        <div class="input-group" style="margin-bottom: 15px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span class="text-muted">剪影暗度阈值</span>
+                                <span id="dtBlueThresholdVal" style="color: var(--text-muted); font-size: 0.8rem;">128</span>
+                            </div>
+                            <input type="range" id="dtBlueThreshold" min="50" max="250" value="128" style="width: 100%; accent-color: var(--accent-highlight);" oninput="document.getElementById('dtBlueThresholdVal').innerText = this.value">
+                        </div>
+
+                        <div id="dtBlueImagePreviewContainer" style="display: none; margin-top: 15px;">
+                            <div id="dtBluePreviewBox" style="width: 100%; max-width: 400px; aspect-ratio: 1/1; background: url('./assets/img/bg.png') center/cover no-repeat; background-color: #1650A2; position: relative; overflow: hidden; border-radius: 8px; margin: 0 auto; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); touch-action: none;">
+                                <img id="dtBlueDragImg" style="position: absolute; transform-origin: top left; filter: contrast(1000%) grayscale(100%); mix-blend-mode: multiply; opacity: 0.8; cursor: grab;" />
+                                <div id="dtBlueDragArea" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none;"></div>
+                                <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; pointer-events: none; z-index: 10;">直接在画面上拖动图片或文字</div>
+                            </div>
+                            <div style="margin-top: 15px; display: flex; align-items: center; justify-content: center; gap: 15px;">
+                                <span style="color: var(--text-muted); font-size: 0.9rem;">缩小图片</span>
+                                <input type="range" id="dtBlueZoom" min="0.2" max="3" step="0.05" value="1" style="width: 200px; accent-color: var(--accent-highlight);">
+                                <span style="color: var(--text-muted); font-size: 0.9rem;">放大图片</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h3 style="font-size: 1rem; color: var(--accent-highlight); margin-bottom: 15px;">② 核心排版 (可拖拽调整)</h3>
+                        
+                        <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed rgba(255,255,255,0.1);">
+                            <label class="text-muted" style="display: block; margin-bottom: 8px;">顶部符号</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="text" id="dtBlueSymbol" value="!" style="width: 80px; padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: #fff; text-align: center; font-size: 1.2rem;">
+                                <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">字号</span>
+                                    <input type="range" id="dtBlueSymbolSize" min="50" max="300" step="5" value="120" style="width: 100%; accent-color: var(--accent-highlight);">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed rgba(255,255,255,0.1);">
+                            <label class="text-muted" style="display: block; margin-bottom: 8px;">英文标题</label>
+                            <input type="text" id="dtBlueEnTitle" value="David Tao" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: #fff; margin-bottom: 10px;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">字号</span>
+                                    <input type="range" id="dtBlueEnSize" min="30" max="200" step="5" value="85" style="width: 100%; accent-color: var(--accent-highlight);">
+                                </div>
+                                <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">字距</span>
+                                    <input type="range" id="dtBlueEnSpacing" min="-10" max="50" step="1" value="0" style="width: 100%; accent-color: var(--accent-highlight);">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-muted" style="display: block; margin-bottom: 8px;">中文标题</label>
+                            <input type="text" id="dtBlueZhTitle" value="陶喆" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: #fff; margin-bottom: 10px;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">字号</span>
+                                    <input type="range" id="dtBlueZhSize" min="50" max="300" step="5" value="120" style="width: 100%; accent-color: var(--accent-highlight);">
+                                </div>
+                                <div style="flex: 1; display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">字距</span>
+                                    <input type="range" id="dtBlueZhSpacing" min="-10" max="100" step="1" value="10" style="width: 100%; accent-color: var(--accent-highlight);">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+                        <h3 style="font-size: 1rem; color: var(--accent-highlight); margin-bottom: 15px;">③ 背景小字 (低分辨率模糊效果)</h3>
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">小字统一字号</span>
+                            <input type="range" id="dtBlueSSize" min="12" max="60" step="1" value="26" style="flex: 1; accent-color: var(--accent-highlight);">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <input type="text" id="dtBlueS1" value="R&B / SOUL / 1997" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: #fff;">
+                            <input type="text" id="dtBlueS2" value="SHOCK RECORDS" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: #fff;">
+                            <input type="text" id="dtBlueS3" value="PRODUCED BY DAVID TAO" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: #fff;">
+                            <input type="text" id="dtBlueS4" value="ALL RIGHTS RESERVED" style="width: 100%; padding: 10px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: #fff;">
+                        </div>
+                    </div>
+
+                    <button id="generateBtnDTBlue" class="btn btn-primary" style="width: 100%; padding: 15px; font-size: 1.1rem;">生成封面</button>
                 </div>
 
                 <div class="section" id="resultSection" style="display: none;">

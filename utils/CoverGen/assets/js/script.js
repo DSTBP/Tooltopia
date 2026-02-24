@@ -29,6 +29,23 @@ const AppState = {
         activeType: null, 
         activeCol: -1,    
         startX: 0, startY: 0
+    },
+
+    dtBlueDrag: {
+        activeItem: null,
+        startX: 0, startY: 0,
+        pos: {
+            image: { x: 0, y: 300, scale: 1 },
+            // 调整初始位置：感叹号在最上 -> 英文标题 -> 中文标题
+            symbol: { x: 400, y: 80 },     
+            enTitle: { x: 400, y: 220 },   
+            zhTitle: { x: 400, y: 350 },   
+            s1: { x: 50, y: 650 },
+            s2: { x: 50, y: 690 },
+            s3: { x: 50, y: 730 },
+            s4: { x: 50, y: 770 }
+        },
+        imgWidth: 0, imgHeight: 0
     }
 };
 
@@ -55,20 +72,27 @@ function selectStyle(styleId, styleName, coverUrl) {
     document.querySelector('.header').style.display = 'none';
     document.getElementById('mainHomeLink').style.display = 'none';
     document.getElementById('backToHomeBtn').style.display = 'inline-block';
-
     document.getElementById('currentStyleName').textContent = styleName;
     document.getElementById('currentStyleImg').src = coverUrl;
     
+
+
     document.getElementById('imOkSettings').style.display = 'none';
     const baimaSettings = document.getElementById('baimaSettings');
     if(baimaSettings) baimaSettings.style.display = 'none';
+    const dtBlueSettings = document.getElementById('dtBlueSettings');
+    if(dtBlueSettings) dtBlueSettings.style.display = 'none';
 
     if (styleId === 'im_ok') {
         document.getElementById('imOkSettings').style.display = 'block';
     } else if (styleId === 'baima') {
         document.getElementById('baimaSettings').style.display = 'block';
+    } else if (styleId === 'dt_blue') {
+        document.getElementById('dtBlueSettings').style.display = 'block';
     }
     
+
+
     document.getElementById('resultSection').style.display = 'none';
     document.getElementById('resultPreview').style.display = 'none';
 }
@@ -88,7 +112,10 @@ function resetApp() {
 }
 
 async function handleGenerate() {
-    const activeBtnId = AppState.selectedStyleId === 'baima' ? 'generateBtnBaima' : 'generateBtn';
+    let activeBtnId = 'generateBtn';
+    if (AppState.selectedStyleId === 'baima') activeBtnId = 'generateBtnBaima';
+    if (AppState.selectedStyleId === 'dt_blue') activeBtnId = 'generateBtnDTBlue';
+    
     const generateBtn = document.getElementById(activeBtnId);
     
     const resultSection = document.getElementById('resultSection');
@@ -105,11 +132,12 @@ async function handleGenerate() {
     try {
         let finalImageUrl = AppState.selectedStyleCoverUrl;
 
-        // 核心渲染分发路由
         if (AppState.selectedStyleId === 'im_ok') {
             finalImageUrl = await renderImOkStyle();
         } else if (AppState.selectedStyleId === 'baima') {
             finalImageUrl = await renderBaimaStyle();
+        } else if (AppState.selectedStyleId === 'dt_blue') {
+            finalImageUrl = await renderDTBlueStyle();
         }
 
         generatedImg.src = finalImageUrl;
@@ -135,9 +163,108 @@ async function handleGenerate() {
 
 
 // =====================================================================
-// 模块 2：I'm OK 风格专区 (交互与渲染)
+// 事件总线初始化
 // =====================================================================
+window.addEventListener('load', function() {
+    document.getElementById('backToHomeBtn').addEventListener('click', resetApp);
+    document.getElementById('mainHomeLink').addEventListener('click', resetApp);
+    
+    // 生成按钮绑定
+    document.getElementById('generateBtn').addEventListener('click', handleGenerate);
+    const btnBaima = document.getElementById('generateBtnBaima');
+    if(btnBaima) btnBaima.addEventListener('click', handleGenerate);
 
+    const btnDTBlue = document.getElementById('generateBtnDTBlue');
+    if(btnDTBlue) btnDTBlue.addEventListener('click', handleGenerate);
+
+    // I'm OK 模块初始化
+    const titleInput = document.getElementById('titleInput');
+    const subtitleInput = document.getElementById('subtitleInput');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewSubtitle = document.getElementById('previewSubtitle');
+    const dotPeriodSlider = document.getElementById('dotPeriodSlider');
+    const dotPeriodValue = document.getElementById('dotPeriodValue');
+
+    if (dotPeriodSlider && dotPeriodValue) {
+        dotPeriodSlider.addEventListener('input', (e) => {
+            dotPeriodValue.textContent = e.target.value;
+        });
+    }
+
+    // 绑定颜色深浅滑块事件
+    const imOkDarknessSlider = document.getElementById('imOkDarknessSlider');
+    const imOkDarknessValue = document.getElementById('imOkDarknessValue');
+    if (imOkDarknessSlider && imOkDarknessValue) {
+        imOkDarknessSlider.addEventListener('input', (e) => {
+            imOkDarknessValue.textContent = parseFloat(e.target.value).toFixed(1);
+        });
+    }
+
+    if(titleInput) {
+        titleInput.addEventListener('input', (e) => {
+            previewTitle.textContent = e.target.value || "I'm ok";
+        });
+    }
+    if(subtitleInput) {
+        subtitleInput.addEventListener('input', (e) => {
+            previewSubtitle.textContent = e.target.value || "DAVID TAO 陶喆";
+        });
+    }
+
+    initImageUploaderAndDrag();
+    initBaimaDrag();
+    initDTBlueModule();
+});
+
+// =====================================================================
+// 日夜主题切换逻辑 (原版完全复刻)
+// =====================================================================
+(() => {
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+    const THEME_KEY = 'tooltopia-theme';
+
+    // 从 localStorage 读取保存的主题偏好
+    function loadThemePreference() {
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        if (savedTheme === 'day') {
+            body.classList.add('day-mode');
+            if(themeToggle) themeToggle.checked = true;
+        } else {
+            body.classList.remove('day-mode');
+            if(themeToggle) themeToggle.checked = false;
+        }
+    }
+
+    // 保存主题偏好到 localStorage
+    function saveThemePreference(isDayMode) {
+        localStorage.setItem(THEME_KEY, isDayMode ? 'day' : 'night');
+    }
+
+    // 切换主题
+    function toggleTheme() {
+        const isDayMode = themeToggle.checked;
+
+        if (isDayMode) {
+            body.classList.add('day-mode');
+        } else {
+            body.classList.remove('day-mode');
+        }
+
+        saveThemePreference(isDayMode);
+    }
+
+    // 页面加载时恢复主题
+    loadThemePreference();
+
+    // 监听切换器变化
+    if(themeToggle) themeToggle.addEventListener('change', toggleTheme);
+})();
+
+
+// =====================================================================
+// 模块：I'm OK 风格专区 (交互与渲染)
+// =====================================================================
 function updateDragPosition() {
     const dragImg = document.getElementById('dragImg');
     if (dragImg) {
@@ -342,7 +469,7 @@ async function renderImOkStyle() {
 
 
 // =====================================================================
-// 模块 3：白马村游记 风格专区 (交互与渲染)
+// 模块：白马村游记 风格专区 (交互与渲染)
 // =====================================================================
 function getBaimaProcessedText(inputId, defaultText) {
     return document.getElementById(inputId).value || defaultText;
@@ -715,98 +842,303 @@ async function renderBaimaStyle() {
 
 
 // =====================================================================
-// 模块 4：事件总线初始化
+// 模块：陶喆 (克莱因蓝剪影) 风格专区
 // =====================================================================
+function initDTBlueModule() {
+    const input = document.getElementById('dtBlueImage');
+    const previewContainer = document.getElementById('dtBlueImagePreviewContainer');
+    const previewBox = document.getElementById('dtBluePreviewBox');
+    const zoomSlider = document.getElementById('dtBlueZoom');
 
-window.addEventListener('load', function() {
-    document.getElementById('backToHomeBtn').addEventListener('click', resetApp);
-    document.getElementById('mainHomeLink').addEventListener('click', resetApp);
+    updateDTBluePreview();
+
+    if (!input) return;
+
+    input.addEventListener('change', async (e) => {
+        if (e.target.files && e.target.files[0]) {
+            AppState.uploadedImage = await loadImage(e.target.files[0]);
+            previewContainer.style.display = 'block';
+            
+            const nativeW = AppState.uploadedImage.naturalWidth;
+            const nativeH = AppState.uploadedImage.naturalHeight;
+            const baseRatio = Math.max(800 / nativeW, 800 / nativeH);
+            
+            AppState.dtBlueDrag.imgWidth = nativeW * baseRatio;
+            AppState.dtBlueDrag.imgHeight = nativeH * baseRatio;
+            AppState.dtBlueDrag.pos.image.scale = 1; 
+            AppState.dtBlueDrag.pos.image.x = -(AppState.dtBlueDrag.imgWidth - 800) / 2;
+            AppState.dtBlueDrag.pos.image.y = 800 - AppState.dtBlueDrag.imgHeight + 20; 
+            
+            document.getElementById('dtBlueDragImg').src = AppState.uploadedImage.src;
+            if(zoomSlider) zoomSlider.value = 1; 
+            updateDTBluePreview();
+        }
+    });
+
+    if(zoomSlider) {
+        zoomSlider.addEventListener('input', (e) => {
+            AppState.dtBlueDrag.pos.image.scale = parseFloat(e.target.value);
+            updateDTBluePreview();
+        });
+    }
+
+    // 绑定所有的数值滑块和输入框，确保实时刷新
+    const bindIds = [
+        'dtBlueEnTitle', 'dtBlueZhTitle', 'dtBlueEnSize', 'dtBlueZhSize', 
+        'dtBlueEnSpacing', 'dtBlueZhSpacing', 'dtBlueThreshold',
+        'dtBlueSSize', 'dtBlueSymbol', 'dtBlueSymbolSize', 
+        'dtBlueS1', 'dtBlueS2', 'dtBlueS3', 'dtBlueS4'
+    ];
+    bindIds.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.addEventListener('input', updateDTBluePreview);
+    });
+
+    if(previewBox) {
+        previewBox.addEventListener('pointerdown', (e) => {
+            const textTarget = e.target.closest('.drag-dt-item');
+            const imgTarget = e.target.closest('#dtBlueDragImg');
+            
+            let activeId = null;
+            if (textTarget) activeId = textTarget.getAttribute('data-id');
+            else if (imgTarget && AppState.uploadedImage) activeId = 'image';
+            else return;
+
+            const boxSize = previewBox.getBoundingClientRect().width || 400;
+            const scale = boxSize / 800;
+
+            AppState.dtBlueDrag.activeItem = activeId;
+            previewBox.style.cursor = 'grabbing';
+            if (textTarget) textTarget.style.cursor = 'grabbing';
+            
+            const pos = AppState.dtBlueDrag.pos[activeId];
+            AppState.dtBlueDrag.startX = e.clientX - (pos.x * scale);
+            AppState.dtBlueDrag.startY = e.clientY - (pos.y * scale);
+            
+            previewBox.setPointerCapture(e.pointerId);
+            e.preventDefault();
+        });
+
+        previewBox.addEventListener('pointermove', (e) => {
+            if (!AppState.dtBlueDrag.activeItem) return;
+            const boxSize = previewBox.getBoundingClientRect().width || 400;
+            const scale = boxSize / 800;
+            
+            AppState.dtBlueDrag.pos[AppState.dtBlueDrag.activeItem].x = (e.clientX - AppState.dtBlueDrag.startX) / scale;
+            AppState.dtBlueDrag.pos[AppState.dtBlueDrag.activeItem].y = (e.clientY - AppState.dtBlueDrag.startY) / scale;
+            updateDTBluePreview();
+        });
+
+        previewBox.addEventListener('pointerup', (e) => {
+            AppState.dtBlueDrag.activeItem = null;
+            previewBox.style.cursor = 'default';
+            previewBox.releasePointerCapture(e.pointerId);
+            updateDTBluePreview();
+        });
+    }
+}
+
+function updateDTBluePreview() {
+    const dragArea = document.getElementById('dtBlueDragArea');
+    const previewBox = document.getElementById('dtBluePreviewBox');
+    const imgEl = document.getElementById('dtBlueDragImg');
+    if (!dragArea || !previewBox) return;
+
+    // 1. 更新预览框背景为图片
+    previewBox.style.background = "url('./assets/img/bg.png') center/cover no-repeat";
+    previewBox.style.backgroundColor = "#1650A2";
+
+    const boxSize = previewBox.getBoundingClientRect().width || 400;
+    const scale = boxSize / 800;
+
+    if (imgEl && AppState.uploadedImage) {
+        imgEl.style.width = `${AppState.dtBlueDrag.imgWidth * scale}px`;
+        imgEl.style.height = `${AppState.dtBlueDrag.imgHeight * scale}px`;
+        imgEl.style.transform = `translate(${AppState.dtBlueDrag.pos.image.x * scale}px, ${AppState.dtBlueDrag.pos.image.y * scale}px) scale(${AppState.dtBlueDrag.pos.image.scale})`;
+    }
+
+    const inputs = {
+        symbol: document.getElementById('dtBlueSymbol').value || "!",
+        enTitle: document.getElementById('dtBlueEnTitle').value || "David Tao",
+        zhTitle: document.getElementById('dtBlueZhTitle').value || "陶喆",
+        s1: document.getElementById('dtBlueS1').value || "R&B / SOUL / 1997",
+        s2: document.getElementById('dtBlueS2').value || "SHOCK RECORDS",
+        s3: document.getElementById('dtBlueS3').value || "PRODUCED BY DAVID TAO",
+        s4: document.getElementById('dtBlueS4').value || "ALL RIGHTS RESERVED"
+    };
+
+    const enSize = parseInt(document.getElementById('dtBlueEnSize').value) || 85;
+    const zhSize = parseInt(document.getElementById('dtBlueZhSize').value) || 120;
+    const symbolSize = parseInt(document.getElementById('dtBlueSymbolSize').value) || 120;
+    const sSize = parseInt(document.getElementById('dtBlueSSize').value) || 26;
     
-    // 生成按钮绑定
-    document.getElementById('generateBtn').addEventListener('click', handleGenerate);
-    const btnBaima = document.getElementById('generateBtnBaima');
-    if(btnBaima) btnBaima.addEventListener('click', handleGenerate);
+    // 获取间距值
+    const enSpacing = parseInt(document.getElementById('dtBlueEnSpacing').value) || 0;
+    const zhSpacing = parseInt(document.getElementById('dtBlueZhSpacing').value) || 0;
 
-    // I'm OK 模块初始化
-    initImageUploaderAndDrag();
-    const titleInput = document.getElementById('titleInput');
-    const subtitleInput = document.getElementById('subtitleInput');
-    const previewTitle = document.getElementById('previewTitle');
-    const previewSubtitle = document.getElementById('previewSubtitle');
-    const dotPeriodSlider = document.getElementById('dotPeriodSlider');
-    const dotPeriodValue = document.getElementById('dotPeriodValue');
+    let html = '';
+    const createText = (id, text, font, size, align, customStyle) => {
+        const pxX = AppState.dtBlueDrag.pos[id].x * scale;
+        const pxY = AppState.dtBlueDrag.pos[id].y * scale;
+        const pxSize = size * scale;
+        const transform = align === 'center' ? 'translate(-50%, -50%)' : 'translate(0, -50%)';
+        // 对 symbol 强制加上 z-index: 10，保证鼠标能选中它且视觉在最上层
+        const zIndex = id === 'symbol' ? 10 : 1;
+        
+        return `<div class="drag-dt-item" data-id="${id}" style="position:absolute; left:${pxX}px; top:${pxY}px; cursor:grab; padding:10px; margin:-10px; user-select:none; pointer-events:auto; z-index:${zIndex};">
+            <div style="transform:${transform}; font-family:${font}, sans-serif; font-size:${pxSize}px; white-space:nowrap; ${customStyle}">${text}</div>
+        </div>`;
+    };
 
-    if (dotPeriodSlider && dotPeriodValue) {
-        dotPeriodSlider.addEventListener('input', (e) => {
-            dotPeriodValue.textContent = e.target.value;
-        });
+    // 先生成主副标题 (排在DOM层级下方)
+    html += createText('enTitle', inputs.enTitle, "'XinJian', 'XinHeiTi'", enSize, 'center', `color: #e6e8e6; letter-spacing: ${enSpacing * scale}px;`);
+    html += createText('zhTitle', inputs.zhTitle, "'XinJian', 'XinHeiTi'", zhSize, 'center', `color: #e6e8e6; letter-spacing: ${zhSpacing * scale}px;`);
+    
+    // 再生成独立符号 (排在DOM层级上方，且自带z-index)
+    html += createText('symbol', inputs.symbol, "'ShangShouHaoRan'", symbolSize, 'center', 'color: #050505;');
+    
+    // 最后生成四行小字
+    const lowResStyle = 'color: #e6e8e6; filter: blur(1.2px); opacity: 0.55; mix-blend-mode: screen; transform: scale(1.02); transform-origin: left center;';
+    html += createText('s1', inputs.s1, "'MuLanTi'", sSize, 'left', lowResStyle);
+    html += createText('s2', inputs.s2, "'MuLanTi'", sSize, 'left', lowResStyle);
+    html += createText('s3', inputs.s3, "'MuLanTi'", sSize, 'left', lowResStyle);
+    html += createText('s4', inputs.s4, "'MuLanTi'", sSize, 'left', lowResStyle);
+
+    dragArea.innerHTML = html;
+}
+
+async function renderDTBlueStyle() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const size = 800; 
+    canvas.width = size;
+    canvas.height = size;
+
+    // 预加载背景图和所有字体
+    const bgImg = new Image();
+    bgImg.crossOrigin = "anonymous"; 
+    bgImg.src = './assets/img/bg.png';
+
+    try {
+        await Promise.all([
+            new Promise((resolve, reject) => { bgImg.onload = resolve; bgImg.onerror = reject; }),
+            document.fonts.load('120px "ShangShouHaoRan"'), 
+            document.fonts.load('85px "XinJian"'), 
+            document.fonts.load('85px "XinHeiTi"'), 
+            document.fonts.load('26px "MuLanTi"')
+        ]);
+    } catch (e) {
+        console.warn("字体资源加载部分失败，将尝试继续绘制", e);
     }
 
-    // 绑定颜色深浅滑块事件
-    const imOkDarknessSlider = document.getElementById('imOkDarknessSlider');
-    const imOkDarknessValue = document.getElementById('imOkDarknessValue');
-    if (imOkDarknessSlider && imOkDarknessValue) {
-        imOkDarknessSlider.addEventListener('input', (e) => {
-            imOkDarknessValue.textContent = parseFloat(e.target.value).toFixed(1);
-        });
+    // 1. 绘制背景图片 (包含底色 fallback)
+    ctx.fillStyle = '#1650A2';
+    ctx.fillRect(0, 0, size, size);
+    if(bgImg.complete) {
+        ctx.drawImage(bgImg, 0, 0, size, size);
     }
 
-    if(titleInput) {
-        titleInput.addEventListener('input', (e) => {
-            previewTitle.textContent = e.target.value || "I'm ok";
-        });
-    }
-    if(subtitleInput) {
-        subtitleInput.addEventListener('input', (e) => {
-            previewSubtitle.textContent = e.target.value || "DAVID TAO 陶喆";
-        });
-    }
+    // 2. 处理剪影与倒影
+    if (AppState.uploadedImage) {
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = size;
+        offCanvas.height = size;
+        const offCtx = offCanvas.getContext('2d');
+        
+        const targetX = AppState.dtBlueDrag.pos.image.x;
+        const targetY = AppState.dtBlueDrag.pos.image.y;
+        const targetWidth = AppState.dtBlueDrag.imgWidth * AppState.dtBlueDrag.pos.image.scale;
+        const targetHeight = AppState.dtBlueDrag.imgHeight * AppState.dtBlueDrag.pos.image.scale;
 
-    // 白马村模块初始化
-    initBaimaDrag();
-});
+        offCtx.drawImage(AppState.uploadedImage, targetX, targetY, targetWidth, targetHeight);
 
-// =====================================================================
-// 模块 5：日夜主题切换逻辑 (原版完全复刻)
-// =====================================================================
-(() => {
-    const themeToggle = document.getElementById('themeToggle');
-    const body = document.body;
-    const THEME_KEY = 'tooltopia-theme';
+        const imgData = offCtx.getImageData(0, 0, size, size);
+        const data = imgData.data;
+        const threshold = parseInt(document.getElementById('dtBlueThreshold').value) || 128;
 
-    // 从 localStorage 读取保存的主题偏好
-    function loadThemePreference() {
-        const savedTheme = localStorage.getItem(THEME_KEY);
-        if (savedTheme === 'day') {
-            body.classList.add('day-mode');
-            if(themeToggle) themeToggle.checked = true;
-        } else {
-            body.classList.remove('day-mode');
-            if(themeToggle) themeToggle.checked = false;
+        for (let i = 0; i < data.length; i += 4) {
+            if (data[i+3] > 0) {
+                let luma = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
+                if (luma < threshold) {
+                    let noise = Math.random() * 15;
+                    data[i] = noise; data[i+1] = noise; data[i+2] = noise;
+                    data[i+3] = 255;
+                } else {
+                    data[i+3] = 0; // 亮部透明
+                }
+            }
         }
+        offCtx.putImageData(imgData, 0, 0);
+
+        // 绘制水波倒影
+        const waterLineY = targetY + targetHeight - 20; 
+        ctx.save();
+        ctx.translate(0, waterLineY);
+        ctx.scale(1, -0.6); 
+        ctx.globalAlpha = 0.35; 
+        ctx.drawImage(offCanvas, 0, -waterLineY);
+        ctx.restore();
+
+        // 绘制主体剪影
+        ctx.drawImage(offCanvas, 0, 0);
     }
 
-    // 保存主题偏好到 localStorage
-    function saveThemePreference(isDayMode) {
-        localStorage.setItem(THEME_KEY, isDayMode ? 'day' : 'night');
-    }
+    // 3. 排版文字 (应用原生 letterSpacing API)
+    const enSize = parseInt(document.getElementById('dtBlueEnSize').value) || 85;
+    const zhSize = parseInt(document.getElementById('dtBlueZhSize').value) || 120;
+    const symbolSize = parseInt(document.getElementById('dtBlueSymbolSize').value) || 120;
+    
+    const enSpacing = parseInt(document.getElementById('dtBlueEnSpacing').value) || 0;
+    const zhSpacing = parseInt(document.getElementById('dtBlueZhSpacing').value) || 0;
 
-    // 切换主题
-    function toggleTheme() {
-        const isDayMode = themeToggle.checked;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
 
-        if (isDayMode) {
-            body.classList.add('day-mode');
-        } else {
-            body.classList.remove('day-mode');
-        }
+    // -- 层级 1：先画英文标题 (底层) --
+    ctx.fillStyle = '#e6e8e6';
+    ctx.font = `${enSize}px "XinJian", "XinHeiTi", sans-serif`;
+    ctx.letterSpacing = `${enSpacing}px`;  
+    ctx.fillText(document.getElementById('dtBlueEnTitle').value, AppState.dtBlueDrag.pos.enTitle.x, AppState.dtBlueDrag.pos.enTitle.y);
+    
+    // -- 层级 2：再画中文标题 (中层) --
+    ctx.font = `${zhSize}px "XinJian", "XinHeiTi", sans-serif`;
+    ctx.letterSpacing = `${zhSpacing}px`;
+    ctx.fillText(document.getElementById('dtBlueZhTitle').value, AppState.dtBlueDrag.pos.zhTitle.x, AppState.dtBlueDrag.pos.zhTitle.y);
 
-        saveThemePreference(isDayMode);
-    }
+    // 恢复默认字距给后续使用
+    ctx.letterSpacing = '0px';
 
-    // 页面加载时恢复主题
-    loadThemePreference();
+    // -- 层级 3：最后画独立感叹号 (最顶层，完全覆盖在标题上方) --
+    ctx.fillStyle = '#050505';
+    ctx.font = `${symbolSize}px "ShangShouHaoRan", sans-serif`;
+    ctx.fillText(document.getElementById('dtBlueSymbol').value, AppState.dtBlueDrag.pos.symbol.x, AppState.dtBlueDrag.pos.symbol.y);
 
-    // 监听切换器变化
-    if(themeToggle) themeToggle.addEventListener('change', toggleTheme);
-})();
+    // 4. 四行小字（极限降采样重绘：实现低分辨率涂抹模糊感）
+    const sSize = parseInt(document.getElementById('dtBlueSSize').value) || 26;
+    const sRatio = 0.25; // 分辨率降至 25%
+    
+    const smallTextCanvas = document.createElement('canvas');
+    smallTextCanvas.width = size * sRatio;
+    smallTextCanvas.height = size * sRatio;
+    const stCtx = smallTextCanvas.getContext('2d');
+    
+    stCtx.fillStyle = '#e6e8e6';
+    stCtx.textAlign = 'left';
+    stCtx.textBaseline = 'middle';
+    stCtx.font = `${sSize * sRatio}px "MuLanTi", sans-serif`;
+    stCtx.filter = 'blur(0.5px)'; // 在小画布上微弱模糊
+    
+    stCtx.fillText(document.getElementById('dtBlueS1').value, AppState.dtBlueDrag.pos.s1.x * sRatio, AppState.dtBlueDrag.pos.s1.y * sRatio);
+    stCtx.fillText(document.getElementById('dtBlueS2').value, AppState.dtBlueDrag.pos.s2.x * sRatio, AppState.dtBlueDrag.pos.s2.y * sRatio);
+    stCtx.fillText(document.getElementById('dtBlueS3').value, AppState.dtBlueDrag.pos.s3.x * sRatio, AppState.dtBlueDrag.pos.s3.y * sRatio);
+    stCtx.fillText(document.getElementById('dtBlueS4').value, AppState.dtBlueDrag.pos.s4.x * sRatio, AppState.dtBlueDrag.pos.s4.y * sRatio);
+
+    ctx.save();
+    ctx.globalAlpha = 0.55; 
+    ctx.globalCompositeOperation = 'screen'; // 滤色模式融入背景
+    ctx.imageSmoothingEnabled = true; // 强制双线性插值拉伸
+    ctx.drawImage(smallTextCanvas, 0, 0, smallTextCanvas.width, smallTextCanvas.height, 0, 0, size, size);
+    ctx.restore();
+
+    return canvas.toDataURL('image/png');
+}
