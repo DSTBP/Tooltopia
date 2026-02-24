@@ -1113,3 +1113,133 @@ body.day-mode .result-header.error {
 }
 
 @keyframes spin { 100% { transform: rotate(360deg); } }
+
+
+/* =========================================
+   11. 原版日夜切换器动画 (星星、云朵、陨石坑)
+   ========================================= */
+.theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  user-select: none;
+  transform: scale(0.64);
+  transform-origin: top right;
+}
+
+.theme-toggle__checkbox { display: none; }
+
+.theme-toggle__btn {
+  display: block; position: relative; width: 125px; height: 70px;
+  border-radius: 70px; border: 5px solid #1c1c1c; background-color: #3c4145;
+  cursor: pointer; transition: all 350ms ease-in;
+}
+
+.theme-toggle__btn::before {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 46px; height: 46px;
+  border-radius: 50%; background-color: #fff; border: 5px solid #e3e3c7;
+  transition: all 250ms ease-in;
+}
+
+.theme-toggle__btn::after {
+  content: ''; position: absolute; top: 62%; left: 39px; z-index: 10;
+  width: 9.2px; height: 9.2px; opacity: 0; background-color: #fff; border-radius: 50%;
+  box-shadow: #fff 0 0, #fff 2.5px 0, #fff 5px 0, #fff 7.5px 0, #fff 9px 0, #fff 11.5px 0, #fff 13px 0, #fff 17px -1px 0 1px, #fff 13px -6px 0 -2px, #fff 6px -6px 0 1px, #d3d3d3 0 0 0 3.5px, #d3d3d3 5px 0 0 3.5px, #d3d3d3 9px 0 0 3.5px, #d3d3d3 13px 0 0 3.5px, #d3d3d3 17px -1px 0 4.5px, #d3d3d3 13px -6px 0 1px, #d3d3d3 6px -6px 0 4.5px;
+  transition: opacity 100ms ease-in;
+}
+
+.theme-toggle__feature {
+  display: block; position: absolute; top: 9px; left: 52.5%; z-index: 20;
+  width: 4px; height: 4px; border-radius: 50%; background-color: #fff;
+  box-shadow: rgba(255,255,255,0.1) 30px -3px 0 0, rgba(255,255,255,0.1) 12px 10px 0 -1px, #fff 38px 18px 0 1px, rgba(255,255,255,0.1) 32px 34px 0 0, #fff 20px 24px 0 -1.5px, rgba(255,255,255,0.1) 5px 38px 0 1px;
+  animation: starry_star 5s ease-in-out infinite;
+}
+
+.theme-toggle__feature::before {
+  content: ''; position: absolute; top: -2px; left: -25px;
+  width: 15px; height: 15px; background-color: #fff; border-radius: 50%;
+  border: 4px solid #e3e3c7; box-shadow: #e3e3c7 -28px 0 0 -3px, #e3e3c7 -8px 24px 0 -2px;
+  transform-origin: -6px 130%; transition: all 250ms ease-in;
+}
+
+@keyframes starry_star {
+  50% {
+    background-color: rgba(255,255,255,0.1);
+    box-shadow: #fff 30px -3px 0 0, #fff 12px 10px 0 -1px, rgba(255,255,255,0.1) 38px 18px 0 1px, #fff 32px 34px 0 0, rgba(255,255,255,0.1) 20px 24px 0 -1.5px, #fff 5px 38px 0 1px;
+  }
+}
+
+@keyframes bounceIn {
+  0% { opacity: 0; transform: scale(.3); }
+  50% { opacity: 1; transform: scale(1.1); }
+  55% { transform: scale(1.1); }
+  75% { transform: scale(.9); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn {
+  background-color: #9ee3fb; border: 5px solid #86c3d7;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn::before {
+  left: 57px; background-color: #ffdf6d; border: 5px solid #e1c348;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn::after {
+  opacity: 1; animation-name: bounceIn; animation-duration: 0.60s;
+  animation-delay: 0.10s; animation-fill-mode: backwards; animation-timing-function: ease-in-out;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn .theme-toggle__feature {
+  opacity: 0; box-shadow: rgba(255,255,255,0.1) 30px -3px 0 -4px, rgba(255,255,255,0.1) 12px 10px 0 -5px, #fff 38px 18px 0 -3px, rgba(255,255,255,0.1) 32px 34px 0 -4px, #fff 20px 24px 0 -5.5px, rgba(255,255,255,0.1) 5px 38px 0 -3px; animation: none;
+}
+
+.theme-toggle__checkbox:checked + .theme-toggle__btn .theme-toggle__feature::before {
+  left: 25px; transform: rotate(70deg);
+}
+
+@media (max-width: 768px) {
+  .theme-toggle { top: 10px; right: 10px; transform: scale(0.58); }
+}
+
+/* =========================================
+   12. 封面生成器 Day-Mode 颜色反转适配
+   ========================================= */
+body.day-mode {
+    --bg-dark: #f0f4f8; 
+    --bg-panel: #e2e8f0;
+    
+    /* 深色文字 */
+    --text-primary: #2d3748;
+    --text-secondary: #4a5568;
+    --text-muted: #718096;
+    
+    /* 玻璃面板 */
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    
+    /* 输入框变为白底 */
+    --input-bg: rgba(255, 255, 255, 0.8);
+    --input-border: rgba(0, 0, 0, 0.15);
+}
+
+body.day-mode .header h1 {
+    color: #2d3748;
+    text-shadow: .03em .03em 0 hsla(200, 60%, 60%, 1);
+}
+
+body.day-mode .album-card {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(0,0,0,0.1);
+}
+body.day-mode .album-card h3 { color: #2d3748; }
+body.day-mode .album-card p { color: #4a5568; }
+
+body.day-mode .btn-secondary {
+    background: #ffffff;
+    color: #2d3748;
+    border-color: #cbd5e0;
+}
+body.day-mode .btn-secondary:hover { background: #f7fafc; }

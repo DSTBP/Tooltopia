@@ -1,6 +1,6 @@
 /**
  * CoverGen - 黑胶专辑封面生成器逻辑
- * 全面重构版：逻辑分离，移动端适配，修复拖拽
+ * 全面重构版：逻辑分离，移动端适配，修复拖拽，终极光学渲染
  */
 
 // =====================================================================
@@ -138,11 +138,9 @@ async function handleGenerate() {
 // 模块 2：I'm OK 风格专区 (交互与渲染)
 // =====================================================================
 
-// 【修复点】：补回了丢失的 updateDragPosition 函数
 function updateDragPosition() {
     const dragImg = document.getElementById('dragImg');
     if (dragImg) {
-        // 利用 transform 进行丝滑的拖拽和缩放偏移
         dragImg.style.transform = `translate(${AppState.drag.x}px, ${AppState.drag.y}px) scale(${AppState.drag.scale})`;
         dragImg.style.transformOrigin = 'top left'; 
     }
@@ -260,12 +258,17 @@ async function renderImOkStyle() {
     const imgData = offCtx.getImageData(0, 0, size, size);
     const data = imgData.data;
 
-    // --- 纯正圆形半调算法 ---
+    // --- 光学级连续调半调渲染 (完美圆形算法) ---
     const outputData = ctx.createImageData(size, size);
     const outPixels = outputData.data;
 
     const dotPeriodSlider = document.getElementById('dotPeriodSlider');
     const dotPeriod = dotPeriodSlider ? parseInt(dotPeriodSlider.value, 10) : 6; 
+    
+    // 获取用户设置的颜色深浅倍率 (默认 1.0)
+    const imOkDarknessSlider = document.getElementById('imOkDarknessSlider');
+    const darknessFactor = imOkDarknessSlider ? parseFloat(imOkDarknessSlider.value) : 1.0;
+
     const angle = Math.PI / 4;
     const cosA = Math.cos(angle);
     const sinA = Math.sin(angle);
@@ -279,13 +282,14 @@ async function renderImOkStyle() {
             let darkness = 1 - brightness;
             darkness = Math.pow(darkness, 1.1);
 
-            let effective_darkness = 0.08 + darkness * 0.85;
+            // 乘上颜色深浅倍率
+            let effective_darkness = 0.08 + (darkness * 0.85 * darknessFactor);
 
             const dotR = 119 * (1 - darkness) + 4 * darkness;
             const dotG = 94 * (1 - darkness) + 4 * darkness;
             const dotB = 1 * (1 - darkness) + 0 * darkness;
 
-            // 完美的圆形距离计算
+            // 核心：欧几里得距离计算完美圆形网点
             const rx = x * cosA - y * sinA;
             const ry = x * sinA + y * cosA;
             const cellCX = Math.round(rx / dotPeriod) * dotPeriod;
@@ -674,6 +678,15 @@ window.addEventListener('load', function() {
         });
     }
 
+    // 绑定颜色深浅滑块事件
+    const imOkDarknessSlider = document.getElementById('imOkDarknessSlider');
+    const imOkDarknessValue = document.getElementById('imOkDarknessValue');
+    if (imOkDarknessSlider && imOkDarknessValue) {
+        imOkDarknessSlider.addEventListener('input', (e) => {
+            imOkDarknessValue.textContent = parseFloat(e.target.value).toFixed(1);
+        });
+    }
+
     if(titleInput) {
         titleInput.addEventListener('input', (e) => {
             previewTitle.textContent = e.target.value || "I'm ok";
@@ -688,3 +701,48 @@ window.addEventListener('load', function() {
     // 白马村模块初始化
     initBaimaDrag();
 });
+
+// =====================================================================
+// 模块 5：日夜主题切换逻辑 (原版完全复刻)
+// =====================================================================
+(() => {
+    const themeToggle = document.getElementById('themeToggle');
+    const body = document.body;
+    const THEME_KEY = 'tooltopia-theme';
+
+    // 从 localStorage 读取保存的主题偏好
+    function loadThemePreference() {
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        if (savedTheme === 'day') {
+            body.classList.add('day-mode');
+            if(themeToggle) themeToggle.checked = true;
+        } else {
+            body.classList.remove('day-mode');
+            if(themeToggle) themeToggle.checked = false;
+        }
+    }
+
+    // 保存主题偏好到 localStorage
+    function saveThemePreference(isDayMode) {
+        localStorage.setItem(THEME_KEY, isDayMode ? 'day' : 'night');
+    }
+
+    // 切换主题
+    function toggleTheme() {
+        const isDayMode = themeToggle.checked;
+
+        if (isDayMode) {
+            body.classList.add('day-mode');
+        } else {
+            body.classList.remove('day-mode');
+        }
+
+        saveThemePreference(isDayMode);
+    }
+
+    // 页面加载时恢复主题
+    loadThemePreference();
+
+    // 监听切换器变化
+    if(themeToggle) themeToggle.addEventListener('change', toggleTheme);
+})();
