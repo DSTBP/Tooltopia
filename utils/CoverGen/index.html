@@ -126,48 +126,28 @@
                     <h2>配置您的封面参数 (水墨排版)</h2>
                     
                     <div class="input-group" style="margin-bottom: 15px;">
-                        <label class="text-muted" style="display: block; margin-bottom: 8px;">简繁体排版参考 (请手动在下方修改需要的字)：</label>
+                        <label class="text-muted" style="display: block; margin-bottom: 8px;">简繁体排版参考 (点击黄字复制)：</label>
                         <div id="tradReferenceBox" style="padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px; border: 1px dashed var(--glass-border); color: var(--text-primary); font-size: 0.95rem; min-height: 44px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
                             <span style="color: var(--text-muted); font-size: 0.85rem;">输入文本后，这里会提示对应的繁体字...</span>
                         </div>
                     </div>
 
-                    <div class="input-group" style="margin-bottom: 15px;">
+                    <div class="input-group" style="margin-bottom: 10px;">
                         <label class="text-muted" style="display: block; margin-bottom: 8px;">1. 主标题 (竖排，按回车键分列)：</label>
                         <textarea id="baimaTitleInput" rows="2" style="width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: #fff; font-size: 1.2rem;">白马村&#10;游记</textarea>
                     </div>
+                    <div id="baimaTitleControls" style="margin-bottom: 20px;"></div>
 
-                    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                        <div style="flex: 1;">
-                            <label class="text-muted" style="display: block; margin-bottom: 8px; font-size: 0.9rem;">主标题字号：</label>
-                            <input type="range" id="baimaTitleSize" min="150" max="450" step="10" value="320" style="width: 100%; accent-color: var(--accent-highlight);">
-                        </div>
-                        <div style="flex: 1;">
-                            <label class="text-muted" style="display: block; margin-bottom: 8px; font-size: 0.9rem;">主标题字距：</label>
-                            <input type="range" id="baimaTitleSpacing" min="0.5" max="1.5" step="0.05" value="0.85" style="width: 100%; accent-color: var(--accent-highlight);">
-                        </div>
-                    </div>
-
-                    <div class="input-group" style="margin-bottom: 15px;">
+                    <div class="input-group" style="margin-bottom: 10px;">
                         <label class="text-muted" style="display: block; margin-bottom: 8px;">2. 副标题 (落款，按回车键分列)：</label>
                         <textarea id="baimaSubtitleInput" rows="2" style="width: 100%; padding: 12px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 8px; color: #fff; font-size: 1rem;">上海彩虹&#10;室内合唱团</textarea>
                     </div>
-
-                    <div style="display: flex; gap: 15px; margin-bottom: 25px;">
-                        <div style="flex: 1;">
-                            <label class="text-muted" style="display: block; margin-bottom: 8px; font-size: 0.9rem;">副标题字号：</label>
-                            <input type="range" id="baimaSubSize" min="40" max="150" step="5" value="75" style="width: 100%; accent-color: var(--accent-highlight);">
-                        </div>
-                        <div style="flex: 1;">
-                            <label class="text-muted" style="display: block; margin-bottom: 8px; font-size: 0.9rem;">副标题字距：</label>
-                            <input type="range" id="baimaSubSpacing" min="0.5" max="1.5" step="0.05" value="0.95" style="width: 100%; accent-color: var(--accent-highlight);">
-                        </div>
-                    </div>
+                    <div id="baimaSubControls" style="margin-bottom: 25px;"></div>
 
                     <div id="baimaPreviewContainer" style="margin-bottom: 25px;">
                         <div id="baimaPreviewBox" style="width: 100%; max-width: 400px; aspect-ratio: 1/1; background: #F2EFE8; position: relative; overflow: hidden; border-radius: 8px; margin: 0 auto; box-shadow: inset 0 0 10px rgba(0,0,0,0.1); touch-action: none;">
                             <div id="baimaDragArea" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;"></div>
-                            <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; pointer-events: none; z-index: 10;">拖动文字，滑块调间距与大小</div>
+                            <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; pointer-events: none; z-index: 10;">拖动每列文字，上方滑块调间距与大小</div>
                         </div>
                     </div>
 

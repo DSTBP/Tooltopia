@@ -344,7 +344,6 @@ async function renderImOkStyle() {
 // =====================================================================
 // 模块 3：白马村游记 风格专区 (交互与渲染)
 // =====================================================================
-
 function getBaimaProcessedText(inputId, defaultText) {
     return document.getElementById(inputId).value || defaultText;
 }
@@ -370,23 +369,80 @@ function updateTradReference() {
     else refBox.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">当前文本没有对应的繁体字，或已全部为繁体。</span>';
 }
 
+function updateBaimaControls() {
+    const titleLines = getBaimaProcessedText('baimaTitleInput', "白马村\n游记").split('\n');
+    const subLines = getBaimaProcessedText('baimaSubtitleInput', "上海彩虹\n室内合唱团").split('\n');
+
+    const titleContainer = document.getElementById('baimaTitleControls');
+    const subContainer = document.getElementById('baimaSubControls');
+    if (!titleContainer || !subContainer) return;
+
+    // 生成主标题控制条
+    let titleHtml = '';
+    titleLines.forEach((col, idx) => {
+        const sizeEl = document.getElementById(`titleSize_${idx}`);
+        const spacingEl = document.getElementById(`titleSpacing_${idx}`);
+        // 记忆之前的数值，若是新列则赋默认值
+        const currentSize = sizeEl ? sizeEl.value : (idx === 0 ? 320 : 256);
+        const currentSpacing = spacingEl ? spacingEl.value : 0.85;
+        const labelText = col.length > 3 ? col.substring(0,3) + '..' : (col || '空');
+
+        titleHtml += `
+            <div style="display: flex; gap: 10px; margin-top: 8px; align-items: center; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                <span style="color: var(--accent-highlight); width: 45px; font-size: 0.85rem; white-space: nowrap; overflow: hidden; font-weight: bold;">${labelText}</span>
+                <div style="flex: 1; display: flex; flex-direction: column;">
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">字号</span>
+                    <input type="range" id="titleSize_${idx}" class="baima-dynamic-slider" min="100" max="500" step="5" value="${currentSize}" style="width: 100%; accent-color: var(--accent-highlight);">
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column;">
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">间距</span>
+                    <input type="range" id="titleSpacing_${idx}" class="baima-dynamic-slider" min="0.5" max="1.8" step="0.05" value="${currentSpacing}" style="width: 100%; accent-color: var(--accent-highlight);">
+                </div>
+            </div>`;
+    });
+    titleContainer.innerHTML = titleHtml;
+
+    // 生成副标题控制条
+    let subHtml = '';
+    subLines.forEach((col, idx) => {
+        const sizeEl = document.getElementById(`subSize_${idx}`);
+        const spacingEl = document.getElementById(`subSpacing_${idx}`);
+        const currentSize = sizeEl ? sizeEl.value : 75;
+        const currentSpacing = spacingEl ? spacingEl.value : 0.95;
+        const labelText = col.length > 3 ? col.substring(0,3) + '..' : (col || '空');
+
+        subHtml += `
+            <div style="display: flex; gap: 10px; margin-top: 8px; align-items: center; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+                <span style="color: var(--text-secondary); width: 45px; font-size: 0.85rem; white-space: nowrap; overflow: hidden; font-weight: bold;">${labelText}</span>
+                <div style="flex: 1; display: flex; flex-direction: column;">
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">字号</span>
+                    <input type="range" id="subSize_${idx}" class="baima-dynamic-slider" min="30" max="180" step="5" value="${currentSize}" style="width: 100%; accent-color: var(--accent-highlight);">
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column;">
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">间距</span>
+                    <input type="range" id="subSpacing_${idx}" class="baima-dynamic-slider" min="0.5" max="1.8" step="0.05" value="${currentSpacing}" style="width: 100%; accent-color: var(--accent-highlight);">
+                </div>
+            </div>`;
+    });
+    subContainer.innerHTML = subHtml;
+
+    // 给所有新生成的滑块绑定实时刷新事件
+    document.querySelectorAll('.baima-dynamic-slider').forEach(el => {
+        el.addEventListener('input', updateBaimaPreview);
+    });
+}
+
 function updateBaimaPreview() {
     const dragArea = document.getElementById('baimaDragArea');
     const previewBox = document.getElementById('baimaPreviewBox');
     if (!dragArea || !previewBox) return;
 
-    // 动态缩放比，适配所有手机屏幕
     const boxSize = previewBox.getBoundingClientRect().width || 400;
     const scale = boxSize / 800; 
 
     const titleLines = getBaimaProcessedText('baimaTitleInput', "白马村\n游记").split('\n');
     const subLines = getBaimaProcessedText('baimaSubtitleInput', "上海彩虹\n室内合唱团").split('\n');
     
-    const titleBaseSize = (parseInt(document.getElementById('baimaTitleSize').value) || 320) * scale;
-    const subBaseSize = (parseInt(document.getElementById('baimaSubSize').value) || 75) * scale;
-    const titleSpacing = parseFloat(document.getElementById('baimaTitleSpacing').value) || 0.85;
-    const subSpacing = parseFloat(document.getElementById('baimaSubSpacing').value) || 0.95;
-
     while(AppState.baimaDrag.titlePos.length < titleLines.length) AppState.baimaDrag.titlePos.push({x: 400, y: 200});
     while(AppState.baimaDrag.subPos.length < subLines.length) AppState.baimaDrag.subPos.push({x: 200, y: 400});
 
@@ -397,9 +453,12 @@ function updateBaimaPreview() {
         const displayX = logicalPos.x * scale;
         const displayY = logicalPos.y * scale;
 
-        let size = titleBaseSize;
-        if (idx === 1) size = titleBaseSize * 0.8; 
-        else if (idx > 1) size = titleBaseSize * 0.8;
+        // 【修改点】：动态读取这一列专属的滑块值
+        const sizeInput = document.getElementById(`titleSize_${idx}`);
+        const spaceInput = document.getElementById(`titleSpacing_${idx}`);
+        const rawSize = sizeInput ? parseInt(sizeInput.value) : (idx === 0 ? 320 : 256);
+        const titleSpacing = spaceInput ? parseFloat(spaceInput.value) : 0.85;
+        const size = rawSize * scale;
 
         let colHtml = `<div class="drag-baima-col" data-type="title" data-col="${idx}" style="position:absolute; left:${displayX}px; top:${displayY}px; cursor:grab; padding: 10px; margin: -10px;">`;
         let curY = 0;
@@ -415,7 +474,13 @@ function updateBaimaPreview() {
         const logicalPos = AppState.baimaDrag.subPos[idx];
         const displayX = logicalPos.x * scale;
         const displayY = logicalPos.y * scale;
-        let size = subBaseSize;
+        
+        // 【修改点】：动态读取这一列专属的滑块值
+        const sizeInput = document.getElementById(`subSize_${idx}`);
+        const spaceInput = document.getElementById(`subSpacing_${idx}`);
+        const rawSize = sizeInput ? parseInt(sizeInput.value) : 75;
+        const subSpacing = spaceInput ? parseFloat(spaceInput.value) : 0.95;
+        const size = rawSize * scale;
 
         let colHtml = `<div class="drag-baima-col" data-type="sub" data-col="${idx}" style="position:absolute; left:${displayX}px; top:${displayY}px; cursor:grab; padding: 10px; margin: -10px;">`;
         let curY = 0;
@@ -435,6 +500,7 @@ function initBaimaDrag() {
     if(!previewBox) return;
 
     updateTradReference();
+    updateBaimaControls(); // 初始化时生成控制条
     updateBaimaPreview();
     
     window.addEventListener('resize', updateBaimaPreview);
@@ -491,14 +557,10 @@ function initBaimaDrag() {
         if(el) {
             el.addEventListener('input', () => {
                 updateTradReference();
+                updateBaimaControls(); // 文本改变可能导致行数增减，需重新生成控制条
                 updateBaimaPreview();
             });
         }
-    });
-
-    ['baimaTitleSize', 'baimaSubSize', 'baimaTitleSpacing', 'baimaSubSpacing'].forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.addEventListener('input', updateBaimaPreview);
     });
 }
 
@@ -522,9 +584,6 @@ async function renderBaimaStyle() {
     const titleText = getBaimaProcessedText('baimaTitleInput', "白马村\n游记");
     const subtitleText = getBaimaProcessedText('baimaSubtitleInput', "上海彩虹\n室内合唱团");
     
-    const titleSpacing = parseFloat(document.getElementById('baimaTitleSpacing').value) || 0.85;
-    const subSpacing = parseFloat(document.getElementById('baimaSubSpacing').value) || 0.95;
-
     tCtx.fillStyle = '#1A1C1A'; 
     tCtx.textAlign = 'center';
     tCtx.textBaseline = 'middle'; 
@@ -532,13 +591,15 @@ async function renderBaimaStyle() {
     const charPosInfo = []; 
 
     const titleLines = titleText.split('\n');
-    const titleBaseSize = parseInt(document.getElementById('baimaTitleSize').value) || 320;
 
     titleLines.forEach((col, idx) => {
         const pos = AppState.baimaDrag.titlePos[idx] || {x: 400, y: 200};
-        let size = titleBaseSize;
-        if (idx === 1) size = titleBaseSize * 0.8; 
-        else if (idx > 1) size = titleBaseSize * 0.8;
+        
+        // 在生成图片时同样读取独立的滑块值
+        const sizeInput = document.getElementById(`titleSize_${idx}`);
+        const spaceInput = document.getElementById(`titleSpacing_${idx}`);
+        const size = sizeInput ? parseInt(sizeInput.value) : (idx === 0 ? 320 : 256);
+        const titleSpacing = spaceInput ? parseFloat(spaceInput.value) : 0.85;
 
         const finalColX = pos.x; 
         const finalColY = pos.y;
@@ -566,11 +627,14 @@ async function renderBaimaStyle() {
     });
 
     const subLines = subtitleText.split('\n');
-    const subBaseSize = parseInt(document.getElementById('baimaSubSize').value) || 75;
 
     subLines.forEach((col, idx) => {
         const pos = AppState.baimaDrag.subPos[idx] || {x: 200, y: 400};
-        let size = subBaseSize;
+        
+        const sizeInput = document.getElementById(`subSize_${idx}`);
+        const spaceInput = document.getElementById(`subSpacing_${idx}`);
+        const size = sizeInput ? parseInt(sizeInput.value) : 75;
+        const subSpacing = spaceInput ? parseFloat(spaceInput.value) : 0.95;
 
         const finalColX = pos.x;
         const finalColY = pos.y;
