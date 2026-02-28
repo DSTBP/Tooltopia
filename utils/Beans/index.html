@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>拼豆颜色替换工具</title>
+    <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+    <div class="theme-toggle">
+        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+        <label for="themeToggle" class="theme-toggle__btn">
+            <span class="theme-toggle__feature"></span>
+        </label>
+    </div>
+
+    <div class="page-container">
+        <div class="header">
+            <h1 data-shadow='拼豆颜色替换'>拼豆颜色替换</h1>
+            <p class="subtitle">支持 HEX、RGB、MARD 及各类品牌色号混合输入，自动匹配最佳替代色</p>
+        </div>
+
+        <div class="container">
+            <div class="section" id="step1">
+                <h2>步骤 1: 输入需要替换的原始颜色</h2>
+                
+                <div class="scheme-select-group">
+                    <label for="targetBrandSelect">当前使用的品牌色系：</label>
+                    <select id="targetBrandSelect" class="column-select">
+                        </select>
+                    <span style="margin-left: 15px; font-size: 0.85rem; color: #888;">* 用于解析下方输入的简写色号</span>
+                </div>
+
+                <div class="text-input" style="margin-top: 15px;">
+                    <textarea id="targetColorsInput" placeholder="请输入原始色号，使用空格、逗号或换行分隔...&#10;&#10;支持格式：&#10;1. HEX代码 (如 #FFDD99)&#10;2. RGB代码 (如 rgb(255,221,153) 或 255-221-153)&#10;3. 上方所选品牌的色号 (如 A11, 65)"></textarea>
+                </div>
+            </div>
+
+            <div class="section" id="step2">
+                <h2>步骤 2: 设置你拥有的颜色库</h2>
+                
+                <div class="scheme-select-group">
+                    <label for="ownedBrandSelect">当前拥有的品牌色系：</label>
+                    <select id="ownedBrandSelect" class="column-select">
+                        </select>
+                    <span style="margin-left: 15px; font-size: 0.85rem; color: #888;">* 用于解析下方输入的简写色号及提供套装</span>
+                </div>
+
+                <div class="scheme-select-group" style="margin-top: 15px;">
+                    <label for="schemeSelect">快速选择已有色系套装：</label>
+                    <select id="schemeSelect" class="column-select">
+                        <option value="">-- 手动输入 --</option>
+                        </select>
+                </div>
+
+                <div class="text-input" style="margin-top: 15px;">
+                    <textarea id="ownedColorsInput" placeholder="在此补充你拥有的其他颜色色号 (格式同上)..."></textarea>
+                </div>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button id="matchBtn" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 40px;">开始智能匹配替换</button>
+                </div>
+            </div>
+
+            <div class="section" id="step3" style="display: none;">
+                <h2>步骤 3: 匹配结果</h2>
+                <div id="resultsTable" class="table-wrapper"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./assets/js/theme-toggle.js"></script>
+    <script src="./assets/js/colorsData.js"></script>
+    <script src="./assets/js/script.js"></script>
+</body>
+</html>
