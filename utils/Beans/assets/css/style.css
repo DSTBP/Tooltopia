@@ -31,7 +31,7 @@ body {
 }
 
 .page-container {
-    max-width: 1200px;
+    max-width: 96%; /* 为了容纳双栏结构，拓宽了最大宽度 */
     margin: 0 auto;
     width: 100%;
     position: relative;
@@ -105,6 +105,46 @@ body {
     font-size: 1rem;
     color: hsl(0 0% 75%);
     margin-top: 0.5rem;
+}
+
+/* 主体左右布局 */
+.main-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+    align-items: flex-start;
+}
+
+.left-panel {
+    flex: 4;
+    min-width: 0;
+    width: 100%;
+}
+
+.right-panel {
+    flex: 6;
+    min-width: 0;
+    width: 100%;
+}
+
+.sticky-panel {
+    position: sticky;
+    top: 24px;
+}
+
+.right-content {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 桌面端左右布局 */
+@media (min-width: 1024px) {
+    .main-layout {
+        flex-direction: row;
+    }
 }
 
 /* 容器 */
@@ -209,7 +249,6 @@ body {
     color: hsl(122 40% 70%);
     font-weight: 600;
     font-size: 0.95rem;
-}
 }
 
 #encodingSelect {
@@ -1263,3 +1302,231 @@ body.day-mode .badge.success { color: #2e7d32; border-color: #4caf50; background
 body.day-mode .badge.warning { color: #ed6c02; border-color: #ff9800; background-color: rgba(255, 152, 0, 0.1); }
 body.day-mode .badge.error { color: #d32f2f; border-color: #f44336; background-color: rgba(244, 67, 54, 0.1); }
 body.day-mode .error-text { color: #d32f2f; }
+
+.preview-title {
+    color: hsl(0 0% 90%); /* 浅灰偏白 */
+}
+
+.preview-hint {
+    color: #aaaaaa; /* 稍暗的灰色 */
+}
+
+/* 适配日间模式 */
+body.day-mode .preview-title {
+    color: #1a202c; /* 深灰色 */
+}
+
+body.day-mode .preview-hint {
+    color: #666666; /* 较深的灰色 */
+}
+
+.color-picker-swatch {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    transition: transform 0.1s, border-color 0.1s, box-shadow 0.1s;
+    flex-shrink: 0;
+}
+
+.color-picker-swatch:hover {
+    transform: scale(1.15);
+    z-index: 10;
+}
+
+/* 选中状态的明显高亮环 */
+.color-picker-swatch.selected {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px #007bff;
+    z-index: 10;
+}
+
+/* 适配夜间模式的选中高亮环 */
+body.day-mode .color-picker-swatch.selected {
+    box-shadow: 0 0 0 2px #1a202c, 0 0 0 4px #4299e1;
+}
+
+/* 自定义色卡区的滚动条以保持美观 */
+#colorPickerGrid::-webkit-scrollbar {
+    width: 8px;
+}
+#colorPickerGrid::-webkit-scrollbar-track {
+    background: rgba(128, 128, 128, 0.1);
+    border-radius: 4px;
+}
+#colorPickerGrid::-webkit-scrollbar-thumb {
+    background: rgba(128, 128, 128, 0.4);
+    border-radius: 4px;
+}
+#colorPickerGrid::-webkit-scrollbar-thumb:hover {
+    background: rgba(128, 128, 128, 0.6);
+}
+
+/* 右侧预览区容器样式（不再在内部做左右分割，改为完全随容器向下堆叠） */
+.preview-tweak-layout {
+    display: none; /* JS 中控制显示为 flex */
+    flex-direction: column;
+}
+
+/* --- 画布区样式 --- */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 10px;
+}
+.preview-title { margin: 0; font-size: 1.1rem; color: hsl(0 0% 90%); }
+.preview-hint { font-size: 0.85rem; color: #aaaaaa; }
+.preview-panel {
+    width: 100%;
+}
+.canvas-container {
+    overflow: auto;
+    max-height: 500px;
+    border: 1px solid rgba(128,128,128,0.3);
+    border-radius: 8px;
+    background: rgba(0,0,0,0.1);
+    position: relative;
+}
+#previewCanvas {
+    display: block;
+    margin: 0 auto;
+    image-rendering: pixelated;
+    transform-origin: 0 0;
+}
+
+/* --- 控制功能区（含日夜间模式） --- */
+.control-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+}
+.tweak-section, .export-section {
+    background: rgba(255, 255, 255, 0.05); /* 夜间深灰背景 */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 18px;
+}
+.section-title { margin-top: 0; margin-bottom: 10px; font-size: 1.1rem; color: hsl(0 0% 90%); }
+.tweak-desc { font-size: 0.85rem; color: #aaa; margin-bottom: 15px; }
+.export-hint { font-size: 0.8rem; color: #888; text-align: center; margin: 10px 0 0 0; }
+
+.tweak-cards {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 15px;
+    align-items: stretch;
+}
+.tweak-card {
+    background: rgba(0, 0, 0, 0.2); /* 夜间卡片更深的底色 */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+}
+.tweak-card h4 { margin: 0 0 10px 0; font-size: 0.95rem; color: hsl(0 0% 85%); text-align: center; }
+
+/* 调整比例 */
+.tweak-card-small { flex: 0 0 90px; } /* 原色框缩小 */
+.tweak-card-large { flex: 1; min-width: 0; } /* 色卡框放大 */
+
+.color-display-box {
+    height: 40px;
+    border-radius: 6px;
+    border: 2px dashed #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    color: #888;
+    transition: all 0.3s;
+    text-align: center;
+    margin-bottom: 8px;
+}
+#selectedOriginalCode { font-size: 0.8rem; margin: 0; color: #888; text-align: center; word-break: break-all; }
+
+/* 滚动色卡区 */
+.color-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    height: 140px;             /* 默认初始高度 */
+    min-height: 100px;         /* 最小高度限制 */
+    max-height: 60vh;          /* 最大高度限制 */
+    overflow-y: auto;
+    padding: 4px;
+    align-content: flex-start;
+    resize: vertical;          /* 开启垂直拉伸 */
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2); /* 底部加上稍微明显的拖拽边框提示 */
+}
+.color-grid::-webkit-scrollbar { width: 6px; }
+.color-grid::-webkit-scrollbar-track { background: rgba(128, 128, 128, 0.1); border-radius: 3px; }
+.color-grid::-webkit-scrollbar-thumb { background: rgba(128, 128, 128, 0.4); border-radius: 3px; }
+
+body.day-mode .color-grid {
+    border-bottom: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+/* 按钮统一 */
+.full-width-btn { width: 100%; padding: 12px !important; }
+.export-buttons { display: flex; flex-direction: column; gap: 12px; }
+.export-buttons .btn { width: 100%; padding: 12px !important; }
+
+/* --- 适配日间模式 --- */
+body.day-mode .preview-title, body.day-mode .section-title { color: #1a202c; }
+body.day-mode .preview-hint, body.day-mode .tweak-desc { color: #666; }
+body.day-mode .tweak-section, body.day-mode .export-section {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+body.day-mode .tweak-card {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+body.day-mode .tweak-card h4 { color: #4a5568; }
+body.day-mode .color-display-box { border-color: #a0aec0; color: #4a5568; }
+
+.image-extract-panel {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-top: -10px; /* 拉近与上传框的距离 */
+    animation: bounceIn 0.3s ease-out;
+}
+
+body.day-mode .image-extract-panel {
+    background: rgba(255, 255, 255, 0.5);
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
+.unmatched-toggle-label {
+    color: hsl(0 0% 90%);
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+}
+body.day-mode .unmatched-toggle-label {
+    color: #1a202c;
+}
+body.day-mode .unmatched-section {
+    border-top-color: rgba(0,0,0,0.1) !important;
+}
+.unmatched-color-text {
+    font-size: 10px;
+    color: white;
+    text-shadow: 0 0 2px black, 0 0 1px black;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1.1;
+    word-break: break-all;
+    pointer-events: none;
+}

@@ -6,6 +6,7 @@
     <title>拼豆颜色替换工具</title>
     <link rel="stylesheet" href="./assets/css/style.css">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
     <div class="theme-toggle">
@@ -22,54 +23,153 @@
             <p class="subtitle">支持 HEX、RGB、MARD 及各类品牌色号混合输入，自动匹配最佳替代色</p>
         </div>
 
-        <div class="container">
-            <div class="section" id="step1">
-                <h2>步骤 1: 输入需要替换的原始颜色</h2>
-                
-                <div class="scheme-select-group">
-                    <label for="targetBrandSelect">当前使用的品牌色系：</label>
-                    <select id="targetBrandSelect" class="column-select">
-                        </select>
-                    <span style="margin-left: 15px; font-size: 0.85rem; color: #888;">* 用于解析下方输入的简写色号</span>
-                </div>
+        <div class="main-layout">
+            
+            <div class="left-panel">
+                <div class="container">
+                    <div class="section" id="step1">
+                        <h2>步骤 1: 输入或上传需要替换的原始颜色</h2>
+                        
+                        <div class="scheme-select-group">
+                            <label for="targetBrandSelect">当前使用的品牌色系：</label>
+                            <select id="targetBrandSelect" class="column-select">
+                                </select>
+                            <span style="margin-left: 15px; font-size: 0.85rem; color: #888;">* 用于解析简写色号</span>
+                        </div>
 
-                <div class="text-input" style="margin-top: 15px;">
-                    <textarea id="targetColorsInput" placeholder="请输入原始色号，使用空格、逗号或换行分隔...&#10;&#10;支持格式：&#10;1. HEX代码 (如 #FFDD99)&#10;2. RGB代码 (如 rgb(255,221,153) 或 255-221-153)&#10;3. 上方所选品牌的色号 (如 A11, 65)"></textarea>
+                        <div class="upload-area" style="margin-top: 20px;">
+                            <div class="file-upload">
+                                <div class="file-upload-area" id="fileUploadArea">
+                                    <input type="file" id="fileInput" accept=".csv, image/png, image/jpeg, image/jpg, image/webp" style="display: none;">
+                                    <div class="upload-icon">📁</div>
+                                    <p class="upload-text">点击选择或拖拽 CSV 或 图片文件 到此处</p>
+                                    <p class="upload-hint">支持读取包含表格数据的 CSV，或直接上传清晰图纸图片（仅包含网格区域，去除边缘留白和数轴）提取颜色</p>
+                                    <span id="fileName" class="file-name"></span>
+                                </div>
+
+                                <div id="imageExtractPanel" class="image-extract-panel" style="display: none;">
+                                    <h3 style="color: hsl(0 0% 90%); margin-bottom: 10px; font-size: 1.05rem;">图片网格采样设置</h3>
+                                    <div class="condition-row">
+                                        <label style="color: #ddd;">图纸横向豆子数(列数):</label>
+                                        <input type="number" id="imageGridCols" class="keyword-input" style="width: 100px; flex: none;" value="50" min="5" max="300">
+                                        
+                                        <label style="color: #ddd; margin-left: 10px;">
+                                            <input type="checkbox" id="ignoreWhiteBg" checked style="vertical-align: middle;"> 纯白背景视为透明
+                                        </label>
+
+                                        <button id="extractImageBtn" class="btn btn-primary" style="margin-left: auto;">提取颜色</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="divider">或手动输入</div>
+                            
+                            <div class="text-input">
+                                <textarea id="targetColorsInput" placeholder="提取的颜色会显示在这里，也可手动输入，使用空格、换行分隔...&#10;&#10;支持格式：&#10;1. HEX代码 (如 #FFDD99)&#10;2. RGB代码 (如 rgb(255,221,153))&#10;3. 所选品牌的色号 (如 A11, 65)"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section" id="step2">
+                        <h2>步骤 2: 设置你拥有的颜色库</h2>
+                        
+                        <div class="scheme-select-group">
+                            <label for="ownedBrandSelect">当前拥有的品牌色系：</label>
+                            <select id="ownedBrandSelect" class="column-select">
+                                </select>
+                            <span style="margin-left: 15px; font-size: 0.85rem; color: #888;">* 用于解析下方输入的简写色号及提供套装</span>
+                        </div>
+
+                        <div class="scheme-select-group" style="margin-top: 15px;">
+                            <label for="schemeSelect">快速选择已有色系套装：</label>
+                            <select id="schemeSelect" class="column-select">
+                                <option value="">-- 手动输入 --</option>
+                                </select>
+                        </div>
+
+                        <div class="text-input" style="margin-top: 15px;">
+                            <textarea id="ownedColorsInput" placeholder="在此补充你拥有的其他颜色色号 (格式同上)..."></textarea>
+                        </div>
+                        
+                        <div style="margin-top: 20px; text-align: center;">
+                            <button id="matchBtn" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 40px;">开始智能匹配替换</button>
+                        </div>
+                    </div>
+
+                    <div class="section" id="step3" style="display: none;">
+                        <h2>步骤 3: 匹配结果</h2>
+                        <div id="resultsTable" class="table-wrapper"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="section" id="step2">
-                <h2>步骤 2: 设置你拥有的颜色库</h2>
-                
-                <div class="scheme-select-group">
-                    <label for="ownedBrandSelect">当前拥有的品牌色系：</label>
-                    <select id="ownedBrandSelect" class="column-select">
-                        </select>
-                    <span style="margin-left: 15px; font-size: 0.85rem; color: #888;">* 用于解析下方输入的简写色号及提供套装</span>
-                </div>
+            <div id="previewTweakLayout" class="preview-tweak-layout right-panel" style="display: none;">
+                <div class="container sticky-panel">
+                    <div class="right-content">
+                        <div id="canvasPreviewArea" class="preview-panel">
+                            <div class="panel-header">
+                                <h3 id="previewTitle" class="preview-title">替换后图纸预览：</h3>
+                                <span class="preview-hint">(按住 Ctrl + 鼠标滚轮缩放)</span>
+                            </div>
+                            <div id="previewContainer" class="canvas-container">
+                                <canvas id="previewCanvas"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="control-panel">
+                            <div id="step4" class="tweak-section">
+                                <h3 class="section-title">手动微调</h3>
+                                <p class="tweak-desc">
+                                    觉得不满意？
+                                    请点击上方图纸格子选择需要微调的颜色区域，然后在下方色卡中选择一个新颜色，最后点击确认按钮替换当前颜色。
+                                </p>
+                                
+                                <div class="tweak-cards">
+                                    <div class="tweak-card tweak-card-small">
+                                        <h4>原始区域</h4>
+                                        <div id="selectedOriginalDisplay" class="color-display-box">+</div>
+                                        <p id="selectedOriginalCode">代号: -</p>
+                                    </div>
 
-                <div class="scheme-select-group" style="margin-top: 15px;">
-                    <label for="schemeSelect">快速选择已有色系套装：</label>
-                    <select id="schemeSelect" class="column-select">
-                        <option value="">-- 手动输入 --</option>
-                        </select>
-                </div>
+                                    <div class="tweak-card tweak-card-large">
+                                        <h4>选择新颜色</h4>
+                                        <div id="colorPickerGrid" class="color-grid">
+                                            <span>(完成匹配以加载色系)</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button id="applyManualTweakBtn" class="btn btn-warning full-width-btn" disabled>确认替换</button>
+                                
+                                <div class="unmatched-section" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(255,255,255,0.2);">
+                                    <label class="unmatched-toggle-label">
+                                        <input type="checkbox" id="toggleUnmatchedCheckbox"> 显示没有匹配颜色的区域
+                                    </label>
+                                    <div id="unmatchedColorsList" class="color-grid" style="display: none; height: auto; min-height: 50px; max-height: 120px; margin-top: 10px;">
+                                        </div>
+                                </div>
+                            </div>
 
-                <div class="text-input" style="margin-top: 15px;">
-                    <textarea id="ownedColorsInput" placeholder="在此补充你拥有的其他颜色色号 (格式同上)..."></textarea>
-                </div>
-                
-                <div style="margin-top: 20px; text-align: center;">
-                    <button id="matchBtn" class="btn btn-primary" style="font-size: 1.1rem; padding: 15px 40px;">开始智能匹配替换</button>
+                            <div id="exportArea" class="export-section">
+                                <h3 class="section-title">保存与导出</h3>
+                                <div class="export-buttons">
+                                    <button id="exportCsvBtn" class="btn btn-success">⬇️ 导出 CSV 纯网格</button>
+                                    <button id="exportImageBtn" class="btn btn-primary">🖼️ 导出高清图纸</button>
+                                </div>
+                                <p class="export-hint">* 图片包含色卡与标注，CSV仅保留网格数据</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="section" id="step3" style="display: none;">
-                <h2>步骤 3: 匹配结果</h2>
-                <div id="resultsTable" class="table-wrapper"></div>
-            </div>
         </div>
     </div>
+
+    <footer class="footer">
+        <p>Copyright © 2024 Tooltopia. All Rights Reserved.</p>
+        <p>Designed by DSTBP</p>
+    </footer>
 
     <script src="./assets/js/theme-toggle.js"></script>
     <script src="./assets/js/colorsData.js"></script>
