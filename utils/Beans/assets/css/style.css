@@ -865,7 +865,8 @@ body.day-mode .file-name {
 
 body.day-mode textarea,
 body.day-mode select,
-body.day-mode input[type="text"] {
+body.day-mode input[type="text"],
+body.day-mode input[type="number"] {
     background: rgba(255, 255, 255, 0.7);
     border-color: rgba(0, 0, 0, 0.15);
     color: #1a202c;
@@ -1529,4 +1530,19 @@ body.day-mode .unmatched-section {
     line-height: 1.1;
     word-break: break-all;
     pointer-events: none;
+}
+
+.image-extract-panel h3 {
+    color: hsl(0 0% 90%);
+}
+.image-extract-panel label {
+    color: #ddd;
+}
+
+/* 图片网格采样设置 - 日间文字颜色 */
+body.day-mode .image-extract-panel h3 {
+    color: #1a202c;
+}
+body.day-mode .image-extract-panel label {
+    color: #2d3748;
 }
