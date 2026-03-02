@@ -1546,3 +1546,19 @@ body.day-mode .image-extract-panel h3 {
 body.day-mode .image-extract-panel label {
     color: #2d3748;
 }
+
+body.day-mode .column-select:focus,
+body.day-mode select:focus,
+body.day-mode textarea:focus,
+body.day-mode input[type="text"]:focus,
+body.day-mode input[type="number"]:focus {
+    border-color: rgba(59, 130, 246, 0.5); /* 聚焦时显示柔和的蓝色边框 */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); /* 增加微弱的蓝色焦点光晕 */
+    outline: none;
+}
+
+/* 2. 针对 value 为空（即 "-- 请选择 --" 等占位选项）进行单独降级样式 */
+body.day-mode select option[value=""] {
+    color: #a0aec0; /* 颜色变淡，使用浅蓝灰色 */
+    font-weight: 400; /* 取消加粗，恢复普通字重 */
+}
