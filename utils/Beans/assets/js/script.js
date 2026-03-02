@@ -205,6 +205,51 @@ function findClosestHex(r, g, b, palette) {
     return closestHex;
 }
 
+function getDominantColor(ctx, startX, startY, cellW, cellH) {
+    // 留出 20% 的边距，避开网格线，只取中间 60% 的区域进行统计
+    const marginX = Math.floor(cellW * 0.2);
+    const marginY = Math.floor(cellH * 0.2);
+    const width = Math.floor(cellW * 0.6);
+    const height = Math.floor(cellH * 0.6);
+
+    if (width <= 0 || height <= 0) return null;
+
+    // 获取该区块的所有像素数据
+    const imgData = ctx.getImageData(startX + marginX, startY + marginY, width, height).data;
+    const colorCounts = {};
+    let maxCount = 0;
+    let dominantRGB = null;
+
+    for (let i = 0; i < imgData.length; i += 4) {
+        let r = imgData[i];
+        let g = imgData[i+1];
+        let b = imgData[i+2];
+        let a = imgData[i+3];
+
+        if (a < 128) continue; // 忽略透明像素
+
+        // 颜色量化降噪 (将相近的 JPEG 噪点归为同一种颜色，容差设为10)
+        const tolerance = 10;
+        const qR = Math.round(r / tolerance) * tolerance;
+        const qG = Math.round(g / tolerance) * tolerance;
+        const qB = Math.round(b / tolerance) * tolerance;
+
+        const key = `${qR},${qG},${qB}`;
+        colorCounts[key] = (colorCounts[key] || 0) + 1;
+
+        // 记录出现次数最多的颜色
+        if (colorCounts[key] > maxCount) {
+            maxCount = colorCounts[key];
+            // 保留该像素原始的 RGB 值
+            dominantRGB = { r, g, b };
+        }
+    }
+    return dominantRGB;
+}
+
+// ==========================================
+// 核心：从图片中提取网格，并强制转换到目标品牌色库中
+// ==========================================
 function extractImageGrid() {
     if (!uploadedImage) return;
     
@@ -232,13 +277,16 @@ function extractImageGrid() {
     }
 
     const ignoreWhite = document.getElementById('ignoreWhiteBg').checked;
+
     const canvas = document.createElement('canvas');
     canvas.width = uploadedImage.width;
     canvas.height = uploadedImage.height;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(uploadedImage, 0, 0);
     
+    // 按比例计算行数 
     const rows = Math.round(cols * (canvas.height / canvas.width));
+    
     const cellW = canvas.width / cols;
     const cellH = canvas.height / rows;
     
@@ -248,33 +296,34 @@ function extractImageGrid() {
     for (let j = 0; j < rows; j++) {
         let rowData = [];
         for (let i = 0; i < cols; i++) {
-            const cx = Math.floor(i * cellW + cellW * 0.28);
-            const cy = Math.floor(j * cellH + cellH * 0.28);
-            if (cx >= canvas.width || cy >= canvas.height) {
-                rowData.push('TRANSPARENT');
-                continue;
-            }
-            const pixel = ctx.getImageData(cx, cy, 1, 1).data;
-            const r = pixel[0], g = pixel[1], b = pixel[2], a = pixel[3];
+            const startX = i * cellW;
+            const startY = j * cellH;
             
-            if (a < 128 || (ignoreWhite && r > 245 && g > 245 && b > 245)) {
+            // 使用全新的主色提取算法，代替单点采样
+            const dominantColor = getDominantColor(ctx, startX, startY, cellW, cellH);
+
+            if (!dominantColor) {
                 rowData.push('TRANSPARENT');
             } else {
-                const closestHex = findClosestHex(r, g, b, palette);
-                rowData.push(closestHex);
-                uniqueColors.add(closestHex);
+                const { r, g, b } = dominantColor;
+                // 纯白背景过滤
+                if (ignoreWhite && r > 240 && g > 240 && b > 240) {
+                    rowData.push('TRANSPARENT');
+                } else {
+                    const closestHex = findClosestHex(r, g, b, palette);
+                    rowData.push(closestHex);
+                    uniqueColors.add(closestHex);
+                }
             }
         }
         originalCsvData.push(rowData);
     }
     
     const colorArray = Array.from(uniqueColors);
-    // 核心修改：提取后强制更新输入框
     document.getElementById('targetColorsInput').value = colorArray.join('\n');
     document.getElementById('fileName').innerHTML += `<br><span style="font-size: 0.85em; color: #4caf50;">已成功提取并映射至 ${targetBrand} 色库，共提取到 ${colorArray.length} 种颜色</span>`;
     document.getElementById('imageExtractPanel').style.display = 'none';
 }
-
 function exportCsv() {
     if (!replacedCsvData) return;
     const csv = Papa.unparse(replacedCsvData);
