@@ -269,9 +269,11 @@ class ResourceLocalizer {
             await new Promise(resolve => setTimeout(resolve, 100));
             
             const userContinue = window.confirm(
-                `有 ${failedUrls.length} 个资源下载失败（通常是跨域拦截或404，详见页面日志）。\n\n` +
-                `👉 点击【确定】: 忽略失败的资源，继续生成 ZIP 包（失败资源将保留原外网链接或降级链接）。\n` +
-                `👉 点击【取消】: 终止打包。`
+                `有 ${failedUrls.length} 个资源下载失败。\n` +
+                `👉 常见原因：目标网址404，或者被 uBlock Origin 等广告插件拦截。\n\n` +
+                `💡 如果是被拦截，您可以【临时关闭广告插件】后重试。\n\n` +
+                `• 点击【确定】: 忽略失败项，继续打包（失败项将保留原始外网链接）\n` +
+                `• 点击【取消】: 中止打包`
             );
 
             if (!userContinue) {
@@ -302,13 +304,13 @@ class ResourceLocalizer {
     async fetchWithRetry(url, maxRetries = 3) {
         let lastError;
         for (let i = 0; i < maxRetries; i++) {
+            const startTime = Date.now(); // 记录请求开始时间
             try {
                 const response = await fetch(url, {
                     mode: 'cors',
                     cache: 'no-cache'
                 });
 
-                // 如果是 4xx 客户端错误（如 403, 404），通常重试也没用，直接抛出不再重试
                 if (response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 429) {
                     throw new Error(`HTTP ${response.status} - 客户端错误，放弃重试`);
                 }
@@ -319,16 +321,24 @@ class ResourceLocalizer {
 
                 return response;
             } catch (error) {
+                const duration = Date.now() - startTime; // 计算请求耗时
                 lastError = error;
                 const isNetworkError = error instanceof TypeError && error.message === 'Failed to fetch';
                 
+                // 【核心策略】如果请求在极短时间（< 150ms）内发生 Failed to fetch，
+                // 极大概率是被 uBlock Origin 等广告拦截器拦截，或者触发了严格的 CORS 策略。
+                // 此时重试毫无意义，直接中断。
+                if (isNetworkError && duration < 150) {
+                    this.log(`⚠️ 请求瞬间被阻断 (${url})，可能是被广告插件(如uBlock)拦截，放弃重试`, 'error');
+                    throw new Error('被浏览器扩展或CORS拦截');
+                }
+
                 // 如果是最后一次尝试，或者是不应该重试的错误，直接抛出
                 if (i === maxRetries - 1 || (!isNetworkError && error.message.includes('客户端错误'))) {
                     throw error;
                 }
 
-                // 打印重试日志并等待一段时间再试 (1.5秒)
-                this.log(`⚠️ 请求失败 (${error.message})，准备进行第 ${i + 1} 次重试: ${url}`, 'info');
+                this.log(`⚠️ 网络请求失败，准备进行第 ${i + 1} 次重试: ${url}`, 'info');
                 await new Promise(resolve => setTimeout(resolve, 1500));
             }
         }
