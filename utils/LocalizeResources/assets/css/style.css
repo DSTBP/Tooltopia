@@ -303,11 +303,42 @@ body {
     border-left: 4px solid hsl(0 0% 70%);
     display: flex;
     align-items: center;
-    gap: 10px;
-    word-break: break-all;
+    gap: 15px; /* 让徽章、链接、下拉框之间留出空隙 */
     color: hsl(0 0% 85%);
 }
 
+.resource-url {
+    flex: 1; /* 占据中间所有剩余空间 */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 独立设计的加载策略下拉框 */
+.strategy-select {
+    background: rgba(0, 0, 0, 0.3);
+    color: hsl(0, 0%, 90%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.85em;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.3s ease;
+    min-width: 140px;
+}
+
+.strategy-select:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.strategy-select option {
+    background: #2d3748;
+    color: white;
+}
+
+/* 强化不同 Resource Type 的颜色差异 */
 .resource-type {
     display: inline-block;
     padding: 4px 10px;
@@ -320,12 +351,14 @@ body {
 
 .resource-type.css {
     background: rgba(66, 165, 245, 0.2);
-    color: hsl(207 90% 70%);
+    color: hsl(207, 90%, 70%);
+    border: 1px solid rgba(66, 165, 245, 0.4);
 }
 
 .resource-type.js {
     background: rgba(255, 193, 7, 0.2);
-    color: hsl(45 100% 70%);
+    color: hsl(45, 100%, 70%);
+    border: 1px solid rgba(255, 193, 7, 0.4);
 }
 
 .progress-container {
@@ -569,8 +602,9 @@ body.day-mode .stat-label {
 }
 
 body.day-mode .resource-list {
-    background: rgba(255, 255, 255, 0.5);
-    border-color: rgba(0, 0, 0, 0.1);
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
 }
 
 body.day-mode .resource-item {
@@ -844,4 +878,103 @@ body.day-mode .footer p {
     .footer p {
         font-size: 0.75rem;
     }
+}
+
+body.day-mode .strategy-select {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(0, 0, 0, 0.2);
+    color: #2d3748;
+}
+
+body.day-mode .strategy-select option {
+    background: white;
+    color: #2d3748;
+}
+
+/* 强化日间模式的类型标签色彩 */
+body.day-mode .resource-type.css {
+    background: rgba(59, 130, 246, 0.15);
+    color: #1d4ed8;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+body.day-mode .resource-type.js {
+    background: rgba(245, 158, 11, 0.15);
+    color: #b45309;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.resource-type.img {
+    background: rgba(233, 30, 99, 0.2);
+    color: hsl(339, 82%, 70%);
+    border: 1px solid rgba(233, 30, 99, 0.4);
+}
+
+.resource-type.font {
+    background: rgba(156, 39, 176, 0.2);
+    color: hsl(291, 64%, 70%);
+    border: 1px solid rgba(156, 39, 176, 0.4);
+}
+
+.resource-type.other {
+    background: rgba(158, 158, 158, 0.2);
+    color: hsl(0, 0%, 70%);
+    border: 1px solid rgba(158, 158, 158, 0.4);
+}
+
+body.day-mode .resource-type.img {
+    background: rgba(233, 30, 99, 0.15);
+    color: #be185d;
+    border: 1px solid rgba(233, 30, 99, 0.3);
+}
+
+body.day-mode .resource-type.font {
+    background: rgba(147, 51, 234, 0.15);
+    color: #7e22ce;
+    border: 1px solid rgba(147, 51, 234, 0.3);
+}
+
+body.day-mode .resource-type.other {
+    background: rgba(107, 114, 128, 0.15);
+    color: #374151;
+    border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.list-header h3 {
+    margin-bottom: 0; /* 覆盖原有的 margin-bottom */
+}
+
+.batch-controls {
+    display: flex;
+    gap: 10px;
+}
+
+/* 小型按钮修改默认 .btn 的边距和内边距 */
+.btn.btn-sm {
+    margin-top: 0;
+    padding: 6px 15px;
+    font-size: 0.85rem;
+    width: auto; /* 覆盖原有 width: 100% */
+}
+
+/* 移动端适配：屏幕变窄时让标题和按钮上下排列 */
+@media (max-width: 600px) {
+    .list-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+}
+
+body.day-mode #resourceList {
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02); /* 可选：加一点内阴影让列表看起来更有深度 */
 }

@@ -2,11 +2,16 @@ class ResourceLocalizer {
     constructor() {
         this.htmlFile = null;
         this.htmlContent = '';
+        // 扩充支持的资源类型
         this.resources = {
             css: [],
-            js: []
+            js: [],
+            img: [],
+            font: [],
+            other: []
         };
         this.downloadedResources = new Map();
+        this.resourceStrategies = new Map();
 
         this.initEventListeners();
     }
@@ -14,7 +19,7 @@ class ResourceLocalizer {
     initEventListeners() {
         const fileInput = document.getElementById('htmlInput');
         const fileUploadArea = document.getElementById('fileUploadArea');
-
+        
         // 点击上传区域触发文件选择
         fileUploadArea.addEventListener('click', () => {
             fileInput.click();
@@ -60,8 +65,30 @@ class ResourceLocalizer {
                 }
             }
         });
-    }
 
+        document.getElementById('batchLocalBtn').addEventListener('click', () => this.setBatchStrategy('local'));
+        document.getElementById('batchFallbackBtn').addEventListener('click', () => this.setBatchStrategy('fallback'));
+    }
+    
+    setBatchStrategy(strategy) {
+        // 1. 更新内存中的策略状态
+        ['css', 'js', 'img', 'font', 'other'].forEach(type => {
+            this.resources[type].forEach(url => {
+                this.resourceStrategies.set(url, strategy);
+            });
+        });
+
+        // 2. 同步更新页面上所有下拉框的选中值
+        const selects = document.querySelectorAll('.strategy-select');
+        selects.forEach(select => {
+            select.value = strategy;
+        });
+
+        // 3. 打印日志反馈
+        const strategyName = strategy === 'local' ? '纯本地加载' : '优先外源 (降级本地)';
+        this.log(`已将所有资源批量设置为: ${strategyName}`, 'info');
+    }
+    
     handleFileUpload(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -79,21 +106,32 @@ class ResourceLocalizer {
 
     analyzeResources() {
         this.log('开始分析 HTML 文件...', 'info');
-
         const parser = new DOMParser();
         const doc = parser.parseFromString(this.htmlContent, 'text/html');
 
-        // 提取 CSS 链接
-        const cssLinks = doc.querySelectorAll('link[rel="stylesheet"]');
-        this.resources.css = Array.from(cssLinks)
-            .map(link => link.getAttribute('href'))
-            .filter(href => href && (href.startsWith('http://') || href.startsWith('https://')));
+        // 清空之前的资源
+        this.resources = { css: [], js: [], img: [], font: [], other: [] };
 
-        // 提取 JS 脚本
-        const jsScripts = doc.querySelectorAll('script[src]');
-        this.resources.js = Array.from(jsScripts)
-            .map(script => script.getAttribute('src'))
-            .filter(src => src && (src.startsWith('http://') || src.startsWith('https://')));
+        const addResource = (url, type) => {
+            if (url && (url.startsWith('http://') || url.startsWith('https://')) && !this.resources[type].includes(url)) {
+                this.resources[type].push(url);
+            }
+        };
+
+        // 1. CSS
+        doc.querySelectorAll('link[rel="stylesheet"]').forEach(el => addResource(el.getAttribute('href'), 'css'));
+        // 2. JS
+        doc.querySelectorAll('script[src]').forEach(el => addResource(el.getAttribute('src'), 'js'));
+        // 3. 图片 (Img, Svg, 图标等)
+        doc.querySelectorAll('img[src]').forEach(el => addResource(el.getAttribute('src'), 'img'));
+        doc.querySelectorAll('link[rel*="icon"]').forEach(el => addResource(el.getAttribute('href'), 'img'));
+        // 4. 字体 (ttf, woff, woff2)
+        doc.querySelectorAll('link[rel="preload"][as="font"]').forEach(el => addResource(el.getAttribute('href'), 'font'));
+        // 5. 其他 (JSON, manifest, ejs, 媒体 source 等)
+        doc.querySelectorAll('link[rel="manifest"], link[rel="prefetch"], source[src]').forEach(el => {
+            const url = el.getAttribute('href') || el.getAttribute('src');
+            addResource(url, 'other');
+        });
 
         this.displayAnalysisResults();
         document.getElementById('step2').style.display = 'block';
@@ -101,37 +139,58 @@ class ResourceLocalizer {
     }
 
     displayAnalysisResults() {
-        const cssCount = this.resources.css.length;
-        const jsCount = this.resources.js.length;
-        const totalCount = cssCount + jsCount;
+        const counts = {
+            css: this.resources.css.length,
+            js: this.resources.js.length,
+            img: this.resources.img.length,
+            font: this.resources.font.length,
+            other: this.resources.other.length
+        };
+        const totalCount = Object.values(counts).reduce((a, b) => a + b, 0);
 
-        document.getElementById('cssCount').textContent = cssCount;
-        document.getElementById('jsCount').textContent = jsCount;
-        document.getElementById('totalCount').textContent = totalCount;
+        // 更新基础统计 (如果有更多 UI 卡片可自行在 HTML 中添加 id 并赋值)
+        if(document.getElementById('cssCount')) document.getElementById('cssCount').textContent = counts.css;
+        if(document.getElementById('jsCount')) document.getElementById('jsCount').textContent = counts.js;
+        if(document.getElementById('totalCount')) document.getElementById('totalCount').textContent = totalCount;
 
         const resourceList = document.getElementById('resourceList');
         resourceList.innerHTML = '';
 
-        // 显示 CSS 资源
-        this.resources.css.forEach(url => {
+        const createResourceItem = (url, type) => {
             const item = document.createElement('div');
             item.className = 'resource-item';
-            item.innerHTML = `
-                <span class="resource-type css">CSS</span>
-                <span>${url}</span>
-            `;
-            resourceList.appendChild(item);
-        });
 
-        // 显示 JS 资源
-        this.resources.js.forEach(url => {
-            const item = document.createElement('div');
-            item.className = 'resource-item';
-            item.innerHTML = `
-                <span class="resource-type js">JS</span>
-                <span>${url}</span>
+            const typeSpan = document.createElement('span');
+            typeSpan.className = `resource-type ${type}`;
+            typeSpan.textContent = type.toUpperCase();
+
+            const urlSpan = document.createElement('span');
+            urlSpan.className = 'resource-url';
+            urlSpan.textContent = url;
+            urlSpan.title = url;
+
+            const select = document.createElement('select');
+            select.className = 'strategy-select';
+            select.innerHTML = `
+                <option value="local">纯本地加载</option>
+                <option value="fallback">优先外源 (降级本地)</option>
             `;
+
+            if (!this.resourceStrategies.has(url)) {
+                this.resourceStrategies.set(url, 'local');
+            }
+            select.value = this.resourceStrategies.get(url);
+            select.addEventListener('change', (e) => this.resourceStrategies.set(url, e.target.value));
+
+            item.appendChild(typeSpan);
+            item.appendChild(urlSpan);
+            item.appendChild(select);
             resourceList.appendChild(item);
+        };
+
+        // 按顺序渲染
+        ['css', 'js', 'img', 'font', 'other'].forEach(type => {
+            this.resources[type].forEach(url => createResourceItem(url, type));
         });
     }
 
@@ -139,51 +198,88 @@ class ResourceLocalizer {
         document.getElementById('step3').style.display = 'block';
         document.getElementById('downloadBtn').disabled = true;
 
-        const allResources = [...this.resources.css, ...this.resources.js];
+        // 合并所有需要下载的资源并附带类型
+        const allResources = [];
+        ['css', 'js', 'img', 'font', 'other'].forEach(type => {
+            if (this.resources[type]) {
+                this.resources[type].forEach(url => allResources.push({ url, type }));
+            }
+        });
+
         const total = allResources.length;
         let completed = 0;
+        let failedUrls = []; // 记录下载失败的资源
 
         this.log(`开始下载 ${total} 个资源...`, 'info');
 
         const zip = new JSZip();
         const staticFolder = zip.folder('static');
-        const cssFolder = staticFolder.folder('css');
-        const jsFolder = staticFolder.folder('js');
+        
+        // 创建各类型文件夹
+        const folders = {
+            css: staticFolder.folder('css'),
+            js: staticFolder.folder('js'),
+            img: staticFolder.folder('img'),
+            font: staticFolder.folder('font'),
+            other: staticFolder.folder('other')
+        };
 
-        // 下载所有资源
-        for (const url of allResources) {
+        for (const { url, type } of allResources) {
             try {
                 this.log(`下载中: ${url}`, 'info');
-
-                const response = await fetch(url, {
-                    mode: 'cors',
-                    cache: 'no-cache'
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const content = await response.text();
+                
+                // 【修改点1】调用封装好的带有重试机制的 fetch 方法
+                const response = await this.fetchWithRetry(url, 3);
+                
                 const filename = this.getFilenameFromUrl(url);
+                const localPath = `./static/${type}/${filename}`;
 
-                if (this.resources.css.includes(url)) {
-                    // 处理 CSS 文件中的资源引用
-                    const processedContent = await this.processCssContent(content, url, cssFolder);
-                    cssFolder.file(filename, processedContent);
-                    this.downloadedResources.set(url, `./static/css/${filename}`);
+                // 区分文本和二进制的下载方式
+                if (type === 'css' || type === 'js') {
+                    const content = await response.text();
+                    if (type === 'css') {
+                        const processedContent = await this.processCssContent(content, url, folders.css);
+                        folders.css.file(filename, processedContent);
+                    } else {
+                        folders.js.file(filename, content);
+                    }
                 } else {
-                    jsFolder.file(filename, content);
-                    this.downloadedResources.set(url, `./static/js/${filename}`);
+                    const blob = await response.blob();
+                    folders[type].file(filename, blob);
                 }
 
-                completed++;
-                this.updateProgress(completed, total);
+                this.downloadedResources.set(url, localPath);
                 this.log(`✓ 下载成功: ${filename}`, 'success');
             } catch (error) {
-                this.log(`✗ 下载失败: ${url} (${error.message})`, 'error');
+                // 【修改点2】记录失败的资源，不抛出异常以保证循环继续
+                this.log(`✗ 彻底失败: ${url} (${error.message})`, 'error');
+                failedUrls.push(url);
+            } finally {
+                // 无论成功还是失败，进度条都要走
                 completed++;
                 this.updateProgress(completed, total);
+            }
+        }
+
+        // 【修改点3】判断是否有失败的资源，如果有，弹窗询问用户
+        if (failedUrls.length > 0) {
+            this.log(`⚠️ 下载环节结束。有 ${failedUrls.length} 个资源下载失败，等待用户决策...`, 'error');
+            
+            // 延迟一点点弹窗，确保 UI 和日志已经更新
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const userContinue = window.confirm(
+                `有 ${failedUrls.length} 个资源下载失败（通常是跨域拦截或404，详见页面日志）。\n\n` +
+                `👉 点击【确定】: 忽略失败的资源，继续生成 ZIP 包（失败资源将保留原外网链接或降级链接）。\n` +
+                `👉 点击【取消】: 终止打包。`
+            );
+
+            if (!userContinue) {
+                this.log('⛔ 用户已取消生成 ZIP 包，任务终止。', 'error');
+                document.getElementById('downloadBtn').disabled = false;
+                return; // 提前退出函数，不执行打包
+            } else {
+                this.log('▶️ 用户选择忽略失败项，继续生成 ZIP 包...', 'info');
             }
         }
 
@@ -191,11 +287,9 @@ class ResourceLocalizer {
         const modifiedHtml = this.generateModifiedHtml();
         zip.file('index.html', modifiedHtml);
 
-        // 生成 ZIP 文件
         this.log('正在生成 ZIP 文件...', 'info');
         const blob = await zip.generateAsync({ type: 'blob' });
 
-        // 下载 ZIP 文件
         const downloadLink = document.createElement('a');
         downloadLink.href = URL.createObjectURL(blob);
         downloadLink.download = `${this.htmlFile.name.replace('.html', '')}_localized.zip`;
@@ -203,6 +297,42 @@ class ResourceLocalizer {
 
         this.log('✓ 全部完成！ZIP 文件已生成', 'success');
         document.getElementById('downloadBtn').disabled = false;
+    }
+
+    async fetchWithRetry(url, maxRetries = 3) {
+        let lastError;
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                const response = await fetch(url, {
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+
+                // 如果是 4xx 客户端错误（如 403, 404），通常重试也没用，直接抛出不再重试
+                if (response.status >= 400 && response.status < 500 && response.status !== 408 && response.status !== 429) {
+                    throw new Error(`HTTP ${response.status} - 客户端错误，放弃重试`);
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                return response;
+            } catch (error) {
+                lastError = error;
+                const isNetworkError = error instanceof TypeError && error.message === 'Failed to fetch';
+                
+                // 如果是最后一次尝试，或者是不应该重试的错误，直接抛出
+                if (i === maxRetries - 1 || (!isNetworkError && error.message.includes('客户端错误'))) {
+                    throw error;
+                }
+
+                // 打印重试日志并等待一段时间再试 (1.5秒)
+                this.log(`⚠️ 请求失败 (${error.message})，准备进行第 ${i + 1} 次重试: ${url}`, 'info');
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+        }
+        throw lastError;
     }
 
     async processCssContent(cssContent, cssUrl, cssFolder) {
@@ -253,27 +383,49 @@ class ResourceLocalizer {
     generateModifiedHtml() {
         let modifiedHtml = this.htmlContent;
 
-        // 替换 CSS 链接
-        this.resources.css.forEach(url => {
-            const localPath = this.downloadedResources.get(url);
-            if (localPath) {
-                modifiedHtml = modifiedHtml.replace(
-                    new RegExp(`href=["']${this.escapeRegex(url)}["']`, 'g'),
-                    `href="${localPath}"`
-                );
-            }
-        });
+        const processReplacements = (type) => {
+            this.resources[type].forEach(url => {
+                const localPath = this.downloadedResources.get(url);
+                const strategy = this.resourceStrategies.get(url) || 'local';
 
-        // 替换 JS 链接
-        this.resources.js.forEach(url => {
-            const localPath = this.downloadedResources.get(url);
-            if (localPath) {
-                modifiedHtml = modifiedHtml.replace(
-                    new RegExp(`src=["']${this.escapeRegex(url)}["']`, 'g'),
-                    `src="${localPath}"`
-                );
-            }
-        });
+                if (localPath) {
+                    const escapedUrl = this.escapeRegex(url);
+                    // 同时匹配 href 和 src
+                    const hrefRegex = new RegExp(`href=["']${escapedUrl}["']`, 'g');
+                    const srcRegex = new RegExp(`src=["']${escapedUrl}["']`, 'g');
+
+                    if (strategy === 'local') {
+                        modifiedHtml = modifiedHtml.replace(hrefRegex, `href="${localPath}"`);
+                        modifiedHtml = modifiedHtml.replace(srcRegex, `src="${localPath}"`);
+                    } else if (strategy === 'fallback') {
+                        if (type === 'css' || type === 'font') {
+                            modifiedHtml = modifiedHtml.replace(
+                                hrefRegex,
+                                `href="${url}" onerror="this.onerror=null;this.href='${localPath}'"`
+                            );
+                        } else if (type === 'js') {
+                            modifiedHtml = modifiedHtml.replace(
+                                srcRegex,
+                                `src="${url}" onerror="document.write('<script src=\\'${localPath}\\'><\\/script>')"`
+                            );
+                        } else if (type === 'img' || type === 'other') {
+                            // 对于图片等标签，降级替换 src 属性
+                            modifiedHtml = modifiedHtml.replace(
+                                srcRegex,
+                                `src="${url}" onerror="this.onerror=null;this.src='${localPath}'"`
+                            );
+                            // 万一 other 类型使用的是 href (例如 manifest)，也做预备替换
+                            modifiedHtml = modifiedHtml.replace(
+                                hrefRegex,
+                                `href="${url}" onerror="this.onerror=null;this.href='${localPath}'"`
+                            );
+                        }
+                    }
+                }
+            });
+        };
+
+        ['css', 'js', 'img', 'font', 'other'].forEach(type => processReplacements(type));
 
         return modifiedHtml;
     }

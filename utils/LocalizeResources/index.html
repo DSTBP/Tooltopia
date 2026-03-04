@@ -74,7 +74,13 @@
             </div>
 
             <div class="resource-list">
-                <h3>📋 检测到的外部资源</h3>
+                <div class="list-header">
+                    <h3>📋 检测到的外部资源</h3>
+                    <div class="batch-controls">
+                        <button id="batchLocalBtn" class="btn btn-sm">全部纯本地</button>
+                        <button id="batchFallbackBtn" class="btn btn-sm">全部优先外源</button>
+                    </div>
+                </div>
                 <div id="resourceList"></div>
             </div>
 
