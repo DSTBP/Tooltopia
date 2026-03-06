@@ -335,6 +335,7 @@ img, svg { display: block; vertical-align: middle; max-width: 100%; }
 body.day-mode {
     background: #f0f4f8;
     background-image: url(../../../../assets/image/day-background.png);
+    color: #2d3748;
     background-size: auto;
     background-repeat: repeat;
 }
@@ -494,15 +495,7 @@ body.day-mode .footer p { color: rgba(0, 0, 0, 0.5); }
 }
 
 .briefing-icon {
-    color: #4ECDC4; /* 契合档案库的神秘青色 */
-}
-
-.briefing-body p {
-    color: hsl(0 0% 75%);
-    line-height: 1.8;
-    font-size: 0.95rem;
-    margin: 0;
-    text-align: justify; /* 两端对齐，排版更像官方文档 */
+    color: #317b7b; /* 幽暗青：带有旧档案室的霉旧感 */
 }
 
 .briefing-footer {
@@ -511,20 +504,28 @@ body.day-mode .footer p { color: rgba(0, 0, 0, 0.5); }
     align-items: center;
     gap: 0.5rem;
     font-size: 0.85rem;
-    color: #4ECDC4;
-    background: rgba(78, 205, 196, 0.08);
+    color: #439696; /* 文字稍亮以保证可读性，维持暗青基调 */
+    background: rgba(49, 123, 123, 0.08);
     padding: 0.5rem 1rem;
     border-radius: 6px;
-    border: 1px solid rgba(78, 205, 196, 0.15);
+    border: 1px solid rgba(49, 123, 123, 0.2);
 }
 
 .status-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background-color: #4ECDC4;
-    box-shadow: 0 0 8px #4ECDC4;
+    background-color: #439696;
+    box-shadow: 0 0 8px rgba(67, 150, 150, 0.6); /* 诡异的青色微光 */
     animation: pulse-dot-anim 2s infinite;
+}
+
+.briefing-body p {
+    color: hsl(0 0% 75%);
+    line-height: 1.8;
+    font-size: 0.95rem;
+    margin: 0;
+    text-align: justify; /* 两端对齐，排版更像官方文档 */
 }
 
 @keyframes pulse-dot-anim {
@@ -549,23 +550,24 @@ body.day-mode .briefing-header {
     border-bottom-color: rgba(0, 0, 0, 0.1);
 }
 
-body.day-mode .briefing-icon {
-    color: #3b82f6; /* 日间模式改为清爽的蓝色 */
-}
-
 body.day-mode .briefing-body p {
     color: #4a5568;
 }
 
+/* 🌟 下方为日间模式的深渊青色调 */
+body.day-mode .briefing-icon {
+    color: #1b4f4f; /* 深渊青：在亮色背景下显得压抑深邃 */
+}
+
 body.day-mode .briefing-footer {
-    color: #3b82f6;
-    background: rgba(59, 130, 246, 0.08);
-    border-color: rgba(59, 130, 246, 0.2);
+    color: #1b4f4f;
+    background: rgba(27, 79, 79, 0.06);
+    border-color: rgba(27, 79, 79, 0.15);
 }
 
 body.day-mode .status-dot {
-    background-color: #3b82f6;
-    box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+    background-color: #1b4f4f;
+    box-shadow: 0 0 8px rgba(27, 79, 79, 0.5);
 }
 
 /* 移动端简单优化 */
