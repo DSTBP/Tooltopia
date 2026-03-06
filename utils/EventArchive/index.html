@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>異常事件研究所</title>
+    <link href="assets/css/style.css" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+</head>
+<body>
+    <div id="root">
+        <div class="app-container">
+            
+            <nav class="navbar">
+                <div class="nav-content">
+                    <div class="logo-wrapper">
+                        <img src="favicon.png" alt="Logo" class="logo-icon">
+                        <div class="search-wrapper">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg>
+                            <input id="search-input" placeholder="检索档案 (名称/作者)..." class="search-input" type="text" value="">
+                        </div>
+                    </div>
+                    
+                    <div class="nav-actions">
+                        <div class="desktop-random">
+                            <a href="../../index.html" class="btn-primary shadow-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                </svg>
+                                <span>返回主页</span>
+                            </a>
+                            <div class="tooltip">回到工具箱首页</div>
+                        </div>
+                        <div class="desktop-random">
+                            <button class="random-btn btn-primary shadow-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"></rect><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"></path><path d="M6 18h.01"></path><path d="M10 14h.01"></path><path d="M15 6h.01"></path><path d="M18 9h.01"></path></svg>
+                                <span>随机抽取</span>
+                            </button>
+                            <div class="tooltip">不知道玩哪个？试试运气？</div>
+                        </div>
+                        
+                        <div class="theme-toggle-container">
+                            <div class="theme-toggle">
+                                <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+                                <label for="themeToggle" class="theme-toggle__btn">
+                                    <span class="theme-toggle__feature"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <header class="hero-section">
+                <div class="hero-content">
+                    <h1 class="hero-title" data-shadow='異常事件研究所'>異常事件研究所</h1>
+                    
+                    <div class="hero-desc">
+                        <div class="briefing-card">
+                            <div class="briefing-header">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="briefing-icon"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                                <span>各位特殊事件研究员，欢迎入所！</span>
+                            </div>
+                            <div class="briefing-body">
+                                <p>这里藏着无数光怪陆离的未知事件，诡异谜团正持续发酵，反常线索亟待挖掘。诚邀你沉浸式入局，与我们一同追踪蛛丝马迹、深度分析脉络、抽丝剥茧还原事件真相，解锁专属的奇案线索追踪体验！</p>
+                            </div>
+                            <div class="briefing-footer">
+                                <div class="status-dot"></div>
+                                <span>本页面将不定期更新未收录的解谜新游，持续解锁全新探案体验～</span>
+                            </div>
+                        </div>
+                        
+                        <div class="feature-tags">
+                            <div class="feature-tag">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #f97316;" aria-hidden="true"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"></path></svg>
+                                <span>热门推荐：追踪高频异常事件</span>
+                            </div>
+                            <div class="feature-tag">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #facc15;" aria-hidden="true"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg>
+                                <span>最新收录：第一时间锁定新案</span>
+                            </div>
+                            <div class="feature-tag">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #22d3ee;" aria-hidden="true"><path d="M14 14a2 2 0 0 0 2-2V8h-2"></path><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"></path><path d="M8 14a2 2 0 0 0 2-2V8H8"></path></svg>
+                                <span>情报墙：反馈遇到的问题</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <section class="archive-section" id="popular-section">
+                    <div class="section-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #f97316;" aria-hidden="true"><path d="M12 3q1 4 4 6.5t3 5.5a1 1 0 0 1-14 0 5 5 0 0 1 1-3 1 1 0 0 0 5 0c0-2-1.5-3-1.5-5q0-2 2.5-4"></path></svg>
+                        <h2 class="section-title">热门档案</h2>
+                    </div>
+                    <div id="popular-container" class="grid-container"></div>
+                </section>
+
+                <section class="archive-section" id="new-section">
+                    <div class="section-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #facc15;" aria-hidden="true"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg>
+                        <h2 class="section-title">最新收录</h2>
+                    </div>
+                    <div id="new-container" class="grid-container"></div>
+                </section>
+
+                <div class="divider"></div>
+
+                <section id="all-section">
+                    <div class="section-header" style="border-bottom: none; margin-bottom: 0.5rem; padding-bottom: 0;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #667eea;" aria-hidden="true"><rect width="20" height="8" x="2" y="3" rx="2" ry="2"/><rect width="20" height="8" x="2" y="13" rx="2" ry="2"/><line x1="10" x2="14" y1="7" y2="7"/><line x1="10" x2="14" y1="17" y2="17"/></svg>
+                        <h2 class="section-title">全部档案库</h2>
+                    </div>
+                    
+                    <div class="search-status">
+                        <div class="pulse-dot"></div>
+                        <span id="total-count">已检索到 0 份特殊档案</span>
+                    </div>
+                    
+                    <div id="all-container" class="grid-container"></div>
+                </section>
+            </main>
+            
+            <footer class="footer">
+                <p style="font-size: 0.85em; opacity: 0.75; line-height: 1.8;">
+                    本网页参考自 <a href="https://gameorganize.hedyyy.cn/" target="_blank" style="text-decoration: underline; text-underline-offset: 2px;">gameorganize.hedyyy.cn</a>，欢迎前往原站探索<br>
+                    原网站作者：小红书 <a href="https://www.xiaohongshu.com/user/profile/69295a990000000037005e7a" target="_blank" style="text-decoration: underline; text-underline-offset: 2px;">@摸鱼侦探社</a>
+                </p>
+            </footer>
+        </div>
+    </div>
+    <script src="assets/js/theme-toggle.js"></script>
+    <script src="assets/js/data.js"></script>
+    <script src="assets/js/script.js"></script>
+</body>
+</html>
