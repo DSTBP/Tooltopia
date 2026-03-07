@@ -635,17 +635,17 @@ body.day-mode .briefing-body p {
 
 /* 🌟 下方为日间模式的深渊青色调 */
 body.day-mode .briefing-icon {
-    color: #1b4f4f; /* 深渊青：在亮色背景下显得压抑深邃 */
+    color: #0C5D56; /* 深渊青：在亮色背景下显得压抑深邃 */
 }
 
 body.day-mode .briefing-footer {
-    color: #1b4f4f;
+    color: #0C5D56;
     background: rgba(27, 79, 79, 0.06);
     border-color: rgba(27, 79, 79, 0.15);
 }
 
 body.day-mode .status-dot {
-    background-color: #1b4f4f;
+    background-color: #0C5D56;
     box-shadow: 0 0 8px rgba(27, 79, 79, 0.5);
 }
 
