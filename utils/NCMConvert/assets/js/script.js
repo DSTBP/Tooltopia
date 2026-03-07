@@ -1,6 +1,6 @@
 /*
  * @Description: NCM 转 MP3/FLAC... 核心逻辑 (包含 LRC 歌词匹配与合并、MP3直传合并及ZIP打包下载)
- * @Updated: 解决 ffmpeg 队列死锁问题，新增 MP3 ID3 标签(封面/歌手)解析
+ * @Updated: 修复处理未生成输出文件的 Bug，关闭冗余控制台日志输出
  */
 
 const WORKER_CODE = `
@@ -149,22 +149,20 @@ class NCMConverter {
 
         try {
             if (typeof FFmpeg === 'undefined') {
-                console.log("Loading FFmpeg 0.11.x script...");
                 await this.loadScript('https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js');
             }
 
             const { createFFmpeg } = FFmpeg;
 
+            // 关闭冗余的日志输出
             this.ffmpeg = createFFmpeg({
-                log: true,
+                log: false, 
                 mainName: 'main', 
-                corePath: 'https://unpkg.com/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js',
-                logger: ({ message }) => console.log("[FFmpeg]", message)
+                corePath: 'https://unpkg.com/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js'
             });
 
             await this.ffmpeg.load();
         } catch (e) {
-            console.error("FFmpeg Init Error", e);
             throw new Error("FFmpeg 组件加载失败: " + e.message);
         }
     }
@@ -252,7 +250,6 @@ class NCMConverter {
         });
 
         if (this.mp3MergeCheck && this.mp3MergeCheck.checked && mp3Files.length > 0) {
-            // 动态加载 ID3 解析库
             if (typeof window.jsmediatags === 'undefined') {
                 await this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js');
             }
@@ -274,7 +271,6 @@ class NCMConverter {
                 const url = URL.createObjectURL(file);
                 const fallbackMeta = { format: 'mp3', musicName: baseName };
 
-                // 解析 MP3 ID3 信息
                 window.jsmediatags.read(file, {
                     onSuccess: (tag) => {
                         const tags = tag.tags;
@@ -283,7 +279,6 @@ class NCMConverter {
                         if (tags.artist) meta.artist = [[tags.artist]];
                         if (tags.album) meta.album = tags.album;
                         
-                        // 提取并转换封面为 Blob URL
                         if (tags.picture) {
                             const byteArray = new Uint8Array(tags.picture.data);
                             const blob = new Blob([byteArray], { type: tags.picture.format });
@@ -291,8 +286,8 @@ class NCMConverter {
                         }
                         this.handleDecryptionSuccess(id, { meta, url, fileName: file.name });
                     },
-                    onError: (error) => {
-                        console.warn("ID3 解析失败:", error);
+                    onError: () => {
+                        // 出错时静默处理，使用 fallback 数据
                         this.handleDecryptionSuccess(id, { meta: fallbackMeta, url, fileName: file.name });
                     }
                 });
@@ -395,10 +390,8 @@ class NCMConverter {
             try {
                 await this.transcodeAudio(task);
             } catch (error) {
-                console.error("Transcode Error:", error);
                 this.handleError(task.id, `转换失败: ${error.message || '未知错误'}`);
                 
-                // 出现异常时强制清理实例状态，防止队列完全卡死
                 try { this.ffmpeg.exit(); } catch(e) {}
                 this.ffmpeg = null;
                 if (this.transcodeQueue.length > 0) {
@@ -408,7 +401,6 @@ class NCMConverter {
             await new Promise(r => setTimeout(r, 200)); 
         }
 
-        // 整个批次转换完成后，释放 FFmpeg 内存
         if (this.ffmpeg) {
             try { this.ffmpeg.exit(); } catch(e) {}
             this.ffmpeg = null;
@@ -453,16 +445,13 @@ class NCMConverter {
         
         args.push(outName);
 
+        let needReset = false;
         try {
             await this.ffmpeg.run(...args);
         } catch (e) {
-            // FFmpeg 0.11 bug: 成功执行有时也会抛出 exit(0)，此时如果不管，会导致内部锁_isRunning卡死
             if (e.message === 'Program terminated with exit(0)' || (e.name === 'ExitStatus' && e.status === 0)) {
-                console.log("FFmpeg run complete (exit 0). Resolving lock state manually.");
-                // 强制重置以消除 "one command at a time" bug
-                try { this.ffmpeg.exit(); } catch(err) {}
-                this.ffmpeg = null;
-                await this.initFFmpeg();
+                // 标记为需要重置，但不在这里马上 exit，否则会破坏下方 FS 读取文件
+                needReset = true;
             } else {
                 throw e;
             }
@@ -470,6 +459,7 @@ class NCMConverter {
 
         let result;
         try {
+            // 先安全读取产出的文件
             result = this.ffmpeg.FS('readFile', outName);
         } catch (e) {
             throw new Error("处理未生成输出文件");
@@ -484,6 +474,13 @@ class NCMConverter {
         URL.revokeObjectURL(data.url);
 
         this.renderSuccessCard(id, newUrl, data.meta, outExt, data.fileName);
+
+        // 文件读取并生成 Blob 成功之后，再去销毁重启 FFmpeg 以解锁实例
+        if (needReset) {
+            try { this.ffmpeg.exit(); } catch(err) {}
+            this.ffmpeg = null;
+            await this.initFFmpeg();
+        }
     }
 
     renderSuccessCard(id, url, meta, ext, fileName) {
@@ -608,7 +605,6 @@ class NCMConverter {
             
             setTimeout(() => URL.revokeObjectURL(zipUrl), 10000);
         } catch (error) {
-            console.error("ZIP打包失败:", error);
             alert("打包下载失败：" + error.message);
         } finally {
             btn.disabled = false;
