@@ -248,7 +248,9 @@ img, svg { display: block; vertical-align: middle; max-width: 100%; }
    玻璃拟态游戏卡片
    ============================================================ */
 .archive-card { 
-    position: relative; width: 100%; height: auto; border-radius: 16px; overflow: hidden; 
+    position: relative; width: 100%; 
+    min-height: 420px; /* 给卡片一个固定最小高度，确保背景图片能完美展示 */
+    border-radius: 16px; overflow: hidden; 
     background: rgba(255, 255, 255, 0.03); 
     backdrop-filter: blur(20px) saturate(1.2); 
     border: 1px solid rgba(255, 255, 255, 0.1); 
@@ -257,39 +259,68 @@ img, svg { display: block; vertical-align: middle; max-width: 100%; }
 }
 .archive-card:hover { border-color: rgba(255, 255, 255, 0.3); transform: translateY(-4px); }
 
-.new-badge-wrapper { position: absolute; top: 0; left: 0; z-index: 20; overflow: hidden; width: 4rem; height: 4rem; pointer-events: none; }
+/* NEW角标保持原样 */
+.new-badge-wrapper { position: absolute; top: 0; left: 0; z-index: 30; overflow: hidden; width: 4rem; height: 4rem; pointer-events: none; }
 .new-badge-text { position: absolute; top: 10px; left: -25px; width: 80px; padding: 0.125rem 0; background-color: #FF6B6B; color: white; font-size: 10px; font-weight: bold; text-align: center; transform: rotate(-45deg); text-transform: uppercase; letter-spacing: 0.05em; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 
-.card-bg-wrapper { position: absolute; inset: 0; z-index: 0; height: 160px; }
-.card-cover-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.5; transition: transform 0.7s ease-out; }
-.archive-card:hover .card-cover-img { transform: scale(1.05); opacity: 0.7; }
+/* 绝对定位在右上角的标签 */
+.card-tags-absolute {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    z-index: 20;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.375rem;
+    max-width: 60%; /* 防止标签太多挡住左边的区域 */
+}
+.card-tag { padding: 0.125rem 0.5rem; border-radius: 0.25rem; border-width: 1px; font-size: 11px; backdrop-filter: blur(4px); font-weight: 500;}
+.tag-normal { background-color: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.2); color: hsl(0 0% 95%); }
+.tag-horror { background-color: rgba(255,107,107,0.3); border-color: rgba(255,107,107,0.5); color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.5);}
+
+/* 图片作为完整底层背景 */
+.card-bg-wrapper { position: absolute; inset: 0; z-index: 0; height: 100%; width: 100%; }
+.card-cover-img { width: 100%; height: 100%; object-fit: cover; opacity: 0.85; transition: transform 0.7s ease-out; }
+.archive-card:hover .card-cover-img { transform: scale(1.05); opacity: 1; }
 .card-cover-fallback { width: 100%; height: 100%; background: linear-gradient(to right, rgba(0,0,0,0.5), rgba(0,0,0,0.2)); display: flex; align-items: center; justify-content: center; padding: 1rem; }
 .fallback-title { color: white; font-size: 1.125rem; font-weight: bold; opacity: 0.9; text-align: center; line-height: 1.375; }
-.card-gradient-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(30,30,30,1), transparent); }
 
-.card-content { position: relative; z-index: 10; padding: 1.5rem; display: flex; flex-direction: column; height: 100%; margin-top: 130px; }
-.card-tags-wrapper { display: flex; justify-content: flex-end; gap: 0.375rem; margin-bottom: 0.5rem; }
-.card-tag { padding: 0.125rem 0.5rem; border-radius: 0.25rem; border-width: 1px; font-size: 10px; backdrop-filter: blur(4px); }
-.tag-normal { background-color: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.15); color: hsl(0 0% 90%); }
-.tag-horror { background-color: rgba(255,107,107,0.2); border-color: rgba(255,107,107,0.4); color: #FF6B6B; }
+/* 核心：由上往下慢慢不透明的渐变遮罩 (Night Mode) */
+.card-gradient-overlay { 
+    position: absolute; inset: 0; 
+    background: linear-gradient(to bottom, 
+        rgba(26, 26, 26, 0) 0%,      /* 顶部透明，露出图片和标签 */
+        rgba(26, 26, 26, 0.4) 30%,   /* 中间开始变暗 */
+        rgba(26, 26, 26, 0.95) 60%,  /* 标题和文字区接近纯色底 */
+        rgba(26, 26, 26, 1) 100%     /* 底部变成纯色，确保文字清晰度 */
+    ); 
+}
 
-.card-title { font-size: 1.5rem; font-weight: bold; color: hsl(0 0% 95%); margin-bottom: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.card-desc { color: hsl(0 0% 70%); font-size: 0.875rem; line-height: 1.625; margin-bottom: 1.5rem; height: 4.5em; overflow-y: auto; padding-right: 0.5rem; }
+/* 内容区域被推到底部 */
+.card-content { 
+    position: relative; z-index: 10; padding: 1.5rem; display: flex; flex-direction: column; 
+    height: 100%; 
+    justify-content: flex-end; /* 将文字和底部信息全部挤到卡片最下方 */
+}
+
+.card-title { font-size: 1.5rem; font-weight: bold; color: hsl(0 0% 95%); margin-bottom: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.card-desc { color: hsl(0 0% 75%); font-size: 0.875rem; line-height: 1.625; margin-bottom: 1.25rem; height: 4.5em; overflow-y: auto; padding-right: 0.5rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 .card-divider { width: 100%; height: 1px; background-color: rgba(255,255,255,0.1); margin-bottom: 1.25rem; }
 
 .card-meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; font-size: 0.75rem; color: hsl(0 0% 60%); margin-bottom: 1.5rem; }
 .meta-item { display: flex; align-items: center; gap: 0.5rem; }
-.meta-icon, .device-icon { width: 1rem; height: 1rem; color: hsl(0 0% 80%); flex-shrink: 0; }
+.meta-icon, .device-icon { width: 1rem; height: 1rem; color: #4ECDC4; flex-shrink: 0; }
 .author-link:hover { color: #fff; text-decoration: underline; }
-.platform-icons { display: flex; gap: 0.125rem; color: hsl(0 0% 80%); }
+.platform-icons { display: flex; gap: 0.125rem; color: #4ECDC4; }
 
 .card-footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-.play-btn { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: bold; color: white; transition: color 0.3s; cursor: pointer; }
+.play-btn { display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; font-weight: bold; color: white; transition: color 0.3s; cursor: pointer; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 .play-btn:hover { color: #4ECDC4; }
 .arrow-icon { width: 1.25rem; height: 1.25rem; transition: transform 0.15s; }
 .play-btn:hover .arrow-icon { transform: translateX(0.25rem); }
-.guide-btn { display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; color: hsl(0 0% 70%); background-color: rgba(255,255,255,0.05); padding: 0.375rem 0.75rem; border-radius: 0.25rem; border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s; }
-.guide-btn:hover { color: white; background-color: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+.guide-btn { display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; color: hsl(0 0% 90%); background-color: rgba(0,0,0,0.4); padding: 0.375rem 0.75rem; border-radius: 0.25rem; border: 1px solid rgba(255,255,255,0.2); transition: all 0.3s; backdrop-filter: blur(4px); }
+.guide-btn:hover { color: white; background-color: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.4); }
 
 /* ============================================================
    页脚
@@ -417,21 +448,44 @@ body.day-mode .archive-card {
     border-color: rgba(0, 0, 0, 0.1);
 }
 body.day-mode .archive-card:hover { border-color: rgba(0, 0, 0, 0.2); }
-body.day-mode .card-gradient-overlay { background: linear-gradient(to top, rgba(255,255,255,1), transparent); }
-body.day-mode .card-title { color: #2d3748; }
-body.day-mode .card-desc { color: #4a5568; }
+body.day-mode .card-gradient-overlay { 
+    background: linear-gradient(to bottom, 
+        rgba(255,255,255,0) 0%, 
+        rgba(255,255,255,0.5) 30%, 
+        rgba(255,255,255,0.95) 60%, 
+        rgba(255,255,255,1) 100%
+    ); 
+}
+body.day-mode .tag-normal { background-color: rgba(255,255,255,0.6); border-color: rgba(0,0,0,0.15); color: #2d3748; }
+body.day-mode .card-title { 
+    color: #1a202c;
+    font-weight: bold;      /* 将之前的 500 改回 bold (或 700) */
+    text-shadow: none;      /* 继续保持无阴影，防止糊字 */
+}
+body.day-mode .card-desc { 
+    color: #4a5568;
+    text-shadow: none;
+    font-weight: normal; 
+}
 body.day-mode .card-divider { background-color: rgba(0, 0, 0, 0.1); }
 body.day-mode .card-meta-grid { color: #718096; }
-body.day-mode .meta-icon, body.day-mode .device-icon { color: #4a5568; }
-body.day-mode .play-btn { color: #2d3748; }
-body.day-mode .play-btn:hover { color: #3b82f6; }
+body.day-mode .meta-icon, body.day-mode .device-icon { color: #317b7b; }
+body.day-mode .play-btn {
+    color: #1a202c;           /* 使用深色文字提高辨识度 */
+    text-shadow: none;        /* 关键：去除在白底上显得脏乱的黑色阴影 */
+    font-weight: 600;         /* 适当保持中等加粗，维持按钮的引导感 */
+}
+
+body.day-mode .play-btn:hover {
+    color: #317b7b;           /* 悬停时切换为深薄荷绿，与图标主题统一 */
+}
+
 body.day-mode .guide-btn {
     background-color: rgba(255, 255, 255, 0.8);
     border-color: rgba(0, 0, 0, 0.1);
     color: #4a5568;
 }
 body.day-mode .guide-btn:hover { background-color: #fff; border-color: rgba(0, 0, 0, 0.2); color: #1a202c; }
-body.day-mode .tag-normal { background-color: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: #4a5568; }
 
 body.day-mode .footer { border-top-color: rgba(0,0,0,0.1); }
 body.day-mode .footer p { color: rgba(0, 0, 0, 0.5); }
@@ -457,13 +511,12 @@ body.day-mode .footer p { color: rgba(0, 0, 0, 0.5); }
     .card-content { margin-top: 150px; }
 }
 @media (min-width: 768px) {
+    /* 平板及以上屏幕保持 2 列 */
     .grid-container { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (min-width: 1024px) {
-    .grid-container { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-@media (max-width: 768px) {
-    .hero-title { font-size: 2.5em; }
+    /* 将原本的 3 列强制改为 2 列，或者直接将这段 @media (min-width: 1024px) 规则删掉也可以 */
+    .grid-container { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ============================================================
@@ -688,4 +741,8 @@ body.day-mode .tag-filter.active { background: #3b82f6; color: #fff; border-colo
 body.day-mode ::selection { 
     background-color: rgba(59, 130, 246, 0.2); 
     color: #1a202c; 
+}
+
+body.day-mode .author-link:hover { 
+    color: #317b7b; 
 }

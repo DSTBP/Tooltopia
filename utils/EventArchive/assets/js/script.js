@@ -80,12 +80,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
             <div class="archive-card group">
                 ${newBadge}
+                <div class="card-tags-absolute">${tagsHTML}</div>
+                
                 <div class="card-bg-wrapper">
                     ${coverHTML}
                     <div class="card-gradient-overlay"></div>
                 </div>
+                
                 <div class="card-content">
-                    <div class="card-tags-wrapper">${tagsHTML}</div>
                     <h3 class="card-title" title="${game.title}">${game.title}</h3>
                     <p class="card-desc custom-scrollbar">${game.description.replace(/\n/g, '<br>')}</p>
                     <div class="card-divider"></div>
