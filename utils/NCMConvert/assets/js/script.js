@@ -1,6 +1,6 @@
 /*
  * @Description: NCM 转 MP3/FLAC... 核心逻辑 (包含 LRC 歌词匹配与合并、MP3直传合并及ZIP打包下载)
- * @Updated: 增加 LRC 自动/手动匹配及元数据注入功能，支持直接上传 MP3 注入歌词，多文件 ZIP 打包下载
+ * @Updated: 解决合并同格式音频时的卡顿问题（流复制 + 实例复用）
  */
 
 const WORKER_CODE = `
@@ -146,14 +146,12 @@ class NCMConverter {
     }
 
     async initFFmpeg() {
-        if (this.ffmpeg) {
-            // try { this.ffmpeg.exit(); } catch(e) { console.warn(e); }
-            this.ffmpeg = null;
-        }
+        // 性能优化：如果已经初始化，则不再重新初始化加载，直接复用内存
+        if (this.ffmpeg) return;
 
         try {
             if (typeof FFmpeg === 'undefined') {
-                // console.log("Loading FFmpeg 0.11.x script...");
+                console.log("Loading FFmpeg 0.11.x script...");
                 await this.loadScript('https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js');
             }
 
@@ -163,12 +161,12 @@ class NCMConverter {
                 log: true,
                 mainName: 'main', 
                 corePath: 'https://unpkg.com/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js',
-                // logger: ({ message }) => console.log("[FFmpeg]", message)
+                logger: ({ message }) => console.log("[FFmpeg]", message)
             });
 
             await this.ffmpeg.load();
         } catch (e) {
-            // console.error("FFmpeg Init Error", e);
+            console.error("FFmpeg Init Error", e);
             throw new Error("FFmpeg 组件加载失败: " + e.message);
         }
     }
@@ -378,6 +376,9 @@ class NCMConverter {
         if (this.isProcessing) return;
         this.isProcessing = true;
 
+        // 性能优化：在队列处理开始前统一初始化一次，避免每个文件都加载 WASM
+        if (!this.ffmpeg) await this.initFFmpeg();
+
         while (this.transcodeQueue.length > 0) {
             const task = this.transcodeQueue.shift();
             try {
@@ -386,23 +387,15 @@ class NCMConverter {
             } catch (error) {
                 console.error("Transcode Error:", error);
                 this.handleError(task.id, `转换失败: ${error.message || '未知错误'}`);
-            } finally {
-                if (this.ffmpeg) {
-                    try { 
-                        this.ffmpeg.exit(); 
-                        // console.log("FFmpeg instance destroyed for cleanup.");
-                    } catch(e) { console.warn(e); }
-                    this.ffmpeg = null;
-                }
             }
+            // 取消了 this.ffmpeg.exit() 和 this.ffmpeg = null; 的操作，以复用实例
         }
+        
         this.isProcessing = false;
         this.updateStatus();
     }
 
     async transcodeAudio({ id, data, target, original }) {
-        await this.initFFmpeg();
-
         const card = document.getElementById(`task-${id}`);
         if (card) {
             card.querySelector('.music-artist').textContent = `处理中 (${original}->${target})...`;
@@ -425,12 +418,17 @@ class NCMConverter {
             args.push('-metadata', `lyrics=${lrcText}`);
         }
 
-        if (target === 'mp3') args.push('-c:a', 'libmp3lame', '-q:a', '2');
-        else if (target === 'aac') args.push('-c:a', 'aac', '-b:a', '192k');
-        else if (target === 'wav') args.push('-c:a', 'pcm_s16le');
-        else if (target === 'wma') args.push('-c:a', 'wmav2');
-        else if (target === 'alac') args.push('-c:a', 'alac');
-        else if (target === 'ogg') args.push('-c:a', 'libvorbis');
+        // 性能优化核心：如果原始格式与目标格式相同，直接进行流复制(-c:a copy)，极大地节省时间和 CPU
+        if (target === original) {
+            args.push('-c:a', 'copy');
+        } else {
+            if (target === 'mp3') args.push('-c:a', 'libmp3lame', '-q:a', '2');
+            else if (target === 'aac') args.push('-c:a', 'aac', '-b:a', '192k');
+            else if (target === 'wav') args.push('-c:a', 'pcm_s16le');
+            else if (target === 'wma') args.push('-c:a', 'wmav2');
+            else if (target === 'alac') args.push('-c:a', 'alac');
+            else if (target === 'ogg') args.push('-c:a', 'libvorbis');
+        }
         
         args.push(outName);
 
@@ -450,6 +448,12 @@ class NCMConverter {
         } catch (e) {
             throw new Error("转换未生成输出文件");
         }
+
+        // 及时释放 FFmpeg 文件系统内的缓存
+        try {
+            this.ffmpeg.FS('unlink', inName);
+            this.ffmpeg.FS('unlink', outName);
+        } catch (e) {}
 
         const newUrl = URL.createObjectURL(new Blob([result.buffer], { type: `audio/${target}` }));
         URL.revokeObjectURL(data.url);
@@ -584,7 +588,7 @@ class NCMConverter {
             // 稍后释放内存
             setTimeout(() => URL.revokeObjectURL(zipUrl), 10000);
         } catch (error) {
-            // console.error("ZIP打包失败:", error);
+            console.error("ZIP打包失败:", error);
             alert("打包下载失败：" + error.message);
         } finally {
             btn.disabled = false;
