@@ -193,7 +193,8 @@ img, svg { display: block; vertical-align: middle; max-width: 100%; }
 
 .hero-title {
     display: block;
-    width: fit-content;
+    width: 100%;
+    max-width: 90vw;
     color: #8b0000;
     font-family: 'glitch', 'Righteous', 'Microsoft YaHei', serif;
     font-size: 3.5em;
@@ -220,8 +221,9 @@ img, svg { display: block; vertical-align: middle; max-width: 100%; }
     display: flex;
     justify-content: center;
     align-items: center;
-    white-space: nowrap;
+    white-space: normal;
     animation: shad-anim 60s linear infinite;
+    word-break: break-word;
 }
 
 @keyframes shad-anim { 0% { background-position: 0 0; } 100% { background-position: 100% -100%; } }
@@ -304,7 +306,22 @@ img, svg { display: block; vertical-align: middle; max-width: 100%; }
     justify-content: flex-end; /* 将文字和底部信息全部挤到卡片最下方 */
 }
 
-.card-title { font-size: 1.5rem; font-weight: bold; color: hsl(0 0% 95%); margin-bottom: 0.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+.card-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: hsl(0 0% 95%);
+    margin-bottom: 0.5rem;
+    
+    /* 修改这里：允许换行并去掉省略号 */
+    white-space: normal;      /* 允许换行 */
+    overflow: visible;        /* 允许溢出显示 */
+    text-overflow: clip;      /* 去掉省略号 */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;    /* 最多显示2行，防止标题过长撑破布局 */
+    -webkit-box-orient: vertical;
+    
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
 .card-desc { color: hsl(0 0% 75%); font-size: 0.875rem; line-height: 1.625; margin-bottom: 1.25rem; height: 4.5em; overflow-y: auto; padding-right: 0.5rem; text-shadow: 0 1px 2px rgba(0,0,0,0.8); }
 .card-divider { width: 100%; height: 1px; background-color: rgba(255,255,255,0.1); margin-bottom: 1.25rem; }
 
@@ -457,10 +474,10 @@ body.day-mode .card-gradient-overlay {
     ); 
 }
 body.day-mode .tag-normal { background-color: rgba(255,255,255,0.6); border-color: rgba(0,0,0,0.15); color: #2d3748; }
-body.day-mode .card-title { 
-    color: #1a202c;
-    font-weight: bold;      /* 将之前的 500 改回 bold (或 700) */
-    text-shadow: none;      /* 继续保持无阴影，防止糊字 */
+body.day-mode .card-title {
+    white-space: normal;
+    font-weight: bold;
+    text-shadow: none;
 }
 body.day-mode .card-desc { 
     color: #4a5568;
@@ -745,4 +762,62 @@ body.day-mode ::selection {
 
 body.day-mode .author-link:hover { 
     color: #317b7b; 
+}
+
+/* ============================================================
+   移动端卡片布局适配修正
+   ============================================================ */
+@media (max-width: 639px) {
+    /* 1. 降低卡片最小高度，防止在小屏上显得太空 */
+    .archive-card { 
+        min-height: 360px; 
+    }
+
+    /* 2. 修正内容区位置：减小顶部预留空间 */
+    .card-content { 
+        padding: 1.25rem; 
+        margin-top: 80px; /* 从 130px 减小，让文字整体下移量减少 */
+    }
+
+    /* 3. 优化标题和描述的间距 */
+    .card-title { 
+        font-size: 1.25rem; 
+        margin-bottom: 0.25rem; 
+    }
+    
+    .card-desc { 
+        font-size: 0.8rem; 
+        margin-bottom: 0.75rem; /* 减小描述下方的间距 */
+        height: 3.2em; /* 手机端显示 2 行左右即可 */
+    }
+
+    /* 4. 压缩元数据网格与底部的距离 */
+    .card-divider { 
+        margin-bottom: 0.75rem; 
+    }
+    
+    .card-meta-grid { 
+        gap: 0.5rem; 
+        margin-bottom: 0.75rem; /* 核心修正：减小此处间距，让“启动研究”靠拢 */
+    }
+
+    /* 5. 调整底部操作区 */
+    .card-footer { 
+        margin-top: 0; /* 取消 auto 边距，由上面的 margin 控制距离 */
+    }
+    
+    .play-btn { 
+        font-size: 0.9rem; 
+    }
+
+    /* 6. 调整右上角标签大小，防止挡住太多图片 */
+    .card-tags-absolute {
+        top: 0.75rem;
+        right: 0.75rem;
+    }
+    
+    .card-tag {
+        font-size: 10px;
+        padding: 0.1rem 0.4rem;
+    }
 }
