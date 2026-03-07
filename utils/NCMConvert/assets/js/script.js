@@ -516,7 +516,12 @@ class NCMConverter {
             for (const f of this.convertedFiles) {
                 const response = await fetch(f.url);
                 const blob = await response.blob();
-                zip.file(f.name, blob);
+                
+                // 新增：过滤掉文件名中的路径分隔符（/ 和 \），替换为 ' & '
+                const safeFileName = f.name.replace(/[/\\]/g, ' & ');
+                
+                // 使用安全的文件名写入压缩包
+                zip.file(safeFileName, blob);
             }
 
             // 异步生成 zip 文件
