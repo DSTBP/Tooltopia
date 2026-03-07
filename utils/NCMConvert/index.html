@@ -43,12 +43,8 @@
                                 <option value="wav">WAV</option>
                                 <option value="aac">AAC (m4a)</option>
                                 <option value="ogg">OGG</option>
+                                <!-- <option value="alac">ALAC (m4a)</option> -->
                             </select>
-                        </div>
-
-                        <div class="mp3-merge-setting" style="margin-bottom: 20px; padding: 0 15px; display: flex; align-items: center; gap: 8px;">
-                            <input type="checkbox" id="mp3MergeCheck" style="width: 16px; height: 16px; cursor: pointer;">
-                            <label for="mp3MergeCheck" class="mp3-merge-label" style="cursor: pointer; font-size: 0.95rem;">启用 MP3 文件与歌词合并 (允许上传 .mp3)</label>
                         </div>
 
                         <div class="tab-content active" id="fileContent">
@@ -183,6 +179,7 @@
     </footer>
 
     <script src="assets/js/theme-toggle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script src="assets/js/script.js"></script>
 </body>
 </html>
