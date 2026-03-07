@@ -1,6 +1,6 @@
 /*
  * @Description: NCM 转 MP3/FLAC... 核心逻辑 (包含 LRC 歌词匹配与合并、MP3直传合并及ZIP打包下载)
- * @Updated: 解决合并同格式音频时的卡顿问题（流复制 + 实例复用）
+ * @Updated: 解决 ffmpeg 队列死锁问题，新增 MP3 ID3 标签(封面/歌手)解析
  */
 
 const WORKER_CODE = `
@@ -94,8 +94,8 @@ class NCMConverter {
         this.taskIdToKey = {};
 
         // 歌词存储逻辑
-        this.lrcStore = new Map(); // 存储上传的歌词内容: 文件名 -> 内容
-        this.taskLrcMap = new Map(); // 任务ID -> 关联的歌词内容
+        this.lrcStore = new Map();
+        this.taskLrcMap = new Map();
 
         this.transcodeQueue = [];
         this.isProcessing = false;
@@ -117,7 +117,6 @@ class NCMConverter {
             });
         }
 
-        // 暴露实例给全局，以便 HTML 中的 onclick 事件调用
         window.ncmConverter = this;
     }
 
@@ -146,7 +145,6 @@ class NCMConverter {
     }
 
     async initFFmpeg() {
-        // 性能优化：如果已经初始化，则不再重新初始化加载，直接复用内存
         if (this.ffmpeg) return;
 
         try {
@@ -197,7 +195,6 @@ class NCMConverter {
                 const id = parseInt(e.target.closest('.music-item').id.replace('task-', ''));
                 this.deleteTask(id);
             } else if (e.target.classList.contains('lrc-tag') && e.target.classList.contains('unmatched')) {
-                // 处理点击手动匹配歌词
                 e.stopPropagation();
                 const id = parseInt(e.target.closest('.music-item').id.replace('task-', ''));
                 this.bindManualMatch(id);
@@ -222,14 +219,12 @@ class NCMConverter {
         const mp3Files = allFiles.filter(f => f.name.toLowerCase().endsWith('.mp3'));
         const lrcFiles = allFiles.filter(f => f.name.toLowerCase().endsWith('.lrc'));
 
-        // 1. 预处理上传的歌词文件
         for (const file of lrcFiles) {
             const text = await file.text();
             const baseName = file.name.replace(/\.lrc$/i, '');
             this.lrcStore.set(baseName, text);
         }
 
-        // 2. 如果只上传了歌词，尝试重新匹配现有任务
         if (!ncmFiles.length && !mp3Files.length && lrcFiles.length > 0) {
             this.reMatchExistingTasks();
             this.fileInput.value = '';
@@ -239,7 +234,6 @@ class NCMConverter {
         const currentTargetFormat = this.formatSelect.value;
         const payload = [];
         
-        // 处理 NCM 文件
         ncmFiles.forEach(file => {
             const key = `${file.name}_${currentTargetFormat}`;
             if (this.activeTaskKeys.has(key)) return;
@@ -248,7 +242,6 @@ class NCMConverter {
             this.activeTaskKeys.add(key);
             this.taskIdToKey[id] = key;
 
-            // 自动匹配歌词 (根据 NCM 文件名)
             const baseName = file.name.replace(/\.ncm$/i, '');
             if (this.lrcStore.has(baseName)) {
                 this.taskLrcMap.set(id, this.lrcStore.get(baseName));
@@ -258,32 +251,52 @@ class NCMConverter {
             payload.push({ id, file });
         });
 
-        // 处理直接上传的 MP3 文件
-        if (this.mp3MergeCheck && this.mp3MergeCheck.checked) {
-            mp3Files.forEach(file => {
+        if (this.mp3MergeCheck && this.mp3MergeCheck.checked && mp3Files.length > 0) {
+            // 动态加载 ID3 解析库
+            if (typeof window.jsmediatags === 'undefined') {
+                await this.loadScript('https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js');
+            }
+
+            for (const file of mp3Files) {
                 const key = `${file.name}_mp3_merge`;
-                if (this.activeTaskKeys.has(key)) return;
+                if (this.activeTaskKeys.has(key)) continue;
                 
                 const id = this.taskIdCounter++;
                 this.activeTaskKeys.add(key);
                 this.taskIdToKey[id] = key;
 
-                // 自动匹配歌词 (根据 MP3 文件名)
                 const baseName = file.name.replace(/\.mp3$/i, '');
                 if (this.lrcStore.has(baseName)) {
                     this.taskLrcMap.set(id, this.lrcStore.get(baseName));
                 }
 
                 this.createCard(id, file.name);
-                
-                // 模拟解密成功，直接构建数据传入
                 const url = URL.createObjectURL(file);
-                const meta = { format: 'mp3', musicName: baseName };
-                
-                setTimeout(() => {
-                    this.handleDecryptionSuccess(id, { meta, url, fileName: file.name });
-                }, 100);
-            });
+                const fallbackMeta = { format: 'mp3', musicName: baseName };
+
+                // 解析 MP3 ID3 信息
+                window.jsmediatags.read(file, {
+                    onSuccess: (tag) => {
+                        const tags = tag.tags;
+                        const meta = { format: 'mp3' };
+                        meta.musicName = tags.title || baseName;
+                        if (tags.artist) meta.artist = [[tags.artist]];
+                        if (tags.album) meta.album = tags.album;
+                        
+                        // 提取并转换封面为 Blob URL
+                        if (tags.picture) {
+                            const byteArray = new Uint8Array(tags.picture.data);
+                            const blob = new Blob([byteArray], { type: tags.picture.format });
+                            meta.albumPic = URL.createObjectURL(blob);
+                        }
+                        this.handleDecryptionSuccess(id, { meta, url, fileName: file.name });
+                    },
+                    onError: (error) => {
+                        console.warn("ID3 解析失败:", error);
+                        this.handleDecryptionSuccess(id, { meta: fallbackMeta, url, fileName: file.name });
+                    }
+                });
+            }
         }
 
         if (payload.length) this.worker.postMessage(payload);
@@ -362,7 +375,6 @@ class NCMConverter {
         
         const hasLrc = this.taskLrcMap.has(id);
         
-        // 如果输入和输出格式一致，且【没有匹配到歌词】，才跳过转换
         if (target === original && !hasLrc) {
             this.renderSuccessCard(id, data.url, data.meta, original, data.fileName);
             return;
@@ -376,19 +388,30 @@ class NCMConverter {
         if (this.isProcessing) return;
         this.isProcessing = true;
 
-        // 性能优化：在队列处理开始前统一初始化一次，避免每个文件都加载 WASM
         if (!this.ffmpeg) await this.initFFmpeg();
 
         while (this.transcodeQueue.length > 0) {
             const task = this.transcodeQueue.shift();
             try {
                 await this.transcodeAudio(task);
-                await new Promise(r => setTimeout(r, 200)); 
             } catch (error) {
                 console.error("Transcode Error:", error);
                 this.handleError(task.id, `转换失败: ${error.message || '未知错误'}`);
+                
+                // 出现异常时强制清理实例状态，防止队列完全卡死
+                try { this.ffmpeg.exit(); } catch(e) {}
+                this.ffmpeg = null;
+                if (this.transcodeQueue.length > 0) {
+                    await this.initFFmpeg();
+                }
             }
-            // 取消了 this.ffmpeg.exit() 和 this.ffmpeg = null; 的操作，以复用实例
+            await new Promise(r => setTimeout(r, 200)); 
+        }
+
+        // 整个批次转换完成后，释放 FFmpeg 内存
+        if (this.ffmpeg) {
+            try { this.ffmpeg.exit(); } catch(e) {}
+            this.ffmpeg = null;
         }
         
         this.isProcessing = false;
@@ -412,13 +435,11 @@ class NCMConverter {
 
         const args = ['-i', inName];
         
-        // 注入歌词元数据
         const lrcText = this.taskLrcMap.get(id);
         if (lrcText) {
             args.push('-metadata', `lyrics=${lrcText}`);
         }
 
-        // 性能优化核心：如果原始格式与目标格式相同，直接进行流复制(-c:a copy)，极大地节省时间和 CPU
         if (target === original) {
             args.push('-c:a', 'copy');
         } else {
@@ -435,8 +456,13 @@ class NCMConverter {
         try {
             await this.ffmpeg.run(...args);
         } catch (e) {
+            // FFmpeg 0.11 bug: 成功执行有时也会抛出 exit(0)，此时如果不管，会导致内部锁_isRunning卡死
             if (e.message === 'Program terminated with exit(0)' || (e.name === 'ExitStatus' && e.status === 0)) {
-                console.log("FFmpeg success (exit 0).");
+                console.log("FFmpeg run complete (exit 0). Resolving lock state manually.");
+                // 强制重置以消除 "one command at a time" bug
+                try { this.ffmpeg.exit(); } catch(err) {}
+                this.ffmpeg = null;
+                await this.initFFmpeg();
             } else {
                 throw e;
             }
@@ -446,10 +472,9 @@ class NCMConverter {
         try {
             result = this.ffmpeg.FS('readFile', outName);
         } catch (e) {
-            throw new Error("转换未生成输出文件");
+            throw new Error("处理未生成输出文件");
         }
 
-        // 及时释放 FFmpeg 文件系统内的缓存
         try {
             this.ffmpeg.FS('unlink', inName);
             this.ffmpeg.FS('unlink', outName);
@@ -545,7 +570,6 @@ class NCMConverter {
     async downloadAll() {
         if (this.convertedFiles.length === 0) return;
         
-        // 如果只有一首歌，直接单文件下载
         if (this.convertedFiles.length === 1) {
             const f = this.convertedFiles[0];
             const a = document.createElement('a');
@@ -555,21 +579,18 @@ class NCMConverter {
             return;
         }
 
-        // 多文件，使用 JSZip 打包
         const btn = this.downloadAllBtn;
         const originalText = btn.textContent;
         btn.disabled = true;
         btn.textContent = '正在打包ZIP...';
 
         try {
-            // 动态加载 JSZip
             if (typeof JSZip === 'undefined') {
                 await this.loadScript('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js');
             }
             
             const zip = new JSZip();
             
-            // 并发获取所有已转换音频的数据
             const promises = this.convertedFiles.map(async (f) => {
                 const response = await fetch(f.url);
                 const blob = await response.blob();
@@ -585,7 +606,6 @@ class NCMConverter {
             a.download = `NCM_Converted_${new Date().getTime()}.zip`;
             a.click();
             
-            // 稍后释放内存
             setTimeout(() => URL.revokeObjectURL(zipUrl), 10000);
         } catch (error) {
             console.error("ZIP打包失败:", error);
