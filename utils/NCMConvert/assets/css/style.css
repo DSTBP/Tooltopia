@@ -801,3 +801,11 @@ body.day-mode .info-value { color: #2d3748; }
 .manual-lrc-input {
     display: none;
 }
+
+.mp3-merge-label {
+    color: hsl(0 0% 90%);
+    font-weight: 500;
+}
+body.day-mode .mp3-merge-label {
+    color: #2d3748;
+}
