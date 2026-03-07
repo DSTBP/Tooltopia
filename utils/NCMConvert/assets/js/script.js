@@ -147,13 +147,13 @@ class NCMConverter {
 
     async initFFmpeg() {
         if (this.ffmpeg) {
-            try { this.ffmpeg.exit(); } catch(e) { console.warn(e); }
+            // try { this.ffmpeg.exit(); } catch(e) { console.warn(e); }
             this.ffmpeg = null;
         }
 
         try {
             if (typeof FFmpeg === 'undefined') {
-                console.log("Loading FFmpeg 0.11.x script...");
+                // console.log("Loading FFmpeg 0.11.x script...");
                 await this.loadScript('https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js');
             }
 
@@ -163,12 +163,12 @@ class NCMConverter {
                 log: true,
                 mainName: 'main', 
                 corePath: 'https://unpkg.com/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js',
-                logger: ({ message }) => console.log("[FFmpeg]", message)
+                // logger: ({ message }) => console.log("[FFmpeg]", message)
             });
 
             await this.ffmpeg.load();
         } catch (e) {
-            console.error("FFmpeg Init Error", e);
+            // console.error("FFmpeg Init Error", e);
             throw new Error("FFmpeg 组件加载失败: " + e.message);
         }
     }
@@ -390,7 +390,7 @@ class NCMConverter {
                 if (this.ffmpeg) {
                     try { 
                         this.ffmpeg.exit(); 
-                        console.log("FFmpeg instance destroyed for cleanup.");
+                        // console.log("FFmpeg instance destroyed for cleanup.");
                     } catch(e) { console.warn(e); }
                     this.ffmpeg = null;
                 }
@@ -584,7 +584,7 @@ class NCMConverter {
             // 稍后释放内存
             setTimeout(() => URL.revokeObjectURL(zipUrl), 10000);
         } catch (error) {
-            console.error("ZIP打包失败:", error);
+            // console.error("ZIP打包失败:", error);
             alert("打包下载失败：" + error.message);
         } finally {
             btn.disabled = false;
