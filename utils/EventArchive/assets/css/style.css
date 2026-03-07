@@ -39,7 +39,15 @@ img, svg { display: block; vertical-align: middle; max-width: 100%; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
 
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.empty-text { color: #6b7280; font-size: 0.875rem; text-align: center; }
+.empty-text { 
+   color: #6b7280; 
+   font-size: 0.875rem; 
+   text-align: center; 
+   grid-column: 1 / -1; /* 关键：强制在 grid 布局中横跨整行 */
+   width: 100%;
+   padding: 2rem 0;     /* 稍微增加一点上下间距，视觉更舒服 */
+   user-select: none;   /* 防止被误选中 */
+}
 ::selection { background-color: rgba(255, 255, 255, 0.2); color: white; }
 
 .app-container { min-height: 100vh; flex: 1; position: relative; z-index: 2; width: 100%; }
@@ -596,4 +604,88 @@ body.day-mode .hero-title::after {
         rgba(179, 0, 0, 0.7) 55%, 
         transparent 0
     );
+}
+
+/* ============================================================
+   导航分类与标签面包屑 (Navigation & Breadcrumb)
+   ============================================================ */
+.navigation-container {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 0.5rem;
+}
+
+.nav-tab {
+    padding: 0.5rem 0.5rem;
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: hsl(0 0% 60%);
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+    outline: none; /* 去除点击时的浏览器默认焦点框 */
+    -webkit-tap-highlight-color: transparent; /* 去除移动端点击高亮 */
+}
+
+.nav-tab:hover { color: hsl(0 0% 90%); }
+
+.nav-tab.active {
+    color: hsl(0 0% 95%);
+    border-bottom-color: #4ECDC4;
+}
+
+.category-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.tag-filter {
+    padding: 0.375rem 1rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.875rem;
+    color: hsl(0 0% 80%);
+    cursor: pointer;
+    transition: all 0.2s;
+    outline: none; /* 去除点击时的浏览器默认焦点框 */
+    -webkit-tap-highlight-color: transparent; /* 去除移动端点击高亮 */
+    user-select: none; /* 防止双击时选中文字变成蓝色/白色的块 */
+}
+
+.tag-filter:hover { background: rgba(255, 255, 255, 0.1); }
+
+.tag-filter.active {
+    background: #4ECDC4;
+    color: #1a1a1a;
+    font-weight: bold;
+    border-color: #4ECDC4;
+    box-shadow: 0 0 10px rgba(78, 205, 196, 0.4);
+}
+
+/* 隐藏未激活的板块 */
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.4s ease-in-out; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* 日间模式适配 */
+body.day-mode .navigation-container { border-bottom-color: rgba(0,0,0,0.1); }
+body.day-mode .nav-tab { color: #718096; }
+body.day-mode .nav-tab:hover { color: #2d3748; }
+body.day-mode .nav-tab.active { color: #1e3a8a; border-bottom-color: #3b82f6; }
+body.day-mode .tag-filter { background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.1); color: #4a5568; }
+body.day-mode .tag-filter:hover { background: rgba(0,0,0,0.1); }
+body.day-mode .tag-filter.active { background: #3b82f6; color: #fff; border-color: #3b82f6; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4); }
+
+/* 日间模式下的文字选中（鼠标拖拽框选）背景修复 */
+body.day-mode ::selection { 
+    background-color: rgba(59, 130, 246, 0.2); 
+    color: #1a202c; 
 }
