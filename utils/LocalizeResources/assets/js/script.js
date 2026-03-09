@@ -346,7 +346,7 @@ class ResourceLocalizer {
     }
 
     async processCssContent(cssContent, cssUrl, cssFolder) {
-        // 处理 CSS 中的 @import
+        // 1. 处理 CSS 中的 @import
         const importRegex = /@import\s+(?:url\()?['"]?([^'"\)]+)['"]?\)?[^;]*;/g;
         let match;
         const imports = [];
@@ -358,7 +358,7 @@ class ResourceLocalizer {
         for (const importUrl of imports) {
             try {
                 const fullUrl = new URL(importUrl, cssUrl).href;
-                const response = await fetch(fullUrl);
+                const response = await this.fetchWithRetry(fullUrl, 3);
                 const importedContent = await response.text();
                 const filename = this.getFilenameFromUrl(fullUrl);
                 cssFolder.file(filename, importedContent);
@@ -368,24 +368,51 @@ class ResourceLocalizer {
             }
         }
 
-        // 处理 CSS 中的 url() 引用（字体、图片等）
+        // 2. 处理 CSS 中的 url() 引用（如 Font Awesome 的 woff2/ttf 字体、背景图片等）
         const urlRegex = /url\(['"]?([^'"\)]+)['"]?\)/g;
         const baseUrl = new URL(cssUrl);
-
-        cssContent = cssContent.replace(urlRegex, (match, url) => {
-            // 跳过 data URLs
-            if (url.startsWith('data:')) {
-                return match;
+        // String.prototype.replace 不支持 async，所以先找出所有匹配项
+        const urlMatches = [...cssContent.matchAll(urlRegex)];
+        
+        // 去重，避免同一个字体或图片被重复下载
+        const uniqueUrls = new Set();
+        for (const urlMatch of urlMatches) {
+            const url = urlMatch[1].trim();
+            // 跳过 base64 data URLs 和空链接
+            if (url && !url.startsWith('data:')) {
+                uniqueUrls.add(url);
             }
+        }
 
+        // 遍历下载所有提取出的二次链接
+        for (const url of uniqueUrls) {
             try {
+                // 忽略纯锚点引用 (如 SVG 中的 #id)
+                if (url.startsWith('#')) continue;
+
                 const fullUrl = new URL(url, baseUrl).href;
-                // 保留外部字体和图片的原始链接
-                return match;
+                
+                // 发起下载请求
+                const response = await this.fetchWithRetry(fullUrl, 3);
+                const blob = await response.blob();
+                
+                // 获取文件名并附加特征码以防重名
+                const filename = this.getFilenameFromUrl(fullUrl);
+                
+                // 将下载的字体/图片保存到与 CSS 相同的文件夹下
+                cssFolder.file(filename, blob);
+                
+                // 将 CSS 文件中的原始外链替换为本地相对路径 ('./filename')
+                // 使用现有的 escapeRegex 方法防止 URL 里的特殊字符破坏正则
+                const escapedUrl = this.escapeRegex(url);
+                const replaceRegex = new RegExp(`url\\(['"]?${escapedUrl}['"]?\\)`, 'g');
+                cssContent = cssContent.replace(replaceRegex, `url('./${filename}')`);
+                
+                this.log(`✓ CSS内部资源下载成功: ${filename}`, 'success');
             } catch (error) {
-                return match;
+                this.log(`警告: 无法下载 CSS 内部资源: ${url}`, 'warning');
             }
-        });
+        }
 
         return cssContent;
     }
