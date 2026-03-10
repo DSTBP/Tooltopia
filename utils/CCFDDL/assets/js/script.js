@@ -59,6 +59,94 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function createMultiSelect(selectId, options, placeholder) {
+        const originalSelect = document.getElementById(selectId);
+        if (!originalSelect) return;
+
+        originalSelect.style.display = 'none'; // 隐藏原生select
+        
+        // 移除旧的容器(应对切换Tab)
+        const existing = originalSelect.nextElementSibling;
+        if (existing && existing.classList.contains('custom-multi-select')) existing.remove();
+
+        const container = document.createElement('div');
+        container.className = 'custom-multi-select';
+        
+        const displayBtn = document.createElement('div');
+        displayBtn.className = 'select-box form-select';
+        displayBtn.innerHTML = `<span>${placeholder}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"></path></svg>`;
+        
+        const dropdown = document.createElement('div');
+        dropdown.className = 'dropdown-list';
+        
+        let html = `<label class="dropdown-item"><input type="checkbox" value="all" checked> <span class="truncate">所有选项</span></label>`;
+        options.forEach(opt => {
+            html += `<label class="dropdown-item"><input type="checkbox" value="${opt.value}"> <span class="truncate">${opt.label}</span></label>`;
+        });
+        dropdown.innerHTML = html;
+        
+        container.appendChild(displayBtn);
+        container.appendChild(dropdown);
+        originalSelect.parentNode.insertBefore(container, originalSelect.nextSibling);
+
+        const checkboxes = dropdown.querySelectorAll('input[type="checkbox"]');
+        const allCheckbox = dropdown.querySelector('input[value="all"]');
+
+        displayBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.dropdown-list').forEach(list => { if (list !== dropdown) list.classList.remove('show'); });
+            dropdown.classList.toggle('show');
+        });
+
+        dropdown.addEventListener('click', (e) => e.stopPropagation()); // 防止点击内容时关闭
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                if (e.target.value === 'all' && e.target.checked) {
+                    checkboxes.forEach(c => { if(c !== allCheckbox) c.checked = false; });
+                } else if (e.target.checked) {
+                    allCheckbox.checked = false;
+                }
+                
+                if (!Array.from(checkboxes).some(c => c.checked)) allCheckbox.checked = true;
+
+                updateSelectText();
+                currentPage = 1;
+                updateView(); // 直接触发视图更新
+            });
+        });
+
+        function updateSelectText() {
+            const checked = Array.from(checkboxes).filter(c => c.checked);
+            const textSpan = displayBtn.querySelector('span');
+            if (checked.length === 0 || checked[0].value === 'all') {
+                textSpan.textContent = placeholder;
+            } else if (checked.length === 1) {
+                textSpan.textContent = checked[0].nextElementSibling.textContent;
+            } else {
+                textSpan.textContent = `已选 ${checked.length} 项`;
+            }
+            
+            // 同步回原生 select 便于逻辑读取
+            originalSelect.innerHTML = '';
+            checked.forEach(c => originalSelect.innerHTML += `<option value="${c.value}" selected></option>`);
+        }
+        updateSelectText();
+    }
+
+    function getSelectedValues(selectId) {
+        const select = document.getElementById(selectId);
+        if (!select) return ['all'];
+        const values = Array.from(select.options).filter(opt => opt.selected).map(opt => opt.value);
+        return values.length > 0 ? values : ['all'];
+    }
+
+    // 全局点击关闭下拉
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.dropdown-list').forEach(list => list.classList.remove('show'));
+    });
+
+
     function setMode(mode) {
         currentMode = mode;
         currentPage = 1;
@@ -67,12 +155,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const col4 = document.getElementById('filter-col-4');
         const label3 = document.getElementById('label-filter-3');
         const tzWrapper = document.querySelector('.timezone-wrapper');
+        const ccfNotice = document.getElementById('ccf-list-notice'); // 获取备注元素
 
         if (mode === 'deadlines') {
             document.getElementById('tab-deadlines').classList.add('active');
             label3.textContent = '年份';
             if (col4) col4.style.display = 'block';
             if (tzWrapper) tzWrapper.style.display = 'block';
+            if (ccfNotice) ccfNotice.style.display = 'none'; // 隐藏备注
             
             initDeadlineFilters();
         } else if (mode === 'ccf_list') {
@@ -82,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 隐藏状态过滤和时区选择
             if (col4) col4.style.display = 'none';
             if (tzWrapper) tzWrapper.style.display = 'none';
+            if (ccfNotice) ccfNotice.style.display = 'flex'; // 显示备注
             
             initCCFListFilters();
         }
@@ -193,11 +284,11 @@ document.addEventListener('DOMContentLoaded', () => {
             results.forEach(res => { rawData = rawData.concat(res); });
             confData = mergeConfData(rawData);
             
-            // 默认启动模式为 deadlines
             if (currentMode === 'deadlines') {
                 initDeadlineFilters(); 
-                updateView();
             }
+            // 将 updateView 提出来，确保无论什么模式更新数据后都会重绘画布
+            updateView();
         } catch (error) {
             if(conferencesContainer) conferencesContainer.innerHTML = `<p class="empty-text" style="color:red;">数据拉取失败，请检查网络</p>`;
         }
@@ -208,10 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 动态生成下拉筛选器
     // ==========================================
     function initDeadlineFilters() {
-        const categorySelect = document.getElementById('category-filter');
-        const levelSelect = document.getElementById('level-filter');
-        const yearSelect = document.getElementById('year-filter');
-
         const categories = new Set();
         const levels = new Set();
         const years = new Set();
@@ -222,31 +309,18 @@ document.addEventListener('DOMContentLoaded', () => {
             if (conf.confs && conf.confs.length > 0 && conf.confs[0].year) years.add(conf.confs[0].year);
         });
 
-        categorySelect.innerHTML = '<option value="all">所有领域</option>';
-        Array.from(categories).sort().forEach(sub => {
-            const subName = subMap[sub] || sub;
-            categorySelect.innerHTML += `<option value="${sub}">${subName}</option>`;
-        });
-
-        levelSelect.innerHTML = '<option value="all">所有级别</option>';
-        Array.from(levels).sort().forEach(lvl => {
-            const label = lvl === 'N' ? '无评级' : `CCF-${lvl}`;
-            levelSelect.innerHTML += `<option value="${lvl}">${label}</option>`;
-        });
-
-        yearSelect.innerHTML = '<option value="all">所有年份</option>';
-        Array.from(years).sort((a, b) => b - a).forEach(year => {
-            yearSelect.innerHTML += `<option value="${year}">${year}</option>`;
-        });
-
-        bindFilterEvents();
+        createMultiSelect('category-filter', Array.from(categories).sort().map(sub => ({value: sub, label: subMap[sub] || sub})), '所有领域');
+        createMultiSelect('level-filter', Array.from(levels).sort().map(lvl => ({value: lvl, label: lvl === 'N' ? '无评级' : `CCF-${lvl}`})), '所有级别');
+        createMultiSelect('year-filter', Array.from(years).sort((a,b)=>b-a).map(y => ({value: y, label: y})), '所有年份');
+        
+        createMultiSelect('deadline-filter', [
+            {value: 'upcoming', label: '即将截稿 (30天内)'},
+            {value: 'open', label: '开放投稿'},
+            {value: 'passed', label: '已截稿'}
+        ], '所有状态');
     }
     
     function initCCFListFilters() {
-        const categorySelect = document.getElementById('category-filter');
-        const levelSelect = document.getElementById('level-filter');
-        const typeSelect = document.getElementById('year-filter'); // 复用作为类型下拉框
-
         const categories = new Set();
         const levels = new Set();
         const types = new Set();
@@ -259,22 +333,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        categorySelect.innerHTML = '<option value="all">所有领域</option>';
-        Array.from(categories).sort().forEach(sub => {
-            categorySelect.innerHTML += `<option value="${sub}">${sub}</option>`;
-        });
-
-        levelSelect.innerHTML = '<option value="all">所有级别</option>';
-        Array.from(levels).sort().forEach(lvl => {
-            levelSelect.innerHTML += `<option value="${lvl}">${lvl}类</option>`;
-        });
-
-        typeSelect.innerHTML = '<option value="all">所有类型</option>';
-        Array.from(types).sort().forEach(t => {
-            typeSelect.innerHTML += `<option value="${t}">${t}</option>`;
-        });
-        
-        bindFilterEvents();
+        createMultiSelect('category-filter', Array.from(categories).sort().map(sub => ({value: sub, label: sub})), '所有领域');
+        createMultiSelect('level-filter', Array.from(levels).sort().map(lvl => ({value: lvl, label: `CCF-${lvl}`})), '所有级别');
+        createMultiSelect('year-filter', Array.from(types).sort().map(t => ({value: t, label: t})), '所有类型');
     }
     
     function bindFilterEvents() {
@@ -432,12 +493,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     function createCCFListCardHTML(item) {
         const ccfClass = item.grade === 'A' ? "tag-horror" : "tag-normal";
-        const categoryAbbr = item.domain || 'MIX';
         
+        // 通过反查 subMap 获取领域的简称 (如 'DS', 'NW')，找不到则默认 'MIX'
+        const categoryAbbr = Object.keys(subMap).find(key => subMap[key] === item.domain) || 'MIX';
+        
+        // 标签只保留级别和领域简称，去掉“会议/期刊”标签
         const tagsHTML = `
             <span class="card-tag ${ccfClass}">CCF-${item.grade}</span>
-            <span class="card-tag tag-normal">${item.type}</span>
-            <span class="card-tag tag-normal" title="${item.domain}">${categoryAbbr.length > 8 ? categoryAbbr.substring(0,8)+'..' : categoryAbbr}</span>
+            <span class="card-tag tag-normal" title="${item.domain}">${categoryAbbr}</span>
         `;
 
         const coverHTML = `
@@ -458,14 +521,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3 class="card-title" title="${item.abbr}">${item.abbr}</h3>
                     <div class="card-divider"></div>
                     <div class="card-meta-grid">
-                        <div class="meta-item truncate text-only" title="全称: ${item.fullname}" style="grid-column: 1/-1;">
-                            <span><strong style="color:#4ECDC4;">全称:</strong> ${item.fullname}</span>
+                        <div class="meta-item truncate" title="全称: ${item.fullname}" style="grid-column: 1/-1;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                            <span>${item.fullname}</span>
                         </div>
-                        <div class="meta-item truncate text-only" title="出版社: ${item.publisher}">
-                            <span><strong style="color:#4ECDC4;">出版:</strong> ${item.publisher}</span>
+                        <div class="meta-item truncate" title="出版社: ${item.publisher}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                            <span>${item.publisher}</span>
                         </div>
-                        <div class="meta-item truncate text-only" title="领域: ${item.domain}">
-                            <span><strong style="color:#4ECDC4;">领域:</strong> ${item.domain.length > 10 ? item.domain.substring(0,10)+'..' : item.domain}</span>
+                        <div class="meta-item truncate" title="类型: ${item.type}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
+                            <span>${item.type}</span>
                         </div>
                     </div>
                     <div class="card-footer" style="margin-top: 0.75rem;">
@@ -483,10 +549,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // 更新视图 (双分支逻辑)
     // ==========================================
     function updateView() {
-        const catFilter = document.getElementById('category-filter').value;
-        const levelFilter = document.getElementById('level-filter').value;
-        const col3Filter = document.getElementById('year-filter').value; // 'year' 或是 'type'
-        const statusFilter = document.getElementById('deadline-filter').value;
+        // 读取数组
+        const catFilters = getSelectedValues('category-filter');
+        const levelFilters = getSelectedValues('level-filter');
+        const col3Filters = getSelectedValues('year-filter');
+        const statusFilters = getSelectedValues('deadline-filter');
         const now = Date.now();
 
         let filteredData = [];
@@ -503,27 +570,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 const matchSearch = (conf.title || '').toLowerCase().includes(searchQuery) || (conf.description || '').toLowerCase().includes(searchQuery);
                 if (!matchSearch) return false;
-                if (catFilter !== 'all' && conf.sub !== catFilter) return false;
+                
+                // 多选过滤判定
+                if (!catFilters.includes('all') && !catFilters.includes(conf.sub)) return false;
 
                 const ccfRank = conf.rank && conf.rank.ccf ? conf.rank.ccf : 'N';
-                if (levelFilter !== 'all' && ccfRank !== levelFilter) return false;
+                if (!levelFilters.includes('all') && !levelFilters.includes(ccfRank)) return false;
 
                 const confYear = conf.confs && conf.confs.length > 0 ? String(conf.confs[0].year) : '';
-                if (col3Filter !== 'all' && confYear !== col3Filter) return false;
+                if (!col3Filters.includes('all') && !col3Filters.includes(confYear)) return false;
 
-                if (statusFilter !== 'all') {
-                    if (statusFilter === 'upcoming') {
-                        if (ms === null || ms <= now || (ms - now) > 60 * 24 * 30 * 60 * 1000) return false;
-                    } else if (statusFilter === 'open') {
-                        if (ms === null || ms <= now) return false;
-                    } else if (statusFilter === 'passed') {
-                        if (ms !== null && ms > now) return false;
-                    }
+                // 多重状态过滤
+                if (!statusFilters.includes('all')) {
+                    let isUpcoming = ms !== null && ms > now && (ms - now) <= 30 * 24 * 60 * 60 * 1000;
+                    let isOpen = ms !== null && ms > now;
+                    let isPassed = ms === null || ms <= now;
+                    
+                    let statusMatch = false;
+                    if (statusFilters.includes('upcoming') && isUpcoming) statusMatch = true;
+                    if (statusFilters.includes('open') && isOpen) statusMatch = true;
+                    if (statusFilters.includes('passed') && isPassed) statusMatch = true;
+
+                    if (!statusMatch) return false;
                 }
                 return true;
             });
 
-            // 按距离当前时间排序
+            // 按距离当前时间排序... (保留原逻辑不变)
             filteredData.sort((a, b) => {
                 const timeA = a.statusInfo.ms, timeB = b.statusInfo.ms;
                 const isAValid = timeA !== null && timeA > now, isBValid = timeB !== null && timeB > now;
@@ -541,14 +614,15 @@ document.addEventListener('DOMContentLoaded', () => {
             filteredData = ccfData.filter(item => {
                 const matchSearch = (item.abbr || '').toLowerCase().includes(searchQuery) || (item.fullname || '').toLowerCase().includes(searchQuery);
                 if (!matchSearch) return false;
-                if (catFilter !== 'all' && item.domain !== catFilter) return false;
-                if (levelFilter !== 'all' && item.grade !== levelFilter) return false;
-                // 在推荐列表模式下，col3Filter 充当 type 过滤 (会议/期刊)
-                if (col3Filter !== 'all' && item.type !== col3Filter) return false;
+                
+                // 多选过滤判定
+                if (!catFilters.includes('all') && !catFilters.includes(item.domain)) return false;
+                if (!levelFilters.includes('all') && !levelFilters.includes(item.grade)) return false;
+                if (!col3Filters.includes('all') && !col3Filters.includes(item.type)) return false;
                 return true;
             });
 
-            // 按 A->B->C 及缩写字母排序
+            // 排序逻辑... (保留原逻辑不变)
             filteredData.sort((a, b) => {
                 if (a.grade === b.grade) return (a.abbr || '').localeCompare(b.abbr || '');
                 return (a.grade || '').localeCompare(b.grade || '');
@@ -693,4 +767,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 初始化启动拉取 Deadlines 接口
     fetchConferencesData();
+
+    const updateDataBtn = document.getElementById('update-data-btn');
+    if (updateDataBtn) {
+        updateDataBtn.addEventListener('click', async () => {
+            const icon = updateDataBtn.querySelector('.refresh-icon');
+            if (icon) icon.classList.add('spin-anim'); // 开始旋转
+            updateDataBtn.disabled = true; // 禁用按钮防止重复点击
+            
+            await fetchConferencesData(); // 重新拉取
+            
+            if (icon) icon.classList.remove('spin-anim'); // 停止旋转
+            updateDataBtn.disabled = false; // 恢复按钮
+        });
+    }
 });
