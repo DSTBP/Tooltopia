@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCF-Deadlines 会议截稿追踪</title>
+    <link href="assets/css/style.css" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+</head>
+<body>
+    <div id="root">
+        <div class="app-container">
+            
+            <nav class="navbar">
+                <div class="nav-content">
+                    <div class="logo-wrapper">
+                        <img src="favicon.png" alt="Logo" class="logo-icon">
+                        <div class="logo-text-desktop">CCF-Deadlines</div>
+                    </div>
+                    
+                    <div class="nav-actions">
+                        <div class="desktop-random">
+                            <a href="../../index.html" class="btn-primary shadow-btn">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                </svg>
+                                <span>返回主页</span>
+                            </a>
+                            <div class="tooltip">回到工具箱首页</div>
+                        </div>
+                        
+                        <div class="theme-toggle-container">
+                            <div class="theme-toggle">
+                                <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+                                <label for="themeToggle" class="theme-toggle__btn">
+                                    <span class="theme-toggle__feature"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <header class="hero-section">
+                <div class="hero-content">
+                    <h1 class="hero-title" data-shadow='CCF-Deadlines'>CCF-Deadlines</h1>
+                    <div class="hero-desc">
+                        <div class="briefing-card">
+                            <div class="briefing-header">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="briefing-icon"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                <span>各位科研人员，欢迎使用！</span>
+                            </div>
+                            <div class="briefing-body">
+                                <p>这里汇总了计算机科学领域各大顶级会议的截稿倒计时与 CCF 推荐目录。您可以高效规划科研时间线，精准狙击每一个 Deadline，同时快速检索目标期刊与会议！</p>
+                            </div>
+                            <div class="briefing-footer">
+                                <div class="status-dot"></div>
+                                <span>数据由开源社区协同维护，所有时间均已自动转换为您的本地时区～</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="main-content">
+                <div class="filter-container" id="ccf-filters">
+                    <div class="filter-top-bar">
+                        <div class="top-nav-tabs">
+                            <a href="#" class="top-tab active" id="tab-deadlines">CCF Deadlines</a>
+                            <a href="#" class="top-tab" id="tab-jcr">JCR 数据</a>
+                            <a href="#" class="top-tab" id="tab-ccf-list">CCF推荐列表</a>
+                        </div>
+                        
+                        <div class="search-wrapper enlarged-input">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg>
+                            <input id="search-input" placeholder="检索 (简称/全称)..." class="search-input" type="text" value="">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="filter-group">
+                                <label for="category-filter" class="form-label">领域</label>
+                                <select id="category-filter" class="form-select">
+                                    <option value="all">加载中...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="filter-group">
+                                <label for="level-filter" class="form-label">CCF级别</label>
+                                <select id="level-filter" class="form-select">
+                                    <option value="all">加载中...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3" id="filter-col-3">
+                            <div class="filter-group">
+                                <label for="year-filter" id="label-filter-3" class="form-label">年份</label>
+                                <select id="year-filter" class="form-select">
+                                    <option value="all">加载中...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3" id="filter-col-4">
+                            <div class="filter-group">
+                                <label for="deadline-filter" id="label-filter-4" class="form-label">截稿状态</label>
+                                <select id="deadline-filter" class="form-select">
+                                    <option value="all">所有状态</option>
+                                    <option value="upcoming">即将截稿 (30天内)</option>
+                                    <option value="open">开放投稿</option>
+                                    <option value="passed">已截稿</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-actions">
+                        <div class="timezone-wrapper enlarged-input">
+                            <select id="timezone-selector" class="search-input">
+                                <option value="original">原始时区 (Original)</option>
+                                <option value="local">本地时区 (Local)</option>
+                                <option value="AoE">AoE (Anywhere on Earth)</option>
+                                <option value="-12">UTC-12</option>
+                                <option value="-8">UTC-8 (太平洋时间)</option>
+                                <option value="-5">UTC-5 (美东时间)</option>
+                                <option value="0">UTC+0 (格林威治)</option>
+                                <option value="+8">UTC+8 (北京时间)</option>
+                                <option value="+9">UTC+9 (东京时间)</option>
+                            </select>
+                        </div>
+
+                        <div class="search-status" style="margin-bottom: 0;">
+                            <div class="pulse-dot"></div>
+                            <span id="total-count">正在获取数据...</span>
+                        </div>
+                        
+                        <div class="layout-toggles">
+                            <button class="layout-btn active" data-cols="2" title="双排卡片 (2列)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg>
+                            </button>
+                            <button class="layout-btn" data-cols="3" title="三排卡片 (3列)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="4" height="18" rx="1"/><rect x="10" y="3" width="4" height="18" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+                            </button>
+                            <button class="layout-btn" data-cols="4" title="四排卡片 (4列)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="3.5" height="18" rx="0.5"/><rect x="7.5" y="3" width="3.5" height="18" rx="0.5"/><rect x="13" y="3" width="3.5" height="18" rx="0.5"/><rect x="18.5" y="3" width="3.5" height="18" rx="0.5"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="archive-section active" id="main-section">
+                    <div id="conferences-container" class="grid-container"></div>
+                    <div id="pagination-container" class="pagination-container"></div>
+                </section>
+            </main>
+            
+            <footer class="footer">
+                <p style="font-size: 0.85em; opacity: 0.75; line-height: 1.8;">
+                    数据来源于开源社区 <a href="https://github.com/ccfddl/ccf-deadlines" target="_blank" style="text-decoration: underline; text-underline-offset: 2px;">CCF-Deadlines</a><br>
+                    Frontend Refactored from Tooltopia
+                </p>
+            </footer>
+        </div>
+    </div>
+    
+    <script src="assets/js/data.js"></script>
+    <script src="assets/js/theme-toggle.js"></script>
+    <script src="assets/js/script.js"></script>
+</body>
+</html>
