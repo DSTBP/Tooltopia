@@ -64,6 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
         asc: false  // 默认降序 (大数值在前)
     };
 
+    let ccfSortConfig = {
+        key: 'grade', // 默认按 CCF 级别排序
+        asc: true     // 默认升序 (A在前，C在后)
+    };
+
     // 当前视图模式 ('deadlines', 'ccf_list' 或 'sjr_list')
     let currentMode = 'deadlines';
 
@@ -671,6 +676,70 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
+    // 界面渲染 - CCF 推荐列表 (表格模式)
+    // ==========================================
+    function createCCFTableHTML(dataList) {
+        if (!dataList || dataList.length === 0) {
+            return '<p class="empty-text" style="grid-column: 1/-1; text-align: center;">未找到符合条件的 CCF 推荐数据</p>';
+        }
+
+        let rowsHTML = dataList.map(item => {
+            const isQ1 = item.grade === 'A';
+            const ccfClass = isQ1 ? 'quartile-tag quartile-q1' : 'quartile-tag quartile-normal';
+            const categoryAbbr = Object.keys(subMap).find(key => subMap[key] === item.domain) || item.domain || 'MIX';
+            
+            const abbrLower = (item.abbr || '').toLowerCase();
+            const accRateStr = accRatesMap.get(abbrLower) || '-';
+
+            return `
+                <tr>
+                    <td class="title-col" title="${item.abbr}">
+                        <a href="${item.url}" target="_blank" style="text-decoration: none; color: inherit;" class="author-link">${item.abbr}</a>
+                    </td>
+                    <td style="white-space: normal; min-width: 200px; line-height: 1.4;">${item.fullname}</td>
+                    <td><span class="${ccfClass}">CCF-${item.grade}</span></td>
+                    <td><span class="card-tag tag-normal">${categoryAbbr}</span></td>
+                    <td>${item.type}</td>
+                    <td style="white-space: normal; min-width: 150px;">${item.publisher}</td>
+                    <td>${accRateStr}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const getTh = (key, label, minW = '') => {
+            let icon = '↕';
+            let iconClass = 'sort-icon';
+            if (ccfSortConfig.key === key) {
+                icon = ccfSortConfig.asc ? '▲' : '▼';
+                iconClass += ' active';
+            }
+            const widthStyle = minW ? `min-width: ${minW};` : '';
+            return `<th class="sortable-th" data-sort="${key}" style="${widthStyle}">${label} <span class="${iconClass}">${icon}</span></th>`;
+        };
+
+        return `
+            <div class="sjr-table-wrapper">
+                <table class="sjr-table">
+                    <thead>
+                        <tr>
+                            ${getTh('abbr', '简称 (Abbr)')}
+                            ${getTh('fullname', '全称 (Fullname)', '200px')}
+                            ${getTh('grade', '级别 (Grade)')}
+                            ${getTh('domain', '领域')}
+                            ${getTh('type', '类型')}
+                            ${getTh('publisher', '出版社')}
+                            <th>最新收录率</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHTML}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // ==========================================
     // 界面渲染 - SJR 排名列表 (表格模式)
     // ==========================================
     function createSJRTableHTML(dataList) {
@@ -812,8 +881,20 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             filteredData.sort((a, b) => {
-                if (a.grade === b.grade) return (a.abbr || '').localeCompare(b.abbr || '');
-                return (a.grade || '').localeCompare(b.grade || '');
+                let valA = a[ccfSortConfig.key];
+                let valB = b[ccfSortConfig.key];
+
+                if (valA === undefined || valA === null) valA = '';
+                if (valB === undefined || valB === null) valB = '';
+
+                let cmp = String(valA).localeCompare(String(valB));
+                
+                // 如果是按照级别(grade)排序且级别相同，则默认按 abbr 字母序做次级排序
+                if (cmp === 0 && ccfSortConfig.key === 'grade') {
+                    return String(a.abbr || '').localeCompare(String(b.abbr || ''));
+                }
+
+                return ccfSortConfig.asc ? cmp : -cmp;
             });
 
         // --- 分支 3：SJR 排名数据逻辑 ---
@@ -882,7 +963,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentMode === 'deadlines') {
                 conferencesContainer.innerHTML = paginatedData.length ? paginatedData.map(createDeadlineCardHTML).join('') : emptyMsg;
             } else if (currentMode === 'ccf_list') {
-                conferencesContainer.innerHTML = paginatedData.length ? paginatedData.map(createCCFListCardHTML).join('') : emptyMsg;
+                conferencesContainer.innerHTML = createCCFTableHTML(paginatedData);
             } else if (currentMode === 'sjr_list') {
                 conferencesContainer.innerHTML = createSJRTableHTML(paginatedData);
             }
@@ -1029,22 +1110,31 @@ document.addEventListener('DOMContentLoaded', () => {
     if (conferencesContainer) {
         conferencesContainer.addEventListener('click', (e) => {
             const th = e.target.closest('th.sortable-th');
-            if (th && currentMode === 'sjr_list') {
+            if (th) {
                 const sortKey = th.getAttribute('data-sort');
                 
-                // 如果点击的是当前排序列，则切换升降序；否则默认降序（文本类默认升序）
-                if (sjrSortConfig.key === sortKey) {
-                    sjrSortConfig.asc = !sjrSortConfig.asc;
-                } else {
-                    sjrSortConfig.key = sortKey;
-                    // 文本列默认升序，数字列默认降序
-                    if (['title', 'type', 'quartile', 'country'].includes(sortKey)) {
-                        sjrSortConfig.asc = true;
+                if (currentMode === 'sjr_list') {
+                    if (sjrSortConfig.key === sortKey) {
+                        sjrSortConfig.asc = !sjrSortConfig.asc;
                     } else {
-                        sjrSortConfig.asc = false;
+                        sjrSortConfig.key = sortKey;
+                        if (['title', 'type', 'quartile', 'country'].includes(sortKey)) {
+                            sjrSortConfig.asc = true;
+                        } else {
+                            sjrSortConfig.asc = false;
+                        }
                     }
+                    updateView(); 
+                } 
+                else if (currentMode === 'ccf_list') {
+                    if (ccfSortConfig.key === sortKey) {
+                        ccfSortConfig.asc = !ccfSortConfig.asc;
+                    } else {
+                        ccfSortConfig.key = sortKey;
+                        ccfSortConfig.asc = true; // CCF 大部分字段默认升序排列体验更好
+                    }
+                    updateView();
                 }
-                updateView(); // 重新排序并渲染
             }
         });
     }
