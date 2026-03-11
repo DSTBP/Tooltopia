@@ -247,6 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const label3 = document.getElementById('label-filter-3');
         const tzWrapper = document.querySelector('.timezone-wrapper');
         const ccfNotice = document.getElementById('ccf-list-notice'); 
+        const sjrNotice = document.getElementById('sjr-list-notice'); // 获取新增的 SJR 备注元素
 
         if (mode === 'deadlines') {
             const tab = document.getElementById('tab-deadlines');
@@ -254,7 +255,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (label3) label3.textContent = '年份';
             if (col4) col4.style.display = 'block';
             if (tzWrapper) tzWrapper.style.display = 'block';
-            if (ccfNotice) ccfNotice.style.display = 'none'; 
+            if (ccfNotice) ccfNotice.style.display = 'none'; // 隐藏 CCF 备注
+            if (sjrNotice) sjrNotice.style.display = 'none'; // 隐藏 SJR 备注
             
             initDeadlineFilters();
         } else if (mode === 'ccf_list') {
@@ -263,7 +265,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (label3) label3.textContent = '类型'; 
             if (col4) col4.style.display = 'none';
             if (tzWrapper) tzWrapper.style.display = 'none';
-            if (ccfNotice) ccfNotice.style.display = 'flex'; 
+            if (ccfNotice) ccfNotice.style.display = 'flex'; // 显示 CCF 备注
+            if (sjrNotice) sjrNotice.style.display = 'none'; // 隐藏 SJR 备注
             
             initCCFListFilters();
         } else if (mode === 'sjr_list') {
@@ -272,7 +275,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (label3) label3.textContent = '类型'; 
             if (col4) col4.style.display = 'none';
             if (tzWrapper) tzWrapper.style.display = 'none';
-            if (ccfNotice) ccfNotice.style.display = 'none';
+            if (ccfNotice) ccfNotice.style.display = 'none'; // 隐藏 CCF 备注
+            if (sjrNotice) sjrNotice.style.display = 'flex'; // 显示 SJR 备注
             
             initSJRFilters();
         }
