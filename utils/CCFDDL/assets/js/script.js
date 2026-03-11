@@ -793,8 +793,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <table class="sjr-table">
                     <thead>
                         <tr>
-                            ${getTh('title', '名称 (Title)')}
-                            ${getTh('type', '类型 (Type)', '120px')}
+                            ${getTh('title', '名称')}
+                            ${getTh('type', '类型', '120px')}
                             ${getTh('quartile', '分区')}
                             ${getTh('sjr', 'SJR')}
                             ${getTh('hIndex', 'H-Index')}
