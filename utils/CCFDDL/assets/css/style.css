@@ -545,3 +545,150 @@ body.day-mode .custom-multi-select .select-box { background-color: #f9fafb; bord
 body.day-mode .custom-multi-select .dropdown-list { background-color: #ffffff; border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 body.day-mode .custom-multi-select .dropdown-item { color: #1a202c; }
 body.day-mode .custom-multi-select .dropdown-item:hover { background-color: rgba(0,0,0,0.05); }
+
+/* ============================================================
+   10. SJR 表格样式与日间模式 (SJR Table & Day Mode)
+   ============================================================ */
+.sjr-table-wrapper {
+    grid-column: 1 / -1; 
+    width: 100%; 
+    overflow-x: auto;
+    background: rgba(30, 30, 35, 0.8); 
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1); 
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.sjr-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    text-align: left; 
+    font-size: 0.95rem; 
+    white-space: nowrap; 
+}
+
+.sjr-table th {
+    padding: 16px; 
+    color: #d1d5db; 
+    font-weight: 600;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1); 
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sjr-table td {
+    padding: 14px 16px; 
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.2s; 
+    color: #9ca3af;
+}
+
+.sjr-table tbody tr:hover td { 
+    background-color: rgba(255, 255, 255, 0.05); 
+}
+
+.sjr-table td.title-col { 
+    font-weight: 500; 
+    color: #f3f4f6; 
+    white-space: normal; /* 允许超长标题换行 */
+    min-width: 250px; 
+}
+
+.sjr-table td.sjr-score { 
+    font-weight: bold; 
+    color: #e5e7eb; 
+}
+
+/* 分区 Tag 样式 */
+.quartile-tag { 
+    padding: 2px 8px; 
+    border-radius: 4px; 
+    font-size: 0.85rem; 
+}
+.quartile-q1 { 
+    background: rgba(239, 68, 68, 0.2); 
+    color: #f87171; 
+    font-weight: bold; 
+}
+.quartile-normal { 
+    background: rgba(255, 255, 255, 0.1); 
+    color: #d1d5db; 
+}
+
+/* ================== SJR 表格日间模式 (Day Mode) ================== */
+body.day-mode .sjr-table-wrapper {
+    background: rgba(255, 255, 255, 0.8); 
+    border-color: rgba(0, 0, 0, 0.1); 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+body.day-mode .sjr-table th {
+    color: #4a5568; 
+    border-bottom-color: rgba(0, 0, 0, 0.1); 
+    background: rgba(0, 0, 0, 0.02);
+}
+
+body.day-mode .sjr-table td { 
+    border-bottom-color: rgba(0, 0, 0, 0.05); 
+    color: #4a5568; 
+}
+
+body.day-mode .sjr-table tbody tr:hover td { 
+    background-color: rgba(0, 0, 0, 0.03); 
+}
+
+body.day-mode .sjr-table td.title-col { 
+    color: #1a202c; 
+}
+
+body.day-mode .sjr-table td.sjr-score { 
+    color: #1a202c; 
+}
+
+body.day-mode .quartile-q1 { 
+    background: #fee2e2; 
+    color: #b91c1c; 
+}
+
+body.day-mode .quartile-normal { 
+    background: #f1f5f9; 
+    color: #64748b; 
+}
+
+/* ============================================================
+   11. 表格排序控制 (Table Sorting)
+   ============================================================ */
+.sortable-th {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+
+.sortable-th:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.sort-icon {
+    display: inline-block;
+    width: 14px;
+    text-align: center;
+    opacity: 0.3;
+    font-size: 0.8em;
+    margin-left: 4px;
+    transition: all 0.2s;
+}
+
+.sort-icon.active {
+    opacity: 1;
+    color: #4ECDC4;
+    transform: scale(1.2);
+}
+
+body.day-mode .sortable-th:hover {
+    background-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+body.day-mode .sort-icon.active {
+    color: #3b82f6;
+}

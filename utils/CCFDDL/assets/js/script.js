@@ -10,8 +10,61 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 全局数据变量
     let confData = [];
+    let sjrData = []; // 新增 SJR 数据变量
+
+    let accRatesMap = new Map();
+
+    async function fetchAcceptanceRates() {
+        try {
+            const response = await fetch('https://raw.githubusercontent.com/ccfddl/ccfddl.github.io/page/conference/allacc.yml');
+            const yamlText = await response.text();
+            
+            // 简易 YAML 解析器（针对特定格式进行字符串分割提取）
+            const blocks = yamlText.split(/(?:^|\n)-\s*title:\s*/);
+            blocks.forEach(block => {
+                if (!block.trim()) return;
+                
+                // 提取会议缩写名 (Title)
+                const lines = block.split('\n');
+                let title = lines[0].trim().replace(/^['"]|['"]$/g, '');
+
+                // 按 year 块拆分，寻找最新年份的数据
+                const yearStrBlocks = block.split(/\s+-\s*year:\s*/).slice(1);
+                let maxYear = 0;
+                let bestStr = null;
+                
+                yearStrBlocks.forEach(ysb => {
+                    const yearMatch = ysb.match(/^(\d+)/);
+                    if (yearMatch) {
+                        const year = parseInt(yearMatch[1], 10);
+                        // 匹配 str: 后面的内容
+                        const strMatch = ysb.match(/str:\s*(.+)/);
+                        if (strMatch && year >= maxYear) {
+                            maxYear = year;
+                            bestStr = strMatch[1].trim().replace(/^['"]|['"]$/g, '');
+                        }
+                    }
+                });
+
+                // 存入 Map，将缩写名转小写以防大小写不一致
+                if (title && bestStr) {
+                    accRatesMap.set(title.toLowerCase(), bestStr);
+                }
+            });
+            
+            // 如果拉取完数据时正处于 ccf_list 模式，自动刷新视图
+            if (currentMode === 'ccf_list') updateView();
+        } catch (error) {
+            console.error("收录率数据拉取失败:", error);
+        }
+    }
     
-    // 当前视图模式 ('deadlines' 或 'ccf_list')
+    let sjrSortConfig = {
+        key: 'sjr', // 默认按 SJR 分数排序
+        asc: false  // 默认降序 (大数值在前)
+    };
+
+    // 当前视图模式 ('deadlines', 'ccf_list' 或 'sjr_list')
     let currentMode = 'deadlines';
 
     // 分页状态控制
@@ -31,6 +84,39 @@ document.addEventListener('DOMContentLoaded', () => {
         'MX': '交叉/综合/新兴'
     };
 
+    // ==========================================
+    // 解析 SJR 数据 (SCImago)
+    // ==========================================
+    if (typeof SCImago !== 'undefined' && SCImago.data) {
+        sjrData = SCImago.data.map(row => {
+            const parseNum = (val, isFloat = false) => {
+                if (!val || val === '-') return 0;
+                let strVal = String(val).replace(/,/g, isFloat ? '.' : ''); // 浮点数逗号转点，整数剔除千分位
+                return isFloat ? parseFloat(strVal) : parseInt(strVal, 10);
+            };
+
+            return {
+                title: row[0] || '',
+                type: row[1] || '',
+                issn: row[2] || '',
+                publisher: row[3] || '',
+                sjr: parseNum(row[4], true),
+                quartile: row[5] || '-',
+                hIndex: parseNum(row[6]),
+                totalDocsYear: parseNum(row[7]),     
+                totalDocs3Years: parseNum(row[8]),   
+                totalRefs: parseNum(row[9]),         
+                totalCites3Years: parseNum(row[10]), 
+                citableDocs3Years: parseNum(row[11]),
+                citesDoc2Years: parseNum(row[12], true), 
+                refDoc: parseNum(row[13], true),           
+                country: row[14] || '',
+                region: row[15] || '',
+                areas: row[16] || row[15] || '' 
+            };
+        });
+    }
+
     if (timezoneSelector) {
         timezoneSelector.value = 'original'; 
         timezoneSelector.addEventListener('change', (e) => {
@@ -44,6 +130,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     const tabDeadlines = document.getElementById('tab-deadlines');
     const tabCcfList = document.getElementById('tab-ccf-list');
+    const tabSjrList = document.getElementById('tab-sjr-list'); 
     
     if (tabDeadlines) {
         tabDeadlines.addEventListener('click', (e) => {
@@ -59,13 +146,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    if (tabSjrList) {
+        tabSjrList.addEventListener('click', (e) => {
+            e.preventDefault();
+            setMode('sjr_list');
+        });
+    }
+
     function createMultiSelect(selectId, options, placeholder) {
         const originalSelect = document.getElementById(selectId);
         if (!originalSelect) return;
 
-        originalSelect.style.display = 'none'; // 隐藏原生select
+        originalSelect.style.display = 'none'; 
         
-        // 移除旧的容器(应对切换Tab)
         const existing = originalSelect.nextElementSibling;
         if (existing && existing.classList.contains('custom-multi-select')) existing.remove();
 
@@ -98,7 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
             dropdown.classList.toggle('show');
         });
 
-        dropdown.addEventListener('click', (e) => e.stopPropagation()); // 防止点击内容时关闭
+        dropdown.addEventListener('click', (e) => e.stopPropagation()); 
 
         checkboxes.forEach(cb => {
             cb.addEventListener('change', (e) => {
@@ -112,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 updateSelectText();
                 currentPage = 1;
-                updateView(); // 直接触发视图更新
+                updateView(); 
             });
         });
 
@@ -127,7 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 textSpan.textContent = `已选 ${checked.length} 项`;
             }
             
-            // 同步回原生 select 便于逻辑读取
             originalSelect.innerHTML = '';
             checked.forEach(c => originalSelect.innerHTML += `<option value="${c.value}" selected></option>`);
         }
@@ -141,7 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
         return values.length > 0 ? values : ['all'];
     }
 
-    // 全局点击关闭下拉
     document.addEventListener('click', () => {
         document.querySelectorAll('.dropdown-list').forEach(list => list.classList.remove('show'));
     });
@@ -155,31 +246,39 @@ document.addEventListener('DOMContentLoaded', () => {
         const col4 = document.getElementById('filter-col-4');
         const label3 = document.getElementById('label-filter-3');
         const tzWrapper = document.querySelector('.timezone-wrapper');
-        const ccfNotice = document.getElementById('ccf-list-notice'); // 获取备注元素
+        const ccfNotice = document.getElementById('ccf-list-notice'); 
 
         if (mode === 'deadlines') {
-            document.getElementById('tab-deadlines').classList.add('active');
-            label3.textContent = '年份';
+            const tab = document.getElementById('tab-deadlines');
+            if (tab) tab.classList.add('active');
+            if (label3) label3.textContent = '年份';
             if (col4) col4.style.display = 'block';
             if (tzWrapper) tzWrapper.style.display = 'block';
-            if (ccfNotice) ccfNotice.style.display = 'none'; // 隐藏备注
+            if (ccfNotice) ccfNotice.style.display = 'none'; 
             
             initDeadlineFilters();
         } else if (mode === 'ccf_list') {
-            document.getElementById('tab-ccf-list').classList.add('active');
-            // 将年份选项转为类型选项 (期刊/会议)
-            label3.textContent = '类型'; 
-            // 隐藏状态过滤和时区选择
+            const tab = document.getElementById('tab-ccf-list');
+            if (tab) tab.classList.add('active');
+            if (label3) label3.textContent = '类型'; 
             if (col4) col4.style.display = 'none';
             if (tzWrapper) tzWrapper.style.display = 'none';
-            if (ccfNotice) ccfNotice.style.display = 'flex'; // 显示备注
+            if (ccfNotice) ccfNotice.style.display = 'flex'; 
             
             initCCFListFilters();
+        } else if (mode === 'sjr_list') {
+            const tab = document.getElementById('tab-sjr-list');
+            if (tab) tab.classList.add('active');
+            if (label3) label3.textContent = '类型'; 
+            if (col4) col4.style.display = 'none';
+            if (tzWrapper) tzWrapper.style.display = 'none';
+            if (ccfNotice) ccfNotice.style.display = 'none';
+            
+            initSJRFilters();
         }
         
         updateView();
     }
-
 
     // ==========================================
     // 在线数据获取与 ICS 解析逻辑 (Deadlines)
@@ -287,13 +386,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentMode === 'deadlines') {
                 initDeadlineFilters(); 
             }
-            // 将 updateView 提出来，确保无论什么模式更新数据后都会重绘画布
             updateView();
         } catch (error) {
             if(conferencesContainer) conferencesContainer.innerHTML = `<p class="empty-text" style="color:red;">数据拉取失败，请检查网络</p>`;
         }
     }
-
 
     // ==========================================
     // 动态生成下拉筛选器
@@ -337,9 +434,28 @@ document.addEventListener('DOMContentLoaded', () => {
         createMultiSelect('level-filter', Array.from(levels).sort().map(lvl => ({value: lvl, label: `CCF-${lvl}`})), '所有级别');
         createMultiSelect('year-filter', Array.from(types).sort().map(t => ({value: t, label: t})), '所有类型');
     }
+
+    function initSJRFilters() {
+        const areas = new Set();
+        const quartiles = new Set();
+        const types = new Set();
+
+        if (sjrData && sjrData.length > 0) {
+            sjrData.forEach(item => {
+                if (item.areas) {
+                    item.areas.split(';').forEach(a => areas.add(a.trim()));
+                }
+                if (item.quartile) quartiles.add(item.quartile);
+                if (item.type) types.add(item.type);
+            });
+        }
+
+        createMultiSelect('category-filter', Array.from(areas).filter(a => a).sort().map(a => ({value: a, label: a})), '所有领域');
+        createMultiSelect('level-filter', Array.from(quartiles).sort().map(q => ({value: q, label: q === '-' ? '无分区' : q})), '所有分区');
+        createMultiSelect('year-filter', Array.from(types).sort().map(t => ({value: t, label: t})), '所有类型');
+    }
     
     function bindFilterEvents() {
-        // 防止重复绑定，每次先克隆替换以清空旧事件
         const filterIds = ['category-filter', 'level-filter', 'year-filter', 'deadline-filter'];
         filterIds.forEach(id => {
             const el = document.getElementById(id);
@@ -421,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 界面渲染 - CCF Deadlines (原逻辑)
+    // 界面渲染 - CCF Deadlines
     // ==========================================
     function createDeadlineCardHTML(item) {
         const conf = item.conf;
@@ -493,11 +609,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     function createCCFListCardHTML(item) {
         const ccfClass = item.grade === 'A' ? "tag-horror" : "tag-normal";
-        
-        // 通过反查 subMap 获取领域的简称 (如 'DS', 'NW')，找不到则默认 'MIX'
         const categoryAbbr = Object.keys(subMap).find(key => subMap[key] === item.domain) || 'MIX';
         
-        // 标签只保留级别和领域简称，去掉“会议/期刊”标签
         const tagsHTML = `
             <span class="card-tag ${ccfClass}">CCF-${item.grade}</span>
             <span class="card-tag tag-normal" title="${item.domain}">${categoryAbbr}</span>
@@ -510,6 +623,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>`;
 
+        // 根据会议缩写从小写 Map 中获取最新的收录率
+        const abbrLower = (item.abbr || '').toLowerCase();
+        const accRateStr = accRatesMap.get(abbrLower) || '暂无数据';
+
         return `
             <div class="archive-card group">
                 <div class="card-tags-absolute">${tagsHTML}</div>
@@ -521,17 +638,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3 class="card-title" title="${item.abbr}">${item.abbr}</h3>
                     <div class="card-divider"></div>
                     <div class="card-meta-grid">
-                        <div class="meta-item truncate" title="全称: ${item.fullname}" style="grid-column: 1/-1;">
+                        <div class="meta-item truncate" title="全称: ${item.fullname}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-                            <span>${item.fullname}</span>
+                            <span class="truncate">${item.fullname}</span>
                         </div>
                         <div class="meta-item truncate" title="出版社: ${item.publisher}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-                            <span>${item.publisher}</span>
+                            <span class="truncate">${item.publisher}</span>
                         </div>
                         <div class="meta-item truncate" title="类型: ${item.type}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-                            <span>${item.type}</span>
+                            <span class="truncate">${item.type}</span>
+                        </div>
+                        <div class="meta-item truncate" title="最新收录率: ${accRateStr}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="meta-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                            <span class="truncate">收率: ${accRateStr}</span>
                         </div>
                     </div>
                     <div class="card-footer" style="margin-top: 0.75rem;">
@@ -546,10 +667,78 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 更新视图 (双分支逻辑)
+    // 界面渲染 - SJR 排名列表 (表格模式)
+    // ==========================================
+    function createSJRTableHTML(dataList) {
+        if (!dataList || dataList.length === 0) {
+            return '<p class="empty-text" style="grid-column: 1/-1; text-align: center;">未找到符合条件的 SJR 排名数据</p>';
+        }
+
+        let rowsHTML = dataList.map(item => {
+            const isQ1 = item.quartile === 'Q1';
+            const quartileClass = isQ1 ? 'quartile-tag quartile-q1' : 'quartile-tag quartile-normal';
+
+            // 针对 conference and proceedings 进行针对性换行处理
+            let typeHtml = item.type || '-';
+            if (typeHtml.toLowerCase().includes(' and ')) {
+                typeHtml = typeHtml.replace(' and ', '<br>and ');
+            }
+
+            return `
+                <tr>
+                    <td class="title-col" title="${item.title}">${item.title}</td>
+                    <td style="text-transform: capitalize; white-space: normal; min-width: 120px; line-height: 1.4;">${typeHtml}</td>
+                    <td><span class="${quartileClass}">${item.quartile || '-'}</span></td>
+                    <td class="sjr-score">${item.sjr}</td>
+                    <td>${item.hIndex || '-'}</td>
+                    <td>${item.citesDoc2Years || '-'}</td>
+                    <td>${item.totalDocsYear || '-'}</td>
+                    <td>${item.totalCites3Years || '-'}</td>
+                    <td>${item.country || '-'}</td>
+                </tr>
+            `;
+        }).join('');
+
+        // 生成带状态的表头和箭头小图标
+        const getTh = (key, label, minW = '') => {
+            let icon = '↕';
+            let iconClass = 'sort-icon';
+            if (sjrSortConfig.key === key) {
+                icon = sjrSortConfig.asc ? '▲' : '▼';
+                iconClass += ' active';
+            }
+            const widthStyle = minW ? `min-width: ${minW};` : '';
+            return `<th class="sortable-th" data-sort="${key}" style="${widthStyle}">${label} <span class="${iconClass}">${icon}</span></th>`;
+        };
+
+        return `
+            <div class="sjr-table-wrapper">
+                <table class="sjr-table">
+                    <thead>
+                        <tr>
+                            ${getTh('title', '名称 (Title)')}
+                            ${getTh('type', '类型 (Type)', '120px')}
+                            ${getTh('quartile', '分区')}
+                            ${getTh('sjr', 'SJR')}
+                            ${getTh('hIndex', 'H-Index')}
+                            ${getTh('citesDoc2Years', '近两年篇均被引')}
+                            ${getTh('totalDocsYear', '文献数')}
+                            ${getTh('totalCites3Years', '近三年被引')}
+                            ${getTh('country', '国家')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHTML}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // ==========================================
+    // 更新视图 (三分支逻辑)
     // ==========================================
     function updateView() {
-        // 读取数组
         const catFilters = getSelectedValues('category-filter');
         const levelFilters = getSelectedValues('level-filter');
         const col3Filters = getSelectedValues('year-filter');
@@ -571,7 +760,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const matchSearch = (conf.title || '').toLowerCase().includes(searchQuery) || (conf.description || '').toLowerCase().includes(searchQuery);
                 if (!matchSearch) return false;
                 
-                // 多选过滤判定
                 if (!catFilters.includes('all') && !catFilters.includes(conf.sub)) return false;
 
                 const ccfRank = conf.rank && conf.rank.ccf ? conf.rank.ccf : 'N';
@@ -580,7 +768,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const confYear = conf.confs && conf.confs.length > 0 ? String(conf.confs[0].year) : '';
                 if (!col3Filters.includes('all') && !col3Filters.includes(confYear)) return false;
 
-                // 多重状态过滤
                 if (!statusFilters.includes('all')) {
                     let isUpcoming = ms !== null && ms > now && (ms - now) <= 30 * 24 * 60 * 60 * 1000;
                     let isOpen = ms !== null && ms > now;
@@ -596,7 +783,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return true;
             });
 
-            // 按距离当前时间排序... (保留原逻辑不变)
             filteredData.sort((a, b) => {
                 const timeA = a.statusInfo.ms, timeB = b.statusInfo.ms;
                 const isAValid = timeA !== null && timeA > now, isBValid = timeB !== null && timeB > now;
@@ -615,17 +801,62 @@ document.addEventListener('DOMContentLoaded', () => {
                 const matchSearch = (item.abbr || '').toLowerCase().includes(searchQuery) || (item.fullname || '').toLowerCase().includes(searchQuery);
                 if (!matchSearch) return false;
                 
-                // 多选过滤判定
                 if (!catFilters.includes('all') && !catFilters.includes(item.domain)) return false;
                 if (!levelFilters.includes('all') && !levelFilters.includes(item.grade)) return false;
                 if (!col3Filters.includes('all') && !col3Filters.includes(item.type)) return false;
                 return true;
             });
 
-            // 排序逻辑... (保留原逻辑不变)
             filteredData.sort((a, b) => {
                 if (a.grade === b.grade) return (a.abbr || '').localeCompare(b.abbr || '');
                 return (a.grade || '').localeCompare(b.grade || '');
+            });
+
+        // --- 分支 3：SJR 排名数据逻辑 ---
+        } else if (currentMode === 'sjr_list') {
+            if (!sjrData || sjrData.length === 0) return;
+
+            filteredData = sjrData.filter(item => {
+                const matchSearch = (item.title || '').toLowerCase().includes(searchQuery) || (item.publisher || '').toLowerCase().includes(searchQuery);
+                if (!matchSearch) return false;
+                
+                if (!catFilters.includes('all')) {
+                    const itemAreas = item.areas ? item.areas.split(';').map(a => a.trim()) : [];
+                    if (!itemAreas.some(a => catFilters.includes(a))) return false;
+                }
+                if (!levelFilters.includes('all') && !levelFilters.includes(item.quartile)) return false;
+                if (!col3Filters.includes('all') && !col3Filters.includes(item.type)) return false;
+                
+                return true;
+            });
+
+            // ==========================================
+            // 新增：动态字段排序逻辑
+            // ==========================================
+            filteredData.sort((a, b) => {
+                let valA = a[sjrSortConfig.key];
+                let valB = b[sjrSortConfig.key];
+
+                // 特殊处理：分区 (Quartile) 的字母序是反直觉的 (Q1比Q4好)，需要转为数字等级进行比较
+                if (sjrSortConfig.key === 'quartile') {
+                    const qMap = { 'Q1': 1, 'Q2': 2, 'Q3': 3, 'Q4': 4, '-': 5, '': 5 };
+                    let numA = qMap[valA] || 5;
+                    let numB = qMap[valB] || 5;
+                    return sjrSortConfig.asc ? numA - numB : numB - numA; 
+                }
+
+                // 常规排序 (数字与字符串区分处理)
+                if (valA === undefined || valA === null) valA = '';
+                if (valB === undefined || valB === null) valB = '';
+
+                let cmp = 0;
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                    cmp = valA - valB;
+                } else {
+                    cmp = String(valA).localeCompare(String(valB));
+                }
+
+                return sjrSortConfig.asc ? cmp : -cmp;
             });
         }
 
@@ -641,13 +872,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const startIndex = (currentPage - 1) * itemsPerPage;
         const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
 
-        // 渲染列表
+        // 渲染列表：如果是在 SJR 列表模式下，则调用新增的 createSJRTableHTML 函数整体渲染，其他模式还是以卡片形式循环拼接
         const emptyMsg = '<p class="empty-text" style="grid-column: 1/-1; text-align: center;">未找到符合条件的数据</p>';
         if (conferencesContainer) {
             if (currentMode === 'deadlines') {
                 conferencesContainer.innerHTML = paginatedData.length ? paginatedData.map(createDeadlineCardHTML).join('') : emptyMsg;
-            } else {
+            } else if (currentMode === 'ccf_list') {
                 conferencesContainer.innerHTML = paginatedData.length ? paginatedData.map(createCCFListCardHTML).join('') : emptyMsg;
+            } else if (currentMode === 'sjr_list') {
+                conferencesContainer.innerHTML = createSJRTableHTML(paginatedData);
             }
         }
 
@@ -767,18 +1000,48 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 初始化启动拉取 Deadlines 接口
     fetchConferencesData();
+    fetchAcceptanceRates(); // 启动时异步拉取收录率
 
     const updateDataBtn = document.getElementById('update-data-btn');
     if (updateDataBtn) {
         updateDataBtn.addEventListener('click', async () => {
             const icon = updateDataBtn.querySelector('.refresh-icon');
-            if (icon) icon.classList.add('spin-anim'); // 开始旋转
-            updateDataBtn.disabled = true; // 禁用按钮防止重复点击
+            if (icon) icon.classList.add('spin-anim');
+            updateDataBtn.disabled = true; 
             
-            await fetchConferencesData(); // 重新拉取
+            // 并发重新拉取两边的数据
+            await Promise.all([
+                fetchConferencesData(),
+                fetchAcceptanceRates()
+            ]);
             
-            if (icon) icon.classList.remove('spin-anim'); // 停止旋转
-            updateDataBtn.disabled = false; // 恢复按钮
+            if (icon) icon.classList.remove('spin-anim'); 
+            updateDataBtn.disabled = false; 
+        });
+    }
+    // ==========================================
+    // 表格表头点击排序事件
+    // ==========================================
+    if (conferencesContainer) {
+        conferencesContainer.addEventListener('click', (e) => {
+            const th = e.target.closest('th.sortable-th');
+            if (th && currentMode === 'sjr_list') {
+                const sortKey = th.getAttribute('data-sort');
+                
+                // 如果点击的是当前排序列，则切换升降序；否则默认降序（文本类默认升序）
+                if (sjrSortConfig.key === sortKey) {
+                    sjrSortConfig.asc = !sjrSortConfig.asc;
+                } else {
+                    sjrSortConfig.key = sortKey;
+                    // 文本列默认升序，数字列默认降序
+                    if (['title', 'type', 'quartile', 'country'].includes(sortKey)) {
+                        sjrSortConfig.asc = true;
+                    } else {
+                        sjrSortConfig.asc = false;
+                    }
+                }
+                updateView(); // 重新排序并渲染
+            }
         });
     }
 });
