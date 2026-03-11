@@ -249,6 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.top-tab').forEach(t => t.classList.remove('active'));
         
         const col4 = document.getElementById('filter-col-4');
+        const label2 = document.getElementById('label-filter-2');
         const label3 = document.getElementById('label-filter-3');
         const tzWrapper = document.querySelector('.timezone-wrapper');
         const ccfNotice = document.getElementById('ccf-list-notice'); 
@@ -257,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (mode === 'deadlines') {
             const tab = document.getElementById('tab-deadlines');
             if (tab) tab.classList.add('active');
+            if (label2) label2.textContent = 'CCF 级别';
             if (label3) label3.textContent = '年份';
             if (col4) col4.style.display = 'block';
             if (tzWrapper) tzWrapper.style.display = 'block';
@@ -267,6 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (mode === 'ccf_list') {
             const tab = document.getElementById('tab-ccf-list');
             if (tab) tab.classList.add('active');
+            if (label2) label2.textContent = 'CCF 级别';
             if (label3) label3.textContent = '类型'; 
             if (col4) col4.style.display = 'none';
             if (tzWrapper) tzWrapper.style.display = 'none';
@@ -277,6 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (mode === 'sjr_list') {
             const tab = document.getElementById('tab-sjr-list');
             if (tab) tab.classList.add('active');
+            if (label2) label2.textContent = 'SJR 分区';
             if (label3) label3.textContent = '类型'; 
             if (col4) col4.style.display = 'none';
             if (tzWrapper) tzWrapper.style.display = 'none';
@@ -722,9 +726,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <table class="sjr-table">
                     <thead>
                         <tr>
-                            ${getTh('abbr', '简称 (Abbr)')}
-                            ${getTh('fullname', '全称 (Fullname)', '200px')}
-                            ${getTh('grade', '级别 (Grade)')}
+                            ${getTh('abbr', '简称')}
+                            ${getTh('fullname', '全称', '200px')}
+                            ${getTh('grade', '级别')}
                             ${getTh('domain', '领域')}
                             ${getTh('type', '类型')}
                             ${getTh('publisher', '出版社')}
