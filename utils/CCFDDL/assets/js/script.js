@@ -69,6 +69,11 @@ document.addEventListener('DOMContentLoaded', () => {
         asc: true     // 默认升序 (A在前，C在后)
     };
 
+    let deadlineSortConfig = {
+        key: 'deadline', // 默认按截止时间排序
+        asc: true
+    };
+
     // 当前视图模式 ('deadlines', 'ccf_list' 或 'sjr_list')
     let currentMode = 'deadlines';
 
@@ -618,6 +623,99 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
+    // Interface rendering - CCF Deadlines (Table)
+    // ==========================================
+    function createDeadlineTableHTML(dataList) {
+        if (!dataList || dataList.length === 0) {
+            return '<p class="empty-text" style="grid-column: 1/-1; text-align: center;">未找到符合条件的 Deadline 数据</p>';
+        }
+
+        const rowsHTML = dataList.map(item => {
+            const conf = item.conf;
+            const timeStatus = item.statusInfo;
+            const latestConf = conf.confs && conf.confs.length > 0 ? conf.confs[0] : {};
+
+            const ccfRank = conf.rank && conf.rank.ccf ? conf.rank.ccf : 'N';
+            const ccfClass = ccfRank === 'A' ? "quartile-tag quartile-q1" : "quartile-tag quartile-normal";
+
+            const categoryAbbr = conf.sub || 'MIX';
+            const categoryFullName = subMap[conf.sub] || conf.sub || 'MIX';
+
+            const originalTz = latestConf.timezone || 'UTC';
+            const formattedDeadline = formatToSelectedTz(timeStatus.ms, selectedTimezone, originalTz);
+            const deadlineBadge = timeStatus.comment ? `<span class="deadline-badge">${timeStatus.comment}</span>` : '';
+
+            const place = latestConf.place || 'TBA';
+            const confName = conf.description || 'TBA';
+            const confDate = latestConf.date || '-';
+            const confLink = latestConf.link || '#';
+
+            const rowClass = timeStatus.isUrgent ? 'deadline-row deadline-urgent' : 'deadline-row';
+            const linkHTML = confLink && confLink !== '#'
+                ? `<a href="${confLink}" target="_blank" rel="noreferrer" class="table-link">官网</a>`
+                : '-';
+            const titleHTML = confLink && confLink !== '#'
+                ? `<a href="${confLink}" target="_blank" rel="noreferrer" class="author-link">${conf.title}</a>`
+                : `${conf.title}`;
+
+            return `
+                <tr class="${rowClass}">
+                    <td class="title-col" title="${conf.title}">
+                        ${titleHTML}
+                    </td>
+                    <td style="white-space: normal; min-width: 220px; line-height: 1.4;">${confName}</td>
+                    <td><span class="${ccfClass}">CCF-${ccfRank}</span></td>
+                    <td class="deadline-cell" title="${formattedDeadline}">
+                        <div class="deadline-main">${formattedDeadline}</div>
+                        ${deadlineBadge}
+                    </td>
+                    <td class="countdown-timer-container" data-ts="${timeStatus.ms || ''}">
+                        <span class="countdown-text">计算中..</span>
+                    </td>
+                    <td style="white-space: normal; min-width: 140px;">${confDate}</td>
+                    <td style="white-space: normal; min-width: 140px;">${place}</td>
+                    <td><span class="card-tag tag-normal" title="${categoryFullName}">${categoryAbbr}</span></td>
+                    <td>${linkHTML}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const getDeadlineTh = (key, label, minW = '') => {
+            let icon = '⇅';
+            let iconClass = 'sort-icon';
+            if (deadlineSortConfig.key === key) {
+                icon = deadlineSortConfig.asc ? '▲' : '▼';
+                iconClass += ' active';
+            }
+            const widthStyle = minW ? `min-width: ${minW};` : '';
+            return `<th class="sortable-th" data-sort="${key}" style="${widthStyle}">${label} <span class="${iconClass}">${icon}</span></th>`;
+        };
+
+        return `
+            <div class="sjr-table-wrapper deadline-table-wrapper">
+                <table class="sjr-table deadline-table">
+                    <thead>
+                        <tr>
+                            ${getDeadlineTh('title', '简称')}
+                            ${getDeadlineTh('fullname', '全称', '220px')}
+                            ${getDeadlineTh('grade', '级别')}
+                            ${getDeadlineTh('deadline', '截止时间', '200px')}
+                            ${getDeadlineTh('countdown', '倒计时')}
+                            ${getDeadlineTh('confDate', '会议时间', '140px')}
+                            ${getDeadlineTh('place', '地点', '140px')}
+                            ${getDeadlineTh('domain', '领域')}
+                            ${getDeadlineTh('link', '官网')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHTML}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // ==========================================
     // 界面渲染 - CCF 推荐列表
     // ==========================================
     function createCCFListCardHTML(item) {
@@ -694,11 +792,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const abbrLower = (item.abbr || '').toLowerCase();
             const accRateStr = accRatesMap.get(abbrLower) || '-';
+            const ccfLink = item.url || '#';
+            const linkHTML = ccfLink && ccfLink !== '#'
+                ? `<a href="${ccfLink}" target="_blank" rel="noreferrer" class="table-link">官网</a>`
+                : '-';
 
             return `
                 <tr>
                     <td class="title-col" title="${item.abbr}">
-                        <a href="${item.url}" target="_blank" style="text-decoration: none; color: inherit;" class="author-link">${item.abbr}</a>
+                        <a href="${ccfLink}" target="_blank" style="text-decoration: none; color: inherit;" class="author-link">${item.abbr}</a>
                     </td>
                     <td style="white-space: normal; min-width: 200px; line-height: 1.4;">${item.fullname}</td>
                     <td><span class="${ccfClass}">CCF-${item.grade}</span></td>
@@ -706,6 +808,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${item.type}</td>
                     <td style="white-space: normal; min-width: 150px;">${item.publisher}</td>
                     <td>${accRateStr}</td>
+                    <td>${linkHTML}</td>
                 </tr>
             `;
         }).join('');
@@ -733,6 +836,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${getTh('type', '类型')}
                             ${getTh('publisher', '出版社')}
                             <th>最新收录率</th>
+                            <th>官网</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -861,13 +965,58 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             filteredData.sort((a, b) => {
-                const timeA = a.statusInfo.ms, timeB = b.statusInfo.ms;
-                const isAValid = timeA !== null && timeA > now, isBValid = timeB !== null && timeB > now;
-                if (isAValid && isBValid) return timeA - timeB;
-                if (isAValid && !isBValid) return -1;
-                if (!isAValid && isBValid) return 1;
-                if (timeA !== null && timeB !== null) return timeB - timeA;
-                return 0;
+                const confA = a.conf, confB = b.conf;
+                const latestA = confA.confs && confA.confs.length > 0 ? confA.confs[0] : {};
+                const latestB = confB.confs && confB.confs.length > 0 ? confB.confs[0] : {};
+
+                const key = deadlineSortConfig.key;
+                let valA = '';
+                let valB = '';
+
+                if (key === 'deadline' || key === 'countdown') {
+                    const msA = a.statusInfo.ms;
+                    const msB = b.statusInfo.ms;
+                    const isAValid = msA !== null && msA > now;
+                    const isBValid = msB !== null && msB > now;
+                    if (isAValid && !isBValid) return -1;
+                    if (!isAValid && isBValid) return 1;
+                    if (msA === null && msB === null) return 0;
+                    if (msA === null) return 1;
+                    if (msB === null) return -1;
+                    const cmp = msA - msB;
+                    return deadlineSortConfig.asc ? cmp : -cmp;
+                }
+
+                if (key === 'grade') {
+                    const rankA = confA.rank && confA.rank.ccf ? confA.rank.ccf : 'N';
+                    const rankB = confB.rank && confB.rank.ccf ? confB.rank.ccf : 'N';
+                    const rMap = { 'A': 1, 'B': 2, 'C': 3, 'N': 4 };
+                    const cmp = (rMap[rankA] || 4) - (rMap[rankB] || 4);
+                    return deadlineSortConfig.asc ? cmp : -cmp;
+                }
+
+                if (key === 'title') {
+                    valA = confA.title || '';
+                    valB = confB.title || '';
+                } else if (key === 'fullname') {
+                    valA = confA.description || '';
+                    valB = confB.description || '';
+                } else if (key === 'confDate') {
+                    valA = latestA.date || '';
+                    valB = latestB.date || '';
+                } else if (key === 'place') {
+                    valA = latestA.place || '';
+                    valB = latestB.place || '';
+                } else if (key === 'domain') {
+                    valA = confA.sub || '';
+                    valB = confB.sub || '';
+                } else if (key === 'link') {
+                    valA = latestA.link || '';
+                    valB = latestB.link || '';
+                }
+
+                const cmp = String(valA).localeCompare(String(valB));
+                return deadlineSortConfig.asc ? cmp : -cmp;
             });
 
         // --- 分支 2：CCF推荐列表 数据逻辑 ---
@@ -965,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const emptyMsg = '<p class="empty-text" style="grid-column: 1/-1; text-align: center;">未找到符合条件的数据</p>';
         if (conferencesContainer) {
             if (currentMode === 'deadlines') {
-                conferencesContainer.innerHTML = paginatedData.length ? paginatedData.map(createDeadlineCardHTML).join('') : emptyMsg;
+                conferencesContainer.innerHTML = createDeadlineTableHTML(paginatedData);
             } else if (currentMode === 'ccf_list') {
                 conferencesContainer.innerHTML = createCCFTableHTML(paginatedData);
             } else if (currentMode === 'sjr_list') {
@@ -1029,7 +1178,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.countdown-timer-container').forEach(el => {
             const tsAttr = el.getAttribute('data-ts');
             const textSpan = el.querySelector('.countdown-text');
-            el.className = 'meta-item truncate countdown-timer-container';
+            el.classList.remove('timer-normal', 'timer-warning', 'timer-urgent', 'timer-finished', 'timer-tbd');
 
             if (!tsAttr || tsAttr === 'null') {
                 if(textSpan) textSpan.textContent = '状态: 时间未定 (TBD)';
@@ -1128,8 +1277,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             sjrSortConfig.asc = false;
                         }
                     }
-                    updateView(); 
-                } 
+                    updateView();
+                }
+                else if (currentMode === 'deadlines') {
+                    if (deadlineSortConfig.key === sortKey) {
+                        deadlineSortConfig.asc = !deadlineSortConfig.asc;
+                    } else {
+                        deadlineSortConfig.key = sortKey;
+                        deadlineSortConfig.asc = true;
+                    }
+                    updateView();
+                }
                 else if (currentMode === 'ccf_list') {
                     if (ccfSortConfig.key === sortKey) {
                         ccfSortConfig.asc = !ccfSortConfig.asc;

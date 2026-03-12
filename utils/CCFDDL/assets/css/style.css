@@ -132,7 +132,7 @@ img, svg { display: block; vertical-align: middle; max-width: 100%; }
 /* ============================================================
    5. 主内容与卡片 (Main Content & Cards)
    ============================================================ */
-.main-content { max-width: 80rem; margin: 0 auto; padding: 0 1rem; }
+.main-content { max-width: 90rem; margin: 0 auto; padding: 0 1rem; }
 .archive-section { margin-bottom: 3.5rem; }
 .section-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.5rem; }
 .section-title { font-size: 1.5rem; font-weight: bold; color: hsl(0 0% 95%); letter-spacing: 0.025em; }
@@ -614,6 +614,64 @@ body.day-mode .custom-multi-select .dropdown-item:hover { background-color: rgba
     background: rgba(255, 255, 255, 0.1); 
     color: #d1d5db; 
 }
+
+/* ================== Deadline Table ================== */
+.deadline-table .deadline-cell {
+    white-space: normal;
+    min-width: 200px;
+    line-height: 1.35;
+}
+
+.deadline-table .deadline-main {
+    font-weight: 500;
+    color: inherit;
+}
+
+.deadline-table .deadline-badge {
+    display: inline-block;
+    margin-top: 4px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: #d1d5db;
+}
+
+.deadline-table .countdown-timer-container {
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.table-link {
+    color: #60a5fa;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.table-link:hover {
+    text-decoration: underline;
+}
+
+body.day-mode .deadline-table .deadline-main {
+    color: #1a202c;
+}
+
+body.day-mode .deadline-table .deadline-badge {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+body.day-mode .table-link {
+    color: #2563eb;
+}
+
+/* Countdown color accents in table view */
+.deadline-table .countdown-timer-container.timer-urgent { color: #ef4444; }
+.deadline-table .countdown-timer-container.timer-warning { color: #facc15; }
+.deadline-table .countdown-timer-container.timer-normal { color: #22c55e; }
+body.day-mode .deadline-table .countdown-timer-container.timer-urgent { color: #dc2626; }
+body.day-mode .deadline-table .countdown-timer-container.timer-warning { color: #d97706; }
+body.day-mode .deadline-table .countdown-timer-container.timer-normal { color: #16a34a; }
 
 /* ================== SJR 表格日间模式 (Day Mode) ================== */
 body.day-mode .sjr-table-wrapper {
