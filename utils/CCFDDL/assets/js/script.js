@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 全局数据变量
     let confData = [];
     let sjrData = []; // 新增 SJR 数据变量
+    let jcrData = []; // 新增 JCR 数据变量
 
     let accRatesMap = new Map();
 
@@ -63,6 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
         key: 'sjr', // 默认按 SJR 分数排序
         asc: false  // 默认降序 (大数值在前)
     };
+    
+    let jcrSortConfig = {
+        key: 'factor', // 默认按影响因子排序
+        asc: false     // 默认降序 (大数值在前)
+    };
 
     let ccfSortConfig = {
         key: 'grade', // 默认按 CCF 级别排序
@@ -74,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
         asc: true
     };
 
-    // 当前视图模式 ('deadlines', 'ccf_list' 或 'sjr_list')
+    // 当前视图模式 ('deadlines', 'ccf_list', 'sjr_list' 或 'jcr_list')
     let currentMode = 'deadlines';
 
     // 分页状态控制
@@ -127,6 +133,38 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ==========================================
+    // 解析 JCR 数据 (影响因子)
+    // ==========================================
+    const getFactorBand = (value) => {
+        if (!value || Number.isNaN(value)) return '未知';
+        if (value >= 20) return '>=20';
+        if (value >= 10) return '10-20';
+        if (value >= 5) return '5-10';
+        if (value >= 1) return '1-5';
+        return '<1';
+    };
+
+    if (typeof factor !== 'undefined' && factor.data) {
+        jcrData = factor.data.map(row => {
+            const num = parseFloat(String(row[1] ?? '').replace(/,/g, ''));
+            const factorValue = Number.isFinite(num) ? num : 0;
+            const jcr = row[2] || '-';
+            const zky = row[7] || '-';
+            return {
+                nlmId: row[0] || '',
+                factor: factorValue,
+                factorBand: getFactorBand(factorValue),
+                jcr: jcr === '.' ? '-' : jcr,
+                journal: row[3] || '',
+                abbr: row[4] || '',
+                issn: row[5] || '',
+                eissn: row[6] || '',
+                zky: zky === '.' ? '-' : zky
+            };
+        });
+    }
+
     if (timezoneSelector) {
         timezoneSelector.value = 'original'; 
         timezoneSelector.addEventListener('change', (e) => {
@@ -141,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabDeadlines = document.getElementById('tab-deadlines');
     const tabCcfList = document.getElementById('tab-ccf-list');
     const tabSjrList = document.getElementById('tab-sjr-list'); 
+    const tabJcrList = document.getElementById('tab-jcr-list');
     
     if (tabDeadlines) {
         tabDeadlines.addEventListener('click', (e) => {
@@ -160,6 +199,13 @@ document.addEventListener('DOMContentLoaded', () => {
         tabSjrList.addEventListener('click', (e) => {
             e.preventDefault();
             setMode('sjr_list');
+        });
+    }
+
+    if (tabJcrList) {
+        tabJcrList.addEventListener('click', (e) => {
+            e.preventDefault();
+            setMode('jcr_list');
         });
     }
 
@@ -254,45 +300,66 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('.top-tab').forEach(t => t.classList.remove('active'));
         
         const col4 = document.getElementById('filter-col-4');
+        const label1 = document.getElementById('label-filter-1');
         const label2 = document.getElementById('label-filter-2');
         const label3 = document.getElementById('label-filter-3');
         const tzWrapper = document.querySelector('.timezone-wrapper');
         const ccfNotice = document.getElementById('ccf-list-notice'); 
         const sjrNotice = document.getElementById('sjr-list-notice'); // 获取新增的 SJR 备注元素
+        const jcrNotice = document.getElementById('jcr-list-notice');
 
         if (mode === 'deadlines') {
             const tab = document.getElementById('tab-deadlines');
             if (tab) tab.classList.add('active');
+            if (label1) label1.textContent = '领域';
             if (label2) label2.textContent = 'CCF 级别';
             if (label3) label3.textContent = '年份';
             if (col4) col4.style.display = 'block';
             if (tzWrapper) tzWrapper.style.display = 'block';
             if (ccfNotice) ccfNotice.style.display = 'none'; // 隐藏 CCF 备注
             if (sjrNotice) sjrNotice.style.display = 'none'; // 隐藏 SJR 备注
+            if (jcrNotice) jcrNotice.style.display = 'none';
             
             initDeadlineFilters();
         } else if (mode === 'ccf_list') {
             const tab = document.getElementById('tab-ccf-list');
             if (tab) tab.classList.add('active');
+            if (label1) label1.textContent = '领域';
             if (label2) label2.textContent = 'CCF 级别';
             if (label3) label3.textContent = '类型'; 
             if (col4) col4.style.display = 'none';
             if (tzWrapper) tzWrapper.style.display = 'none';
             if (ccfNotice) ccfNotice.style.display = 'flex'; // 显示 CCF 备注
             if (sjrNotice) sjrNotice.style.display = 'none'; // 隐藏 SJR 备注
+            if (jcrNotice) jcrNotice.style.display = 'none';
             
             initCCFListFilters();
         } else if (mode === 'sjr_list') {
             const tab = document.getElementById('tab-sjr-list');
             if (tab) tab.classList.add('active');
+            if (label1) label1.textContent = '领域';
             if (label2) label2.textContent = 'SJR 分区';
             if (label3) label3.textContent = '类型'; 
             if (col4) col4.style.display = 'none';
             if (tzWrapper) tzWrapper.style.display = 'none';
             if (ccfNotice) ccfNotice.style.display = 'none'; // 隐藏 CCF 备注
             if (sjrNotice) sjrNotice.style.display = 'flex'; // 显示 SJR 备注
+            if (jcrNotice) jcrNotice.style.display = 'none';
             
             initSJRFilters();
+        } else if (mode === 'jcr_list') {
+            const tab = document.getElementById('tab-jcr-list');
+            if (tab) tab.classList.add('active');
+            if (label1) label1.textContent = '中科院分区';
+            if (label2) label2.textContent = 'JCR 分区';
+            if (label3) label3.textContent = '影响因子区间';
+            if (col4) col4.style.display = 'none';
+            if (tzWrapper) tzWrapper.style.display = 'none';
+            if (ccfNotice) ccfNotice.style.display = 'none';
+            if (sjrNotice) sjrNotice.style.display = 'none';
+            if (jcrNotice) jcrNotice.style.display = 'flex';
+
+            initJCRFilters();
         }
         
         updateView();
@@ -471,6 +538,44 @@ document.addEventListener('DOMContentLoaded', () => {
         createMultiSelect('category-filter', Array.from(areas).filter(a => a).sort().map(a => ({value: a, label: a})), '所有领域');
         createMultiSelect('level-filter', Array.from(quartiles).sort().map(q => ({value: q, label: q === '-' ? '无分区' : q})), '所有分区');
         createMultiSelect('year-filter', Array.from(types).sort().map(t => ({value: t, label: t})), '所有类型');
+    }
+
+    function initJCRFilters() {
+        const zkySet = new Set();
+        const jcrSet = new Set();
+        const factorBands = new Set();
+
+        if (jcrData && jcrData.length > 0) {
+            jcrData.forEach(item => {
+                if (item.zky) zkySet.add(item.zky);
+                if (item.jcr) jcrSet.add(item.jcr);
+                if (item.factorBand) factorBands.add(item.factorBand);
+            });
+        }
+
+        const bandOrder = {
+            '>=20': 1,
+            '10-20': 2,
+            '5-10': 3,
+            '1-5': 4,
+            '<1': 5,
+            '未知': 6
+        };
+
+        createMultiSelect(
+            'category-filter',
+            Array.from(zkySet)
+                .filter(a => a && a !== '.')
+                .sort()
+                .map(a => ({value: a, label: a === '-' ? '无分区' : a})),
+            '所有中科院分区'
+        );
+        createMultiSelect('level-filter', Array.from(jcrSet).filter(q => q).sort().map(q => ({value: q, label: q === '-' ? '无分区' : q})), '所有 JCR 分区');
+        createMultiSelect(
+            'year-filter',
+            Array.from(factorBands).sort((a, b) => (bandOrder[a] || 99) - (bandOrder[b] || 99)).map(b => ({value: b, label: b})),
+            '所有区间'
+        );
     }
     
     function bindFilterEvents() {
@@ -917,6 +1022,72 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
+    // 界面渲染 - JCR 影响因子列表 (表格模式)
+    // ==========================================
+    function createJCRTableHTML(dataList) {
+        if (!dataList || dataList.length === 0) {
+            return '<p class="empty-text" style="grid-column: 1/-1; text-align: center;">未找到符合条件的 JCR 数据</p>';
+        }
+
+        const clean = (val) => {
+            if (val === undefined || val === null) return '-';
+            const str = String(val).trim();
+            return str === '' || str === '.' ? '-' : str;
+        };
+
+        let rowsHTML = dataList.map(item => {
+            const isQ1 = item.jcr === 'Q1';
+            const quartileClass = isQ1 ? 'quartile-tag quartile-q1' : 'quartile-tag quartile-normal';
+            const factorText = item.factor && item.factor > 0 ? item.factor.toFixed(2) : '-';
+            const zkyText = clean(item.zky);
+
+            return `
+                <tr>
+                    <td class="title-col" title="${item.journal}">${clean(item.journal)}</td>
+                    <td class="title-col" title="${item.abbr}">${clean(item.abbr)}</td>
+                    <td class="sjr-score">${factorText}</td>
+                    <td><span class="${quartileClass}">${clean(item.jcr)}</span></td>
+                    <td>${zkyText === '-' ? '无分区' : zkyText}</td>
+                    <td>${clean(item.issn)}</td>
+                    <td>${clean(item.eissn)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        const getTh = (key, label, minW = '') => {
+            let icon = '↕';
+            let iconClass = 'sort-icon';
+            if (jcrSortConfig.key === key) {
+                icon = jcrSortConfig.asc ? '▲' : '▼';
+                iconClass += ' active';
+            }
+            const widthStyle = minW ? `min-width: ${minW};` : '';
+            return `<th class="sortable-th" data-sort="${key}" style="${widthStyle}">${label} <span class="${iconClass}">${icon}</span></th>`;
+        };
+
+        return `
+            <div class="sjr-table-wrapper">
+                <table class="sjr-table">
+                    <thead>
+                        <tr>
+                            ${getTh('journal', '期刊名称', '200px')}
+                            ${getTh('abbr', '简称', '120px')}
+                            ${getTh('factor', '影响因子')}
+                            ${getTh('jcr', 'JCR 分区')}
+                            ${getTh('zky', '中科院分区')}
+                            ${getTh('issn', 'ISSN')}
+                            ${getTh('eissn', 'eISSN')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHTML}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // ==========================================
     // 更新视图 (三分支逻辑)
     // ==========================================
     function updateView() {
@@ -1096,6 +1267,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 return sjrSortConfig.asc ? cmp : -cmp;
             });
+        
+        // --- 分支 4：JCR 影响因子数据逻辑 ---
+        } else if (currentMode === 'jcr_list') {
+            if (!jcrData || jcrData.length === 0) return;
+
+            filteredData = jcrData.filter(item => {
+                const matchSearch = (item.journal || '').toLowerCase().includes(searchQuery)
+                    || (item.abbr || '').toLowerCase().includes(searchQuery)
+                    || (item.issn || '').toLowerCase().includes(searchQuery)
+                    || (item.eissn || '').toLowerCase().includes(searchQuery);
+                if (!matchSearch) return false;
+
+                if (!catFilters.includes('all') && !catFilters.includes(item.zky)) return false;
+                if (!levelFilters.includes('all') && !levelFilters.includes(item.jcr)) return false;
+                if (!col3Filters.includes('all') && !col3Filters.includes(item.factorBand)) return false;
+                return true;
+            });
+
+            filteredData.sort((a, b) => {
+                let valA = a[jcrSortConfig.key];
+                let valB = b[jcrSortConfig.key];
+
+                if (jcrSortConfig.key === 'jcr') {
+                    const qMap = { 'Q1': 1, 'Q2': 2, 'Q3': 3, 'Q4': 4, '-': 5, '': 5 };
+                    const numA = qMap[valA] || 5;
+                    const numB = qMap[valB] || 5;
+                    return jcrSortConfig.asc ? numA - numB : numB - numA;
+                }
+
+                if (jcrSortConfig.key === 'zky') {
+                    const toNum = (v) => {
+                        const match = String(v || '').match(/\d+/);
+                        return match ? parseInt(match[0], 10) : 99;
+                    };
+                    const numA = toNum(valA);
+                    const numB = toNum(valB);
+                    return jcrSortConfig.asc ? numA - numB : numB - numA;
+                }
+
+                if (valA === undefined || valA === null) valA = '';
+                if (valB === undefined || valB === null) valB = '';
+
+                let cmp = 0;
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                    cmp = valA - valB;
+                } else {
+                    cmp = String(valA).localeCompare(String(valB));
+                }
+
+                return jcrSortConfig.asc ? cmp : -cmp;
+            });
         }
 
         if (totalCountSpan) {
@@ -1119,6 +1341,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 conferencesContainer.innerHTML = createCCFTableHTML(paginatedData);
             } else if (currentMode === 'sjr_list') {
                 conferencesContainer.innerHTML = createSJRTableHTML(paginatedData);
+            } else if (currentMode === 'jcr_list') {
+                conferencesContainer.innerHTML = createJCRTableHTML(paginatedData);
             }
         }
 
@@ -1275,6 +1499,19 @@ document.addEventListener('DOMContentLoaded', () => {
                             sjrSortConfig.asc = true;
                         } else {
                             sjrSortConfig.asc = false;
+                        }
+                    }
+                    updateView();
+                }
+                else if (currentMode === 'jcr_list') {
+                    if (jcrSortConfig.key === sortKey) {
+                        jcrSortConfig.asc = !jcrSortConfig.asc;
+                    } else {
+                        jcrSortConfig.key = sortKey;
+                        if (['journal', 'abbr', 'jcr', 'zky', 'issn', 'eissn'].includes(sortKey)) {
+                            jcrSortConfig.asc = true;
+                        } else {
+                            jcrSortConfig.asc = false;
                         }
                     }
                     updateView();
