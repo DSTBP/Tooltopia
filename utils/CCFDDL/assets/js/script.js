@@ -214,6 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!originalSelect) return;
 
         originalSelect.style.display = 'none'; 
+        originalSelect.multiple = true;
         
         const existing = originalSelect.nextElementSibling;
         if (existing && existing.classList.contains('custom-multi-select')) existing.remove();
@@ -276,8 +277,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 textSpan.textContent = `已选 ${checked.length} 项`;
             }
             
-            originalSelect.innerHTML = '';
-            checked.forEach(c => originalSelect.innerHTML += `<option value="${c.value}" selected></option>`);
+            originalSelect.replaceChildren();
+            checked.forEach(c => {
+                const option = document.createElement('option');
+                option.value = c.value;
+                option.selected = true;
+                originalSelect.appendChild(option);
+            });
         }
         updateSelectText();
     }
