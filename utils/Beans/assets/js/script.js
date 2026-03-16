@@ -11,6 +11,7 @@ let replacedCsvData = null;
 let currentFileName = 'replaced_colors'; 
 let uploadedImage = null; // 存储上传的图片对象
 let currentOwnedHexSet = new Set();
+let brandPaletteCache = new Map();
 
 // 手动微调的状态缓存
 let manualSelectedRaw = null;         // 原始 CSV 数据中的代号
@@ -19,6 +20,100 @@ let manualSelectedTargetCode = null;  // 用户从色卡选中的新代号
 
 window.currentHighlightRaw = null;
 window.currentUnmatchedColors = [];
+
+const TOKEN_SPLIT_REGEX = /[\s,，\n]+/;
+const TOKEN_CAPTURE_REGEX = /([\s,，\n]+)/;
+const RGB_REGEX = /^RGB\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/;
+const DASH_RGB_REGEX = /^(\d{1,3})\s*-\s*(\d{1,3})\s*-\s*(\d{1,3})$/;
+
+function normalizeCell(value) {
+    return String(value ?? '').trim();
+}
+
+function splitTokens(value) {
+    const text = normalizeCell(value);
+    return text ? text.split(TOKEN_SPLIT_REGEX).filter(t => t.trim() !== '') : [];
+}
+
+function splitTokensWithDelimiters(value) {
+    return normalizeCell(value).split(TOKEN_CAPTURE_REGEX);
+}
+
+function isValidRgbChannel(value) {
+    return Number.isFinite(value) && value >= 0 && value <= 255;
+}
+
+function parseRgbToken(token) {
+    const rgbMatch = token.match(RGB_REGEX) || token.match(DASH_RGB_REGEX);
+    if (!rgbMatch) return null;
+    const r = Number(rgbMatch[1]);
+    const g = Number(rgbMatch[2]);
+    const b = Number(rgbMatch[3]);
+    if (!isValidRgbChannel(r) || !isValidRgbChannel(g) || !isValidRgbChannel(b)) return null;
+    return rgbToHex(r, g, b).toUpperCase();
+}
+
+function collectUniqueColorsFromCsv(csvData) {
+    const uniqueColors = new Set();
+    if (!Array.isArray(csvData)) return uniqueColors;
+    csvData.forEach(row => {
+        if (!Array.isArray(row)) return;
+        row.forEach(cell => {
+            const val = normalizeCell(cell);
+            if (!val) return;
+            if (val.toUpperCase() === 'TRANSPARENT') return;
+            splitTokens(val).forEach(token => uniqueColors.add(token));
+        });
+    });
+    return uniqueColors;
+}
+
+function getCsvDimensions(csvData) {
+    if (!Array.isArray(csvData) || csvData.length === 0) return { rows: 0, cols: 0 };
+    let maxCols = 0;
+    csvData.forEach(row => {
+        if (Array.isArray(row)) {
+            maxCols = Math.max(maxCols, row.length);
+        }
+    });
+    return { rows: csvData.length, cols: maxCols };
+}
+
+function createStatusLine(text, color, fontSize) {
+    const line = document.createElement('span');
+    line.textContent = text;
+    if (color) line.style.color = color;
+    if (fontSize) line.style.fontSize = fontSize;
+    return line;
+}
+
+function setFileStatus(lines) {
+    const fileNameEl = document.getElementById('fileName');
+    if (!fileNameEl) return;
+    fileNameEl.replaceChildren();
+    lines.forEach((line, idx) => {
+        if (idx > 0) fileNameEl.appendChild(document.createElement('br'));
+        fileNameEl.appendChild(line);
+    });
+}
+
+function appendFileStatusLine(line) {
+    const fileNameEl = document.getElementById('fileName');
+    if (!fileNameEl) return;
+    if (fileNameEl.childNodes.length > 0) {
+        fileNameEl.appendChild(document.createElement('br'));
+    }
+    fileNameEl.appendChild(line);
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 window.addEventListener('DOMContentLoaded', () => {
     if (!colorData) {
@@ -35,6 +130,7 @@ function buildColorIndex() {
     hexToBrandCodes = {};
     availableBrands = new Set();
     hexToStandardCodes = {};
+    brandPaletteCache = new Map();
 
     for (const [hex, brands] of Object.entries(colorData.colorMapping)) {
         const upperHex = hex.toUpperCase();
@@ -141,25 +237,22 @@ function handleFileUpload(file) {
         reader.onload = function(e) {
             Papa.parse(e.target.result, {
                 complete: function(results) {
-                    originalCsvData = results.data;
-                    const uniqueColors = new Set();
-                    originalCsvData.forEach(row => {
-                        row.forEach(cell => {
-                            const val = cell.trim();
-                            if (val && val.toUpperCase() !== 'TRANSPARENT') {
-                                val.split(/[\s,，\n]+/).filter(t => t.trim() !== '').forEach(t => uniqueColors.add(t));
-                            }
-                        });
-                    });
-                    const colorArray = Array.from(uniqueColors);
-                    // 核心修改：确保同步到输入框
+                    originalCsvData = results.data || [];
+                    const colorArray = Array.from(collectUniqueColorsFromCsv(originalCsvData));
                     document.getElementById('targetColorsInput').value = colorArray.join('\n');
-                    document.getElementById('fileName').innerHTML = `<span style="color: #4caf50;">✅ 已读取 CSV: ${file.name}</span><br><span style="font-size: 0.85em; color: #888;">成功提取 ${colorArray.length} 种颜色</span>`;
+                    setFileStatus([
+                        createStatusLine(`✅ 已读取 CSV: ${file.name}`, '#4caf50'),
+                        createStatusLine(`成功提取 ${colorArray.length} 种颜色`, '#888', '0.85em')
+                    ]);
                     document.getElementById('imageExtractPanel').style.display = 'none';
                     document.getElementById('fileInput').value = ''; 
                 },
                 error: function(err) { alert('解析失败: ' + err.message); document.getElementById('fileInput').value = ''; }
             });
+        };
+        reader.onerror = () => {
+            alert('读取文件失败，请重试。');
+            document.getElementById('fileInput').value = '';
         };
         reader.readAsText(file); 
         
@@ -169,16 +262,40 @@ function handleFileUpload(file) {
             uploadedImage = new Image();
             uploadedImage.onload = function() {
                 document.getElementById('imageExtractPanel').style.display = 'block';
-                document.getElementById('fileName').innerHTML = `<span style="color: #4caf50;">✅ 已加载图片: ${file.name}</span><br><span style="font-size: 0.85em; color: #ffb74d;">请在下方设置网格列数并点击提取</span>`;
+                setFileStatus([
+                    createStatusLine(`✅ 已加载图片: ${file.name}`, '#4caf50'),
+                    createStatusLine('请在下方设置网格列数并点击提取', '#ffb74d', '0.85em')
+                ]);
                 document.getElementById('fileInput').value = ''; 
             };
+            uploadedImage.onerror = function() {
+                alert('图片读取失败，请更换文件。');
+                document.getElementById('fileInput').value = '';
+            };
             uploadedImage.src = e.target.result;
+        };
+        reader.onerror = () => {
+            alert('读取图片失败，请重试。');
+            document.getElementById('fileInput').value = '';
         };
         reader.readAsDataURL(file);
     } else {
         alert('请上传 CSV 或 图片 格式的文件！');
         document.getElementById('fileInput').value = '';
     }
+}
+
+function getPaletteForBrand(brand) {
+    const resolvedBrand = brand && hexToBrandCodes[brand] ? brand : (hexToBrandCodes['MARD'] ? 'MARD' : null);
+    if (!resolvedBrand) return [];
+    if (brandPaletteCache.has(resolvedBrand)) return brandPaletteCache.get(resolvedBrand);
+    const brandMap = hexToBrandCodes[resolvedBrand] || {};
+    const palette = Object.keys(brandMap).map(hex => {
+        const rgb = hexToRgbObj(hex);
+        return { hex: hex, r: rgb.r, g: rgb.g, b: rgb.b };
+    });
+    brandPaletteCache.set(resolvedBrand, palette);
+    return palette;
 }
 
 function hexToRgbObj(hex) {
@@ -197,6 +314,7 @@ function findClosestHex(r, g, b, palette) {
         const dg = g - p.g;
         const db = b - p.b;
         const dist = dr * dr + dg * dg + db * db;
+        if (dist === 0) return p.hex;
         if (dist < minDistance) {
             minDistance = dist;
             closestHex = p.hex;
@@ -265,11 +383,7 @@ function extractImageGrid() {
         return;
     }
 
-    const brandMap = hexToBrandCodes[targetBrand] || hexToBrandCodes['MARD'] || {};
-    const palette = Object.keys(brandMap).map(hex => {
-        const rgb = hexToRgbObj(hex);
-        return { hex: hex, r: rgb.r, g: rgb.g, b: rgb.b };
-    });
+    const palette = getPaletteForBrand(targetBrand);
 
     if (palette.length === 0) {
         alert('该品牌色库数据为空，无法进行智能色差吸附！');
@@ -285,7 +399,7 @@ function extractImageGrid() {
     ctx.drawImage(uploadedImage, 0, 0);
     
     // 按比例计算行数 
-    const rows = Math.round(cols * (canvas.height / canvas.width));
+    const rows = Math.max(1, Math.round(cols * (canvas.height / canvas.width)));
     
     const cellW = canvas.width / cols;
     const cellH = canvas.height / rows;
@@ -321,30 +435,36 @@ function extractImageGrid() {
     
     const colorArray = Array.from(uniqueColors);
     document.getElementById('targetColorsInput').value = colorArray.join('\n');
-    document.getElementById('fileName').innerHTML += `<br><span style="font-size: 0.85em; color: #4caf50;">已成功提取并映射至 ${targetBrand} 色库，共提取到 ${colorArray.length} 种颜色</span>`;
+    appendFileStatusLine(createStatusLine(`已成功提取并映射至 ${targetBrand} 色库，共提取到 ${colorArray.length} 种颜色`, '#4caf50', '0.85em'));
     document.getElementById('imageExtractPanel').style.display = 'none';
 }
 function exportCsv() {
     if (!replacedCsvData) return;
+    if (typeof Papa === 'undefined') {
+        alert('导出失败：未加载到 PapaParse。');
+        return;
+    }
     const csv = Papa.unparse(replacedCsvData);
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
+    link.href = url;
     link.download = currentFileName + '_替换后.csv';
     link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 function parseInputColors(text, selectedBrand) {
     if (!text) return [];
-    const tokens = text.split(/[\s,，\n]+/).filter(t => t.trim() !== '');
+    const tokens = text.split(TOKEN_SPLIT_REGEX).filter(t => t.trim() !== '');
     const results = [];
     tokens.forEach(token => {
         let t = token.toUpperCase().trim();
         let hex = null;
-        const rgbMatch = t.match(/^RGB\((\d+),(\d+),(\d+)\)$/) || t.match(/^(\d+)-(\d+)-(\d+)$/);
-        if (rgbMatch) hex = rgbToHex(rgbMatch[1], rgbMatch[2], rgbMatch[3]).toUpperCase();
+        const rgbHex = parseRgbToken(t);
+        if (rgbHex) hex = rgbHex;
         if (!hex) {
-            if (t.startsWith('#') && (t.length === 4 || t.length === 7)) hex = expandHex(t);
+            if (t.startsWith('#') && (t.length === 4 || t.length === 7)) hex = expandHex(t).toUpperCase();
             else if (brandToHexMap[selectedBrand] && brandToHexMap[selectedBrand][t]) hex = brandToHexMap[selectedBrand][t];
         }
         results.push({ originalToken: token, hex: hex });
@@ -366,10 +486,7 @@ function performMatch() {
 
     // 防御性逻辑：如果输入框为空但 originalCsvData 存在，自动重新生成文本
     if (!targetText.trim() && originalCsvData) {
-        const unique = new Set();
-        originalCsvData.forEach(r => r.forEach(c => {
-            if(c && c.toUpperCase() !== 'TRANSPARENT') unique.add(c);
-        }));
+        const unique = collectUniqueColorsFromCsv(originalCsvData);
         targetText = Array.from(unique).join('\n');
         document.getElementById('targetColorsInput').value = targetText;
     }
@@ -377,11 +494,15 @@ function performMatch() {
     if (!targetText.trim()) { alert("请输入需要替换的颜色！"); return; }
 
     const targetColors = parseInputColors(targetText, targetBrand);
+    if (targetColors.length === 0) {
+        alert("未识别到有效颜色，请检查输入格式。");
+        return;
+    }
     const ownedHexSet = new Set();
     
     if (selectedScheme && colorData.colorSchemes[ownedBrand] && colorData.colorSchemes[ownedBrand][selectedScheme]) {
         colorData.colorSchemes[ownedBrand][selectedScheme].forEach(code => {
-            const hex = brandToHexMap[ownedBrand][code.toUpperCase()];
+            const hex = brandToHexMap[ownedBrand][String(code).toUpperCase()];
             if (hex) ownedHexSet.add(hex);
         });
     }
@@ -421,13 +542,20 @@ function performMatch() {
             }
         });
 
+        const grid = getCsvDimensions(originalCsvData);
+        if (!grid.rows || !grid.cols) {
+            document.getElementById('previewTweakLayout').style.display = 'none';
+            return;
+        }
+
         replacedCsvData = originalCsvData.map(row => {
+            if (!Array.isArray(row)) return [];
             return row.map(cell => {
-                const val = cell.trim();
+                const val = normalizeCell(cell);
                 if (!val || val.toUpperCase() === 'TRANSPARENT') return cell;
                 const upperVal = val.toUpperCase();
                 if (matchMapExport[upperVal]) return matchMapExport[upperVal];
-                const tokens = val.split(/([\s,，\n]+)/); 
+                const tokens = splitTokensWithDelimiters(val); 
                 let hasReplaced = false;
                 const newTokens = tokens.map(t => {
                     if (matchMapExport[t.toUpperCase()]) { hasReplaced = true; return matchMapExport[t.toUpperCase()]; }
@@ -437,9 +565,7 @@ function performMatch() {
             });
         });
 
-        const M = originalCsvData.length;
-        const N = originalCsvData[0].length;
-        document.getElementById('previewTitle').textContent = `替换后图纸预览（${N}×${M}）：`;
+        document.getElementById('previewTitle').textContent = `替换后图纸预览（${grid.cols}×${grid.rows}）：`;
         document.getElementById('previewTweakLayout').style.display = 'flex';
 
         window.currentMatchMapHex = matchMapHex;
@@ -506,19 +632,24 @@ function renderResults(results) {
     document.getElementById('step3').style.display = 'block';
     let html = `<table class="data-table result-table"><thead><tr><th>原始输入</th><th>识别的原始色</th><th>替换建议</th><th>匹配状态</th></tr></thead><tbody>`;
     results.forEach(res => {
-        let originalColorHtml = res.hex ? `<div class="color-display"><span class="color-swatch" style="background-color: ${res.hex}"></span><span>${res.hex} ${(hexToStandardCodes[res.hex] || '') ? `(${hexToStandardCodes[res.hex]})` : ''}</span></div>` : `<span class="error-text">未识别的代码</span>`;
+        const safeOriginalToken = escapeHtml(res.originalToken);
+        const safeHex = res.hex ? escapeHtml(res.hex) : '';
+        const safeStandardCode = res.hex && hexToStandardCodes[res.hex] ? escapeHtml(hexToStandardCodes[res.hex]) : '';
+        let originalColorHtml = res.hex ? `<div class="color-display"><span class="color-swatch" style="background-color: ${safeHex}"></span><span>${safeHex} ${safeStandardCode ? `(${safeStandardCode})` : ''}</span></div>` : `<span class="error-text">未识别的代码</span>`;
         let replaceColorHtml = '-';
         let statusHtml = '';
         if (res.status === 'exact' || res.status === 'approximate') {
+            const safeReplaceHex = escapeHtml(res.replaceHex);
             const standardCode = hexToStandardCodes[res.replaceHex] || '';
-            replaceColorHtml = `<div class="color-display"><span class="color-swatch" style="background-color: ${res.replaceHex}"></span><span>${res.replaceHex} ${standardCode ? `(${standardCode})` : ''}</span></div>`;
+            const safeReplaceCode = standardCode ? escapeHtml(standardCode) : '';
+            replaceColorHtml = `<div class="color-display"><span class="color-swatch" style="background-color: ${safeReplaceHex}"></span><span>${safeReplaceHex} ${safeReplaceCode ? `(${safeReplaceCode})` : ''}</span></div>`;
             statusHtml = res.status === 'exact' ? `<span class="badge success">精确匹配</span>` : `<span class="badge warning">近似替代</span>`;
         } else if (res.status === 'not_found') {
             statusHtml = `<span class="badge error">库中无替代色</span>`;
         } else {
             statusHtml = `<span class="badge error">格式错误</span>`;
         }
-        html += `<tr><td><strong>${res.originalToken}</strong></td><td>${originalColorHtml}</td><td>${replaceColorHtml}</td><td>${statusHtml}</td></tr>`;
+        html += `<tr><td><strong>${safeOriginalToken}</strong></td><td>${originalColorHtml}</td><td>${replaceColorHtml}</td><td>${statusHtml}</td></tr>`;
     });
     html += `</tbody></table>`;
     resultsDiv.innerHTML = html;
@@ -548,10 +679,12 @@ function resetCanvasZoom() {
 
 function drawCanvasPreview(csvData, matchMapHex) {
     const canvas = document.getElementById('previewCanvas');
-    if (!canvas || !csvData || csvData.length === 0) return;
+    if (!canvas || !csvData || csvData.length === 0 || !matchMapHex) return;
+    const grid = getCsvDimensions(csvData);
+    if (!grid.rows || !grid.cols) return;
     const ctx = canvas.getContext('2d');
-    const M = csvData.length;
-    const N = csvData[0].length;
+    const M = grid.rows;
+    const N = grid.cols;
     const cellSize = 12; 
     canvas.width = N * cellSize;
     canvas.height = M * cellSize;
@@ -561,14 +694,15 @@ function drawCanvasPreview(csvData, matchMapHex) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const highlightRaw = window.currentHighlightRaw;
     for (let j = 0; j < M; j++) {
+        const rowData = Array.isArray(csvData[j]) ? csvData[j] : [];
         for (let i = 0; i < N; i++) {
-            const cellVal = (csvData[j][i] || '').trim().toUpperCase();
+            const cellVal = normalizeCell(rowData[i]).toUpperCase();
             const drawX = i * cellSize;
             const drawY = j * cellSize;
             let isHighlighted = false;
             let isDimmed = false;
             if (highlightRaw) {
-                const tokens = cellVal.split(/([\s,，\n]+)/);
+                const tokens = splitTokensWithDelimiters(cellVal);
                 if (cellVal === highlightRaw || tokens.includes(highlightRaw)) isHighlighted = true;
                 else isDimmed = true;
             }
@@ -577,7 +711,7 @@ function drawCanvasPreview(csvData, matchMapHex) {
             } else {
                 let hexColor = matchMapHex[cellVal];
                 if (!hexColor) {
-                    for (let t of cellVal.split(/([\s,，\n]+)/)) if (matchMapHex[t]) { hexColor = matchMapHex[t]; break; }
+                    for (let t of splitTokensWithDelimiters(cellVal)) if (matchMapHex[t]) { hexColor = matchMapHex[t]; break; }
                 }
                 if (!hexColor && (cellVal.startsWith('#') || cellVal.startsWith('RGB'))) hexColor = cellVal;
                 ctx.fillStyle = hexColor || '#EF4444'; 
@@ -610,8 +744,10 @@ function exportImage() {
     const logoImg = new Image();
     logoImg.src = './favicon.png';
     const processExport = () => {
-        const M = originalCsvData.length;
-        const N = originalCsvData[0].length;
+        const grid = getCsvDimensions(originalCsvData);
+        if (!grid.rows || !grid.cols) return;
+        const M = grid.rows;
+        const N = grid.cols;
         const downloadCellSize = 30; 
         const axisSize = 25;         
         const extraMargin = 20;      
@@ -619,8 +755,9 @@ function exportImage() {
         const colorStats = {};
         let totalBeads = 0;
         for (let j = 0; j < M; j++) {
+            const rowData = Array.isArray(originalCsvData[j]) ? originalCsvData[j] : [];
             for (let i = 0; i < N; i++) {
-                let raw = (originalCsvData[j][i] || '').trim().toUpperCase();
+                let raw = normalizeCell(rowData[i]).toUpperCase();
                 if (!raw || raw === 'TRANSPARENT') continue;
                 let hex = window.currentMatchMapHex[raw] || ((raw.startsWith('#') || raw.startsWith('RGB')) ? raw : null);
                 if (!hex) continue; 
@@ -657,8 +794,9 @@ function exportImage() {
         const iSX = gAX + axisSize, iSY = gAY + axisSize;
         ctx.font = `bold ${Math.max(9, Math.floor(downloadCellSize * 0.35))}px sans-serif`;
         for (let j = 0; j < M; j++) {
+            const rowData = Array.isArray(originalCsvData[j]) ? originalCsvData[j] : [];
             for (let i = 0; i < N; i++) {
-                let r = (originalCsvData[j][i] || '').trim().toUpperCase();
+                let r = normalizeCell(rowData[i]).toUpperCase();
                 const dX = iSX + i * downloadCellSize, dY = iSY + j * downloadCellSize;
                 if (!r || r === 'TRANSPARENT') { ctx.fillStyle = '#FFFFFF'; ctx.fillRect(dX, dY, downloadCellSize, downloadCellSize); }
                 else {
@@ -708,8 +846,10 @@ function handleCanvasClickForTweak(e) {
     const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
     const x = (e.clientX - rect.left) * scaleX, y = (e.clientY - rect.top) * scaleY;
     const cellSize = 12, col = Math.floor(x / cellSize), row = Math.floor(y / cellSize);
-    if (row >= 0 && row < originalCsvData.length && col >= 0 && col < originalCsvData[0].length) {
-        const raw = (originalCsvData[row][col] || '').trim().toUpperCase();
+    const grid = getCsvDimensions(originalCsvData);
+    if (row >= 0 && row < grid.rows && col >= 0 && col < grid.cols) {
+        const rowData = Array.isArray(originalCsvData[row]) ? originalCsvData[row] : [];
+        const raw = normalizeCell(rowData[col]).toUpperCase();
         if (raw && raw !== 'TRANSPARENT') {
             manualSelectedRaw = raw;
             const currentHex = window.currentMatchMapHex[raw] || raw;
@@ -729,7 +869,7 @@ function checkTweakButtonState() {
 }
 
 function applyManualTweak() {
-    if (!manualSelectedRaw || !manualSelectedTargetHex) return;
+    if (!manualSelectedRaw || !manualSelectedTargetHex || !window.currentMatchMapExport || !window.currentMatchMapHex) return;
     window.currentMatchMapHex[manualSelectedRaw] = manualSelectedTargetHex;
     window.currentMatchMapExport[manualSelectedRaw] = manualSelectedTargetCode;
     window.currentUnmatchedColors = window.currentUnmatchedColors.filter(item => item.token !== manualSelectedRaw);

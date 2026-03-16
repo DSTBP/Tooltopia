@@ -49,6 +49,73 @@ let decryptedJsonText = null; // 存储原始的JSON文本格式
 let configData = null; // 存储配置数据
 let yorgSaveWrapper = null; // yorg 字典格式包装数据
 let yorgSaveEntries = null; // yorg 多存档解析数据
+const configCache = new Map();
+let editTableContainer = null;
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function escapeAttribute(value) {
+    return escapeHtml(value).replace(/\r?\n/g, '&#10;');
+}
+
+function parseLooseInputValue(rawValue) {
+    const newValue = String(rawValue ?? '').trim();
+    if (newValue === '') {
+        return { hasValue: false, value: undefined };
+    }
+
+    if (!Number.isNaN(Number(newValue)) && newValue !== '') {
+        return { hasValue: true, value: Number(newValue) };
+    }
+    if (newValue.toLowerCase() === 'true') {
+        return { hasValue: true, value: true };
+    }
+    if (newValue.toLowerCase() === 'false') {
+        return { hasValue: true, value: false };
+    }
+
+    return { hasValue: true, value: newValue };
+}
+
+function parseEditableInputValue(input) {
+    if (!input) {
+        return { hasValue: false, value: undefined };
+    }
+
+    const rawValue = input.value.trim();
+    if (rawValue === '') {
+        return { hasValue: false, value: undefined };
+    }
+
+    if (input.tagName === 'TEXTAREA') {
+        try {
+            return { hasValue: true, value: JSON.parse(rawValue) };
+        } catch (error) {
+            return { hasValue: true, value: rawValue };
+        }
+    }
+
+    return parseLooseInputValue(rawValue);
+}
+
+function applyStandardFieldUpdate(targetData, originalData, fieldName, value) {
+    const originalField = originalData[fieldName];
+    if (typeof originalField === 'object' && originalField !== null && 'value' in originalField) {
+        targetData[fieldName] = {
+            ...originalField,
+            value
+        };
+    } else {
+        targetData[fieldName] = value;
+    }
+}
 
 
 function getSelectedGame() {
@@ -76,10 +143,33 @@ function isEvolveGame(selectedGame) {
 }
 
 function clearEditTable() {
-    const tableContainer = document.getElementById('editTableContainer');
-    if (tableContainer) {
-        tableContainer.remove();
+    if (editTableContainer) {
+        editTableContainer.remove();
+        editTableContainer = null;
     }
+}
+
+function ensureEditTableContainer() {
+    if (editTableContainer?.isConnected) {
+        return editTableContainer;
+    }
+
+    editTableContainer = document.createElement('div');
+    editTableContainer.id = 'editTableContainer';
+    editTableContainer.className = 'edit-table-container';
+    editTableContainer.addEventListener('click', (event) => {
+        if (event.target.closest('.save-changes-btn')) {
+            saveChanges();
+        }
+    });
+    statusMessage.insertAdjacentElement('afterend', editTableContainer);
+    return editTableContainer;
+}
+
+function getFieldInputs() {
+    return editTableContainer
+        ? Array.from(editTableContainer.querySelectorAll('.field-input'))
+        : [];
 }
 
 
@@ -89,12 +179,15 @@ function setStatus(message, type) {
     }
 
     if (!message) {
-        statusMessage.innerHTML = '';
+        statusMessage.replaceChildren();
         return;
     }
 
     const className = type ? `result-header ${type}` : 'result-header';
-    statusMessage.innerHTML = `<div class="${className}">${message}</div>`;
+    const wrapper = document.createElement('div');
+    wrapper.className = className;
+    wrapper.textContent = message;
+    statusMessage.replaceChildren(wrapper);
 }
 
 function setBusy(isBusy) {
@@ -117,13 +210,7 @@ function clearResult() {
     setResult(null, '');
 }
 
-function updateFile(file) {
-    currentFile = file || null;
-    if (file) {
-        fileName.textContent = `已选择: ${file.name}`;
-    } else {
-        fileName.textContent = '';
-    }
+function resetEditorState() {
     decryptedData = null;
     decryptedJsonText = null;
     configData = null;
@@ -132,6 +219,16 @@ function updateFile(file) {
     clearEditTable();
     clearResult();
     setStatus('');
+}
+
+function updateFile(file) {
+    currentFile = file || null;
+    if (file) {
+        fileName.textContent = `已选择: ${file.name}`;
+    } else {
+        fileName.textContent = '';
+    }
+    resetEditorState();
 }
 
 function applyGameKey() {
@@ -156,7 +253,7 @@ function applyGameKey() {
         keyInput.disabled = false;
         keyInput.placeholder = '输入解密/加密密钥';
     }
-    clearEditTable();
+    resetEditorState();
     updateGamePathHint();
 }
 
@@ -165,13 +262,14 @@ function updateGamePathHint() {
     const gameInfo = GAME_PATHS[selectedGame];
 
     if (gameInfo) {
-        gamePathHint.innerHTML = `
-            <strong>${gameInfo.description}</strong><br>
-            ${gameInfo.windows}
-        `;
+        const title = document.createElement('strong');
+        title.textContent = gameInfo.description;
+        const lineBreak = document.createElement('br');
+        const detail = document.createTextNode(gameInfo.windows);
+        gamePathHint.replaceChildren(title, lineBreak, detail);
         gamePathHint.style.display = 'block';
     } else {
-        gamePathHint.innerHTML = '';
+        gamePathHint.replaceChildren();
         gamePathHint.style.display = 'none';
     }
 }
@@ -201,11 +299,7 @@ function initUploadArea() {
 
         const files = e.dataTransfer.files;
         if (files.length > 0) {
-            const file = files[0];
-            const dt = new DataTransfer();
-            dt.items.add(file);
-            fileInput.files = dt.files;
-            updateFile(file);
+            updateFile(files[0]);
         }
     });
 }
@@ -642,7 +736,7 @@ function buildYorgTableHtml(entry, index) {
     const title = buildYorgTableTitle(entry, index);
     let html = `
         <div class="edit-table-header">
-            <div class="edit-table-title">${title}</div>
+            <div class="edit-table-title">${escapeHtml(title)}</div>
             <div class="edit-table-actions">
                 <button class="btn btn-primary save-changes-btn">保存修改并加密</button>
             </div>
@@ -674,31 +768,31 @@ function buildYorgTableHtml(entry, index) {
 
         html += `
             <tr>
-                <td><span class="field-category">${field.Categorization}</span></td>
-                <td><span class="field-name">${field.FieldName}</span></td>
-                <td><span class="field-description">${field.Description}</span></td>
-                <td><strong>${displayValue}</strong></td>
+                <td><span class="field-category">${escapeHtml(field.Categorization)}</span></td>
+                <td><span class="field-name">${escapeHtml(field.FieldName)}</span></td>
+                <td><span class="field-description">${escapeHtml(field.Description)}</span></td>
+                <td><strong>${escapeHtml(displayValue)}</strong></td>
                 <td>
                     ${info.isComplexType ? `
                         <textarea
                             class="field-input field-textarea"
-                            data-field="${field.FieldName}"
-                            data-save-id="${entry.saveId}"
+                            data-field="${escapeAttribute(field.FieldName)}"
+                            data-save-id="${escapeAttribute(entry.saveId)}"
                             placeholder="输入JSON格式的值"
                             rows="3"
-                        >${inputValue}</textarea>
+                        >${escapeHtml(inputValue)}</textarea>
                     ` : `
                         <input
                             type="text"
                             class="field-input"
-                            data-field="${field.FieldName}"
-                            data-save-id="${entry.saveId}"
-                            value="${inputValue}"
+                            data-field="${escapeAttribute(field.FieldName)}"
+                            data-save-id="${escapeAttribute(entry.saveId)}"
+                            value="${escapeAttribute(inputValue)}"
                             placeholder="输入新值"
                         >
                     `}
                 </td>
-                <td><span class="field-suggestion">${field.Suggestion}</span></td>
+                <td><span class="field-suggestion">${escapeHtml(field.Suggestion)}</span></td>
             </tr>
         `;
     });
@@ -1237,7 +1331,6 @@ window.addEventListener('load', () => {
     applyGameKey();
 });
 
-gameSelect.addEventListener('input', applyGameKey);
 gameSelect.addEventListener('change', applyGameKey);
 
 decryptBtn.addEventListener('click', decryptFile);
@@ -1256,12 +1349,25 @@ async function loadConfigAndDisplayTable() {
             return;
         }
 
-        const response = await fetch(configPath);
-        if (!response.ok) {
-            throw new Error('无法加载配置文件');
+        if (!configCache.has(configPath)) {
+            configCache.set(
+                configPath,
+                fetch(configPath).then((response) => {
+                    if (!response.ok) {
+                        throw new Error('无法加载配置文件');
+                    }
+                    return response.json();
+                }).catch((error) => {
+                    configCache.delete(configPath);
+                    throw error;
+                })
+            );
         }
-
-        configData = await response.json();
+        const loadedConfig = await configCache.get(configPath);
+        if (selectedGame !== getSelectedGame()) {
+            return;
+        }
+        configData = loadedConfig;
         displayEditTable();
     } catch (error) {
         console.error('加载配置文件失败:', error);
@@ -1274,13 +1380,7 @@ function displayEditTable() {
         return;
     }
 
-    let tableContainer = document.getElementById('editTableContainer');
-    if (!tableContainer) {
-        tableContainer = document.createElement('div');
-        tableContainer.id = 'editTableContainer';
-        tableContainer.className = 'edit-table-container';
-        statusMessage.insertAdjacentElement('afterend', tableContainer);
-    }
+    const tableContainer = ensureEditTableContainer();
 
     const selectedGame = getSelectedGame();
     const isYorgSelected = isYorgGame(selectedGame);
@@ -1291,11 +1391,6 @@ function displayEditTable() {
         tableContainer.innerHTML = yorgSaveEntries
             .map((entry, index) => buildYorgTableHtml(entry, index))
             .join('');
-
-        const saveButtons = tableContainer.querySelectorAll('.save-changes-btn');
-        saveButtons.forEach((button) => {
-            button.addEventListener('click', saveChanges);
-        });
         return;
     }
 
@@ -1375,29 +1470,29 @@ function displayEditTable() {
 
         html += `
             <tr>
-                <td><span class="field-category">${field.Categorization}</span></td>
-                <td><span class="field-name">${field.FieldName}</span></td>
-                <td><span class="field-description">${field.Description}</span></td>
-                <td><strong>${displayValue}</strong></td>
+                <td><span class="field-category">${escapeHtml(field.Categorization)}</span></td>
+                <td><span class="field-name">${escapeHtml(field.FieldName)}</span></td>
+                <td><span class="field-description">${escapeHtml(field.Description)}</span></td>
+                <td><strong>${escapeHtml(displayValue)}</strong></td>
                 <td>
                     ${isComplexType ? `
                         <textarea
                             class="field-input field-textarea"
-                            data-field="${field.FieldName}"${saveIdAttr}
+                            data-field="${escapeAttribute(field.FieldName)}"${saveIdAttr}
                             placeholder="输入JSON格式的值"
                             rows="3"
-                        >${inputValue}</textarea>
+                        >${escapeHtml(inputValue)}</textarea>
                     ` : `
                         <input
                             type="text"
                             class="field-input"
-                            data-field="${field.FieldName}"${saveIdAttr}
-                            value="${inputValue}"
+                            data-field="${escapeAttribute(field.FieldName)}"${saveIdAttr}
+                            value="${escapeAttribute(inputValue)}"
                             placeholder="输入新值"
                         >
                     `}
                 </td>
-                <td><span class="field-suggestion">${field.Suggestion}</span></td>
+                <td><span class="field-suggestion">${escapeHtml(field.Suggestion)}</span></td>
             </tr>
         `;
     });
@@ -1405,11 +1500,6 @@ function displayEditTable() {
     html += `</tbody></table></div>`;
 
     tableContainer.innerHTML = html;
-
-    const saveButtons = tableContainer.querySelectorAll('.save-changes-btn');
-    saveButtons.forEach((button) => {
-        button.addEventListener('click', saveChanges);
-    });
 }
 
 async function saveChanges() {
@@ -1440,34 +1530,16 @@ async function saveChanges() {
         return;
     }
 
-    const inputs = document.querySelectorAll('.field-input');
+    const inputs = getFieldInputs();
     const updatedData = { ...decryptedData };
+    const updates = {};
 
     inputs.forEach(input => {
         const fieldName = input.dataset.field;
-        const newValue = input.value.trim();
-
-        if (newValue !== '') {
-            let parsedValue = newValue;
-
-            if (!isNaN(newValue) && newValue !== '') {
-                parsedValue = Number(newValue);
-            }
-            else if (newValue.toLowerCase() === 'true') {
-                parsedValue = true;
-            } else if (newValue.toLowerCase() === 'false') {
-                parsedValue = false;
-            }
-
-            const originalData = decryptedData[fieldName];
-            if (typeof originalData === 'object' && originalData !== null && 'value' in originalData) {
-                updatedData[fieldName] = {
-                    ...originalData,
-                    value: parsedValue
-                };
-            } else {
-                updatedData[fieldName] = parsedValue;
-            }
+        const parsed = parseEditableInputValue(input);
+        if (parsed.hasValue) {
+            updates[fieldName] = parsed.value;
+            applyStandardFieldUpdate(updatedData, decryptedData, fieldName, parsed.value);
         }
     });
 
@@ -1477,39 +1549,10 @@ async function saveChanges() {
     try {
         let jsonText = decryptedJsonText || JSON.stringify(decryptedData);
 
-        const updates = {};
-        inputs.forEach(input => {
-            const fieldName = input.dataset.field;
-            const newValue = input.value.trim();
-
-            if (newValue !== '') {
-                let parsedValue = newValue;
-
-                if (!isNaN(newValue) && newValue !== '') {
-                    parsedValue = Number(newValue);
-                }
-                else if (newValue.toLowerCase() === 'true') {
-                    parsedValue = true;
-                } else if (newValue.toLowerCase() === 'false') {
-                    parsedValue = false;
-                }
-
-                updates[fieldName] = parsedValue;
-            }
-        });
-
         if (Object.keys(updates).length > 0) {
             const jsonObj = JSON.parse(jsonText);
             for (const [fieldName, newValue] of Object.entries(updates)) {
-                const originalData = decryptedData[fieldName];
-                if (typeof originalData === 'object' && originalData !== null && 'value' in originalData) {
-                    jsonObj[fieldName] = {
-                        ...originalData,
-                        value: newValue
-                    };
-                } else {
-                    jsonObj[fieldName] = newValue;
-                }
+                applyStandardFieldUpdate(jsonObj, decryptedData, fieldName, newValue);
             }
             jsonText = JSON.stringify(jsonObj);
         }
@@ -1547,31 +1590,11 @@ async function saveChanges() {
 
 
 function parseYorgInputValue(input) {
-    const newValue = input.value.trim();
-    if (newValue === '') {
-        return { hasValue: false, value: undefined };
-    }
-
-    let parsedValue = newValue;
-    if (input.tagName === 'TEXTAREA') {
-        try {
-            parsedValue = JSON.parse(newValue);
-        } catch (error) {
-            parsedValue = newValue;
-        }
-    } else if (!isNaN(newValue)) {
-        parsedValue = Number(newValue);
-    } else if (newValue.toLowerCase() === 'true') {
-        parsedValue = true;
-    } else if (newValue.toLowerCase() === 'false') {
-        parsedValue = false;
-    }
-
-    return { hasValue: true, value: parsedValue };
+    return parseEditableInputValue(input);
 }
 
 async function saveYorgChanges() {
-    const inputs = document.querySelectorAll('.field-input');
+    const inputs = getFieldInputs();
     const hasEntries = Array.isArray(yorgSaveEntries) && yorgSaveEntries.length > 0;
     const entryList = hasEntries
         ? yorgSaveEntries.map((entry) => ({
@@ -1731,7 +1754,7 @@ async function encryptEvolveFile() {
 }
 
 async function saveEvolveChanges() {
-    const inputs = document.querySelectorAll('.field-input');
+    const inputs = getFieldInputs();
     setBusy(true);
     setStatus('正在保存并加密，请稍候...');
     try {
@@ -1740,19 +1763,9 @@ async function saveEvolveChanges() {
 
         inputs.forEach(input => {
             const fieldName = input.dataset.field;
-            const newValue = input.value.trim();
-
-            if (newValue !== '') {
-                let parsedValue = newValue;
-                if (!isNaN(newValue) && newValue !== '') {
-                    parsedValue = Number(newValue);
-                } else if (newValue.toLowerCase() === 'true') {
-                    parsedValue = true;
-                } else if (newValue.toLowerCase() === 'false') {
-                    parsedValue = false;
-                }
-                // 使用现成的深度嵌套赋值函数
-                setNestedValue(updatedData, fieldName, parsedValue); 
+            const parsed = parseEditableInputValue(input);
+            if (parsed.hasValue) {
+                setNestedValue(updatedData, fieldName, parsed.value);
             }
         });
 

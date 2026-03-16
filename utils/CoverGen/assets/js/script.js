@@ -10,7 +10,10 @@
 const AppState = {
     selectedStyleId: null,
     selectedStyleCoverUrl: null,
-    uploadedImage: null,
+    images: {
+        im_ok: null,
+        dt_blue: null
+    },
     // I'm OK 风格的图片拖拽状态
     drag: { x: 0, y: 0, imgWidth: 0, imgHeight: 0, scale: 1, isDragging: false, startX: 0, startY: 0 },
     
@@ -49,10 +52,16 @@ const AppState = {
     }
 };
 
+const fontLoadCache = new Map();
+let baimaPreviewFrame = 0;
+let dtBluePreviewFrame = 0;
+
 // 工具函数：读取本地图片文件
 function loadImage(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
+        reader.onerror = () => reject(new Error('读取文件失败'));
+        reader.onabort = () => reject(new Error('读取文件已取消'));
         reader.onload = (e) => {
             const img = new Image();
             img.onload = () => resolve(img);
@@ -61,6 +70,135 @@ function loadImage(file) {
         };
         reader.readAsDataURL(file);
     });
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function getInputValue(id, fallback) {
+    const el = document.getElementById(id);
+    return el && el.value ? el.value : fallback;
+}
+
+function getNumberValue(id, fallback, parser = Number) {
+    const el = document.getElementById(id);
+    if (!el) return fallback;
+    const raw = el.value;
+    if (raw === '' || raw === null || raw === undefined) return fallback;
+    const value = parser(raw);
+    return Number.isFinite(value) ? value : fallback;
+}
+
+function getDTBlueInputs() {
+    return {
+        symbol: getInputValue('dtBlueSymbol', '!'),
+        enTitle: getInputValue('dtBlueEnTitle', 'David Tao'),
+        zhTitle: getInputValue('dtBlueZhTitle', '陶喆'),
+        s1: getInputValue('dtBlueS1', 'R&B / SOUL / 1997'),
+        s2: getInputValue('dtBlueS2', 'SHOCK RECORDS'),
+        s3: getInputValue('dtBlueS3', 'PRODUCED BY DAVID TAO'),
+        s4: getInputValue('dtBlueS4', 'ALL RIGHTS RESERVED')
+    };
+}
+
+function getDTBlueSizing() {
+    return {
+        enSize: getNumberValue('dtBlueEnSize', 85, parseInt),
+        zhSize: getNumberValue('dtBlueZhSize', 120, parseInt),
+        symbolSize: getNumberValue('dtBlueSymbolSize', 120, parseInt),
+        sSize: getNumberValue('dtBlueSSize', 26, parseInt),
+        enSpacing: getNumberValue('dtBlueEnSpacing', 0, parseInt),
+        zhSpacing: getNumberValue('dtBlueZhSpacing', 0, parseInt)
+    };
+}
+
+async function copyText(text) {
+    if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+}
+
+function drawTextWithSpacing(ctx, text, x, y, spacing, align = 'left') {
+    if (!text) return;
+    const gap = Number(spacing) || 0;
+    if (!gap) {
+        const previousAlign = ctx.textAlign;
+        ctx.textAlign = align;
+        ctx.fillText(text, x, y);
+        ctx.textAlign = previousAlign;
+        return;
+    }
+
+    const glyphs = Array.from(text);
+    const widths = glyphs.map((glyph) => ctx.measureText(glyph).width);
+    const totalWidth = widths.reduce((sum, width) => sum + width, 0) + gap * (glyphs.length - 1);
+    let startX = x;
+
+    if (align === 'center') {
+        startX = x - totalWidth / 2;
+    } else if (align === 'right') {
+        startX = x - totalWidth;
+    }
+
+    const previousAlign = ctx.textAlign;
+    ctx.textAlign = 'left';
+    let cursorX = startX;
+
+    glyphs.forEach((glyph, index) => {
+        ctx.fillText(glyph, cursorX, y);
+        cursorX += widths[index] + gap;
+    });
+
+    ctx.textAlign = previousAlign;
+}
+
+function scheduleBaimaPreview() {
+    if (baimaPreviewFrame) return;
+    baimaPreviewFrame = window.requestAnimationFrame(() => {
+        baimaPreviewFrame = 0;
+        updateBaimaPreview();
+    });
+}
+
+function scheduleDTBluePreview() {
+    if (dtBluePreviewFrame) return;
+    dtBluePreviewFrame = window.requestAnimationFrame(() => {
+        dtBluePreviewFrame = 0;
+        updateDTBluePreview();
+    });
+}
+
+async function ensureFontsLoaded(fonts) {
+    const tasks = fonts.map((font) => {
+        if (!fontLoadCache.has(font)) {
+            fontLoadCache.set(font, document.fonts.load(font).catch(() => []));
+        }
+        return fontLoadCache.get(font);
+    });
+    await Promise.all(tasks);
+}
+
+function safeReleasePointerCapture(target, pointerId) {
+    if (target && target.hasPointerCapture && target.hasPointerCapture(pointerId)) {
+        target.releasePointerCapture(pointerId);
+    }
 }
 
 function selectStyle(styleId, styleName, coverUrl) {
@@ -97,10 +235,64 @@ function selectStyle(styleId, styleName, coverUrl) {
     document.getElementById('resultPreview').style.display = 'none';
 }
 
+function resetImOkState() {
+    AppState.images.im_ok = null;
+    Object.assign(AppState.drag, {
+        x: 0,
+        y: 0,
+        imgWidth: 0,
+        imgHeight: 0,
+        scale: 1,
+        isDragging: false,
+        startX: 0,
+        startY: 0
+    });
+
+    const userImageInput = document.getElementById('userImage');
+    if (userImageInput) userImageInput.value = '';
+
+    const previewContainer = document.getElementById('imagePreviewContainer');
+    if (previewContainer) previewContainer.style.display = 'none';
+
+    const dragImg = document.getElementById('dragImg');
+    if (dragImg) {
+        dragImg.src = '';
+        dragImg.style.width = '';
+        dragImg.style.height = '';
+        dragImg.style.transform = '';
+    }
+
+    const zoomSlider = document.getElementById('zoomSlider');
+    if (zoomSlider) zoomSlider.value = 1;
+}
+
+function resetDTBlueState() {
+    AppState.images.dt_blue = null;
+    AppState.dtBlueDrag.imgWidth = 0;
+    AppState.dtBlueDrag.imgHeight = 0;
+    AppState.dtBlueDrag.activeItem = null;
+    AppState.dtBlueDrag.pos.image.scale = 1;
+
+    const dtBlueInput = document.getElementById('dtBlueImage');
+    if (dtBlueInput) dtBlueInput.value = '';
+
+    const previewContainer = document.getElementById('dtBlueImagePreviewContainer');
+    if (previewContainer) previewContainer.style.display = 'none';
+
+    const dragImg = document.getElementById('dtBlueDragImg');
+    if (dragImg) {
+        dragImg.src = '';
+        dragImg.style.width = '';
+        dragImg.style.height = '';
+        dragImg.style.transform = '';
+    }
+}
+
 function resetApp() {
     AppState.selectedStyleId = null;
     AppState.selectedStyleCoverUrl = null;
-    AppState.uploadedImage = null;
+    resetImOkState();
+    resetDTBlueState();
 
     document.getElementById('landing-page').style.display = 'flex';
     document.getElementById('tool-interface').style.display = 'none';
@@ -108,7 +300,6 @@ function resetApp() {
     document.getElementById('mainHomeLink').style.display = 'inline-block';
     document.getElementById('backToHomeBtn').style.display = 'none';
     document.getElementById('imOkSettings').style.display = 'none';
-    document.getElementById('userImage').value = '';
 }
 
 async function handleGenerate() {
@@ -217,52 +408,6 @@ window.addEventListener('load', function() {
 });
 
 // =====================================================================
-// 日夜主题切换逻辑 (原版完全复刻)
-// =====================================================================
-(() => {
-    const themeToggle = document.getElementById('themeToggle');
-    const body = document.body;
-    const THEME_KEY = 'tooltopia-theme';
-
-    // 从 localStorage 读取保存的主题偏好
-    function loadThemePreference() {
-        const savedTheme = localStorage.getItem(THEME_KEY);
-        if (savedTheme === 'day') {
-            body.classList.add('day-mode');
-            if(themeToggle) themeToggle.checked = true;
-        } else {
-            body.classList.remove('day-mode');
-            if(themeToggle) themeToggle.checked = false;
-        }
-    }
-
-    // 保存主题偏好到 localStorage
-    function saveThemePreference(isDayMode) {
-        localStorage.setItem(THEME_KEY, isDayMode ? 'day' : 'night');
-    }
-
-    // 切换主题
-    function toggleTheme() {
-        const isDayMode = themeToggle.checked;
-
-        if (isDayMode) {
-            body.classList.add('day-mode');
-        } else {
-            body.classList.remove('day-mode');
-        }
-
-        saveThemePreference(isDayMode);
-    }
-
-    // 页面加载时恢复主题
-    loadThemePreference();
-
-    // 监听切换器变化
-    if(themeToggle) themeToggle.addEventListener('change', toggleTheme);
-})();
-
-
-// =====================================================================
 // 模块：I'm OK 风格专区 (交互与渲染)
 // =====================================================================
 function updateDragPosition() {
@@ -283,12 +428,13 @@ function initImageUploaderAndDrag() {
     userImageInput.addEventListener('change', async (e) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
-            AppState.uploadedImage = await loadImage(file);
+            const image = await loadImage(file);
+            AppState.images.im_ok = image;
             previewContainer.style.display = 'block';
             
             const boxSize = previewBox.getBoundingClientRect().width;
-            const nativeW = AppState.uploadedImage.naturalWidth;
-            const nativeH = AppState.uploadedImage.naturalHeight;
+            const nativeW = image.naturalWidth;
+            const nativeH = image.naturalHeight;
             const baseRatio = Math.max(boxSize / nativeW, boxSize / nativeH);
             
             AppState.drag.imgWidth = nativeW * baseRatio;
@@ -301,7 +447,7 @@ function initImageUploaderAndDrag() {
             AppState.drag.x = -(AppState.drag.imgWidth * 0.2);
             AppState.drag.y = (boxSize - AppState.drag.imgHeight) / 2;
             
-            dragImg.src = AppState.uploadedImage.src;
+            dragImg.src = image.src;
             if(zoomSlider) zoomSlider.value = 1; 
             updateDragPosition();
         }
@@ -328,7 +474,7 @@ function initImageUploaderAndDrag() {
         });
 
         previewBox.addEventListener('pointerdown', (e) => {
-            if (!AppState.uploadedImage) return;
+            if (!AppState.images.im_ok) return;
             AppState.drag.isDragging = true;
             previewBox.style.cursor = 'grabbing';
             AppState.drag.startX = e.clientX - AppState.drag.x;
@@ -343,11 +489,15 @@ function initImageUploaderAndDrag() {
             updateDragPosition();
         });
 
-        previewBox.addEventListener('pointerup', (e) => {
+        const stopDrag = (e) => {
+            if (!AppState.drag.isDragging) return;
             AppState.drag.isDragging = false;
             previewBox.style.cursor = 'grab';
-            previewBox.releasePointerCapture(e.pointerId);
-        });
+            safeReleasePointerCapture(previewBox, e.pointerId);
+        };
+
+        previewBox.addEventListener('pointerup', stopDrag);
+        previewBox.addEventListener('pointercancel', stopDrag);
     }
 }
 
@@ -369,7 +519,8 @@ async function renderImOkStyle() {
     offCtx.fillStyle = '#FFFFFF';
     offCtx.fillRect(0, 0, size, size);
 
-    if (AppState.uploadedImage) {
+    const sourceImage = AppState.images.im_ok;
+    if (sourceImage) {
         const previewBox = document.getElementById('imagePreviewBox');
         const boxSize = previewBox.getBoundingClientRect().width; 
         const ratio = size / boxSize;
@@ -379,7 +530,7 @@ async function renderImOkStyle() {
         const targetWidth = AppState.drag.imgWidth * AppState.drag.scale * ratio;
         const targetHeight = AppState.drag.imgHeight * AppState.drag.scale * ratio;
 
-        offCtx.drawImage(AppState.uploadedImage, targetX, targetY, targetWidth, targetHeight);
+        offCtx.drawImage(sourceImage, targetX, targetY, targetWidth, targetHeight);
     }
 
     const imgData = offCtx.getImageData(0, 0, size, size);
@@ -446,7 +597,7 @@ async function renderImOkStyle() {
     const titleText = document.getElementById('titleInput').value || "I'm ok";
     const subtitleText = document.getElementById('subtitleInput').value || "DAVID TAO 陶喆";
 
-    try { await document.fonts.load('96px "BrushScriptMT"'); } catch (e) { }
+    try { await ensureFontsLoaded(['96px "BrushScriptMT"']); } catch (e) { }
 
     ctx.font = '96px "BrushScriptMT", "Comic Sans MS", cursive';
     ctx.fillStyle = '#CC0000';
@@ -484,16 +635,45 @@ function updateTradReference() {
     const combinedText = title + sub;
 
     const uniqueChars = [...new Set(combinedText.replace(/[\n\sa-zA-Z0-9]/g, ''))];
-    const mapping = [];
+    const fragment = document.createDocumentFragment();
     uniqueChars.forEach(char => {
         const trad = cnchar.convert.simpleToTrad(char);
         if (trad !== char) {
-            mapping.push(`<span style="background: rgba(255,255,255,0.08); padding: 4px 8px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.1);">${char} ➔ <b style="color: #FFE000; cursor: pointer;" title="点击复制" onclick="navigator.clipboard.writeText('${trad}')">${trad}</b></span>`);
+            const chip = document.createElement('span');
+            chip.style.background = 'rgba(255,255,255,0.08)';
+            chip.style.padding = '4px 8px';
+            chip.style.borderRadius = '4px';
+            chip.style.border = '1px solid rgba(255,255,255,0.1)';
+
+            chip.append(document.createTextNode(`${char} ➔ `));
+
+            const tradEl = document.createElement('b');
+            tradEl.style.color = '#FFE000';
+            tradEl.style.cursor = 'pointer';
+            tradEl.title = '点击复制';
+            tradEl.textContent = trad;
+            tradEl.addEventListener('click', async () => {
+                try {
+                    await copyText(trad);
+                } catch (error) {
+                    console.warn('复制失败', error);
+                }
+            });
+
+            chip.appendChild(tradEl);
+            fragment.appendChild(chip);
         }
     });
 
-    if (mapping.length > 0) refBox.innerHTML = mapping.join('');
-    else refBox.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">当前文本没有对应的繁体字，或已全部为繁体。</span>';
+    if (fragment.childNodes.length > 0) {
+        refBox.replaceChildren(fragment);
+    } else {
+        const empty = document.createElement('span');
+        empty.style.color = 'var(--text-muted)';
+        empty.style.fontSize = '0.85rem';
+        empty.textContent = '当前文本没有对应的繁体字，或已全部为繁体。';
+        refBox.replaceChildren(empty);
+    }
 }
 
 function updateBaimaControls() {
@@ -512,10 +692,10 @@ function updateBaimaControls() {
         // 记忆之前的数值，若是新列则赋默认值
         const currentSize = sizeEl ? sizeEl.value : (idx === 0 ? 320 : 256);
         const currentSpacing = spacingEl ? spacingEl.value : 0.85;
-        const labelText = col.length > 3 ? col.substring(0,3) + '..' : (col || '空');
+        const labelText = escapeHtml(col.length > 3 ? col.substring(0,3) + '..' : (col || '空'));
 
         titleHtml += `
-            <div style="display: flex; gap: 10px; margin-top: 8px; align-items: center; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+            <div class="baima-control-row" style="display: flex; gap: 10px; margin-top: 8px; align-items: center; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
                 <span style="color: var(--accent-highlight); width: 45px; font-size: 0.85rem; white-space: nowrap; overflow: hidden; font-weight: bold;">${labelText}</span>
                 <div style="flex: 1; display: flex; flex-direction: column;">
                     <span style="font-size: 0.7rem; color: var(--text-muted);">字号</span>
@@ -536,10 +716,10 @@ function updateBaimaControls() {
         const spacingEl = document.getElementById(`subSpacing_${idx}`);
         const currentSize = sizeEl ? sizeEl.value : 75;
         const currentSpacing = spacingEl ? spacingEl.value : 0.95;
-        const labelText = col.length > 3 ? col.substring(0,3) + '..' : (col || '空');
+        const labelText = escapeHtml(col.length > 3 ? col.substring(0,3) + '..' : (col || '空'));
 
         subHtml += `
-            <div style="display: flex; gap: 10px; margin-top: 8px; align-items: center; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
+            <div class="baima-control-row" style="display: flex; gap: 10px; margin-top: 8px; align-items: center; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05);">
                 <span style="color: var(--text-secondary); width: 45px; font-size: 0.85rem; white-space: nowrap; overflow: hidden; font-weight: bold;">${labelText}</span>
                 <div style="flex: 1; display: flex; flex-direction: column;">
                     <span style="font-size: 0.7rem; color: var(--text-muted);">字号</span>
@@ -555,7 +735,7 @@ function updateBaimaControls() {
 
     // 给所有新生成的滑块绑定实时刷新事件
     document.querySelectorAll('.baima-dynamic-slider').forEach(el => {
-        el.addEventListener('input', updateBaimaPreview);
+        el.addEventListener('input', scheduleBaimaPreview);
     });
 }
 
@@ -590,7 +770,7 @@ function updateBaimaPreview() {
         let colHtml = `<div class="drag-baima-col" data-type="title" data-col="${idx}" style="position:absolute; left:${displayX}px; top:${displayY}px; cursor:grab; padding: 10px; margin: -10px;">`;
         let curY = 0;
         for(let i=0; i<col.length; i++) {
-            colHtml += `<div style="position:absolute; left:10px; top:${curY + 10}px; transform:translate(-50%, 0); font-size:${size}px; font-family:'ShanHaiTaoYuan', serif; color:#1A1C1A; line-height:1; white-space:pre; user-select:none;">${col[i]}</div>`;
+            colHtml += `<div style="position:absolute; left:10px; top:${curY + 10}px; transform:translate(-50%, 0); font-size:${size}px; font-family:'ShanHaiTaoYuan', serif; color:#1A1C1A; line-height:1; white-space:pre; user-select:none;">${escapeHtml(col[i])}</div>`;
             curY += size * titleSpacing; 
         }
         colHtml += `<div style="width: ${size}px; height: ${curY}px; transform:translate(-50%, 0);"></div></div>`;
@@ -612,7 +792,7 @@ function updateBaimaPreview() {
         let colHtml = `<div class="drag-baima-col" data-type="sub" data-col="${idx}" style="position:absolute; left:${displayX}px; top:${displayY}px; cursor:grab; padding: 10px; margin: -10px;">`;
         let curY = 0;
         for(let i=0; i<col.length; i++) {
-            colHtml += `<div style="position:absolute; left:10px; top:${curY + 10}px; transform:translate(-50%, 0); font-size:${size}px; font-family:'ShanHaiTaoYuan', serif; color:#1A1C1A; line-height:1; white-space:pre; user-select:none;">${col[i]}</div>`;
+            colHtml += `<div style="position:absolute; left:10px; top:${curY + 10}px; transform:translate(-50%, 0); font-size:${size}px; font-family:'ShanHaiTaoYuan', serif; color:#1A1C1A; line-height:1; white-space:pre; user-select:none;">${escapeHtml(col[i])}</div>`;
             curY += size * subSpacing;
         }
         colHtml += `<div style="width: ${size}px; height: ${curY}px; transform:translate(-50%, 0);"></div></div>`;
@@ -622,15 +802,19 @@ function updateBaimaPreview() {
     dragArea.innerHTML = html;
 }
 
+function refreshBaimaLayout() {
+    updateTradReference();
+    updateBaimaControls();
+    scheduleBaimaPreview();
+}
+
 function initBaimaDrag() {
     const previewBox = document.getElementById('baimaPreviewBox');
     if(!previewBox) return;
 
-    updateTradReference();
-    updateBaimaControls(); // 初始化时生成控制条
-    updateBaimaPreview();
+    refreshBaimaLayout(); // 初始化时生成控制条与预览
     
-    window.addEventListener('resize', updateBaimaPreview);
+    window.addEventListener('resize', scheduleBaimaPreview);
 
     previewBox.addEventListener('pointerdown', (e) => {
         const targetCol = e.target.closest('.drag-baima-col');
@@ -669,23 +853,25 @@ function initBaimaDrag() {
             AppState.baimaDrag.subPos[AppState.baimaDrag.activeCol].x = newDisplayX / scale;
             AppState.baimaDrag.subPos[AppState.baimaDrag.activeCol].y = newDisplayY / scale;
         }
-        updateBaimaPreview();
+        scheduleBaimaPreview();
     });
 
-    previewBox.addEventListener('pointerup', (e) => {
+    const stopBaimaDrag = (e) => {
+        if (!AppState.baimaDrag.activeType) return;
         AppState.baimaDrag.activeType = null;
         AppState.baimaDrag.activeCol = -1;
         previewBox.style.cursor = 'default';
-        previewBox.releasePointerCapture(e.pointerId);
-    });
+        safeReleasePointerCapture(previewBox, e.pointerId);
+    };
+
+    previewBox.addEventListener('pointerup', stopBaimaDrag);
+    previewBox.addEventListener('pointercancel', stopBaimaDrag);
 
     ['baimaTitleInput', 'baimaSubtitleInput'].forEach(id => {
         const el = document.getElementById(id);
         if(el) {
             el.addEventListener('input', () => {
-                updateTradReference();
-                updateBaimaControls(); // 文本改变可能导致行数增减，需重新生成控制条
-                updateBaimaPreview();
+                refreshBaimaLayout(); // 文本改变可能导致行数增减，需重新生成控制条
             });
         }
     });
@@ -706,7 +892,7 @@ async function renderBaimaStyle() {
     textCanvas.height = size;
     const tCtx = textCanvas.getContext('2d');
 
-    try { await document.fonts.load('320px "ShanHaiTaoYuan"'); } catch (e) {}
+    try { await ensureFontsLoaded(['320px "ShanHaiTaoYuan"']); } catch (e) {}
 
     const titleText = getBaimaProcessedText('baimaTitleInput', "白马村\n游记");
     const subtitleText = getBaimaProcessedText('baimaSubtitleInput', "上海彩虹\n室内合唱团");
@@ -856,11 +1042,12 @@ function initDTBlueModule() {
 
     input.addEventListener('change', async (e) => {
         if (e.target.files && e.target.files[0]) {
-            AppState.uploadedImage = await loadImage(e.target.files[0]);
+            const image = await loadImage(e.target.files[0]);
+            AppState.images.dt_blue = image;
             previewContainer.style.display = 'block';
             
-            const nativeW = AppState.uploadedImage.naturalWidth;
-            const nativeH = AppState.uploadedImage.naturalHeight;
+            const nativeW = image.naturalWidth;
+            const nativeH = image.naturalHeight;
             const baseRatio = Math.max(800 / nativeW, 800 / nativeH);
             
             AppState.dtBlueDrag.imgWidth = nativeW * baseRatio;
@@ -869,16 +1056,16 @@ function initDTBlueModule() {
             AppState.dtBlueDrag.pos.image.x = -(AppState.dtBlueDrag.imgWidth - 800) / 2;
             AppState.dtBlueDrag.pos.image.y = 800 - AppState.dtBlueDrag.imgHeight + 20; 
             
-            document.getElementById('dtBlueDragImg').src = AppState.uploadedImage.src;
+            document.getElementById('dtBlueDragImg').src = image.src;
             if(zoomSlider) zoomSlider.value = 1; 
-            updateDTBluePreview();
+            scheduleDTBluePreview();
         }
     });
 
     if(zoomSlider) {
         zoomSlider.addEventListener('input', (e) => {
             AppState.dtBlueDrag.pos.image.scale = parseFloat(e.target.value);
-            updateDTBluePreview();
+            scheduleDTBluePreview();
         });
     }
 
@@ -891,7 +1078,7 @@ function initDTBlueModule() {
     ];
     bindIds.forEach(id => {
         const el = document.getElementById(id);
-        if(el) el.addEventListener('input', updateDTBluePreview);
+        if(el) el.addEventListener('input', scheduleDTBluePreview);
     });
 
     if(previewBox) {
@@ -901,7 +1088,7 @@ function initDTBlueModule() {
             
             let activeId = null;
             if (textTarget) activeId = textTarget.getAttribute('data-id');
-            else if (imgTarget && AppState.uploadedImage) activeId = 'image';
+            else if (imgTarget && AppState.images.dt_blue) activeId = 'image';
             else return;
 
             const boxSize = previewBox.getBoundingClientRect().width || 400;
@@ -926,15 +1113,19 @@ function initDTBlueModule() {
             
             AppState.dtBlueDrag.pos[AppState.dtBlueDrag.activeItem].x = (e.clientX - AppState.dtBlueDrag.startX) / scale;
             AppState.dtBlueDrag.pos[AppState.dtBlueDrag.activeItem].y = (e.clientY - AppState.dtBlueDrag.startY) / scale;
-            updateDTBluePreview();
+            scheduleDTBluePreview();
         });
 
-        previewBox.addEventListener('pointerup', (e) => {
+        const stopDTBlueDrag = (e) => {
+            if (!AppState.dtBlueDrag.activeItem) return;
             AppState.dtBlueDrag.activeItem = null;
             previewBox.style.cursor = 'default';
-            previewBox.releasePointerCapture(e.pointerId);
-            updateDTBluePreview();
-        });
+            safeReleasePointerCapture(previewBox, e.pointerId);
+            scheduleDTBluePreview();
+        };
+
+        previewBox.addEventListener('pointerup', stopDTBlueDrag);
+        previewBox.addEventListener('pointercancel', stopDTBlueDrag);
     }
 }
 
@@ -945,36 +1136,31 @@ function updateDTBluePreview() {
     if (!dragArea || !previewBox) return;
 
     // 1. 更新预览框背景为图片
-    previewBox.style.background = "url('./assets/img/bg.png') center/cover no-repeat";
-    previewBox.style.backgroundColor = "#1650A2";
+    if (!previewBox.dataset.bgApplied) {
+        previewBox.style.background = "url('./assets/img/bg.png') center/cover no-repeat";
+        previewBox.style.backgroundColor = "#1650A2";
+        previewBox.dataset.bgApplied = 'true';
+    }
 
     const boxSize = previewBox.getBoundingClientRect().width || 400;
     const scale = boxSize / 800;
 
-    if (imgEl && AppState.uploadedImage) {
+    if (imgEl && AppState.images.dt_blue) {
         imgEl.style.width = `${AppState.dtBlueDrag.imgWidth * scale}px`;
         imgEl.style.height = `${AppState.dtBlueDrag.imgHeight * scale}px`;
         imgEl.style.transform = `translate(${AppState.dtBlueDrag.pos.image.x * scale}px, ${AppState.dtBlueDrag.pos.image.y * scale}px) scale(${AppState.dtBlueDrag.pos.image.scale})`;
     }
 
-    const inputs = {
-        symbol: document.getElementById('dtBlueSymbol').value || "!",
-        enTitle: document.getElementById('dtBlueEnTitle').value || "David Tao",
-        zhTitle: document.getElementById('dtBlueZhTitle').value || "陶喆",
-        s1: document.getElementById('dtBlueS1').value || "R&B / SOUL / 1997",
-        s2: document.getElementById('dtBlueS2').value || "SHOCK RECORDS",
-        s3: document.getElementById('dtBlueS3').value || "PRODUCED BY DAVID TAO",
-        s4: document.getElementById('dtBlueS4').value || "ALL RIGHTS RESERVED"
-    };
+    const inputs = getDTBlueInputs();
 
-    const enSize = parseInt(document.getElementById('dtBlueEnSize').value) || 85;
-    const zhSize = parseInt(document.getElementById('dtBlueZhSize').value) || 120;
-    const symbolSize = parseInt(document.getElementById('dtBlueSymbolSize').value) || 120;
-    const sSize = parseInt(document.getElementById('dtBlueSSize').value) || 26;
-    
-    // 获取间距值
-    const enSpacing = parseInt(document.getElementById('dtBlueEnSpacing').value) || 0;
-    const zhSpacing = parseInt(document.getElementById('dtBlueZhSpacing').value) || 0;
+    const {
+        enSize,
+        zhSize,
+        symbolSize,
+        sSize,
+        enSpacing,
+        zhSpacing
+    } = getDTBlueSizing();
 
     let html = '';
     const createText = (id, text, font, size, align, customStyle) => {
@@ -984,9 +1170,10 @@ function updateDTBluePreview() {
         const transform = align === 'center' ? 'translate(-50%, -50%)' : 'translate(0, -50%)';
         // 对 symbol 强制加上 z-index: 10，保证鼠标能选中它且视觉在最上层
         const zIndex = id === 'symbol' ? 10 : 1;
+        const safeText = escapeHtml(text);
         
         return `<div class="drag-dt-item" data-id="${id}" style="position:absolute; left:${pxX}px; top:${pxY}px; cursor:grab; padding:10px; margin:-10px; user-select:none; pointer-events:auto; z-index:${zIndex};">
-            <div style="transform:${transform}; font-family:${font}, sans-serif; font-size:${pxSize}px; white-space:nowrap; ${customStyle}">${text}</div>
+            <div style="transform:${transform}; font-family:${font}, sans-serif; font-size:${pxSize}px; white-space:nowrap; ${customStyle}">${safeText}</div>
         </div>`;
     };
 
@@ -1013,6 +1200,15 @@ async function renderDTBlueStyle() {
     const size = 800; 
     canvas.width = size;
     canvas.height = size;
+    const inputs = getDTBlueInputs();
+    const {
+        enSize,
+        zhSize,
+        symbolSize,
+        sSize,
+        enSpacing,
+        zhSpacing
+    } = getDTBlueSizing();
 
     // 预加载背景图和所有字体
     const bgImg = new Image();
@@ -1022,10 +1218,12 @@ async function renderDTBlueStyle() {
     try {
         await Promise.all([
             new Promise((resolve, reject) => { bgImg.onload = resolve; bgImg.onerror = reject; }),
-            document.fonts.load('120px "ShangShouHaoRan"'), 
-            document.fonts.load('85px "XinJian"'), 
-            document.fonts.load('85px "XinHeiTi"'), 
-            document.fonts.load('26px "MuLanTi"')
+            ensureFontsLoaded([
+                '120px "ShangShouHaoRan"',
+                '85px "XinJian"',
+                '85px "XinHeiTi"',
+                '26px "MuLanTi"'
+            ])
         ]);
     } catch (e) {
         console.warn("字体资源加载部分失败，将尝试继续绘制", e);
@@ -1039,7 +1237,8 @@ async function renderDTBlueStyle() {
     }
 
     // 2. 处理剪影与倒影
-    if (AppState.uploadedImage) {
+    const sourceImage = AppState.images.dt_blue;
+    if (sourceImage) {
         const offCanvas = document.createElement('canvas');
         offCanvas.width = size;
         offCanvas.height = size;
@@ -1050,11 +1249,11 @@ async function renderDTBlueStyle() {
         const targetWidth = AppState.dtBlueDrag.imgWidth * AppState.dtBlueDrag.pos.image.scale;
         const targetHeight = AppState.dtBlueDrag.imgHeight * AppState.dtBlueDrag.pos.image.scale;
 
-        offCtx.drawImage(AppState.uploadedImage, targetX, targetY, targetWidth, targetHeight);
+        offCtx.drawImage(sourceImage, targetX, targetY, targetWidth, targetHeight);
 
         const imgData = offCtx.getImageData(0, 0, size, size);
         const data = imgData.data;
-        const threshold = parseInt(document.getElementById('dtBlueThreshold').value) || 128;
+        const threshold = getNumberValue('dtBlueThreshold', 128, parseInt);
 
         for (let i = 0; i < data.length; i += 4) {
             if (data[i+3] > 0) {
@@ -1083,38 +1282,25 @@ async function renderDTBlueStyle() {
         ctx.drawImage(offCanvas, 0, 0);
     }
 
-    // 3. 排版文字 (应用原生 letterSpacing API)
-    const enSize = parseInt(document.getElementById('dtBlueEnSize').value) || 85;
-    const zhSize = parseInt(document.getElementById('dtBlueZhSize').value) || 120;
-    const symbolSize = parseInt(document.getElementById('dtBlueSymbolSize').value) || 120;
-    
-    const enSpacing = parseInt(document.getElementById('dtBlueEnSpacing').value) || 0;
-    const zhSpacing = parseInt(document.getElementById('dtBlueZhSpacing').value) || 0;
-
+    // 3. 排版文字 (手动控制字距，避免浏览器实现差异)
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
     // -- 层级 1：先画英文标题 (底层) --
     ctx.fillStyle = '#e6e8e6';
     ctx.font = `${enSize}px "XinJian", "XinHeiTi", sans-serif`;
-    ctx.letterSpacing = `${enSpacing}px`;  
-    ctx.fillText(document.getElementById('dtBlueEnTitle').value, AppState.dtBlueDrag.pos.enTitle.x, AppState.dtBlueDrag.pos.enTitle.y);
+    drawTextWithSpacing(ctx, inputs.enTitle, AppState.dtBlueDrag.pos.enTitle.x, AppState.dtBlueDrag.pos.enTitle.y, enSpacing, 'center');
     
     // -- 层级 2：再画中文标题 (中层) --
     ctx.font = `${zhSize}px "XinJian", "XinHeiTi", sans-serif`;
-    ctx.letterSpacing = `${zhSpacing}px`;
-    ctx.fillText(document.getElementById('dtBlueZhTitle').value, AppState.dtBlueDrag.pos.zhTitle.x, AppState.dtBlueDrag.pos.zhTitle.y);
-
-    // 恢复默认字距给后续使用
-    ctx.letterSpacing = '0px';
+    drawTextWithSpacing(ctx, inputs.zhTitle, AppState.dtBlueDrag.pos.zhTitle.x, AppState.dtBlueDrag.pos.zhTitle.y, zhSpacing, 'center');
 
     // -- 层级 3：最后画独立感叹号 (最顶层，完全覆盖在标题上方) --
     ctx.fillStyle = '#050505';
     ctx.font = `${symbolSize}px "ShangShouHaoRan", sans-serif`;
-    ctx.fillText(document.getElementById('dtBlueSymbol').value, AppState.dtBlueDrag.pos.symbol.x, AppState.dtBlueDrag.pos.symbol.y);
+    ctx.fillText(inputs.symbol, AppState.dtBlueDrag.pos.symbol.x, AppState.dtBlueDrag.pos.symbol.y);
 
     // 4. 四行小字（极限降采样重绘：实现低分辨率涂抹模糊感）
-    const sSize = parseInt(document.getElementById('dtBlueSSize').value) || 26;
     const sRatio = 0.25; // 分辨率降至 25%
     
     const smallTextCanvas = document.createElement('canvas');
@@ -1128,10 +1314,10 @@ async function renderDTBlueStyle() {
     stCtx.font = `${sSize * sRatio}px "MuLanTi", sans-serif`;
     stCtx.filter = 'blur(0.5px)'; // 在小画布上微弱模糊
     
-    stCtx.fillText(document.getElementById('dtBlueS1').value, AppState.dtBlueDrag.pos.s1.x * sRatio, AppState.dtBlueDrag.pos.s1.y * sRatio);
-    stCtx.fillText(document.getElementById('dtBlueS2').value, AppState.dtBlueDrag.pos.s2.x * sRatio, AppState.dtBlueDrag.pos.s2.y * sRatio);
-    stCtx.fillText(document.getElementById('dtBlueS3').value, AppState.dtBlueDrag.pos.s3.x * sRatio, AppState.dtBlueDrag.pos.s3.y * sRatio);
-    stCtx.fillText(document.getElementById('dtBlueS4').value, AppState.dtBlueDrag.pos.s4.x * sRatio, AppState.dtBlueDrag.pos.s4.y * sRatio);
+    stCtx.fillText(inputs.s1, AppState.dtBlueDrag.pos.s1.x * sRatio, AppState.dtBlueDrag.pos.s1.y * sRatio);
+    stCtx.fillText(inputs.s2, AppState.dtBlueDrag.pos.s2.x * sRatio, AppState.dtBlueDrag.pos.s2.y * sRatio);
+    stCtx.fillText(inputs.s3, AppState.dtBlueDrag.pos.s3.x * sRatio, AppState.dtBlueDrag.pos.s3.y * sRatio);
+    stCtx.fillText(inputs.s4, AppState.dtBlueDrag.pos.s4.x * sRatio, AppState.dtBlueDrag.pos.s4.y * sRatio);
 
     ctx.save();
     ctx.globalAlpha = 0.55; 

@@ -1,6 +1,12 @@
 (() => {
     const THEME_KEY = 'tooltopia-theme';
-    const savedTheme = localStorage.getItem(THEME_KEY);
+    let savedTheme = null;
+
+    try {
+        savedTheme = localStorage.getItem(THEME_KEY);
+    } catch (error) {
+        savedTheme = null;
+    }
 
     if (savedTheme === 'day') {
         document.documentElement.classList.add('day-init');

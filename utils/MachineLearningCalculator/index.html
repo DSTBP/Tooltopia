@@ -13,20 +13,34 @@
 </head>
 <body>
 <script>
-    if (localStorage.getItem('tooltopia-theme') === 'day') {
-        document.body.classList.add('day-mode');
-    }
+    try {
+        if (window.localStorage && localStorage.getItem('tooltopia-theme') === 'day') {
+            document.body.classList.add('day-mode');
+        }
+    } catch (error) {}
 </script>
-    <div class="theme-toggle">
-        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
-        <label for="themeToggle" class="theme-toggle__btn">
-            <span class="theme-toggle__feature"></span>
-        </label>
-    </div>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="Logo" class="logo-icon">
+                <span class="logo-text-desktop">MachineLearningCalculator</span>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日间模式">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <div id="background-wrapper"></div>
     <div class="page-container">
-        <a href="../../index.html" class="back-btn">← 返回首页</a>
         <div class="header">
             <h1 data-shadow='科学计算器'>科学计算器</h1>
             <p class="subtitle">支持加减乘除、幂函数、完整三角函数、单位与进制转换</p>
@@ -386,11 +400,10 @@
         </div>
     </div>
 
-        <footer class="footer">
-            <p>Copyright © 2024 Tooltopia. All Rights Reserved.</p>
-                <p>Designed by DSTBP</p>
-        </footer>
-    </div>
+    <footer class="footer">
+        <p>Copyright © 2024 Tooltopia. All Rights Reserved.</p>
+        <p>Designed by DSTBP</p>
+    </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
     <script src="assets/js/theme-toggle.js"></script>

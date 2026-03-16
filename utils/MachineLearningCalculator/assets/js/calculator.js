@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const evalBtn = document.getElementById('evalBtn');
     const clearBtn = document.getElementById('clearBtn');
     const backBtn = document.getElementById('backBtn');
-    const buttons = Array.from(document.querySelectorAll('.btn-calc'));
+    const buttonsContainer = document.querySelector('.buttons');
     const historyEl = document.getElementById('history');
     const precisionEl = document.getElementById('precision');
     const angleModeEl = document.getElementById('angleMode');
@@ -154,15 +154,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // wrapper math functions to honor degree/radian setting
     function makeScope() {
-        const mode = angleModeEl.value || 'rad';
+        const isDegreeMode = () => (angleModeEl?.value || 'rad') === 'deg';
         const toRad = (x) => {
-            if (mode === 'deg') {
+            if (isDegreeMode()) {
                 return math.multiply(x, math.divide(math.pi, 180));
             }
             return x;
         };
         const toAngle = (val) => {
-            if (mode === 'deg') {
+            if (isDegreeMode()) {
                 return math.multiply(val, math.divide(180, math.pi));
             }
             return val;
@@ -171,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const invWrap = (fn) => (x) => toAngle(fn(x));
         const hyperWrap = (fn) => (x) => fn(toRad(x));
         const hyperInvWrap = (fn) => (x) => {
-            if (mode === 'deg') {
+            if (isDegreeMode()) {
                 return math.multiply(fn(x), math.divide(180, math.pi));
             }
             return fn(x);
@@ -540,6 +540,31 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    const scopeTemplate = makeScope();
+    scopeTemplate.mod = (a, b) => math.mod(a, b);
+    scopeTemplate.factorial = (n) => math.factorial(n);
+
+    function createEvaluationScope() {
+        return Object.assign(Object.create(scopeTemplate), {
+            phi: math.divide(math.add(1, math.sqrt(5)), 2),
+            gamma: math.bignumber('0.5772156649015329'),
+            sqrt2: math.sqrt(2),
+            ln2: math.log(2),
+            zeta3: math.bignumber('1.202056903159594'),
+            G: math.bignumber('0.915965594177219'),
+            K: math.bignumber('2.685452001065306'),
+            delta: math.bignumber('4.66920160910299'),
+            alpha: math.bignumber('-2.5029078750958928'),
+            tau: math.multiply(math.pi, 2),
+            Omega: math.bignumber('0.5671432904097838'),
+            C: math.bignumber('0.12345678910111213'),
+            rho: math.bignumber('1.3247179572447458'),
+            B: math.bignumber('1.902160583104'),
+            zeta2: math.divide(math.multiply(math.pi, math.pi), 6),
+            ans: lastAns
+        });
+    }
+
     function getDisplay() {
         return displayEl.value;
     }
@@ -576,10 +601,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // button clicks
-    buttons.forEach(btn => {
-        const val = btn.getAttribute('data-val');
-        const fn = btn.getAttribute('data-fn');
-        btn.addEventListener('click', () => {
+    if (buttonsContainer) {
+        buttonsContainer.addEventListener('click', (event) => {
+            const btn = event.target.closest('.btn-calc');
+            if (!btn || !buttonsContainer.contains(btn)) {
+                return;
+            }
+
+            const val = btn.getAttribute('data-val');
+            const fn = btn.getAttribute('data-fn');
             if (val) {
                 appendToDisplay(val);
                 return;
@@ -593,7 +623,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
-    });
+    }
 
     clearBtn.addEventListener('click', () => setDisplay('0', 1));
     backBtn.addEventListener('click', () => {
@@ -614,14 +644,76 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // sanitize user-friendly characters
+    function normalizePostfixFactorials(expr) {
+        let normalized = expr;
+        let factorialIndex = normalized.indexOf('!');
+
+        while (factorialIndex !== -1) {
+            if (normalized[factorialIndex + 1] === '=') {
+                factorialIndex = normalized.indexOf('!', factorialIndex + 1);
+                continue;
+            }
+
+            let operandEnd = factorialIndex - 1;
+            while (operandEnd >= 0 && /\s/.test(normalized[operandEnd])) {
+                operandEnd -= 1;
+            }
+            if (operandEnd < 0) {
+                throw new Error('阶乘缺少操作数');
+            }
+
+            let operandStart = operandEnd;
+            if (normalized[operandEnd] === ')' || normalized[operandEnd] === ']') {
+                const closingChar = normalized[operandEnd];
+                const openingChar = closingChar === ')' ? '(' : '[';
+                let depth = 1;
+                operandStart -= 1;
+
+                while (operandStart >= 0) {
+                    if (normalized[operandStart] === closingChar) {
+                        depth += 1;
+                    } else if (normalized[operandStart] === openingChar) {
+                        depth -= 1;
+                        if (depth === 0) {
+                            break;
+                        }
+                    }
+                    operandStart -= 1;
+                }
+
+                if (depth !== 0) {
+                    throw new Error('阶乘表达式括号不匹配');
+                }
+
+                while (operandStart > 0 && /[A-Za-z0-9_.]/.test(normalized[operandStart - 1])) {
+                    operandStart -= 1;
+                }
+            } else {
+                while (operandStart >= 0 && /[A-Za-z0-9_.]/.test(normalized[operandStart])) {
+                    operandStart -= 1;
+                }
+                operandStart += 1;
+            }
+
+            const operand = normalized.slice(operandStart, factorialIndex).trim();
+            if (!operand) {
+                throw new Error('阶乘缺少操作数');
+            }
+
+            normalized = `${normalized.slice(0, operandStart)}factorial(${operand})${normalized.slice(factorialIndex + 1)}`;
+            factorialIndex = normalized.indexOf('!', operandStart + operand.length + 10);
+        }
+
+        return normalized;
+    }
+
     function normalizeExpr(expr) {
         let normalized = expr;
         SYMBOL_REPLACEMENTS.forEach(([pattern, replacement]) => {
             normalized = normalized.replace(pattern, replacement);
         });
         normalized = normalized.replace(/\s+mod\s+/gi, ' mod ');
-        normalized = normalized.replace(/(\d+(?:\.\d+)?)!/g, (_, n) => `factorial(${n})`);
-        return normalized.replace(/!/g, 'factorial');
+        return normalizePostfixFactorials(normalized);
     }
 
     function formatNumber(val) {
@@ -728,14 +820,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!historyEl) return;
         const item = document.createElement('div');
         item.classList.add('history-item');
-        item.innerHTML = `
-            <div class="history-expression">${expr}</div>
-            <div class="history-result">${result}</div>
-        `;
+        const exprEl = document.createElement('div');
+        exprEl.className = 'history-expression';
+        exprEl.textContent = expr;
+
+        const resultEl = document.createElement('div');
+        resultEl.className = 'history-result';
+        resultEl.textContent = result;
+
+        item.append(exprEl, resultEl);
         item.addEventListener('click', () => setDisplay(expr));
         historyEl.prepend(item);
-        while (historyEl.children.length > MAX_HISTORY) {
-            historyEl.removeChild(historyEl.lastElementChild);
+        if (historyEl.children.length > MAX_HISTORY && historyEl.lastElementChild) {
+            historyEl.lastElementChild.remove();
         }
         historyEl.scrollTop = 0;
     }
@@ -744,12 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const raw = getDisplay();
         const expr = normalizeExpr(raw);
         try {
-            // create scope with trig wrappers and constants
-            const scope = makeScope();
-
-            // math.evaluate supports 'mod' via function math.mod, so we provide mod to scope
-            scope.mod = (a,b) => math.mod(a,b);
-            scope.factorial = (n) => math.factorial(n);
+            const scope = createEvaluationScope();
 
             let res = math.evaluate(expr, scope);
 
@@ -872,22 +964,23 @@ document.addEventListener('DOMContentLoaded', () => {
         ]
     };
 
+    function createOptionFragment(items, getOptionData) {
+        const fragment = document.createDocumentFragment();
+        items.forEach((item) => {
+            const option = document.createElement('option');
+            const { value, label } = getOptionData(item);
+            option.value = value;
+            option.textContent = label;
+            fragment.appendChild(option);
+        });
+        return fragment;
+    }
+
     function populateUnitOptions(category) {
         if (!unitFromEl || !unitToEl) return;
         const options = UNIT_GROUPS[category] || [];
-        unitFromEl.innerHTML = '';
-        unitToEl.innerHTML = '';
-        options.forEach((opt) => {
-            const optionFrom = document.createElement('option');
-            optionFrom.value = opt.value;
-            optionFrom.textContent = opt.label;
-            unitFromEl.appendChild(optionFrom);
-
-            const optionTo = document.createElement('option');
-            optionTo.value = opt.value;
-            optionTo.textContent = opt.label;
-            unitToEl.appendChild(optionTo);
-        });
+        unitFromEl.replaceChildren(createOptionFragment(options, (opt) => opt));
+        unitToEl.replaceChildren(createOptionFragment(options, (opt) => opt));
         if (options.length > 1) {
             unitToEl.selectedIndex = 1;
         }
@@ -904,7 +997,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (unitConvertBtn) {
         unitConvertBtn.addEventListener('click', () => {
             if (!unitValueEl || !unitFromEl || !unitToEl) return;
-            const rawValue = unitValueEl.value;
+            const rawValue = (unitValueEl.value || '').trim();
             const numericValue = Number(rawValue);
             if (!rawValue || Number.isNaN(numericValue)) {
                 unitResult.innerText = '请输入要转换的数值';
@@ -930,7 +1023,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const BASE_DIGITS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-    function populateBaseSelect(selectEl) {
+    function populateBaseSelectLegacy(selectEl) {
         if (!selectEl) return;
         selectEl.innerHTML = '';
         for (let base = 2; base <= 36; base++) {
@@ -979,6 +1072,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return sign + result;
     }
 
+    function populateBaseSelect(selectEl) {
+        if (!selectEl) return;
+        const bases = Array.from({ length: 35 }, (_, index) => index + 2);
+        selectEl.replaceChildren(createOptionFragment(bases, (base) => ({
+            value: String(base),
+            label: `${base} 进制`
+        })));
+    }
+
     if (baseFromEl && baseToEl) {
         populateBaseSelect(baseFromEl);
         populateBaseSelect(baseToEl);
@@ -1020,17 +1122,8 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     if (colorFromEl && colorToEl) {
-        const populate = (sel) => {
-            sel.innerHTML = '';
-            COLOR_FORMATS.forEach(f => {
-                const opt = document.createElement('option');
-                opt.value = f.value;
-                opt.textContent = f.label;
-                sel.appendChild(opt);
-            });
-        };
-        populate(colorFromEl);
-        populate(colorToEl);
+        colorFromEl.replaceChildren(createOptionFragment(COLOR_FORMATS, (format) => format));
+        colorToEl.replaceChildren(createOptionFragment(COLOR_FORMATS, (format) => format));
         colorFromEl.value = 'hex';
         colorToEl.value = 'rgb';
     }
@@ -1067,7 +1160,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (format.startsWith('hsl')) {
             // HSL to RGB
             if (nums.length < 3) throw new Error('HSL 需要 3 个数值');
-            const h = nums[0] % 360;
+            const h = ((nums[0] % 360) + 360) % 360;
             const sVal = clamp(nums[1], 0, 100) / 100;
             const l = clamp(nums[2], 0, 100) / 100;
             const a = nums.length > 3 ? clamp(nums[3], 0, 1) : 1;
@@ -1094,7 +1187,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (format.startsWith('hsv')) {
             // HSV to RGB
             if (nums.length < 3) throw new Error('HSV 需要 3 个数值');
-            const h = nums[0] % 360;
+            const h = ((nums[0] % 360) + 360) % 360;
             const sVal = clamp(nums[1], 0, 100) / 100;
             const v = clamp(nums[2], 0, 100) / 100;
             const a = nums.length > 3 ? clamp(nums[3], 0, 1) : 1;
@@ -1242,6 +1335,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Color Conversion Logic End ---
 
     // --- Timestamp Conversion Logic Start ---
+    function parseLocalDateTime(input) {
+        const normalized = input.trim().replace('T', ' ');
+        const match = normalized.match(
+            /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:\s+(\d{1,2})(?::(\d{1,2})(?::(\d{1,2})(?:\.(\d{1,3}))?)?)?)?$/
+        );
+
+        if (!match) {
+            throw new Error('无效的本地日期时间格式');
+        }
+
+        const [, yearText, monthText, dayText, hourText = '0', minuteText = '0', secondText = '0', msText = '0'] = match;
+        const year = Number(yearText);
+        const month = Number(monthText);
+        const day = Number(dayText);
+        const hour = Number(hourText);
+        const minute = Number(minuteText);
+        const second = Number(secondText);
+        const millisecond = Number(msText.padEnd(3, '0'));
+        const date = new Date(year, month - 1, day, hour, minute, second, millisecond);
+
+        if (
+            date.getFullYear() !== year ||
+            date.getMonth() !== month - 1 ||
+            date.getDate() !== day ||
+            date.getHours() !== hour ||
+            date.getMinutes() !== minute ||
+            date.getSeconds() !== second
+        ) {
+            throw new Error('无效的本地日期时间格式');
+        }
+
+        return date;
+    }
+
     function parseTimestampInput(input, format) {
         const trimmed = input.trim();
 
@@ -1257,10 +1384,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return new Date(timestamp);
         }
 
-        if (format === 'iso' || format === 'local') {
+        if (format === 'iso') {
             const date = new Date(trimmed);
             if (isNaN(date.getTime())) throw new Error('无效的日期格式');
             return date;
+        }
+
+        if (format === 'local') {
+            return parseLocalDateTime(trimmed);
         }
 
         throw new Error('不支持的输入格式');

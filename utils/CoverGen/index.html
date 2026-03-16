@@ -3,26 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <meta name="theme-color" content="#667eea">
+    <meta name="theme-color" content="#1a1a2e">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <title>专辑封面生成器 - CoverGen</title>
     <link rel="stylesheet" href="./assets/css/style.css">
 </head>
 <body>
-    <div class="theme-toggle">
-        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
-        <label for="themeToggle" class="theme-toggle__btn">
-            <span class="theme-toggle__feature"></span>
-        </label>
-    </div>
+    <script>
+        // 在 body 内容渲染前立即执行，避免闪烁
+        (function () {
+            var themeMeta = document.querySelector('meta[name="theme-color"]');
+
+            try {
+                if (localStorage.getItem('tooltopia-theme') === 'day') {
+                    document.body.classList.add('day-mode');
+                    if (themeMeta) {
+                        themeMeta.setAttribute('content', '#f0f4f8');
+                    }
+                }
+            } catch (error) {
+                // Ignore storage access failures and keep the default theme.
+            }
+        })();
+    </script>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="Logo" class="logo-icon">
+                <span class="logo-text-desktop">CoverGen</span>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn" id="mainHomeLink">返回主页</a>
+                <button id="backToHomeBtn" class="nav-btn" style="display: none;">返回选择风格</button>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <div id="background-wrapper"></div>
     <div class="page-container">
-        <div class="nav-bar">
-            <a href="../../index.html" class="back-link" id="mainHomeLink">← 返回首页</a>
-            <button id="backToHomeBtn" class="back-link" style="display: none; background:none; border:none; cursor:pointer;">← 返回选择风格</button>
-        </div>
-
         <div class="header">
             <h1 data-shadow='黑胶封面生成器'>黑胶封面生成器</h1>
             <p class="subtitle" id="mainSubtitle">请选择您喜欢的专辑封面风格</p>
@@ -158,7 +184,7 @@
                     <div id="baimaPreviewContainer" style="margin-bottom: 25px;">
                         <div id="baimaPreviewBox" style="width: 100%; max-width: 400px; aspect-ratio: 1/1; background: #F2EFE8; position: relative; overflow: hidden; border-radius: 8px; margin: 0 auto; box-shadow: inset 0 0 10px rgba(0,0,0,0.1); touch-action: none;">
                             <div id="baimaDragArea" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0;"></div>
-                            <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; pointer-events: none; z-index: 10;">拖动每列文字，上方滑块调间距与大小</div>
+                            <div class="baima-tip" style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; pointer-events: none; z-index: 10;">拖动每列文字，上方滑块调间距与大小</div>
                         </div>
                     </div>
 

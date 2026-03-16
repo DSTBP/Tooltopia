@@ -3,11 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="color-scheme" content="dark light">
     <title>異常事件研究所</title>
     <link href="assets/css/style.css" rel="stylesheet">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
 </head>
 <body>
+    <script>
+        // 在 body 内容渲染前立即执行，避免闪烁
+        (function () {
+            var themeMeta = document.querySelector('meta[name="theme-color"]');
+
+            try {
+                if (localStorage.getItem('tooltopia-theme') === 'day') {
+                    document.body.classList.add('day-mode');
+                    if (themeMeta) {
+                        themeMeta.setAttribute('content', '#f0f4f8');
+                    }
+                }
+            } catch (error) {
+                // Ignore storage access failures and keep the default theme.
+            }
+        })();
+    </script>
     <div id="root">
         <div class="app-container">
             
@@ -42,7 +61,7 @@
                         
                         <div class="theme-toggle-container">
                             <div class="theme-toggle">
-                                <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+                                <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
                                 <label for="themeToggle" class="theme-toggle__btn">
                                     <span class="theme-toggle__feature"></span>
                                 </label>

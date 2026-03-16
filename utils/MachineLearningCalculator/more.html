@@ -21,17 +21,33 @@
 <body>
 <script>
     // 立即执行避免闪烁
-    if (localStorage.getItem('tooltopia-theme') === 'day') {
-        document.body.classList.add('day-mode');
-    }
+    try {
+        if (window.localStorage && localStorage.getItem('tooltopia-theme') === 'day') {
+            document.body.classList.add('day-mode');
+        }
+    } catch (error) {}
 </script>
 
-    <div class="theme-toggle">
-        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
-        <label for="themeToggle" class="theme-toggle__btn">
-            <span class="theme-toggle__feature"></span>
-        </label>
-    </div>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="Logo" class="logo-icon">
+                <span class="logo-text-desktop">MachineLearningCalculator</span>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <a href="index.html" class="nav-btn">返回计算器</a>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日间模式">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <div id="background-wrapper"></div>
     
@@ -205,20 +221,34 @@
             svg: { fontCache: 'global' }
         };
         (function(){
-            function tryRender(){
+            let pendingRenderId = 0;
+
+            function tryRender(target){
+                const renderRoot = target || document.querySelector('.view-section.active') || document.body;
                 try{
                     if (window.renderMathInElement) {
-                        renderMathInElement(document.body, {
+                        renderMathInElement(renderRoot, {
                             delimiters:[{left:'$$',right:'$$',display:true},{left:'\\[',right:'\\]',display:true},{left:'\\(',right:'\\)',display:false}],
                             throwOnError:false
                         });
                         return;
                     }
                 } catch(e){ console.warn('KaTeX render failed', e); }
-                if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+                if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([renderRoot]);
             }
-            // 每次视图切换后也可以调用
+
+            function scheduleRender(target){
+                if (pendingRenderId) {
+                    clearTimeout(pendingRenderId);
+                }
+                pendingRenderId = window.setTimeout(() => {
+                    pendingRenderId = 0;
+                    tryRender(target);
+                }, 100);
+            }
+
             window.renderMathAll = tryRender;
+            window.scheduleMathRender = scheduleRender;
             if (document.readyState==='complete' || document.readyState==='interactive') tryRender(); else document.addEventListener('DOMContentLoaded', tryRender);
         })();
     </script>
@@ -230,31 +260,42 @@
             'pseudoinverse': { id: 'view-pseudoinverse', title: 'Moore-Penrose 伪逆', subtitle: '计算矩阵的 Moore-Penrose 伪逆 A⁺' },
             'simplex': { id: 'view-simplex', title: '单纯形法', subtitle: '线性规划问题求解（约束优化）' }
         };
+        const MATRIX_SAMPLE = '2 4 1 1\n1 2 -1 2\n-1 -2 -2 1';
+        const viewSections = Array.from(document.querySelectorAll('.view-section'));
+        const navBarEl = document.getElementById('nav-bar');
+        const menuBackBtnEl = document.getElementById('menu-back-btn');
+        const pageTitleEl = document.getElementById('page-title');
+        const pageSubtitleEl = document.getElementById('page-subtitle');
 
         function switchView(viewName) {
             // 隐藏所有视图
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            viewSections.forEach(el => el.classList.remove('active'));
             
             // 显示目标视图
             const target = views[viewName];
             if(target) {
-                document.getElementById(target.id).classList.add('active');
+                const section = document.getElementById(target.id);
+                if (!section) {
+                    return;
+                }
+                section.classList.add('active');
                 
                 // 更新标题
-                const h1 = document.getElementById('page-title');
-                h1.textContent = target.title;
-                h1.setAttribute('data-shadow', target.title);
-                document.getElementById('page-subtitle').textContent = target.subtitle;
+                pageTitleEl.textContent = target.title;
+                pageTitleEl.setAttribute('data-shadow', target.title);
+                pageSubtitleEl.textContent = target.subtitle;
 
                 // 切换导航栏状态
                 if(viewName === 'menu') {
-                    document.getElementById('nav-bar').style.display = 'none';
-                    document.getElementById('menu-back-btn').style.display = 'block';
+                    navBarEl.style.display = 'none';
+                    menuBackBtnEl.style.display = 'block';
                 } else {
-                    document.getElementById('nav-bar').style.display = 'flex';
-                    document.getElementById('menu-back-btn').style.display = 'none';
-                    // 重新渲染公式，防止隐藏元素渲染问题
-                    setTimeout(window.renderMathAll, 100);
+                    navBarEl.style.display = 'flex';
+                    menuBackBtnEl.style.display = 'none';
+                    // 重新渲染当前视图中的公式，避免隐藏元素切换后的重复整页扫描
+                    if (typeof window.scheduleMathRender === 'function') {
+                        window.scheduleMathRender(section);
+                    }
                 }
             }
         }
@@ -271,7 +312,7 @@
 
         if (sampleBtn) {
             sampleBtn.addEventListener('click', () => {
-                textarea.value = '2 4 1 1\n1 2 -1 2\n-1 -2 -2 1';
+                textarea.value = MATRIX_SAMPLE;
             });
         }
 
@@ -309,7 +350,7 @@
 
         if (loadBtn) {
             loadBtn.addEventListener('click', () => {
-                ta.value = '2 4 1 1\n1 2 -1 2\n-1 -2 -2 1';
+                ta.value = MATRIX_SAMPLE;
             });
         }
 
@@ -375,6 +416,8 @@
         const loadExampleBtn = document.getElementById('sx-loadExample');
         const outputDiv = document.getElementById('sx-output');
         const problemTypeRadios = document.getElementsByName('sx-problemType');
+        const MINUS_CHARS = /[\u2212\u2013\u2014\u2012\u2010\uFF0D\u002D]/g;
+        const SUPPORTED_INEQUALITIES = new Set(['<=', '>=', '=']);
 
         if (loadExampleBtn) {
             loadExampleBtn.addEventListener('click', () => {
@@ -389,18 +432,45 @@
 
         // --- Simplex Helper Functions ---
         function parseArray(text) {
-            text = text.replace(/[－−—‒–]/g, '-');
-            return text.trim().split(/[,\s]+/).map(x => parseFloat(x)).filter(x => !isNaN(x));
+            const normalized = (text || '').replace(MINUS_CHARS, '-').trim();
+            if (!normalized) return [];
+            return normalized.split(/[,\s]+/).map((token) => {
+                const value = Number(token);
+                if (!Number.isFinite(value)) {
+                    throw new Error(`无效数值: ${token}`);
+                }
+                return value;
+            });
         }
 
         function parseMatrix(text) {
-            text = text.replace(/[－−—‒–]/g, '-');
-            const rows = text.trim().split(/\n+/).map(r => r.trim()).filter(r => r.length > 0);
-            return rows.map(r => r.split(/[,\s]+/).map(x => parseFloat(x)));
+            const normalized = (text || '').replace(MINUS_CHARS, '-').trim();
+            if (!normalized) return [];
+            const rows = normalized.split(/\n+/).map((row) => row.trim()).filter((row) => row.length > 0);
+            return rows.map((row, rowIndex) => {
+                const tokens = row.split(/[,\s]+/).filter(Boolean);
+                if (tokens.length === 0) {
+                    throw new Error(`第 ${rowIndex + 1} 行为空`);
+                }
+                return tokens.map((token) => {
+                    const value = Number(token);
+                    if (!Number.isFinite(value)) {
+                        throw new Error(`无效数值: ${token}`);
+                    }
+                    return value;
+                });
+            });
         }
 
         function parseInequalities(text) {
-            return text.trim().split(/\s+/).map(s => s.trim());
+            const normalized = (text || '').trim();
+            if (!normalized) return [];
+            return normalized.split(/\s+/).map((symbol) => {
+                if (!SUPPORTED_INEQUALITIES.has(symbol)) {
+                    throw new Error(`不支持的约束符号: ${symbol}`);
+                }
+                return symbol;
+            });
         }
 
         function getProblemType() {
@@ -519,6 +589,7 @@
 
         async function simplex(c, A, b, inequalities, isMin) {
             const m = A.length; const n = c.length;
+            const objectiveCoefficients = isMin ? c.slice() : c.map((value) => -value);
             let output = '';
 
             // 适应LaTeX变量名的辅助函数
@@ -584,8 +655,10 @@
             }
 
             if (numArtificial > 0) {
-                output += '<p style="color:#dc2626; font-weight:600">当前版本仅完整支持所有约束为 ≤ 的情况。</p></div>';
-                outputDiv.innerHTML = output; renderMath(outputDiv); return;
+                output += '<p style="color:#dc2626; font-weight:600">当前实现仅完整支持所有约束均为 ≤ 的情形。包含 ≥ 或 = 的问题需要大 M 法或两阶段法，这里会停止继续求解，避免给出错误流程。</p></div>';
+                outputDiv.innerHTML = output;
+                await renderMath(outputDiv);
+                return;
             }
             output += '<p>转换为标准型...</p></div>';
 
@@ -600,7 +673,7 @@
                 tableau.push(row);
             }
             const zRow = [];
-            for (let j = 0; j < n; j++) zRow.push(-c[j]);
+            for (let j = 0; j < n; j++) zRow.push(-objectiveCoefficients[j]);
             for (let j = 0; j < m; j++) zRow.push(0);
             zRow.push(0);
             tableau.push(zRow);
@@ -652,7 +725,7 @@
                     for (let j = 0; j <= totalVars; j++) tableau[i][j] -= factor * tableau[leavingRow][j];
                 }
                 basicVars[leavingRow] = enteringVarName;
-                recalculateZRow(tableau, basicVars, c, n, m);
+                recalculateZRow(tableau, basicVars, objectiveCoefficients, n, m);
                 output += '</div>';
                 iteration++;
             }
@@ -671,7 +744,7 @@
             output += '<p>';
             for (let i = 0; i < n; i++) output += `\\(x_{${i + 1}} = ${fractionString(solution[i])}\\)${i < n - 1 ? ', ' : ''}`;
             output += '</p>';
-            const optimalValue = tableau[m][totalVars];
+            const optimalValue = isMin ? tableau[m][totalVars] : -tableau[m][totalVars];
             output += `<p style="margin-top:12px"><strong>最优值：</strong> \\(z^* = ${fractionString(optimalValue)}\\)</p></div></div>`;
 
             outputDiv.innerHTML = output;
@@ -689,6 +762,18 @@
 
                     if (c.length === 0) throw new Error('请输入目标函数系数');
                     if (A.length === 0) throw new Error('请输入约束条件矩阵');
+                    if (b.length !== A.length) throw new Error('约束右侧常数数量与约束条数不匹配');
+                    if (inequalities.length !== A.length) throw new Error('约束符号数量与约束条数不匹配');
+                    for (const row of A) {
+                        if (row.length !== c.length) {
+                            throw new Error('约束矩阵列数与变量数量不匹配');
+                        }
+                    }
+                    for (const value of b) {
+                        if (value < 0) {
+                            throw new Error('当前实现要求右侧常数 b 非负，请先将约束转换为 b ≥ 0 的形式');
+                        }
+                    }
                     
                     await simplex(c, A, b, inequalities, isMin);
                 } catch (e) {

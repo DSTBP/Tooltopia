@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadExampleBtn = document.getElementById('loadExample');
     const outputDiv = document.getElementById('output');
     const problemTypeRadios = document.getElementsByName('problemType');
+    const MINUS_CHARS = /[\u2212\u2013\u2014\u2012\u2010\uFF0D\u002D]/g;
+    const SUPPORTED_INEQUALITIES = new Set(['<=', '>=', '=']);
 
     loadExampleBtn.addEventListener('click', () => {
         document.querySelector('input[name="problemType"][value="min"]').checked = true;
@@ -18,18 +20,45 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function parseArray(text) {
-        text = text.replace(/[－−—‒–]/g, '-');
-        return text.trim().split(/[,\s]+/).map(x => parseFloat(x)).filter(x => !isNaN(x));
+        const normalized = (text || '').replace(MINUS_CHARS, '-').trim();
+        if (!normalized) return [];
+        return normalized.split(/[,\s]+/).map((token) => {
+            const value = Number(token);
+            if (!Number.isFinite(value)) {
+                throw new Error(`无效数值: ${token}`);
+            }
+            return value;
+        });
     }
 
     function parseMatrix(text) {
-        text = text.replace(/[－−—‒–]/g, '-');
-        const rows = text.trim().split(/\n+/).map(r => r.trim()).filter(r => r.length > 0);
-        return rows.map(r => r.split(/[,\s]+/).map(x => parseFloat(x)));
+        const normalized = (text || '').replace(MINUS_CHARS, '-').trim();
+        if (!normalized) return [];
+        const rows = normalized.split(/\n+/).map(r => r.trim()).filter(r => r.length > 0);
+        return rows.map((row, rowIndex) => {
+            const tokens = row.split(/[,\s]+/).filter(Boolean);
+            if (tokens.length === 0) {
+                throw new Error(`第 ${rowIndex + 1} 行为空`);
+            }
+            return tokens.map((token) => {
+                const value = Number(token);
+                if (!Number.isFinite(value)) {
+                    throw new Error(`无效数值: ${token}`);
+                }
+                return value;
+            });
+        });
     }
 
     function parseInequalities(text) {
-        return text.trim().split(/\s+/).map(s => s.trim());
+        const normalized = (text || '').trim();
+        if (!normalized) return [];
+        return normalized.split(/\s+/).map((symbol) => {
+            if (!SUPPORTED_INEQUALITIES.has(symbol)) {
+                throw new Error(`不支持的约束符号: ${symbol}`);
+            }
+            return symbol;
+        });
     }
 
     function getProblemType() {
@@ -162,6 +191,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function simplex(c, A, b, inequalities, isMin) {
         const m = A.length;    // Number of constraints
         const n = c.length;    // Number of variables
+        const objectiveCoefficients = isMin ? c.slice() : c.map((value) => -value);
         let output = '';
 
         // Helper function to get objective coefficient for a variable
@@ -297,10 +327,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // For simplicity, only handle <= constraints for now
         if (numArtificial > 0) {
             output += '<div class="panel step-section">';
-            output += '<p style="color:#dc2626; font-weight:600">当前版本仅完整支持所有约束为 ≤ 的情况。对于包含 ≥ 或 = 的约束，请将问题转换为 ≤ 形式。</p>';
+            output += '<p style="color:#dc2626; font-weight:600">当前实现仅完整支持所有约束均为 ≤ 的情形。包含 ≥ 或 = 的问题需要大 M 法或两阶段法，这里会停止继续求解，避免给出错误流程。</p>';
             output += '</div>';
             outputDiv.innerHTML = output;
-            renderMath(outputDiv);
+            await renderMath(outputDiv);
             return;
         }
 
@@ -328,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Z row (objective) - using original coefficients
         const zRow = [];
         for (let j = 0; j < n; j++) {
-            zRow.push(-c[j]);  // For min problem: -c[j] gives the reduced cost
+            zRow.push(-objectiveCoefficients[j]);
         }
         for (let j = 0; j < m; j++) {
             zRow.push(0);
@@ -423,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
             basicVars[leavingRow] = enteringVarName;
 
             // Recalculate z-row based on new basis
-            recalculateZRow(tableau, basicVars, c, n, m);
+            recalculateZRow(tableau, basicVars, objectiveCoefficients, n, m);
 
             output += '<p><strong>主元行操作：</strong>将主元行除以主元值</p>';
             output += '<p><strong>消元操作：</strong>使用主元行消去其他行的进基变量列元素</p>';
@@ -468,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         output += '</p>';
 
-        const optimalValue = isMin ? tableau[m][totalVars] : tableau[m][totalVars];
+        const optimalValue = isMin ? tableau[m][totalVars] : -tableau[m][totalVars];
         output += `<p style="margin-top:12px"><strong>最优值：</strong> \\(z^* = ${fractionString(optimalValue)}\\)</p>`;
 
         output += '</div>';

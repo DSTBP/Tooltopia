@@ -1,4 +1,13 @@
 // 页面加载后初始化设置
+function setStoredWordFormData(formData) {
+    try {
+        window.sessionStorage.setItem('wordFormData', JSON.stringify(formData));
+        return true;
+    } catch (error) {
+        return false;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     // 设置默认值（厘米、倍数等）
     const defaultValues = {
@@ -7,8 +16,8 @@ document.addEventListener('DOMContentLoaded', function () {
         marginBottom: '2.54',
         marginLeft: '3.18',
         marginRight: '3.18',
-        headerDistance: '1.5',
-        footerDistance: '1.75'
+        headerMarginTop: '1.5',
+        footerMarginBottom: '1.75'
     };
 
     // 应用默认值
@@ -56,6 +65,9 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // 提交按钮逻辑
+    toggleHeaderFooter();
+    togglePageNumberSettings();
+
     document.getElementById('wordForm').addEventListener('submit', function (e) {
         e.preventDefault();
         if (!validateForm()) return;
@@ -111,7 +123,10 @@ document.addEventListener('DOMContentLoaded', function () {
         };
 
         // 将 formData 保存到 SessionStorage
-        sessionStorage.setItem('wordFormData', JSON.stringify(formData));
+        if (!setStoredWordFormData(formData)) {
+            showError('Unable to store form settings for the next page.');
+            return;
+        }
 
         // 检查 docx 库是否加载
         if (typeof docx === 'undefined') {
@@ -175,17 +190,20 @@ function togglePageNumberSettings() {
 }
 
 // 添加页码对齐方式变化时的处理函数
-document.getElementById('pageNumberAlignment').addEventListener('change', function() {
-    const pageNumberLocation = document.getElementById('pageNumberLocation').value;
-    const alignment = this.value;
-    
-    if (pageNumberLocation === 'header') {
-        document.getElementById('headerTextAlign').value = alignment;
-    }
-    if (pageNumberLocation === 'footer') {
-        document.getElementById('footerTextAlign').value = alignment;
-    }
-});
+const pageNumberAlignmentElement = document.getElementById('pageNumberAlignment');
+if (pageNumberAlignmentElement) {
+    pageNumberAlignmentElement.addEventListener('change', function() {
+        const pageNumberLocation = document.getElementById('pageNumberLocation').value;
+        const alignment = this.value;
+        
+        if (pageNumberLocation === 'header') {
+            document.getElementById('headerTextAlign').value = alignment;
+        }
+        if (pageNumberLocation === 'footer') {
+            document.getElementById('footerTextAlign').value = alignment;
+        }
+    });
+}
 
 // 显示错误信息
 function showError(message) {

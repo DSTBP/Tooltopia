@@ -11,7 +11,24 @@
             .split(/\n+/)
             .map(row => row.trim())
             .filter(Boolean)
-            .map(row => row.split(TOKEN_SPLIT).filter(Boolean).map(Number));
+            .map((row, rowIndex) => {
+                const tokens = row.split(TOKEN_SPLIT).filter(Boolean);
+                if (tokens.length === 0) {
+                    throw new Error(`第 ${rowIndex + 1} 行为空`);
+                }
+                return tokens.map((token) => {
+                    const value = Number(token);
+                    if (!Number.isFinite(value)) {
+                        throw new Error(`无效数值: ${token}`);
+                    }
+                    return value;
+                });
+            });
+
+        const columnCount = rows[0]?.length || 0;
+        if (rows.some((row) => row.length !== columnCount)) {
+            throw new Error('矩阵每一行的列数必须一致');
+        }
         return math.matrix(rows);
     }
 
@@ -119,7 +136,10 @@
     }
 
     async function renderLatex(containers) {
-        const targets = Array.isArray(containers) ? containers : [containers];
+        const targets = (Array.isArray(containers) ? containers : [containers]).filter(Boolean);
+        if (targets.length === 0) {
+            return;
+        }
         if (window.renderMathInElement) {
             targets.forEach(container => {
                 try {

@@ -20,17 +20,35 @@
     <link rel="stylesheet" href="./assets/css/style.css">
 </head>
 <body>
-    <!-- 主题切换器 -->
-    <div class="theme-toggle">
-        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
-        <label for="themeToggle" class="theme-toggle__btn">
-            <span class="theme-toggle__feature"></span>
-        </label>
-    </div>
+    <script>
+        try {
+            if (window.localStorage && localStorage.getItem('tooltopia-theme') === 'day') {
+                document.body.classList.add('day-mode');
+            }
+        } catch (error) {}
+    </script>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="Logo" class="logo-icon">
+                <span class="logo-text-desktop">GameSaveEditor</span>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <div id="background-wrapper"></div>
     <div class="page-container">
-        <a href="../../index.html" class="back-btn">← 返回首页</a>
         <div class="header">
             <h1 data-shadow="游戏存档编辑器">游戏存档编辑器</h1>
             <p class="subtitle">自用游戏存档加解密与下载</p>

@@ -1,27 +1,31 @@
+const DEFAULT_COLORS = ["#f8fafc", "#f1f5f9", "#cbd5e1"];
+const DEFAULT_GAP = 5;
+const DEFAULT_SPEED = 35;
+const MAX_GAP = 50;
+const MIN_GAP = 4;
+const MAX_SPEED = 100;
+const MIN_SPEED = 0;
+const SPEED_THROTTLE = 0.001;
+const FRAME_INTERVAL = 1000 / 60;
+
 class Pixel {
-  constructor(canvas, context, x, y, color, speed, delay) {
-    this.width = canvas.width;
-    this.height = canvas.height;
+  constructor(context, x, y, color, speed, delay, counterBase) {
     this.ctx = context;
     this.x = x;
     this.y = y;
     this.color = color;
-    this.speed = this.getRandomValue(0.1, 0.9) * speed;
+    this.speed = Math.random() * 0.8 * speed + 0.1 * speed;
     this.size = 0;
     this.sizeStep = Math.random() * 0.4;
     this.minSize = 0.5;
     this.maxSizeInteger = 2;
-    this.maxSize = this.getRandomValue(this.minSize, this.maxSizeInteger);
+    this.maxSize = Math.random() * (this.maxSizeInteger - this.minSize) + this.minSize;
     this.delay = delay;
     this.counter = 0;
-    this.counterStep = Math.random() * 4 + (this.width + this.height) * 0.01;
+    this.counterStep = Math.random() * 4 + counterBase;
     this.isIdle = false;
     this.isReverse = false;
     this.isShimmer = false;
-  }
-
-  getRandomValue(min, max) {
-    return Math.random() * (max - min) + min;
   }
 
   draw() {
@@ -37,30 +41,35 @@ class Pixel {
 
   appear() {
     this.isIdle = false;
+
     if (this.counter <= this.delay) {
       this.counter += this.counterStep;
       return;
     }
+
     if (this.size >= this.maxSize) {
       this.isShimmer = true;
     }
+
     if (this.isShimmer) {
       this.shimmer();
     } else {
       this.size += this.sizeStep;
     }
+
     this.draw();
   }
 
   disappear() {
     this.isShimmer = false;
     this.counter = 0;
+
     if (this.size <= 0) {
       this.isIdle = true;
       return;
-    } else {
-      this.size = Math.max(0, this.size - 0.1);
     }
+
+    this.size = Math.max(0, this.size - 0.1);
     this.draw();
   }
 
@@ -70,17 +79,16 @@ class Pixel {
     } else if (this.size <= this.minSize) {
       this.isReverse = false;
     }
-    if (this.isReverse) {
-      this.size -= this.speed;
-    } else {
-      this.size += this.speed;
-    }
+
+    this.size += this.isReverse ? -this.speed : this.speed;
   }
 }
 
 class PixelCanvas extends HTMLElement {
+  static sheet = null;
+
   static register(tag = "pixel-canvas") {
-    if ("customElements" in window) {
+    if ("customElements" in window && !customElements.get(tag)) {
       customElements.define(tag, this);
     }
   }
@@ -94,66 +102,64 @@ class PixelCanvas extends HTMLElement {
     }
   `;
 
-  get colors() {
-    return this.dataset.colors?.split(",").map(c => c.trim()) || ["#f8fafc", "#f1f5f9", "#cbd5e1"];
-  }
-
-  get gap() {
-    const value = this.dataset.gap || 5;
-    const min = 4;
-    const max = 50;
-    if (value <= min) return min;
-    else if (value >= max) return max;
-    else return parseInt(value);
-  }
-
-  get speed() {
-    const value = this.dataset.speed || 35;
-    const min = 0;
-    const max = 100;
-    const throttle = 0.001;
-    if (value <= min || this.reducedMotion) return min;
-    else if (value >= max) return max * throttle;
-    else return parseInt(value) * throttle;
-  }
-
   connectedCallback() {
-    const canvas = document.createElement("canvas");
-    const sheet = new CSSStyleSheet();
-
-    this._parent = this.parentNode;
-    this.shadowroot = this.attachShadow({ mode: "open" });
-
-    sheet.replaceSync(PixelCanvas.css);
-    this.shadowroot.adoptedStyleSheets = [sheet];
-    this.shadowroot.append(canvas);
-    this.canvas = this.shadowroot.querySelector("canvas");
-    this.ctx = this.canvas.getContext("2d");
-    this.timeInterval = 1000 / 60;
+    this._parent = this.parentElement;
+    this.motionQuery =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : null;
+    this.reducedMotion = this.motionQuery ? this.motionQuery.matches : false;
+    this.animation = null;
+    this.currentAnimationType = null;
     this.timePrevious = performance.now();
-    this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    this.mountShadowCanvas();
+    this.ctx = this.canvas.getContext("2d");
+    if (!this.ctx) {
+      return;
+    }
 
     this.init();
-    this.resizeObserver = new ResizeObserver(() => this.init());
-    this.resizeObserver.observe(this);
-
-    this._parent.addEventListener("mouseenter", this);
-    this._parent.addEventListener("mouseleave", this);
-    this._parent.addEventListener("focusin", this);
-    this._parent.addEventListener("focusout", this);
+    this.observeResize();
+    this.observeMotionPreference();
+    this.bindParentEvents();
   }
 
   disconnectedCallback() {
-    this.resizeObserver.disconnect();
-    this._parent.removeEventListener("mouseenter", this);
-    this._parent.removeEventListener("mouseleave", this);
-    this._parent.removeEventListener("focusin", this);
-    this._parent.removeEventListener("focusout", this);
+    cancelAnimationFrame(this.animation);
+    this.animation = null;
+
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+    }
+
+    if (this._handleWindowResize) {
+      window.removeEventListener("resize", this._handleWindowResize);
+    }
+
+    if (this.motionQuery) {
+      if (typeof this.motionQuery.removeEventListener === "function") {
+        this.motionQuery.removeEventListener("change", this._handleMotionChange);
+      } else if (typeof this.motionQuery.removeListener === "function") {
+        this.motionQuery.removeListener(this._handleMotionChange);
+      }
+    }
+
+    if (this._parent) {
+      this._parent.removeEventListener("mouseenter", this);
+      this._parent.removeEventListener("mouseleave", this);
+      this._parent.removeEventListener("focusin", this);
+      this._parent.removeEventListener("focusout", this);
+    }
+
     delete this._parent;
   }
 
   handleEvent(event) {
-    this[`on${event.type}`](event);
+    const handler = this[`on${event.type}`];
+    if (typeof handler === "function") {
+      handler.call(this, event);
+    }
   }
 
   onmouseenter() {
@@ -161,93 +167,212 @@ class PixelCanvas extends HTMLElement {
   }
 
   onmouseleave() {
-      this.handleAnimation("disappear");
-      // 显式强制失焦，防止 focus-within 影响 CSS
-      if (document.activeElement && this._parent.contains(document.activeElement)) {
-          document.activeElement.blur();
-      }
+    this.handleAnimation("disappear");
   }
-  onfocusin(e) {
-    if (e.currentTarget.contains(e.relatedTarget)) return;
+
+  onfocusin(event) {
+    if (event.currentTarget.contains(event.relatedTarget)) {
+      return;
+    }
+
     this.handleAnimation("appear");
   }
 
-  onfocusout(e) {
-    if (e.currentTarget.contains(e.relatedTarget)) return;
+  onfocusout(event) {
+    if (event.currentTarget.contains(event.relatedTarget)) {
+      return;
+    }
+
     this.handleAnimation("disappear");
   }
 
   handleAnimation(name) {
-      // 移除这个 return 限制，允许强制切换状态
-      // if (this.currentAnimationType === name && this.animation !== null) return;
+    if (!this.pixels || this.pixels.length === 0) {
+      return;
+    }
 
-      cancelAnimationFrame(this.animation);
+    if (this.currentAnimationType === name && this.animation !== null) {
+      return;
+    }
 
-      if (name === "disappear") {
-          for (let i = 0; i < this.pixels.length; i++) {
-              this.pixels[i].isIdle = false;
-              this.pixels[i].isShimmer = false;
-              // 确保像素开始缩小
-          }
-      } else if (name === "appear") {
-          for (let i = 0; i < this.pixels.length; i++) {
-              this.pixels[i].isIdle = false;
-              this.pixels[i].counter = 0; // 重置延迟计数器
-          }
+    this.currentAnimationType = name;
+    cancelAnimationFrame(this.animation);
+
+    for (let i = 0; i < this.pixels.length; i += 1) {
+      const pixel = this.pixels[i];
+      pixel.isIdle = false;
+
+      if (name === "appear") {
+        pixel.counter = 0;
+      } else {
+        pixel.isShimmer = false;
       }
+    }
 
-      this.animation = this.animate(name);
+    this.animate(name);
   }
 
   init() {
-    const rect = this.getBoundingClientRect();
-    const width = Math.floor(rect.width);
-    const height = Math.floor(rect.height);
+    if (!this.canvas || !this.ctx) {
+      return;
+    }
 
+    const rect = this.getBoundingClientRect();
+    const width = Math.max(0, Math.floor(rect.width));
+    const height = Math.max(0, Math.floor(rect.height));
+
+    cancelAnimationFrame(this.animation);
+    this.animation = null;
+    this.currentAnimationType = null;
+    this.refreshConfig();
+    this.timePrevious = performance.now();
     this.pixels = [];
     this.canvas.width = width;
     this.canvas.height = height;
     this.canvas.style.width = `${width}px`;
     this.canvas.style.height = `${height}px`;
-    this.createPixels();
+    this.ctx.clearRect(0, 0, width, height);
+
+    if (width === 0 || height === 0) {
+      return;
+    }
+
+    this.createPixels(width, height);
   }
 
-  getDistanceToCanvasCenter(x, y) {
-    const dx = x - this.canvas.width / 2;
-    const dy = y - this.canvas.height / 2;
-    return Math.sqrt(dx * dx + dy * dy);
+  animate(fnName) {
+    if (fnName !== this.currentAnimationType) {
+      return;
+    }
+
+    this.animation = requestAnimationFrame(() => this.animate(fnName));
+
+    const timeNow = performance.now();
+    const timePassed = timeNow - this.timePrevious;
+
+    if (timePassed < FRAME_INTERVAL) {
+      return;
+    }
+
+    this.timePrevious = timeNow - (timePassed % FRAME_INTERVAL);
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    let hasActivePixels = false;
+
+    for (let i = 0; i < this.pixels.length; i += 1) {
+      const pixel = this.pixels[i];
+      pixel[fnName]();
+
+      if (fnName === "disappear" && !pixel.isIdle) {
+        hasActivePixels = true;
+      }
+    }
+
+    if (fnName === "disappear" && !hasActivePixels) {
+      cancelAnimationFrame(this.animation);
+      this.animation = null;
+    }
   }
 
-  createPixels() {
-    for (let x = 0; x < this.canvas.width; x += this.gap) {
-      for (let y = 0; y < this.canvas.height; y += this.gap) {
-        const color = this.colors[Math.floor(Math.random() * this.colors.length)];
-        const delay = this.reducedMotion ? 0 : this.getDistanceToCanvasCenter(x, y);
-        this.pixels.push(new Pixel(this.canvas, this.ctx, x, y, color, this.speed, delay));
+  refreshConfig() {
+    const colors = this.dataset.colors
+      ?.split(",")
+      .map((color) => color.trim())
+      .filter(Boolean);
+    const speed = this.getClampedInteger(this.dataset.speed, DEFAULT_SPEED, MIN_SPEED, MAX_SPEED);
+
+    this.colors = colors && colors.length > 0 ? colors : DEFAULT_COLORS;
+    this.gap = this.getClampedInteger(this.dataset.gap, DEFAULT_GAP, MIN_GAP, MAX_GAP);
+    this.speed = this.reducedMotion ? 0 : speed * SPEED_THROTTLE;
+  }
+
+  createPixels(width, height) {
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const counterBase = (width + height) * 0.01;
+    const gap = this.gap;
+    const colors = this.colors;
+    const speed = this.speed;
+
+    for (let x = 0; x < width; x += gap) {
+      for (let y = 0; y < height; y += gap) {
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const delay = this.reducedMotion ? 0 : Math.hypot(x - centerX, y - centerY);
+
+        this.pixels.push(
+          new Pixel(this.ctx, x, y, color, speed, delay, counterBase)
+        );
       }
     }
   }
 
-  animate(fnName) {
-    this.currentAnimationType = fnName;
-    this.animation = requestAnimationFrame(() => this.animate(fnName));
-    const timeNow = performance.now();
-    const timePassed = timeNow - this.timePrevious;
-
-    if (timePassed < this.timeInterval) return;
-
-    this.timePrevious = timeNow - (timePassed % this.timeInterval);
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-    for (let i = 0; i < this.pixels.length; i++) {
-      this.pixels[i][fnName]();
+  observeResize() {
+    if ("ResizeObserver" in window) {
+      this.resizeObserver = new ResizeObserver(() => this.init());
+      this.resizeObserver.observe(this);
+      return;
     }
 
-    // 检查是否所有像素都已空闲，或者动画类型已改变
-    if (this.pixels.every((pixel) => pixel.isIdle)) {
-      cancelAnimationFrame(this.animation);
-      this.animation = null;
+    this._handleWindowResize = () => this.init();
+    window.addEventListener("resize", this._handleWindowResize);
+  }
+
+  observeMotionPreference() {
+    if (!this.motionQuery) {
+      return;
     }
+
+    this._handleMotionChange = (event) => {
+      this.reducedMotion = event.matches;
+      this.init();
+    };
+
+    if (typeof this.motionQuery.addEventListener === "function") {
+      this.motionQuery.addEventListener("change", this._handleMotionChange);
+    } else if (typeof this.motionQuery.addListener === "function") {
+      this.motionQuery.addListener(this._handleMotionChange);
+    }
+  }
+
+  bindParentEvents() {
+    if (!this._parent) {
+      return;
+    }
+
+    this._parent.addEventListener("mouseenter", this);
+    this._parent.addEventListener("mouseleave", this);
+    this._parent.addEventListener("focusin", this);
+    this._parent.addEventListener("focusout", this);
+  }
+
+  getClampedInteger(value, fallback, min, max) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      return fallback;
+    }
+
+    return Math.min(max, Math.max(min, Math.floor(parsed)));
+  }
+
+  mountShadowCanvas() {
+    const canvas = document.createElement("canvas");
+    const root = this.shadowRoot || this.attachShadow({ mode: "open" });
+
+    if ("adoptedStyleSheets" in root && typeof CSSStyleSheet === "function") {
+      if (!PixelCanvas.sheet) {
+        PixelCanvas.sheet = new CSSStyleSheet();
+        PixelCanvas.sheet.replaceSync(PixelCanvas.css);
+      }
+
+      root.adoptedStyleSheets = [PixelCanvas.sheet];
+      root.replaceChildren(canvas);
+    } else {
+      const style = document.createElement("style");
+      style.textContent = PixelCanvas.css;
+      root.replaceChildren(style, canvas);
+    }
+
+    this.canvas = canvas;
   }
 }
 

@@ -9,17 +9,29 @@
     <script src="assets/js/theme-init.js"></script>
 </head>
 <body>
-    <!-- 日夜切换器 -->
-    <div class="theme-toggle">
-        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
-        <label for="themeToggle" class="theme-toggle__btn">
-            <span class="theme-toggle__feature"></span>
-        </label>
-    </div>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="Logo" class="logo-icon">
+                <div class="logo-text-desktop">CSCSourceFormatter</div>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <a href="index.html" class="nav-btn">返回工具</a>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <div id="background-wrapper"></div>
     <div class="container">
-        <a href="index.html" class="back-btn">← 返回首页</a>
         <h1 data-shadow='Word文档初始化工具'>Word 文档初始化工具</h1>
         <form id="wordForm">
             <div class="main-content">

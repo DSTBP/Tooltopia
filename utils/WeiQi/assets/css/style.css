@@ -7,7 +7,7 @@ body {
     font-family: 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background: radial-gradient(at 50% 0, transparent, #080808), repeating-conic-gradient(hsla(0, 0%, 0%, .235) 0% 25%, transparent 0% 50%) 0 0 / 0.375em 0.375em, #3b3b3b;
     min-height: 100vh;
-    padding: 20px;
+    padding: 0;
     -webkit-font-smoothing: antialiased;
     display: flex;
     flex-direction: column;
@@ -15,12 +15,24 @@ body {
     color: hsl(0 0% 90%);
 }
 
-.page-container { max-width: 1200px; width: 100%; position: relative; z-index: 2; flex: 1; }
+.page-container { max-width: 1200px; width: 100%; position: relative; z-index: 2; flex: 1; padding: 20px 1rem; }
 .container { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(20px) saturate(1.2); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); overflow: hidden; }
 
 /* --- 头部与导航 --- */
-.back-btn { display: inline-block; margin-bottom: 1.5rem; color: hsl(0 0% 85%); text-decoration: none; transition: color 0.3s ease; }
-.back-btn:hover { color: #fff; }
+/* Navbar (aligned with SRT2TXT/ExcelGrep) */
+.navbar { position: sticky; top: 0; z-index: 50; width: 100%; align-self: stretch; background-color: rgba(0, 0, 0, 0.4); border-bottom: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px) saturate(1.2); -webkit-backdrop-filter: blur(12px) saturate(1.2); }
+.nav-content { max-width: 80rem; margin: 0 auto; padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.logo-wrapper { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+.logo-icon { width: 2.25rem; height: 2.25rem; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.3); object-fit: cover; }
+.logo-text-desktop { font-weight: 900; color: hsl(0 0% 95%); letter-spacing: 0.05em; font-size: 1.125rem; font-family: 'Righteous', 'Microsoft YaHei', sans-serif; }
+.nav-actions { display: flex; align-items: center; gap: 1rem; flex: 1; justify-content: flex-end; }
+.nav-btn { -webkit-tap-highlight-color: #0000; cursor: pointer; border-radius: 12px; padding: 0.5rem 1rem; font-size: 0.875rem; background: #0000; border: 1px solid #0000; position: relative; color: white; transition: translate 0.1s ease-out, scale 0.1s ease-out; font-weight: 500; display: flex; align-items: center; gap: 0.5rem; justify-content: center; text-decoration: none; }
+.nav-btn::before,
+.nav-btn::after { content: ''; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; }
+.nav-btn::before { z-index: -1; background: linear-gradient(hsl(0 0% 100% / 0.18), hsl(0 0% 4% / 0.7)); backdrop-filter: saturate(2) contrast(1) blur(10px); }
+.nav-btn::after { box-shadow: 0 0 1px 0.8px hsl(0 0% 100% / 0.8) inset; mask: linear-gradient(-35deg, #ffffff80, #ffffff30 30% 60%, #fff); }
+.nav-btn:active:not(:disabled) { scale: 0.98; translate: 0 1px; }
+.nav-btn:hover:not(:disabled) { scale: 1.02; }
 
 .header { text-align: center; margin-bottom: 2rem; }
 .header h1 {
@@ -154,8 +166,13 @@ select option { background: #1e293b; color: #e2e8f0; }
 body.day-mode { background: #f0f4f8 url(../../../../assets/image/day-background.png) repeat; color: #2d3748; }
 body.day-mode .container { background: hsla(0, 0%, 100%, 0.4); border-color: rgba(200, 200, 200, 0.4); box-shadow: 5px 3px 30px rgba(0, 0, 0, 0.1); }
 body.day-mode .header h1 { color: #2d3748; text-shadow: .03em .03em 0 hsla(200, 60%, 60%, 1); }
-body.day-mode .subtitle, body.day-mode .back-btn { color: #4a5568; }
-body.day-mode .back-btn:hover { color: #1a202c; }
+body.day-mode .subtitle { color: #4a5568; }
+body.day-mode .navbar { background-color: rgba(255, 255, 255, 0.7); border-bottom: 1px solid rgba(0, 0, 0, 0.1); }
+body.day-mode .logo-text-desktop { color: #1a202c; font-weight: bold; text-shadow: none; }
+body.day-mode .nav-btn { background: #ffffff; color: #1a202c; border: 2px solid #cbd5e0; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); }
+body.day-mode .nav-btn::before { background: none; backdrop-filter: none; }
+body.day-mode .nav-btn::after { display: none; }
+body.day-mode .nav-btn:hover:not(:disabled) { background: #f7fafc; border-color: #a0aec0; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
 
 /* 修复日间模式下设置框边框不明显的问题 */
 body.day-mode .settings-group {
@@ -204,9 +221,19 @@ body.day-mode .result-header.error { background: rgba(244, 67, 54, 0.2); color: 
     .rules-toggle-text { font-size: 1.1rem; }
 }
 @media (max-width: 480px) {
-    body { padding: 10px; }
+    body { padding: 0; }
     .header h1 { font-size: 2em; }
     .btn { padding: 12px; }
+}
+
+@media (max-width: 639px) {
+    .nav-content { flex-direction: column; gap: 0.75rem; align-items: center; padding: 0.75rem 1rem; }
+    .logo-wrapper { justify-content: center; width: 100%; }
+    .nav-actions { justify-content: center; width: 100%; gap: 0.75rem; flex-wrap: wrap; }
+}
+
+@media (min-width: 640px) {
+    .nav-content { flex-direction: row; padding: 0.75rem 1.5rem; }
 }
 
 /* --- 滚动条 --- */
@@ -214,6 +241,9 @@ body.day-mode .result-header.error { background: rgba(244, 67, 54, 0.2); color: 
 ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); border-radius: 4px; }
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
 body.day-mode ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); }
+
+.navbar .theme-toggle-container { width: 60px; height: 34px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.navbar .theme-toggle { position: relative; top: auto; right: auto; bottom: auto; left: auto; z-index: 1000; user-select: none; transform: scale(0.45); transform-origin: center; }
 
 /* --- 主题切换开关 --- */
 .theme-toggle { position: fixed; top: 20px; right: 20px; z-index: 1000; transform: scale(0.64); transform-origin: top right; }
@@ -239,7 +269,8 @@ body.day-mode ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); }
     width: 100%;
     padding: 2rem 1rem;
     text-align: center;
-    margin-top: auto;
+    margin-top: 3rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .footer p {
@@ -247,12 +278,15 @@ body.day-mode ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); }
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.4);
     transition: color 300ms ease-out;
+    line-height: 1.8;
 }
 
 /* 日间模式页脚样式 */
 body.day-mode .footer p {
     color: rgba(0, 0, 0, 0.5);
 }
+
+body.day-mode .footer { border-top-color: rgba(0,0,0,0.1); }
 
 /* 页脚响应式 */
 @media (max-width: 768px) {

@@ -1,570 +1,482 @@
-// 全局变量
-let tableData = []; // 表格数据（包含表头）
-let headers = []; // 表头
-let rows = []; // 数据行
-let searchResults = []; // 搜索结果
-let conditionCounter = 0; // 条件计数器
+const SUPPORTED_FILE_EXTENSIONS = ['.xlsx', '.xls', '.csv'];
+const DEFAULT_ENCODING_CANDIDATES = ['utf-8', 'gbk', 'gb2312', 'big5', 'shift-jis', 'windows-1252'];
+const DEFAULT_PREVIEW_ROW_COUNT = 5;
 
-// 页面加载完成检查依赖
-window.addEventListener('load', function() {
+const AppState = {
+    tableData: [],
+    headers: [],
+    rows: [],
+    searchResults: [],
+    conditionCounter: 0,
+    selectedFile: null
+};
+
+const UI = {};
+
+window.addEventListener('load', initApp);
+
+function initApp() {
+    cacheDom();
     checkDependencies();
     initEventListeners();
-});
+}
 
-// 检查依赖库
+function cacheDom() {
+    Object.assign(UI, {
+        fileInput: document.getElementById('fileInput'),
+        fileUploadArea: document.getElementById('fileUploadArea'),
+        fileName: document.getElementById('fileName'),
+        textInput: document.getElementById('textInput'),
+        encodingSelect: document.getElementById('encodingSelect'),
+        loadTableBtn: document.getElementById('loadTableBtn'),
+        continueBtn: document.getElementById('continueBtn'),
+        addConditionBtn: document.getElementById('addConditionBtn'),
+        searchBtn: document.getElementById('searchBtn'),
+        exportExcelBtn: document.getElementById('exportExcelBtn'),
+        exportCsvBtn: document.getElementById('exportCsvBtn'),
+        tablePreview: document.getElementById('tablePreview'),
+        searchConditions: document.getElementById('searchConditions'),
+        searchResults: document.getElementById('searchResults'),
+        exportArea: document.querySelector('.export-area'),
+        step2: document.getElementById('step2'),
+        step3: document.getElementById('step3'),
+        step4: document.getElementById('step4')
+    });
+}
+
 function checkDependencies() {
     const issues = [];
 
     if (typeof XLSX === 'undefined') {
-        issues.push('Excel处理库未加载');
+        issues.push('Excel processing library is unavailable');
     }
 
     if (typeof Papa === 'undefined') {
-        issues.push('CSV处理库未加载');
+        issues.push('CSV processing library is unavailable');
     }
 
     if (issues.length > 0) {
-        console.warn('依赖库加载问题:', issues.join(', '));
-        alert('警告：部分功能库未加载，Excel和CSV文件可能无法正常使用');
+        console.warn('Dependency load issue:', issues.join(', '));
+        alert('警告：部分功能依赖库未加载，Excel 或 CSV 文件可能无法正常使用。');
     }
-
-    return issues.length === 0;
 }
 
-// 初始化事件监听器
 function initEventListeners() {
-    const fileInput = document.getElementById('fileInput');
-    const fileUploadArea = document.getElementById('fileUploadArea');
+    UI.fileUploadArea.addEventListener('click', () => UI.fileInput.click());
 
-    // 点击上传区域触发文件选择
-    fileUploadArea.addEventListener('click', () => {
-        fileInput.click();
-    });
-
-    // 文件选择
-    fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
+    UI.fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
         if (file) {
-            document.getElementById('fileName').textContent = `已选择: ${file.name}`;
+            setSelectedFile(file);
         }
     });
 
-    // 拖拽上传
-    fileUploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        fileUploadArea.classList.add('drag-over');
+    UI.fileUploadArea.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        UI.fileUploadArea.classList.add('drag-over');
     });
 
-    fileUploadArea.addEventListener('dragleave', () => {
-        fileUploadArea.classList.remove('drag-over');
+    UI.fileUploadArea.addEventListener('dragleave', () => {
+        UI.fileUploadArea.classList.remove('drag-over');
     });
 
-    fileUploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        fileUploadArea.classList.remove('drag-over');
+    UI.fileUploadArea.addEventListener('drop', (event) => {
+        event.preventDefault();
+        UI.fileUploadArea.classList.remove('drag-over');
 
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            const file = files[0];
-            const validExtensions = ['.xlsx', '.xls', '.csv'];
-            const isValid = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
-
-            if (isValid) {
-                // 将文件设置到 input 元素
-                const dt = new DataTransfer();
-                dt.items.add(file);
-                fileInput.files = dt.files;
-
-                document.getElementById('fileName').textContent = `已选择: ${file.name}`;
-            } else {
-                alert('请选择 Excel (.xlsx, .xls) 或 CSV 文件');
-            }
+        const file = event.dataTransfer?.files?.[0];
+        if (!file) {
+            return;
         }
+
+        if (!isSupportedFile(file.name)) {
+            alert('请选择 Excel（.xlsx、.xls）或 CSV 文件。');
+            return;
+        }
+
+        setSelectedFile(file);
     });
 
-    // 载入表格按钮
-    document.getElementById('loadTableBtn').addEventListener('click', loadTable);
-
-    // 继续按钮
-    document.getElementById('continueBtn').addEventListener('click', function() {
-        showStep3();
-        addSearchCondition(); // 自动添加第一个搜索条件
-    });
-
-    // 添加条件按钮
-    document.getElementById('addConditionBtn').addEventListener('click', addSearchCondition);
-
-    // 搜索按钮
-    document.getElementById('searchBtn').addEventListener('click', performSearch);
-
-    // 导出按钮
-    document.getElementById('exportExcelBtn').addEventListener('click', () => exportResults('excel'));
-    document.getElementById('exportCsvBtn').addEventListener('click', () => exportResults('csv'));
+    UI.loadTableBtn.addEventListener('click', loadTable);
+    UI.continueBtn.addEventListener('click', showStep3);
+    UI.addConditionBtn.addEventListener('click', addSearchCondition);
+    UI.searchBtn.addEventListener('click', performSearch);
+    UI.exportExcelBtn.addEventListener('click', () => exportResults('excel'));
+    UI.exportCsvBtn.addEventListener('click', () => exportResults('csv'));
 }
 
-// 载入表格
-async function loadTable() {
-    const fileInput = document.getElementById('fileInput');
-    const textInput = document.getElementById('textInput');
-    const btn = document.getElementById('loadTableBtn');
+function isSupportedFile(fileName) {
+    const lowerName = fileName.toLowerCase();
+    return SUPPORTED_FILE_EXTENSIONS.some((extension) => lowerName.endsWith(extension));
+}
 
-    const hasFile = fileInput.files.length > 0;
-    const hasText = textInput.value.trim().length > 0;
+function setSelectedFile(file) {
+    AppState.selectedFile = file;
+    UI.fileName.textContent = `已选择: ${file.name}`;
+
+    try {
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        UI.fileInput.files = dataTransfer.files;
+    } catch (error) {
+        // Some browsers restrict programmatic FileList assignment.
+    }
+}
+
+function getSelectedFile() {
+    return AppState.selectedFile || UI.fileInput.files[0] || null;
+}
+
+function resetSearchState() {
+    AppState.searchResults = [];
+    AppState.conditionCounter = 0;
+    UI.searchConditions.innerHTML = '';
+    UI.searchResults.innerHTML = '';
+    UI.exportArea.style.display = 'none';
+    UI.step3.style.display = 'none';
+    UI.step4.style.display = 'none';
+}
+
+async function loadTable() {
+    const file = getSelectedFile();
+    const text = UI.textInput.value.trim();
+    const hasFile = Boolean(file);
+    const hasText = text.length > 0;
 
     if (!hasFile && !hasText) {
         alert('请选择文件或粘贴表格数据！');
         return;
     }
 
+    UI.loadTableBtn.disabled = true;
+    UI.loadTableBtn.textContent = '正在加载...';
+
     try {
-        btn.disabled = true;
-        btn.textContent = '正在加载...';
+        AppState.tableData = hasFile ? await loadFromFile(file) : loadFromText(text);
 
-        if (hasFile) {
-            const file = fileInput.files[0];
-            await loadFromFile(file);
-        } else {
-            loadFromText(textInput.value);
-        }
-
-        if (tableData.length === 0) {
+        if (AppState.tableData.length === 0) {
             throw new Error('未能解析到有效的表格数据');
         }
 
-        // 提取表头和数据行
-        headers = tableData[0];
-        rows = tableData.slice(1);
+        AppState.headers = AppState.tableData[0];
+        AppState.rows = AppState.tableData.slice(1);
 
-        if (rows.length === 0) {
+        if (AppState.rows.length === 0) {
             throw new Error('表格中没有数据行');
         }
 
-        // 过滤掉空列（列名为空或只有空白字符的列）
         filterEmptyColumns();
-
+        resetSearchState();
         showStep2();
-
     } catch (error) {
-        console.error('加载错误:', error);
-        alert('加载失败: ' + error.message);
+        console.error('Load table failed:', error);
+        alert(`加载失败: ${error.message}`);
     } finally {
-        btn.disabled = false;
-        btn.textContent = '载入表格';
+        UI.loadTableBtn.disabled = false;
+        UI.loadTableBtn.textContent = '载入表格';
     }
 }
 
-// 从文件加载
 async function loadFromFile(file) {
     const fileName = file.name.toLowerCase();
 
     if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
-        await loadExcelFile(file);
-    } else if (fileName.endsWith('.csv')) {
-        await loadCsvFile(file);
-    } else {
-        throw new Error('不支持的文件格式！请选择 Excel 或 CSV 文件。');
+        return loadExcelFile(file);
     }
+
+    if (fileName.endsWith('.csv')) {
+        return loadCsvFile(file);
+    }
+
+    throw new Error('不支持的文件格式，请选择 Excel 或 CSV 文件。');
 }
 
-// 加载 Excel 文件
+function getCellText(cell) {
+    return cell == null ? '' : String(cell);
+}
+
+function normalizeTableData(data) {
+    return data
+        .filter((row) => Array.isArray(row))
+        .map((row) => row.map((cell) => getCellText(cell)))
+        .filter((row) => row.some((cell) => cell.trim() !== ''));
+}
+
+function normalizeRowLength(row, targetLength) {
+    const normalized = row.slice(0, targetLength);
+    while (normalized.length < targetLength) {
+        normalized.push('');
+    }
+    return normalized;
+}
+
 function loadExcelFile(file) {
     return new Promise((resolve, reject) => {
+        if (typeof XLSX === 'undefined') {
+            reject(new Error('Excel 处理依赖未加载'));
+            return;
+        }
+
         const reader = new FileReader();
-
-        reader.onload = function(e) {
+        reader.onload = (event) => {
             try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-
-                // 读取第一个工作表
+                const workbook = XLSX.read(new Uint8Array(event.target.result), { type: 'array' });
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
-
-                // 转换为 JSON 数组（保留表头）
-                tableData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
-
-                // 过滤空行
-                tableData = tableData.filter(row => row.some(cell => cell !== ''));
-
-                console.log('Excel加载成功，共', tableData.length, '行');
-                resolve();
+                const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                resolve(normalizeTableData(data));
             } catch (error) {
-                reject(new Error('Excel文件解析失败: ' + error.message));
+                reject(new Error(`Excel 文件解析失败: ${error.message}`));
             }
         };
-
-        reader.onerror = () => reject(new Error('读取Excel文件失败'));
+        reader.onerror = () => reject(new Error('读取 Excel 文件失败'));
         reader.readAsArrayBuffer(file);
     });
 }
 
-// 检测文本编码质量（检测乱码）
 function detectEncodingQuality(text) {
-    if (!text || text.length === 0) return { badChars: 999, chineseRatio: 0, quality: false };
-
-    // 检测常见的乱码特征
-    const garbledPatterns = [
-        /[\ufffd]/g, // 替换字符 �
-        /[锟斤拷]/g,  // 典型的UTF-8被误读为GBK的乱码
-        /[\u0000-\u0008\u000b-\u000c\u000e-\u001f]/g // 控制字符
-    ];
-
-    let badChars = 0;
-    for (let pattern of garbledPatterns) {
-        const matches = text.match(pattern);
-        if (matches) {
-            badChars += matches.length;
-        }
+    if (!text) {
+        return { badChars: Number.MAX_SAFE_INTEGER, readableRatio: 0 };
     }
 
-    // 计算中文字符比例（用于判断是否成功解码中文）
-    const chineseChars = text.match(/[\u4e00-\u9fa5]/g);
-    const totalChars = text.length;
-    const chineseRatio = chineseChars ? chineseChars.length / totalChars : 0;
-
-    // 检测是否有可读的ASCII或中文
-    const hasReadableContent = /[a-zA-Z0-9\u4e00-\u9fa5]/.test(text);
+    const replacementChars = (text.match(/\ufffd/g) || []).length;
+    const garbledChars = (text.match(/[ÃÂ�]/g) || []).length;
+    const readableChars = (text.match(/[a-zA-Z0-9\u4e00-\u9fa5]/g) || []).length;
 
     return {
-        badChars: badChars,
-        chineseRatio: chineseRatio,
-        quality: badChars === 0 && hasReadableContent
+        badChars: replacementChars + garbledChars,
+        readableRatio: readableChars / text.length
     };
 }
 
-// 使用GBK编码表手动解码（简化版本，支持常用汉字）
-function decodeGBK(bytes) {
-    const uint8Array = new Uint8Array(bytes);
-    let result = '';
-    let i = 0;
-
-    while (i < uint8Array.length) {
-        const byte = uint8Array[i];
-
-        // ASCII范围
-        if (byte < 0x80) {
-            result += String.fromCharCode(byte);
-            i++;
-        }
-        // GBK双字节
-        else if (i + 1 < uint8Array.length) {
-            const byte2 = uint8Array[i + 1];
-            const code = (byte << 8) | byte2;
-
-            // 尝试使用浏览器的TextDecoder（如果支持GBK）
-            try {
-                const decoder = new TextDecoder('gbk');
-                const chunk = decoder.decode(new Uint8Array([byte, byte2]));
-                if (chunk && chunk !== '�') {
-                    result += chunk;
-                    i += 2;
-                    continue;
-                }
-            } catch (e) {
-                // GBK不支持，继续尝试其他方法
-            }
-
-            // 如果TextDecoder不支持，使用fallback
-            // 这里简化处理：将双字节序列保留
-            result += String.fromCharCode(byte) + String.fromCharCode(byte2);
-            i += 2;
-        } else {
-            result += String.fromCharCode(byte);
-            i++;
-        }
-    }
-
-    return result;
+function normalizeEncodingName(encoding) {
+    const lower = encoding.toLowerCase();
+    return lower === 'gb2312' ? 'gbk' : lower;
 }
 
-// 尝试使用指定编码解码
 function tryDecode(arrayBuffer, encoding) {
     try {
-        let text = '';
-
-        // 特殊处理GBK
-        if (encoding.toLowerCase() === 'gbk' || encoding.toLowerCase() === 'gb2312') {
-            // 首先尝试使用TextDecoder
-            try {
-                const decoder = new TextDecoder(encoding, { fatal: false });
-                text = decoder.decode(arrayBuffer);
-            } catch (e) {
-                console.log(`TextDecoder不支持${encoding}，尝试手动解码`);
-                text = decodeGBK(arrayBuffer);
-            }
-        } else {
-            // 其他编码使用TextDecoder
-            const decoder = new TextDecoder(encoding, { fatal: false });
-            text = decoder.decode(arrayBuffer);
-        }
-
-        const quality = detectEncodingQuality(text);
-        console.log(`${encoding} 编码质量:`, quality);
-        return { text, quality: quality.quality, badChars: quality.badChars, chineseRatio: quality.chineseRatio };
+        const decoder = new TextDecoder(normalizeEncodingName(encoding), { fatal: false });
+        const text = decoder.decode(arrayBuffer);
+        return { encoding, text, quality: detectEncodingQuality(text) };
     } catch (error) {
-        console.log(`${encoding} 解码失败:`, error.message);
         return null;
     }
 }
 
-// 自动检测编码
-function autoDetectEncoding(arrayBuffer) {
-    // 使用jschardet检测编码
-    if (typeof jschardet !== 'undefined') {
-        try {
-            const uint8Array = new Uint8Array(arrayBuffer);
-            const detected = jschardet.detect(uint8Array);
-            console.log('jschardet检测结果:', detected);
-
-            if (detected && detected.encoding) {
-                let encoding = detected.encoding.toLowerCase();
-                // 映射编码名称
-                if (encoding === 'gb2312' || encoding === 'gb18030') {
-                    encoding = 'gbk';
-                }
-                if (detected.confidence > 0.7) {
-                    return encoding;
-                }
-            }
-        } catch (e) {
-            console.log('jschardet检测失败:', e);
-        }
+function detectEncoding(arrayBuffer) {
+    if (typeof jschardet === 'undefined') {
+        return null;
     }
 
-    return null;
+    try {
+        const detected = jschardet.detect(new Uint8Array(arrayBuffer));
+        if (!detected?.encoding || detected.confidence <= 0.7) {
+            return null;
+        }
+        return normalizeEncodingName(detected.encoding);
+    } catch (error) {
+        console.warn('Encoding detection failed:', error);
+        return null;
+    }
 }
 
-// 加载 CSV 文件（支持多种编码）
+function pickBestDecodeResult(results) {
+    return results.reduce((best, current) => {
+        if (!best) {
+            return current;
+        }
+
+        if (current.quality.badChars !== best.quality.badChars) {
+            return current.quality.badChars < best.quality.badChars ? current : best;
+        }
+
+        return current.quality.readableRatio > best.quality.readableRatio ? current : best;
+    }, null);
+}
+
+function parseCsvText(text) {
+    if (typeof Papa === 'undefined') {
+        throw new Error('CSV 处理依赖未加载');
+    }
+
+    const result = Papa.parse(text, {
+        skipEmptyLines: true
+    });
+
+    if (result.errors?.length) {
+        throw new Error(result.errors[0].message || 'CSV 解析失败');
+    }
+
+    return normalizeTableData(result.data);
+}
+
 function loadCsvFile(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-
-        reader.onload = function(e) {
+        reader.onload = (event) => {
             try {
-                const arrayBuffer = e.target.result;
-                let bestText = '';
-                let bestEncoding = 'utf-8';
-
-                // 获取用户选择的编码
-                const selectedEncoding = document.getElementById('encodingSelect')?.value || 'auto';
+                const arrayBuffer = event.target.result;
+                const selectedEncoding = UI.encodingSelect?.value || 'auto';
+                let decodedText = '';
 
                 if (selectedEncoding !== 'auto') {
-                    // 用户手动选择了编码
-                    console.log(`使用用户选择的编码: ${selectedEncoding}`);
-                    const result = tryDecode(arrayBuffer, selectedEncoding);
-                    if (result && result.text) {
-                        bestText = result.text;
-                        bestEncoding = selectedEncoding;
-                        console.log(`编码质量评估:`, result);
-                    } else {
+                    const manualResult = tryDecode(arrayBuffer, selectedEncoding);
+                    if (!manualResult) {
                         throw new Error(`无法使用 ${selectedEncoding} 编码解析文件`);
                     }
+                    decodedText = manualResult.text;
                 } else {
-                    // 自动检测编码
-                    console.log('自动检测编码...');
+                    const detectedEncoding = detectEncoding(arrayBuffer);
+                    const encodingCandidates = detectedEncoding
+                        ? [detectedEncoding, ...DEFAULT_ENCODING_CANDIDATES.filter((item) => item !== detectedEncoding)]
+                        : [...DEFAULT_ENCODING_CANDIDATES];
+                    const decodeResults = encodingCandidates.map((encoding) => tryDecode(arrayBuffer, encoding)).filter(Boolean);
 
-                    // 首先尝试jschardet自动检测
-                    const detectedEncoding = autoDetectEncoding(arrayBuffer);
-                    let encodings = ['utf-8', 'gbk', 'gb2312', 'big5', 'shift-jis', 'windows-1252'];
-
-                    // 如果检测到编码，优先尝试
-                    if (detectedEncoding) {
-                        encodings = [detectedEncoding, ...encodings.filter(e => e !== detectedEncoding)];
-                    }
-
-                    const results = [];
-
-                    // 尝试所有编码
-                    for (let encoding of encodings) {
-                        const result = tryDecode(arrayBuffer, encoding);
-                        if (result) {
-                            results.push({ encoding, ...result });
-                        }
-                    }
-
-                    // 选择质量最好的结果
-                    if (results.length > 0) {
-                        // 排序：优先选择quality为true的，然后按乱码字符数量、中文比例排序
-                        results.sort((a, b) => {
-                            if (a.quality !== b.quality) return b.quality - a.quality;
-                            if (a.badChars !== b.badChars) return a.badChars - b.badChars;
-                            return b.chineseRatio - a.chineseRatio;
-                        });
-
-                        bestText = results[0].text;
-                        bestEncoding = results[0].encoding;
-                        console.log(`自动选择编码: ${bestEncoding}`, results[0]);
-                    } else {
+                    if (decodeResults.length === 0) {
                         throw new Error('无法检测文件编码');
                     }
+
+                    decodedText = pickBestDecodeResult(decodeResults).text;
                 }
 
-                // 使用 PapaParse 解析文本
-                Papa.parse(bestText, {
-                    complete: function(results) {
-                        tableData = results.data.filter(row => row.some(cell => cell.trim() !== ''));
-                        console.log(`CSV加载成功 (${bestEncoding})，共`, tableData.length, '行');
-
-                        // 显示编码信息给用户
-                        if (tableData.length > 0) {
-                            const preview = tableData[0].join(', ').substring(0, 100);
-                            console.log('数据预览:', preview);
-                        }
-
-                        resolve();
-                    },
-                    error: function(error) {
-                        reject(new Error('CSV文件解析失败: ' + error.message));
-                    },
-                    skipEmptyLines: true
-                });
+                resolve(parseCsvText(decodedText));
             } catch (error) {
-                console.error('CSV读取错误:', error);
-                reject(new Error('CSV文件读取失败: ' + error.message));
+                reject(new Error(`CSV 文件读取失败: ${error.message}`));
             }
         };
-
-        reader.onerror = () => reject(new Error('读取CSV文件失败'));
+        reader.onerror = () => reject(new Error('读取 CSV 文件失败'));
         reader.readAsArrayBuffer(file);
     });
 }
 
-// 从文本加载（支持 Markdown、Tab分隔、CSV格式）
+function detectTextTableFormat(text) {
+    const lines = text
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+    if (lines.length >= 2 && looksLikeMarkdownTable(lines)) {
+        return 'markdown';
+    }
+
+    if (lines.some((line) => line.includes('\t'))) {
+        return 'tsv';
+    }
+
+    return 'csv';
+}
+
+function looksLikeMarkdownTable(lines) {
+    const separatorPattern = /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/;
+    return lines.length >= 2 && lines[0].includes('|') && separatorPattern.test(lines[1]);
+}
+
+function splitMarkdownLine(line) {
+    let normalized = line.trim();
+    if (normalized.startsWith('|')) {
+        normalized = normalized.slice(1);
+    }
+    if (normalized.endsWith('|')) {
+        normalized = normalized.slice(0, -1);
+    }
+    return normalized.split('|').map((cell) => cell.trim());
+}
+
 function loadFromText(text) {
-    const lines = text.trim().split('\n');
+    const format = detectTextTableFormat(text);
 
-    // 检测是否为 Markdown 表格
-    if (text.includes('|')) {
-        loadFromMarkdown(text);
+    if (format === 'markdown') {
+        return loadFromMarkdown(text);
     }
-    // 检测是否为 Tab 分隔
-    else if (text.includes('\t')) {
-        tableData = lines.map(line => line.split('\t').map(cell => cell.trim()));
+
+    if (format === 'tsv') {
+        return normalizeTableData(text.split('\n').map((line) => line.split('\t')));
     }
-    // 默认为 CSV（逗号分隔）
-    else {
-        Papa.parse(text, {
-            complete: function(results) {
-                tableData = results.data.filter(row => row.some(cell => cell.trim() !== ''));
-            }
-        });
-    }
+
+    return parseCsvText(text);
 }
 
-// 从 Markdown 表格加载
 function loadFromMarkdown(text) {
-    const lines = text.trim().split('\n');
-    tableData = [];
+    const separatorPattern = /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?$/;
+    const rows = text
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .filter((line) => !separatorPattern.test(line))
+        .map(splitMarkdownLine);
 
-    for (let line of lines) {
-        // 跳过分隔行（如 |---|---|）
-        if (line.includes('---')) continue;
-
-        // 移除首尾的 | 并分割
-        line = line.trim();
-        if (line.startsWith('|')) line = line.substring(1);
-        if (line.endsWith('|')) line = line.substring(0, line.length - 1);
-
-        const cells = line.split('|').map(cell => cell.trim());
-        if (cells.length > 0) {
-            tableData.push(cells);
-        }
-    }
+    return normalizeTableData(rows);
 }
 
-// 过滤空列（移除列名为空的列）
 function filterEmptyColumns() {
-    // 找出所有非空列的索引
-    const validColumnIndices = [];
-    headers.forEach((header, index) => {
+    const validColumnIndices = AppState.headers.reduce((indices, header, index) => {
         if (header && header.trim() !== '') {
-            validColumnIndices.push(index);
+            indices.push(index);
         }
-    });
+        return indices;
+    }, []);
 
-    // 如果所有列都有效，不需要过滤
-    if (validColumnIndices.length === headers.length) {
+    if (validColumnIndices.length === AppState.headers.length) {
+        AppState.rows = AppState.rows.map((row) => normalizeRowLength(row, AppState.headers.length));
+        AppState.tableData = [AppState.headers, ...AppState.rows];
         return;
     }
 
-    // 过滤表头
-    const filteredHeaders = validColumnIndices.map(index => headers[index]);
-
-    // 过滤每一行的数据
-    const filteredRows = rows.map(row => {
-        return validColumnIndices.map(index => row[index] || '');
-    });
-
-    // 更新全局变量
-    headers = filteredHeaders;
-    rows = filteredRows;
-    tableData = [headers, ...rows];
-
-    console.log(`已过滤空列，剩余 ${headers.length} 列`);
+    AppState.headers = validColumnIndices.map((index) => AppState.headers[index]);
+    AppState.rows = AppState.rows.map((row) => validColumnIndices.map((index) => row[index] ?? ''));
+    AppState.tableData = [AppState.headers, ...AppState.rows];
 }
 
-// 显示步骤2 - 表格预览
 function showStep2() {
-    const previewDiv = document.getElementById('tablePreview');
-
-    // 创建表格HTML
-    let html = `
+    UI.tablePreview.innerHTML = `
         <div class="table-info">
-            <p>表格信息：共 <strong>${headers.length}</strong> 列，<strong>${rows.length}</strong> 行数据</p>
-            <p>列名：${headers.map((h, i) => `<span class="column-tag">${h}</span>`).join(' ')}</p>
+            <p>表格信息：共 <strong>${AppState.headers.length}</strong> 列，<strong>${AppState.rows.length}</strong> 行数据</p>
+            <p>列名：${AppState.headers.map((header) => `<span class="column-tag">${escapeHtml(header)}</span>`).join(' ')}</p>
         </div>
         <div class="table-wrapper">
             <table class="data-table">
                 <thead>
-                    <tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>
+                    <tr>${AppState.headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr>
                 </thead>
                 <tbody>
-                    ${rows.slice(0, 5).map(row => `
-                        <tr>${row.map(cell => `<td>${cell || ''}</td>`).join('')}</tr>
+                    ${AppState.rows.slice(0, DEFAULT_PREVIEW_ROW_COUNT).map((row) => `
+                        <tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>
                     `).join('')}
                 </tbody>
             </table>
         </div>
-        ${rows.length > 5 ? `<p class="preview-note">仅显示前 5 行数据，共 ${rows.length} 行</p>` : ''}
+        ${AppState.rows.length > DEFAULT_PREVIEW_ROW_COUNT ? `<p class="preview-note">仅显示前 ${DEFAULT_PREVIEW_ROW_COUNT} 行数据，共 ${AppState.rows.length} 行</p>` : ''}
     `;
 
-    previewDiv.innerHTML = html;
-    document.getElementById('step2').style.display = 'block';
-    document.getElementById('step2').scrollIntoView({ behavior: 'smooth' });
+    UI.step2.style.display = 'block';
+    UI.step2.scrollIntoView({ behavior: 'smooth' });
 }
 
-// 显示步骤3 - 搜索配置
 function showStep3() {
-    // 清空之前的搜索条件（防止载入新文件时保留旧条件）
-    document.getElementById('searchConditions').innerHTML = '';
-    conditionCounter = 0; // 重置计数器
-
-    document.getElementById('step3').style.display = 'block';
-    document.getElementById('step3').scrollIntoView({ behavior: 'smooth' });
+    UI.searchConditions.innerHTML = '';
+    AppState.conditionCounter = 0;
+    addSearchCondition();
+    UI.step3.style.display = 'block';
+    UI.step3.scrollIntoView({ behavior: 'smooth' });
 }
 
-// 添加搜索条件
 function addSearchCondition() {
-    const conditionsDiv = document.getElementById('searchConditions');
-    const conditionId = conditionCounter++;
-
-    const conditionHtml = `
+    const conditionId = AppState.conditionCounter++;
+    UI.searchConditions.insertAdjacentHTML('beforeend', `
         <div class="condition-item" data-id="${conditionId}">
             <div class="condition-row">
                 <select class="column-select">
                     <option value="">选择列...</option>
-                    ${headers.map((h, i) => `<option value="${i}">${h}</option>`).join('')}
+                    ${AppState.headers.map((header, index) => `<option value="${index}">${escapeHtml(header)}</option>`).join('')}
                 </select>
-                <input type="text" class="keyword-input" placeholder="输入关键词...">
-                <button class="btn-remove" onclick="removeCondition(${conditionId})">✕</button>
+                <input type="text" class="keyword-input" placeholder="输入关键字...">
+                <button class="btn-remove" type="button" onclick="removeCondition(${conditionId})">✕</button>
             </div>
         </div>
-    `;
-
-    conditionsDiv.insertAdjacentHTML('beforeend', conditionHtml);
+    `);
 }
 
-// 删除搜索条件
 function removeCondition(conditionId) {
     const conditionItem = document.querySelector(`.condition-item[data-id="${conditionId}"]`);
     if (conditionItem) {
@@ -572,102 +484,83 @@ function removeCondition(conditionId) {
     }
 }
 
-// 执行搜索
+function collectSearchConditions() {
+    return Array.from(document.querySelectorAll('.condition-item'))
+        .map((item) => {
+            const columnIndex = item.querySelector('.column-select').value;
+            const keyword = item.querySelector('.keyword-input').value.trim();
+
+            if (columnIndex === '' || keyword === '') {
+                return null;
+            }
+
+            return {
+                columnIndex: Number(columnIndex),
+                columnName: AppState.headers[columnIndex],
+                keyword
+            };
+        })
+        .filter(Boolean);
+}
+
 function performSearch() {
-    const conditionItems = document.querySelectorAll('.condition-item');
-
-    if (conditionItems.length === 0) {
-        alert('请至少添加一个搜索条件！');
-        return;
-    }
-
-    // 收集搜索条件
-    const conditions = [];
-    for (let item of conditionItems) {
-        const columnIndex = item.querySelector('.column-select').value;
-        const keyword = item.querySelector('.keyword-input').value.trim();
-
-        if (columnIndex === '' || keyword === '') {
-            continue;
-        }
-
-        conditions.push({
-            columnIndex: parseInt(columnIndex),
-            columnName: headers[columnIndex],
-            keyword: keyword
-        });
-    }
-
+    const conditions = collectSearchConditions();
     if (conditions.length === 0) {
-        alert('请完整填写至少一个搜索条件（列名和关键词）！');
+        alert('请至少填写一个完整的搜索条件！');
         return;
     }
 
-    // 获取匹配逻辑
-    const logic = document.querySelector('input[name="logic"]:checked').value;
-
-    // 执行搜索
-    searchResults = [];
-
-    for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        let matches = conditions.map(cond => {
-            const cellValue = String(row[cond.columnIndex] || '');
-            return cellValue.includes(cond.keyword);
-        });
-
-        // 根据逻辑判断是否匹配
-        let isMatch = false;
-        if (logic === 'and') {
-            isMatch = matches.every(m => m);
-        } else {
-            isMatch = matches.some(m => m);
-        }
+    const logic = document.querySelector('input[name="logic"]:checked')?.value || 'and';
+    AppState.searchResults = AppState.rows.reduce((results, row, rowIndex) => {
+        const isMatch = logic === 'and'
+            ? conditions.every((condition) => getCellText(row[condition.columnIndex]).includes(condition.keyword))
+            : conditions.some((condition) => getCellText(row[condition.columnIndex]).includes(condition.keyword));
 
         if (isMatch) {
-            searchResults.push({
-                index: i,
-                row: row,
-                matches: conditions.map((cond, idx) => ({
-                    columnName: cond.columnName,
-                    keyword: cond.keyword,
-                    matched: matches[idx]
-                }))
+            results.push({
+                index: rowIndex,
+                row
             });
         }
-    }
 
-    // 显示结果
+        return results;
+    }, []);
+
     displayResults(conditions, logic);
 }
 
-// 显示搜索结果
-function displayResults(conditions, logic) {
-    const resultsDiv = document.getElementById('searchResults');
-    const exportArea = document.querySelector('.export-area');
+function buildHighlightMap(conditions) {
+    return conditions.reduce((map, condition) => {
+        if (!map.has(condition.columnIndex)) {
+            map.set(condition.columnIndex, []);
+        }
+        map.get(condition.columnIndex).push(condition.keyword);
+        return map;
+    }, new Map());
+}
 
-    if (searchResults.length === 0) {
-        resultsDiv.innerHTML = `
+function displayResults(conditions, logic) {
+    if (AppState.searchResults.length === 0) {
+        UI.searchResults.innerHTML = `
             <div class="result-header error">
                 未找到匹配的数据
             </div>
         `;
-        exportArea.style.display = 'none';
-        document.getElementById('step4').style.display = 'block';
-        document.getElementById('step4').scrollIntoView({ behavior: 'smooth' });
+        UI.exportArea.style.display = 'none';
+        UI.step4.style.display = 'block';
+        UI.step4.scrollIntoView({ behavior: 'smooth' });
         return;
     }
 
-    // 生成搜索条件说明
-    const conditionsText = conditions.map(c => `"${c.columnName}" 包含 "${c.keyword}"`).join(logic === 'and' ? ' 且 ' : ' 或 ');
+    const previewResults = AppState.searchResults.slice(0, DEFAULT_PREVIEW_ROW_COUNT);
+    const conditionsText = conditions
+        .map((condition) => `"${escapeHtml(condition.columnName)}" 包含 "${escapeHtml(condition.keyword)}"`)
+        .join(logic === 'and' ? ' 且 ' : ' 或 ');
+    const highlightMap = buildHighlightMap(conditions);
 
-    // 只显示前5行数据
-    const displayResults = searchResults.slice(0, 5);
-    const hasMore = searchResults.length > 5;
-
-    let html = `
+    UI.searchResults.innerHTML = `
         <div class="result-header success">
-            找到 <strong>${searchResults.length}</strong> 条匹配数据${hasMore ? `，仅显示前 <strong>5</strong> 条` : ''}
+            找到 <strong>${AppState.searchResults.length}</strong> 条匹配数据${AppState.searchResults.length > DEFAULT_PREVIEW_ROW_COUNT ? `（仅显示前 ${DEFAULT_PREVIEW_ROW_COUNT} 条）` : ''}
             <div class="search-summary">搜索条件：${conditionsText}</div>
         </div>
         <div class="table-wrapper">
@@ -675,61 +568,55 @@ function displayResults(conditions, logic) {
                 <thead>
                     <tr>
                         <th>#</th>
-                        ${headers.map(h => `<th>${h}</th>`).join('')}
+                        ${AppState.headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}
                     </tr>
                 </thead>
                 <tbody>
-                    ${displayResults.map(result => `
+                    ${previewResults.map((result) => `
                         <tr>
                             <td>${result.index + 1}</td>
-                            ${result.row.map((cell, idx) => {
-                                let cellHtml = String(cell || '');
-                                // 高亮匹配的关键词
-                                for (let cond of conditions) {
-                                    if (cond.columnIndex === idx) {
-                                        cellHtml = highlightText(cellHtml, cond.keyword);
-                                    }
-                                }
-                                return `<td>${cellHtml}</td>`;
-                            }).join('')}
+                            ${result.row.map((cell, columnIndex) => `<td>${highlightCellText(getCellText(cell), highlightMap.get(columnIndex) || [])}</td>`).join('')}
                         </tr>
                     `).join('')}
                 </tbody>
             </table>
         </div>
-        ${hasMore ? `<p class="preview-note">仅显示前 5 条数据，导出时将包含全部 ${searchResults.length} 条数据</p>` : ''}
+        ${AppState.searchResults.length > DEFAULT_PREVIEW_ROW_COUNT ? `<p class="preview-note">仅显示前 ${DEFAULT_PREVIEW_ROW_COUNT} 条数据，导出时将包含全部 ${AppState.searchResults.length} 条数据</p>` : ''}
     `;
 
-    resultsDiv.innerHTML = html;
-    exportArea.style.display = 'block';
-    document.getElementById('step4').style.display = 'block';
-    document.getElementById('step4').scrollIntoView({ behavior: 'smooth' });
+    UI.exportArea.style.display = 'block';
+    UI.step4.style.display = 'block';
+    UI.step4.scrollIntoView({ behavior: 'smooth' });
 }
 
-// 高亮文本
-function highlightText(text, keyword) {
-    if (!keyword) return text;
-    const regex = new RegExp(`(${escapeRegExp(keyword)})`, 'gi');
-    return text.replace(regex, '<span class="highlight">$1</span>');
+function highlightCellText(text, keywords) {
+    if (keywords.length === 0) {
+        return escapeHtml(text);
+    }
+
+    const uniqueKeywords = [...new Set(keywords)].sort((left, right) => right.length - left.length);
+    const regex = new RegExp(uniqueKeywords.map(escapeRegExp).join('|'), 'g');
+    let lastIndex = 0;
+    let result = '';
+
+    text.replace(regex, (match, offset) => {
+        result += escapeHtml(text.slice(lastIndex, offset));
+        result += `<span class="highlight">${escapeHtml(match)}</span>`;
+        lastIndex = offset + match.length;
+        return match;
+    });
+
+    result += escapeHtml(text.slice(lastIndex));
+    return result;
 }
 
-// 转义正则表达式
-function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-// 导出结果
 function exportResults(format) {
-    if (searchResults.length === 0) {
+    if (AppState.searchResults.length === 0) {
         alert('没有可导出的数据！');
         return;
     }
 
-    // 构建导出数据（包含表头）
-    const exportData = [headers];
-    searchResults.forEach(result => {
-        exportData.push(result.row);
-    });
+    const exportData = [AppState.headers, ...AppState.searchResults.map((result) => result.row)];
 
     if (format === 'excel') {
         exportToExcel(exportData);
@@ -738,48 +625,69 @@ function exportResults(format) {
     }
 }
 
-// 导出为 Excel
 function exportToExcel(data) {
     try {
+        if (typeof XLSX === 'undefined') {
+            throw new Error('Excel 处理依赖未加载');
+        }
+
         const worksheet = XLSX.utils.aoa_to_sheet(data);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, '搜索结果');
 
-        // 生成文件名
         const fileName = `表格搜索结果_${getTimestamp()}.xlsx`;
         XLSX.writeFile(workbook, fileName);
-
-        alert(`成功导出 ${searchResults.length} 条数据到 ${fileName}`);
+        alert(`成功导出 ${AppState.searchResults.length} 条数据到 ${fileName}`);
     } catch (error) {
-        alert('导出Excel失败: ' + error.message);
+        alert(`导出 Excel 失败: ${error.message}`);
     }
 }
 
-// 导出为 CSV
 function exportToCsv(data) {
     try {
+        if (typeof Papa === 'undefined') {
+            throw new Error('CSV 处理依赖未加载');
+        }
+
         const csv = Papa.unparse(data);
         const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         const fileName = `表格搜索结果_${getTimestamp()}.csv`;
 
-        link.href = URL.createObjectURL(blob);
+        link.href = url;
         link.download = fileName;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
 
-        alert(`成功导出 ${searchResults.length} 条数据到 ${fileName}`);
+        alert(`成功导出 ${AppState.searchResults.length} 条数据到 ${fileName}`);
     } catch (error) {
-        alert('导出CSV失败: ' + error.message);
+        alert(`导出 CSV 失败: ${error.message}`);
     }
 }
 
-// 获取时间戳
-function getTimestamp() {
-    const now = new Date();
-    return `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// 补零
-function pad(num) {
-    return num < 10 ? '0' + num : num;
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
+
+function getTimestamp() {
+    const now = new Date();
+    return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+}
+
+function pad(number) {
+    return number < 10 ? `0${number}` : String(number);
+}
+
+window.removeCondition = removeCondition;

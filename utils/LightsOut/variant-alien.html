@@ -13,13 +13,26 @@
     <script src="assets/js/theme-init.js"></script>
 </head>
 <body>
-    <div class="theme-toggle">
-        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
-        <label for="themeToggle" class="theme-toggle__btn">
-            <span class="theme-toggle__feature"></span>
-        </label>
-    </div>
-    <a href="variant.html" class="return-home">← 返回变体中心</a>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="Logo" class="logo-icon">
+                <span class="logo-text-desktop">LightsOut</span>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <a href="variant.html" class="nav-btn">返回变体中心</a>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <div class="fo-container">
         <header class="fo-header">
@@ -49,7 +62,6 @@
                     <div class="fo-row">
                         <button id="customize" class="fo-btn">自定义</button>
                         <button id="customDone" class="fo-btn fo-primary is-hidden">完成</button>
-                        <a href="variant.html" class="fo-btn" id="variantBtn">返回中心</a>
                     </div>
                     <div class="fo-stats">
                         <span>步数：<b id="moveCount">0</b></span>

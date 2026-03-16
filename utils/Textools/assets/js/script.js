@@ -1,70 +1,123 @@
 /**
- * TextGrep - 通用文本处理工具脚本
- * 支持批量文件上传、搜索与智能列表转换
+ * TextGrep / Textools
+ * Supports file upload, search mode, and text-to-list mode.
  */
 
-// =========================================
-// 1. 全局状态管理
-// =========================================
+const SUPPORTED_FILE_EXTENSIONS = ['.txt', '.docx', '.pdf'];
+const FILE_HEADER_PREFIX = '--- File:';
+const PDF_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const DEFAULT_PREVIEW_COUNT = 5;
+const DEFAULT_RESULT_PREVIEW_COUNT = 20;
+
 const AppState = {
-    sourceText: '',       
-    dataItems: [],        
+    sourceText: '',
+    dataItems: [],
     lastDownloadItems: [],
-    currentMode: ''       
+    currentMode: '',
+    selectedFiles: []
 };
 
-// =========================================
-// 2. 初始化与依赖检查
-// =========================================
-window.addEventListener('load', function() {
+const UI = {};
+
+function initApp() {
+    cacheDom();
+    configurePdfWorker();
     checkDependencies();
     initUploadArea();
     bindGlobalEvents();
-});
+}
+
+function cacheDom() {
+    Object.assign(UI, {
+        backToHomeBtn: document.getElementById('backToHomeBtn'),
+        mainBackLink: document.querySelector('.back-link[href*="index.html"]'),
+        mainSubtitle: document.getElementById('mainSubtitle'),
+        landingPage: document.getElementById('landing-page'),
+        toolInterface: document.getElementById('tool-interface'),
+        step2: document.getElementById('step2'),
+        step3: document.getElementById('step3'),
+        step2Title: document.getElementById('step2Title'),
+        step3Title: document.getElementById('step3Title'),
+        searchModeUI: document.getElementById('searchModeUI'),
+        listModeUI: document.getElementById('listModeUI'),
+        fileInput: document.getElementById('fileInput'),
+        fileUploadArea: document.getElementById('fileUploadArea'),
+        fileName: document.getElementById('fileName'),
+        textInput: document.getElementById('textInput'),
+        loadTextBtn: document.getElementById('loadTextBtn'),
+        removeDuplicates: document.getElementById('removeDuplicates'),
+        parseTextBtn: document.getElementById('parseTextBtn'),
+        dataPreview: document.getElementById('dataPreview'),
+        searchInput: document.getElementById('searchInput'),
+        searchRegex: document.getElementById('searchRegex'),
+        searchCase: document.getElementById('searchCase'),
+        searchBtn: document.getElementById('searchBtn'),
+        downloadSearchResultsBtn: document.getElementById('downloadSearchResultsBtn'),
+        searchResults: document.getElementById('searchResults'),
+        listOutput: document.getElementById('listOutput'),
+        listStats: document.getElementById('listStats'),
+        copyListBtn: document.getElementById('copyListBtn'),
+        downloadListBtn: document.getElementById('downloadListBtn'),
+        customDelimiter: document.getElementById('customDelimiter'),
+        delimiterCustom: document.getElementById('delimiterCustom'),
+        delimiterRegex: document.getElementById('delimiterRegex'),
+        delimiterCase: document.getElementById('delimiterCase'),
+        listFormatRadios: Array.from(document.getElementsByName('listFormat'))
+    });
+}
+
+function configurePdfWorker() {
+    if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = PDF_WORKER_URL;
+    }
+}
 
 function checkDependencies() {
     const issues = [];
-    if (typeof mammoth === 'undefined') issues.push('Word 处理库 (mammoth.js) 未加载');
-    if (typeof pdfjsLib === 'undefined') issues.push('PDF 处理库 (pdf.js) 未加载');
-    if (issues.length > 0) console.warn('依赖缺失:', issues.join(', '));
+
+    if (typeof mammoth === 'undefined') {
+        issues.push('Word processing library (mammoth.js) is unavailable');
+    }
+
+    if (typeof pdfjsLib === 'undefined') {
+        issues.push('PDF processing library (pdf.js) is unavailable');
+    }
+
+    if (issues.length > 0) {
+        console.warn('Missing dependencies:', issues.join(', '));
+    }
 }
 
-// =========================================
-// 3. 视图导航控制
-// =========================================
 function selectMode(mode) {
     AppState.currentMode = mode;
-    document.getElementById('landing-page').style.display = 'none';
-    document.getElementById('tool-interface').style.display = 'block';
-    
-    document.getElementById('backToHomeBtn').style.display = 'inline-block';
-    const mainBackLink = document.querySelector('.back-link[href*="index.html"]');
-    if (mainBackLink) mainBackLink.style.display = 'none';
+    UI.landingPage.style.display = 'none';
+    UI.toolInterface.style.display = 'block';
+    UI.backToHomeBtn.style.display = 'inline-block';
+
+    if (UI.mainBackLink) {
+        UI.mainBackLink.style.display = 'none';
+    }
 
     updateUITextForMode(mode);
-    
-    document.getElementById('step2').style.display = 'none';
-    document.getElementById('step3').style.display = 'none';
+    UI.step2.style.display = 'none';
+    UI.step3.style.display = 'none';
 }
 
 function updateUITextForMode(mode) {
-    const subtitle = document.getElementById('mainSubtitle');
-    const step2Title = document.getElementById('step2Title');
-    const step3Title = document.getElementById('step3Title');
-
     if (mode === 'search') {
-        subtitle.textContent = '文本搜索模式';
-        step2Title.textContent = '步骤 2: 数据分段 (定义"一条数据")';
-        step3Title.textContent = '步骤 3: 批量搜索';
-        document.getElementById('searchModeUI').style.display = 'block';
-        document.getElementById('listModeUI').style.display = 'none';
-    } else {
-        subtitle.textContent = '文本转列表模式';
-        step2Title.textContent = '步骤 2: 分隔符配置 (如何切分文本)';
-        step3Title.textContent = '步骤 3: 列表结果';
-        document.getElementById('searchModeUI').style.display = 'none';
-        document.getElementById('listModeUI').style.display = 'block';
+        UI.mainSubtitle.textContent = '文本搜索模式';
+        UI.step2Title.textContent = '步骤 2: 数据分段（定义“一条数据”）';
+        UI.step3Title.textContent = '步骤 3: 批量搜索';
+        UI.searchModeUI.style.display = 'block';
+        UI.listModeUI.style.display = 'none';
+        return;
     }
+
+    UI.mainSubtitle.textContent = '文本转列表模式';
+    UI.step2Title.textContent = '步骤 2: 设置分隔符';
+    UI.step3Title.textContent = '步骤 3: 结果处理';
+    UI.searchModeUI.style.display = 'none';
+    UI.listModeUI.style.display = 'block';
 }
 
 function resetApp() {
@@ -72,158 +125,180 @@ function resetApp() {
     AppState.dataItems = [];
     AppState.lastDownloadItems = [];
     AppState.currentMode = '';
+    AppState.selectedFiles = [];
 
-    document.getElementById('fileInput').value = '';
-    document.getElementById('textInput').value = '';
-    document.getElementById('fileName').textContent = '';
-    document.getElementById('searchInput').value = '';
-    document.getElementById('listOutput').value = '';
-    document.getElementById('searchResults').innerHTML = '';
-    document.getElementById('dataPreview').innerHTML = '';
-    // 重置去重选项为默认选中
-    const dedupCheckbox = document.getElementById('removeDuplicates');
-    if(dedupCheckbox) dedupCheckbox.checked = true;
+    UI.fileInput.value = '';
+    UI.textInput.value = '';
+    UI.fileName.textContent = '';
+    UI.searchInput.value = '';
+    UI.listOutput.value = '';
+    UI.searchResults.innerHTML = '';
+    UI.dataPreview.innerHTML = '';
+    UI.removeDuplicates.checked = true;
+    UI.downloadSearchResultsBtn.disabled = true;
 
-    document.getElementById('landing-page').style.display = 'grid';
-    document.getElementById('tool-interface').style.display = 'none';
-    document.getElementById('backToHomeBtn').style.display = 'none';
-    
-    const mainBackLink = document.querySelector('.back-link[href*="index.html"]');
-    if (mainBackLink) mainBackLink.style.display = 'inline-block';
-    
-    document.getElementById('mainSubtitle').textContent = '请选择您需要的功能';
+    UI.landingPage.style.display = 'grid';
+    UI.toolInterface.style.display = 'none';
+    UI.backToHomeBtn.style.display = 'none';
+    UI.mainSubtitle.textContent = '请选择您需要的功能';
+
+    if (UI.mainBackLink) {
+        UI.mainBackLink.style.display = 'inline-block';
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// =========================================
-// 4. 文件上传与加载逻辑 (步骤 1)
-// =========================================
 function initUploadArea() {
-    const fileInput = document.getElementById('fileInput');
-    const fileUploadArea = document.getElementById('fileUploadArea');
+    UI.fileUploadArea.addEventListener('click', () => UI.fileInput.click());
 
-    fileUploadArea.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', (e) => {
-        updateFileFeedback(e.target.files);
+    UI.fileInput.addEventListener('change', (event) => {
+        AppState.selectedFiles = Array.from(event.target.files || []);
+        updateFileFeedback(AppState.selectedFiles);
     });
 
-    fileUploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        fileUploadArea.classList.add('drag-over');
+    UI.fileUploadArea.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        UI.fileUploadArea.classList.add('drag-over');
     });
 
-    fileUploadArea.addEventListener('dragleave', () => {
-        fileUploadArea.classList.remove('drag-over');
+    UI.fileUploadArea.addEventListener('dragleave', () => {
+        UI.fileUploadArea.classList.remove('drag-over');
     });
 
-    fileUploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        fileUploadArea.classList.remove('drag-over');
-        
-        if (e.dataTransfer.files.length > 0) {
-            const files = e.dataTransfer.files;
-            const valid = Array.from(files).some(f => 
-                ['.txt', '.doc', '.docx', '.pdf'].some(ext => f.name.toLowerCase().endsWith(ext))
-            );
+    UI.fileUploadArea.addEventListener('drop', (event) => {
+        event.preventDefault();
+        UI.fileUploadArea.classList.remove('drag-over');
 
-            if (valid) {
-                fileInput.files = files; 
-                updateFileFeedback(files);
-            } else {
-                alert('包含不支持的文件格式，请上传 TXT, DOCX 或 PDF');
-            }
+        const droppedFiles = Array.from(event.dataTransfer?.files || []);
+        if (droppedFiles.length === 0) {
+            return;
         }
+
+        const validFiles = droppedFiles.filter(isSupportedFile);
+        if (validFiles.length === 0) {
+            alert('包含不支持的文件格式，请上传 TXT、DOCX 或 PDF。');
+            return;
+        }
+
+        setSelectedFiles(validFiles);
+        updateFileFeedback(AppState.selectedFiles);
     });
+}
+
+function setSelectedFiles(files) {
+    AppState.selectedFiles = Array.from(files);
+
+    try {
+        const dataTransfer = new DataTransfer();
+        AppState.selectedFiles.forEach((file) => dataTransfer.items.add(file));
+        UI.fileInput.files = dataTransfer.files;
+        AppState.selectedFiles = Array.from(UI.fileInput.files);
+    } catch (error) {
+        // Some browsers do not allow assigning FileList programmatically.
+    }
 }
 
 function updateFileFeedback(files) {
-    const el = document.getElementById('fileName');
     if (!files || files.length === 0) {
-        el.textContent = '';
+        UI.fileName.textContent = '';
         return;
     }
-    
+
     if (files.length === 1) {
-        el.textContent = `已选择: ${files[0].name}`;
-    } else {
-        el.textContent = `已选择 ${files.length} 个文件: ${files[0].name} 等...`;
+        UI.fileName.textContent = `已选择: ${files[0].name}`;
+        return;
     }
+
+    UI.fileName.textContent = `已选择 ${files.length} 个文件: ${files[0].name} 等...`;
 }
 
-async function handleLoadText(btn) {
-    const fileInput = document.getElementById('fileInput');
-    const textInput = document.getElementById('textInput');
-    
-    const files = fileInput.files;
-    const hasFile = files.length > 0;
-    const hasText = textInput.value.trim().length > 0;
+function getSelectedFiles() {
+    if (AppState.selectedFiles.length > 0) {
+        return AppState.selectedFiles;
+    }
+
+    return Array.from(UI.fileInput.files || []);
+}
+
+async function handleLoadText(button) {
+    const selectedFiles = getSelectedFiles();
+    const hasFile = selectedFiles.length > 0;
+    const manualText = UI.textInput.value.trim();
+    const hasText = manualText.length > 0;
 
     if (!hasFile && !hasText) {
         alert('请先选择文件或输入文本内容！');
         return;
     }
 
+    button.disabled = true;
+    button.textContent = '正在读取文件...';
+
     try {
-        btn.disabled = true;
-        btn.textContent = '正在读取文件...';
-        
         const textParts = [];
 
-        // 1. 批量读取文件
         if (hasFile) {
-            const filePromises = Array.from(files).map(async (file) => {
+            const fileContents = await Promise.all(selectedFiles.map(async (file) => {
                 try {
                     const content = await readFileContent(file);
-                    // 文件仍然保留头部标记，防止不同文件内容粘连，且方便追溯
-                    return `--- File: ${file.name} ---\n${content}`;
-                } catch (err) {
-                    console.error(`读取 ${file.name} 失败:`, err);
-                    return `--- File: ${file.name} (读取失败: ${err.message}) ---\n`;
+                    return `${FILE_HEADER_PREFIX} ${file.name} ---\n${content}`;
+                } catch (error) {
+                    console.error(`读取 ${file.name} 失败:`, error);
+                    return `${FILE_HEADER_PREFIX} ${file.name} (读取失败: ${error.message}) ---\n`;
                 }
-            });
+            }));
 
-            const fileContents = await Promise.all(filePromises);
             textParts.push(...fileContents);
         }
 
-        // 2. 合并输入框文本
         if (hasText) {
-            // [修改点]：直接添加用户输入的内容，不再添加 "--- Manual Input ---" 标记
-            textParts.push(textInput.value.trim());
+            textParts.push(manualText);
         }
 
-        // 用双换行连接所有部分
         AppState.sourceText = textParts.join('\n\n');
-        
-        // 进入步骤 2
-        const step2 = document.getElementById('step2');
-        step2.style.display = 'block';
-        step2.scrollIntoView({ behavior: 'smooth' });
-        
-        console.log(`载入成功，总长度 ${AppState.sourceText.length}`);
-
+        UI.step2.style.display = 'block';
+        UI.step2.scrollIntoView({ behavior: 'smooth' });
     } catch (error) {
         console.error('载入失败:', error);
         alert(`载入失败: ${error.message}`);
     } finally {
-        btn.disabled = false;
-        btn.textContent = '载入文本';
+        button.disabled = false;
+        button.textContent = '载入文本';
     }
 }
 
+function isSupportedFile(file) {
+    const lowerName = file.name.toLowerCase();
+    return SUPPORTED_FILE_EXTENSIONS.some((extension) => lowerName.endsWith(extension));
+}
+
 async function readFileContent(file) {
-    const name = file.name.toLowerCase();
-    if (name.endsWith('.txt')) return await readTextFile(file);
-    if (name.endsWith('.docx')) return await readWordFile(file);
-    if (name.endsWith('.pdf')) return await readPdfFile(file);
+    const fileName = file.name.toLowerCase();
+
+    if (fileName.endsWith('.txt')) {
+        return readTextFile(file);
+    }
+
+    if (fileName.endsWith('.docx')) {
+        return readWordFile(file);
+    }
+
+    if (fileName.endsWith('.pdf')) {
+        return readPdfFile(file);
+    }
+
+    if (fileName.endsWith('.doc')) {
+        throw new Error('暂不支持 .doc 文件，请先转换为 .docx。');
+    }
+
     throw new Error('不支持的文件类型');
 }
 
 function readTextFile(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result || '');
+        reader.onload = (event) => resolve(event.target.result || '');
         reader.onerror = () => reject(new Error('无法读取文本文件'));
         reader.readAsText(file, 'UTF-8');
     });
@@ -232,357 +307,369 @@ function readTextFile(file) {
 function readWordFile(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = async e => {
+        reader.onload = async (event) => {
+            if (typeof mammoth === 'undefined') {
+                reject(new Error('Word 处理依赖未加载'));
+                return;
+            }
+
             try {
-                const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+                const result = await mammoth.extractRawText({ arrayBuffer: event.target.result });
                 resolve(result.value);
-            } catch (err) {
-                reject(new Error(`Word 解析失败: ${err.message}`));
+            } catch (error) {
+                reject(new Error(`Word 解析失败: ${error.message}`));
             }
         };
+        reader.onerror = () => reject(new Error('无法读取 Word 文件'));
         reader.readAsArrayBuffer(file);
     });
 }
 
 async function readPdfFile(file) {
+    if (typeof pdfjsLib === 'undefined') {
+        throw new Error('PDF 处理依赖未加载');
+    }
+
     try {
         const buffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-        let fullText = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
+        const pagePromises = Array.from({ length: pdf.numPages }, async (_, index) => {
+            const page = await pdf.getPage(index + 1);
             const content = await page.getTextContent();
-            const pageText = content.items.map(item => item.str).join(' ');
-            fullText += pageText + '\n';
-        }
-        return fullText;
-    } catch (err) {
-        throw new Error(`PDF 解析失败: ${err.message}`);
+            return content.items.map((item) => item.str).join(' ');
+        });
+
+        return (await Promise.all(pagePromises)).join('\n');
+    } catch (error) {
+        throw new Error(`PDF 解析失败: ${error.message}`);
     }
 }
 
-// =========================================
-// 5. 文本解析与去重 (步骤 2)
-// =========================================
 function handleParseText() {
-    const delimiterType = document.querySelector('input[name="delimiter"]:checked').value;
-    const shouldDeduplicate = document.getElementById('removeDuplicates').checked;
-    
-    let separator;
-    let useRegex = false;
-    let caseSensitive = true;
-
-    if (delimiterType === 'custom') {
-        const customVal = document.getElementById('customDelimiter').value;
-        if (!customVal) return alert('请输入自定义分隔符');
-        separator = customVal;
-        useRegex = document.getElementById('delimiterRegex').checked;
-        caseSensitive = document.getElementById('delimiterCase').checked;
-    } else {
-        switch(delimiterType) {
-            case 'newline': separator = '\n'; break;
-            case 'emptyline': separator = '\n\n'; break;
-            case 'comma': separator = ','; break;
-            default: separator = '\n';
-        }
-    }
-
     try {
-        // 1. 分割文本
-        const items = splitText(AppState.sourceText, separator, useRegex, caseSensitive);
-        
-        // 2. 根据选项决定是否去重
-        let finalData = [];
-        let removedCount = 0;
+        const { separator, useRegex, caseSensitive } = getDelimiterConfig();
+        const parsedItems = splitText(AppState.sourceText, separator, useRegex, caseSensitive);
+        const shouldDeduplicate = UI.removeDuplicates.checked;
+        const finalItems = shouldDeduplicate ? [...new Set(parsedItems)] : parsedItems;
+        const removedCount = parsedItems.length - finalItems.length;
 
-        if (shouldDeduplicate) {
-            const uniqueData = [...new Set(items)];
-            finalData = uniqueData;
-            removedCount = items.length - uniqueData.length;
-        } else {
-            finalData = items;
-            removedCount = 0;
-        }
-        
-        AppState.dataItems = finalData;
-        
-        // 3. 显示预览
+        AppState.dataItems = finalItems;
         renderPreview({
-            total: items.length,
-            final: finalData.length,
+            total: parsedItems.length,
+            final: finalItems.length,
             removed: removedCount,
             deduplicated: shouldDeduplicate
         });
 
-        // 4. 进入步骤 3
-        const step3 = document.getElementById('step3');
-        step3.style.display = 'block';
-        step3.scrollIntoView({ behavior: 'smooth' });
+        UI.step3.style.display = 'block';
+        UI.step3.scrollIntoView({ behavior: 'smooth' });
 
         if (AppState.currentMode === 'list') {
             initListModeView();
         } else {
             initSearchModeView();
         }
+    } catch (error) {
+        alert(`解析出错: ${error.message}`);
+    }
+}
 
-    } catch (err) {
-        alert(`解析出错: ${err.message}`);
+function getDelimiterConfig() {
+    const delimiterType = document.querySelector('input[name="delimiter"]:checked')?.value || 'newline';
+
+    if (delimiterType !== 'custom') {
+        return {
+            separator: getBuiltinDelimiter(delimiterType),
+            useRegex: false,
+            caseSensitive: true
+        };
+    }
+
+    const customValue = UI.customDelimiter.value;
+    if (!customValue) {
+        throw new Error('请输入自定义分隔符');
+    }
+
+    return {
+        separator: customValue,
+        useRegex: UI.delimiterRegex.checked,
+        caseSensitive: UI.delimiterCase.checked
+    };
+}
+
+function getBuiltinDelimiter(type) {
+    switch (type) {
+        case 'newline':
+            return '\n';
+        case 'emptyline':
+            return '\n\n';
+        case 'comma':
+            return ',';
+        default:
+            return '\n';
     }
 }
 
 function splitText(text, separator, isRegex, isCaseSensitive) {
-    let splitPattern;
+    let splitPattern = separator;
+
     if (isRegex) {
-        const flags = isCaseSensitive ? '' : 'i';
         try {
-            splitPattern = new RegExp(separator, flags);
-        } catch (e) {
+            splitPattern = new RegExp(separator, isCaseSensitive ? 'g' : 'gi');
+        } catch (error) {
             throw new Error('无效的正则表达式');
         }
-    } else {
-        if (!isCaseSensitive && separator.length > 0) {
-            splitPattern = new RegExp(escapeRegExp(separator), 'i');
-        } else {
-            splitPattern = separator;
-        }
+    } else if (!isCaseSensitive && separator.length > 0) {
+        splitPattern = new RegExp(escapeRegExp(separator), 'gi');
     }
 
-    return text.split(splitPattern)
-        .map(item => item.trim())
-        .filter(item => {
-            // 过滤掉空项，以及文件分割标记线 (File headers)
-            return item.length > 0 && !item.startsWith('--- File:');
-        });
+    return text
+        .split(splitPattern)
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0 && !item.startsWith(FILE_HEADER_PREFIX));
 }
 
 function renderPreview(stats) {
-    const previewDiv = document.getElementById('dataPreview');
-    let summary = '';
+    const summary = stats.deduplicated
+        ? stats.removed > 0
+            ? `解析出 ${stats.total} 条，去重后保留 <strong>${stats.final}</strong> 条（移除 ${stats.removed} 条重复项）`
+            : `解析出 <strong>${stats.final}</strong> 条数据（无重复项）`
+        : `解析出 <strong>${stats.final}</strong> 条数据（未启用去重，保留所有项）`;
 
-    if (stats.deduplicated) {
-        summary = stats.removed > 0
-            ? `解析出 ${stats.total} 条，去重后保留 <strong>${stats.final}</strong> 条 (去除了 ${stats.removed} 条重复项)`
-            : `解析出 <strong>${stats.final}</strong> 条数据 (无重复项)`;
-    } else {
-        summary = `解析出 <strong>${stats.final}</strong> 条数据 (未启用去重，保留所有项)`;
-    }
+    const previewItems = AppState.dataItems
+        .slice(0, DEFAULT_PREVIEW_COUNT)
+        .map((item, index) => `
+            <div class="preview-item">
+                <strong>#${index + 1}:</strong> ${escapeHtml(item.substring(0, 100))}${item.length > 100 ? '...' : ''}
+            </div>
+        `)
+        .join('');
 
-    const previewHtml = AppState.dataItems.slice(0, 5).map((item, idx) => `
-        <div class="preview-item">
-            <strong>#${idx + 1}:</strong> ${escapeHtml(item.substring(0, 100))}${item.length > 100 ? '...' : ''}
-        </div>
-    `).join('');
-
-    previewDiv.innerHTML = `
-        <div class="preview-info">${summary}。预览前5条：</div>
-        <div class="preview-items">${previewHtml}</div>
+    UI.dataPreview.innerHTML = `
+        <div class="preview-info">${summary}。预览前 ${Math.min(DEFAULT_PREVIEW_COUNT, AppState.dataItems.length)} 条：</div>
+        <div class="preview-items">${previewItems}</div>
     `;
 }
 
-// =========================================
-// 6. 列表模式逻辑 (步骤 3 - List)
-// =========================================
 function initListModeView() {
-    const formatRadios = document.getElementsByName('listFormat');
-    formatRadios.forEach(radio => {
-        radio.onclick = renderListOutput; 
-    });
     renderListOutput();
 }
 
 function renderListOutput() {
-    const output = document.getElementById('listOutput');
-    const stats = document.getElementById('listStats');
-    const formatType = document.querySelector('input[name="listFormat"]:checked').value;
-    
+    const selectedFormat = UI.listFormatRadios.find((radio) => radio.checked)?.value || 'string';
+
     if (AppState.dataItems.length === 0) {
-        output.value = '';
-        stats.textContent = '暂无数据';
+        UI.listOutput.value = '';
+        UI.listStats.textContent = '暂无数据';
         return;
     }
 
-    let resultString = '';
-
-    if (formatType === 'string') {
-        resultString = JSON.stringify(AppState.dataItems);
-        resultString = resultString.replace(/,"/g, ', "');
+    if (selectedFormat === 'string') {
+        UI.listOutput.value = JSON.stringify(AppState.dataItems).replace(/,"/g, ', "');
     } else {
-        const formattedItems = AppState.dataItems.map(item => {
-            if (/^-?\d+(\.\d+)?$/.test(item)) return item; 
-            if (item.length === 1) return `'${item.replace(/'/g, "\\'")}'`;
+        const formattedItems = AppState.dataItems.map((item) => {
+            if (/^-?\d+(\.\d+)?$/.test(item)) {
+                return item;
+            }
+            if (item.length === 1) {
+                return `'${item.replace(/'/g, "\\'")}'`;
+            }
             return `"${item.replace(/"/g, '\\"')}"`;
         });
-        resultString = `[${formattedItems.join(', ')}]`;
+        UI.listOutput.value = `[${formattedItems.join(', ')}]`;
     }
 
-    output.value = resultString;
-    stats.textContent = `转换完成！已生成 ${AppState.dataItems.length} 个元素。`;
+    UI.listStats.textContent = `转换完成！已生成 ${AppState.dataItems.length} 个元素。`;
 }
 
-function copyListToClipboard() {
-    const output = document.getElementById('listOutput');
-    if (!output.value) return;
-    output.select();
-    document.execCommand('copy'); 
-    const btn = document.getElementById('copyListBtn');
-    const originalText = btn.innerText;
-    btn.innerText = '已复制!';
-    setTimeout(() => btn.innerText = originalText, 1500);
+async function copyListToClipboard() {
+    const content = UI.listOutput.value;
+    if (!content) {
+        return;
+    }
+
+    try {
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(content);
+        } else {
+            UI.listOutput.select();
+            document.execCommand('copy');
+        }
+
+        const originalText = UI.copyListBtn.innerText;
+        UI.copyListBtn.innerText = '已复制';
+        setTimeout(() => {
+            UI.copyListBtn.innerText = originalText;
+        }, 1500);
+    } catch (error) {
+        alert(`复制失败: ${error.message}`);
+    }
 }
 
-// =========================================
-// 7. 搜索模式逻辑 (步骤 3 - Search)
-// =========================================
 function initSearchModeView() {
-    document.getElementById('searchResults').innerHTML = '';
-    document.getElementById('downloadSearchResultsBtn').disabled = false;
+    UI.searchResults.innerHTML = '';
     displaySearchResults(null);
 }
 
 function handleSearch() {
-    const input = document.getElementById('searchInput').value.trim();
+    const input = UI.searchInput.value.trim();
     if (!input) {
         displaySearchResults(null);
         return;
     }
-    const useRegex = document.getElementById('searchRegex').checked;
-    const caseSensitive = document.getElementById('searchCase').checked;
-    const keywords = input.split('\n').map(k => k.trim()).filter(k => k);
-    
+
+    const keywords = input
+        .split('\n')
+        .map((keyword) => keyword.trim())
+        .filter(Boolean);
+
     if (keywords.length === 0) {
         displaySearchResults(null);
         return;
     }
 
-    const results = performBatchSearch(keywords, useRegex, caseSensitive);
+    const results = performBatchSearch(keywords, UI.searchRegex.checked, UI.searchCase.checked);
     displaySearchResults(results);
 }
 
 function performBatchSearch(keywords, useRegex, caseSensitive) {
-    return keywords.map(keyword => {
-        let regexObj;
-        let errorMsg = null;
+    return keywords.map((keyword) => {
+        let regex = null;
+
         try {
-            if (useRegex) {
-                regexObj = new RegExp(keyword, caseSensitive ? 'g' : 'gi');
-            } else {
-                regexObj = new RegExp(escapeRegExp(keyword), caseSensitive ? 'g' : 'gi');
-            }
-        } catch (e) {
-            errorMsg = '无效的正则表达式';
+            regex = new RegExp(useRegex ? keyword : escapeRegExp(keyword), caseSensitive ? 'g' : 'gi');
+        } catch (error) {
+            return { keyword, error: '无效的正则表达式' };
         }
 
-        if (errorMsg) return { keyword, error: errorMsg };
+        const matches = [];
 
-        const matchedItems = [];
         AppState.dataItems.forEach((content, index) => {
-            regexObj.lastIndex = 0; 
-            if (regexObj.test(content)) {
-                regexObj.lastIndex = 0;
-                const matches = content.match(regexObj);
-                const count = matches ? matches.length : 0;
-                matchedItems.push({ index: index + 1, content: content, matchCount: count });
+            regex.lastIndex = 0;
+            if (!regex.test(content)) {
+                return;
             }
+
+            regex.lastIndex = 0;
+            const matchedEntries = content.match(regex);
+            matches.push({
+                index: index + 1,
+                content,
+                matchCount: matchedEntries ? matchedEntries.length : 0
+            });
         });
-        return { keyword, matches: matchedItems, regex: regexObj };
+
+        return { keyword, matches, regex };
     });
 }
 
 function displaySearchResults(groupedResults) {
-    const container = document.getElementById('searchResults');
-    
     if (!groupedResults) {
-        const displayLimit = 20;
-        const total = AppState.dataItems.length;
-        const itemsToShow = AppState.dataItems.slice(0, displayLimit);
-        
-        container.innerHTML = `
+        const previewItems = AppState.dataItems.slice(0, DEFAULT_RESULT_PREVIEW_COUNT);
+        UI.searchResults.innerHTML = `
             <div class="result-header success">
-                当前显示全部数据（共 ${total} 条，仅预览前 ${itemsToShow.length} 条）
+                当前显示全部数据（共 ${AppState.dataItems.length} 条，仅预览前 ${previewItems.length} 条）
             </div>
             <div class="keyword-group">
-                ${itemsToShow.map((item, i) => `
+                ${previewItems.map((item, index) => `
                     <div class="result-item">
-                        <div class="result-item-header"><span>#${i + 1}</span></div>
+                        <div class="result-item-header"><span>#${index + 1}</span></div>
                         <div class="result-item-content">${escapeHtml(item)}</div>
                     </div>
                 `).join('')}
-                ${total > displayLimit ? `<div style="padding:10px; text-align:center; color:#aaa;">... 剩余 ${total - displayLimit} 条数据请下载查看 ...</div>` : ''}
+                ${AppState.dataItems.length > DEFAULT_RESULT_PREVIEW_COUNT
+                    ? `<div style="padding:10px; text-align:center; color:#aaa;">... 剩余 ${AppState.dataItems.length - DEFAULT_RESULT_PREVIEW_COUNT} 条数据请下载查看 ...</div>`
+                    : ''}
             </div>
         `;
-        AppState.lastDownloadItems = AppState.dataItems;
+        AppState.lastDownloadItems = [...AppState.dataItems];
+        UI.downloadSearchResultsBtn.disabled = AppState.lastDownloadItems.length === 0;
         return;
     }
 
     let totalMatches = 0;
     const downloadSet = new Set();
-    let htmlContent = '';
-
-    groupedResults.forEach(group => {
+    const groupsHtml = groupedResults.map((group) => {
         if (group.error) {
-            htmlContent += `<div class="keyword-group"><div class="keyword-header error">关键词 "${escapeHtml(group.keyword)}": ${group.error}</div></div>`;
-            return;
+            return `<div class="keyword-group"><div class="keyword-header error">关键字 "${escapeHtml(group.keyword)}": ${group.error}</div></div>`;
         }
+
         const count = group.matches.length;
         totalMatches += count;
 
-        if (count > 0) {
-            group.matches.forEach(m => downloadSet.add(m.content));
-            htmlContent += `
-                <div class="keyword-group">
-                    <div class="keyword-header">
-                        <span>关键词: "${escapeHtml(group.keyword)}"</span>
-                        <span class="keyword-count">找到 ${count} 条</span>
-                    </div>
-                    ${group.matches.map(m => `
-                        <div class="result-item">
-                            <div class="result-item-header"><span>#${m.index}</span> <span>匹配 ${m.matchCount} 次</span></div>
-                            <div class="result-item-content">${highlightText(m.content, group.regex)}</div>
-                        </div>
-                    `).join('')}
-                </div>`;
-        } else {
-            htmlContent += `<div class="keyword-group"><div class="keyword-header" style="opacity:0.6;"><span>关键词: "${escapeHtml(group.keyword)}"</span><span class="keyword-count">未找到</span></div></div>`;
+        if (count === 0) {
+            return `<div class="keyword-group"><div class="keyword-header" style="opacity:0.6;"><span>关键字 "${escapeHtml(group.keyword)}"</span><span class="keyword-count">未找到</span></div></div>`;
         }
-    });
 
-    const headerClass = totalMatches > 0 ? 'success' : 'error';
-    const headerText = totalMatches > 0 ? `搜索完成：共找到 ${totalMatches} 条相关数据` : `搜索完成：没有找到匹配的数据`;
+        group.matches.forEach((match) => downloadSet.add(match.content));
 
-    container.innerHTML = `<div class="result-header ${headerClass}">${headerText}</div>${htmlContent}`;
+        return `
+            <div class="keyword-group">
+                <div class="keyword-header">
+                    <span>关键字 "${escapeHtml(group.keyword)}"</span>
+                    <span class="keyword-count">找到 ${count} 条</span>
+                </div>
+                ${group.matches.map((match) => `
+                    <div class="result-item">
+                        <div class="result-item-header"><span>#${match.index}</span><span>匹配 ${match.matchCount} 次</span></div>
+                        <div class="result-item-content">${highlightText(match.content, group.regex)}</div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }).join('');
+
+    const hasMatches = totalMatches > 0;
+    UI.searchResults.innerHTML = `
+        <div class="result-header ${hasMatches ? 'success' : 'error'}">
+            ${hasMatches ? `搜索完成：共找到 ${totalMatches} 条相关数据` : '搜索完成：没有找到匹配的数据'}
+        </div>
+        ${groupsHtml}
+    `;
+
     AppState.lastDownloadItems = Array.from(downloadSet);
-    document.getElementById('downloadSearchResultsBtn').disabled = AppState.lastDownloadItems.length === 0;
+    UI.downloadSearchResultsBtn.disabled = AppState.lastDownloadItems.length === 0;
 }
 
 function highlightText(text, regex) {
     return text.replace(regex, (match) => `<span class="highlight">${escapeHtml(match)}</span>`);
 }
 
-// =========================================
-// 8. 辅助工具与事件绑定
-// =========================================
 function bindGlobalEvents() {
-    document.getElementById('backToHomeBtn').addEventListener('click', resetApp);
-    document.getElementById('loadTextBtn').addEventListener('click', function() { handleLoadText(this); });
-    document.getElementById('parseTextBtn').addEventListener('click', handleParseText);
-    document.getElementById('searchBtn').addEventListener('click', handleSearch);
-    document.getElementById('copyListBtn').addEventListener('click', copyListToClipboard);
-    
-    document.getElementById('downloadListBtn').addEventListener('click', () => {
-        const content = document.getElementById('listOutput').value;
-        if(!content) return alert('没有内容可下载');
-        downloadContent(content, 'list-convert-formatted');
+    UI.backToHomeBtn.addEventListener('click', resetApp);
+    UI.loadTextBtn.addEventListener('click', function () {
+        handleLoadText(this);
     });
-    
-    document.getElementById('downloadSearchResultsBtn').addEventListener('click', () => {
-        if (!AppState.lastDownloadItems.length) return alert('暂无内容可下载');
-        downloadContent(AppState.lastDownloadItems.join('\n'), 'search-results');
+    UI.parseTextBtn.addEventListener('click', handleParseText);
+    UI.searchBtn.addEventListener('click', handleSearch);
+    UI.copyListBtn.addEventListener('click', copyListToClipboard);
+    UI.downloadListBtn.addEventListener('click', handleListDownload);
+    UI.downloadSearchResultsBtn.addEventListener('click', handleSearchDownload);
+    UI.customDelimiter.addEventListener('focus', () => {
+        UI.delimiterCustom.checked = true;
     });
 
-    const customInput = document.getElementById('customDelimiter');
-    customInput.addEventListener('focus', () => {
-        document.getElementById('delimiterCustom').checked = true;
+    UI.listFormatRadios.forEach((radio) => {
+        radio.addEventListener('change', renderListOutput);
     });
+}
+
+function handleListDownload() {
+    if (!UI.listOutput.value) {
+        alert('没有内容可下载');
+        return;
+    }
+
+    downloadContent(UI.listOutput.value, 'list-convert-formatted');
+}
+
+function handleSearchDownload() {
+    if (AppState.lastDownloadItems.length === 0) {
+        alert('暂无内容可下载');
+        return;
+    }
+
+    downloadContent(AppState.lastDownloadItems.join('\n'), 'search-results');
 }
 
 function downloadContent(content, filenamePrefix) {
@@ -590,6 +677,7 @@ function downloadContent(content, filenamePrefix) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
     link.href = url;
     link.download = `${filenamePrefix}-${timestamp}.txt`;
     document.body.appendChild(link);
@@ -603,12 +691,22 @@ function escapeRegExp(string) {
 }
 
 function escapeHtml(text) {
-    if (!text) return '';
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    if (!text) {
+        return '';
+    }
+
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 window.selectMode = selectMode;
 
-if (typeof pdfjsLib !== 'undefined') {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp, { once: true });
+} else {
+    initApp();
 }

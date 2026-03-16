@@ -1,204 +1,313 @@
-(function() {
-    var width, height, canvas, ctx, points, target, animateHeader = true;
+(function () {
+    var CONNECTION_COUNT = 5;
+    var GRID_DIVISOR = 25;
+    var SHIFT_RANGE = 50;
+    var MIN_SHIFT_DURATION = 1000;
+    var SHIFT_DURATION_RANGE = 1000;
+    var ACTIVE_RANGES = [
+        { distanceSq: 4000, lineOpacity: 0.5, circleOpacity: 0.8 },
+        { distanceSq: 20000, lineOpacity: 0.2, circleOpacity: 0.5 },
+        { distanceSq: 40000, lineOpacity: 0.05, circleOpacity: 0.2 }
+    ];
+    var IDLE_LINE_OPACITY = 0.01;
+    var IDLE_CIRCLE_OPACITY = 0.05;
 
-    // 初始化
+    var width = 0;
+    var height = 0;
+    var canvas = document.getElementById('background-canvas');
+    var ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
+    var points = [];
+    var target = { x: 0, y: 0 };
+    var animateHeader = true;
+    var renderFrameId = null;
+    var reducedMotionQuery = window.matchMedia
+        ? window.matchMedia('(prefers-reduced-motion: reduce)')
+        : null;
+    var prefersReducedMotion = reducedMotionQuery ? reducedMotionQuery.matches : false;
+
+    if (!canvas || !ctx) {
+        return;
+    }
+
     initHeader();
-    initAnimation();
     addListeners();
+    syncAnimationState();
 
     function initHeader() {
         width = window.innerWidth;
         height = window.innerHeight;
-        target = {x: width/2, y: height/2};
-
-        canvas = document.getElementById('background-canvas');
+        target.x = width / 2;
+        target.y = height / 2;
         canvas.width = width;
         canvas.height = height;
-        ctx = canvas.getContext('2d');
+        points = buildPoints(performance.now());
+    }
 
-        // 创建点阵
-        points = [];
-        var spacing = Math.max(width, height) / 25; // 增加密度：从 15 改为 20
-        for(var x = 0; x < width; x = x + spacing) {
-            for(var y = 0; y < height; y = y + spacing) {
-                var px = x + Math.random() * spacing;
-                var py = y + Math.random() * spacing;
-                var p = {x: px, originX: px, y: py, originY: py };
-                points.push(p);
+    function buildPoints(now) {
+        var nextPoints = [];
+        var spacing = Math.max(width, height) / GRID_DIVISOR;
+
+        for (var x = 0; x < width; x += spacing) {
+            for (var y = 0; y < height; y += spacing) {
+                nextPoints.push(createPoint(x + Math.random() * spacing, y + Math.random() * spacing, now));
             }
         }
 
-        // 为每个点找到最近的5个点
-        for(var i = 0; i < points.length; i++) {
+        assignClosestPoints(nextPoints);
+        return nextPoints;
+    }
+
+    function createPoint(x, y, now) {
+        var point = {
+            x: x,
+            y: y,
+            originX: x,
+            originY: y,
+            startX: x,
+            startY: y,
+            targetX: x,
+            targetY: y,
+            startTime: now,
+            duration: MIN_SHIFT_DURATION,
+            active: IDLE_LINE_OPACITY
+        };
+
+        point.circle = new Circle(point, 2.5 + Math.random() * 2.5);
+        resetPointMotion(point, now);
+        return point;
+    }
+
+    function assignClosestPoints(pointList) {
+        for (var i = 0; i < pointList.length; i += 1) {
+            var currentPoint = pointList[i];
             var closest = [];
-            var p1 = points[i];
-            for(var j = 0; j < points.length; j++) {
-                var p2 = points[j]
-                if(!(p1 == p2)) {
-                    var placed = false;
-                    for(var k = 0; k < 5; k++) { // 从 5 改为 6，增加连接数
-                        if(!placed) {
-                            if(closest[k] == undefined) {
-                                closest[k] = p2;
-                                placed = true;
-                            }
-                        }
-                    }
 
-                    for(var k = 0; k < 5; k++) { // 从 5 改为 6
-                        if(!placed) {
-                            if(getDistance(p1, p2) < getDistance(p1, closest[k])) {
-                                closest[k] = p2;
-                                placed = true;
-                            }
-                        }
-                    }
+            for (var j = 0; j < pointList.length; j += 1) {
+                var candidatePoint = pointList[j];
+
+                if (currentPoint === candidatePoint) {
+                    continue;
                 }
-            }
-            p1.closest = closest;
-        }
 
-        // 为每个点创建圆圈
-        for(var i in points) {
-            var c = new Circle(points[i], 2.5 + Math.random() * 2.5, 'rgba(255,255,255,0.4)'); // 增大圆圈，提高不透明度
-            points[i].circle = c;
+                insertClosestPoint(closest, candidatePoint, getDistanceSquared(currentPoint, candidatePoint));
+            }
+
+            currentPoint.closest = mapClosestPoints(closest);
         }
     }
 
-    // 事件监听
+    function insertClosestPoint(closestPoints, point, distanceSq) {
+        for (var i = 0; i < CONNECTION_COUNT; i += 1) {
+            if (!closestPoints[i] || distanceSq < closestPoints[i].distanceSq) {
+                closestPoints.splice(i, 0, {
+                    point: point,
+                    distanceSq: distanceSq
+                });
+
+                if (closestPoints.length > CONNECTION_COUNT) {
+                    closestPoints.length = CONNECTION_COUNT;
+                }
+                return;
+            }
+        }
+    }
+
+    function mapClosestPoints(closestPoints) {
+        var mappedPoints = [];
+
+        for (var i = 0; i < closestPoints.length; i += 1) {
+            mappedPoints.push(closestPoints[i].point);
+        }
+
+        return mappedPoints;
+    }
+
     function addListeners() {
-        if(!('ontouchstart' in window)) {
+        if (!('ontouchstart' in window)) {
             window.addEventListener('mousemove', mouseMove);
         }
-        window.addEventListener('scroll', scrollCheck);
+
+        window.addEventListener('scroll', scrollCheck, { passive: true });
         window.addEventListener('resize', resize);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        if (reducedMotionQuery) {
+            if (typeof reducedMotionQuery.addEventListener === 'function') {
+                reducedMotionQuery.addEventListener('change', handleMotionPreferenceChange);
+            } else if (typeof reducedMotionQuery.addListener === 'function') {
+                reducedMotionQuery.addListener(handleMotionPreferenceChange);
+            }
+        }
     }
 
-    function mouseMove(e) {
-        var posx = 0, posy = 0;
-        if (e.pageX || e.pageY) {
-            posx = e.pageX;
-            posy = e.pageY;
-        } else if (e.clientX || e.clientY) {
-            posx = e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
-            posy = e.clientY + document.body.scrollTop + document.documentElement.scrollTop;
-        }
-        target.x = posx;
-        target.y = posy;
+    function mouseMove(event) {
+        target.x = event.clientX;
+        target.y = event.clientY;
     }
 
     function scrollCheck() {
-        if(document.body.scrollTop > height || document.documentElement.scrollTop > height) {
-            animateHeader = false;
-        } else {
-            animateHeader = true;
-        }
+        animateHeader = getScrollTop() <= height;
+        syncAnimationState();
     }
 
     function resize() {
-        width = window.innerWidth;
-        height = window.innerHeight;
-        canvas.width = width;
-        canvas.height = height;
+        initHeader();
+        syncAnimationState();
     }
 
-    // 动画循环
-    function initAnimation() {
-        animate();
-        for(var i in points) {
-            shiftPoint(points[i]);
+    function handleVisibilityChange() {
+        syncAnimationState();
+    }
+
+    function handleMotionPreferenceChange(event) {
+        prefersReducedMotion = event.matches;
+        initHeader();
+        syncAnimationState();
+    }
+
+    function syncAnimationState() {
+        if (prefersReducedMotion) {
+            stopAnimationLoop();
+            renderStaticFrame();
+            return;
+        }
+
+        if (!animateHeader || document.hidden) {
+            stopAnimationLoop();
+            return;
+        }
+
+        startAnimationLoop();
+    }
+
+    function startAnimationLoop() {
+        if (renderFrameId !== null) {
+            return;
+        }
+
+        renderFrameId = requestAnimationFrame(animate);
+    }
+
+    function stopAnimationLoop() {
+        if (renderFrameId === null) {
+            return;
+        }
+
+        cancelAnimationFrame(renderFrameId);
+        renderFrameId = null;
+    }
+
+    function animate(now) {
+        renderFrameId = requestAnimationFrame(animate);
+        updateAndDrawScene(now);
+    }
+
+    function updateAndDrawScene(now) {
+        ctx.clearRect(0, 0, width, height);
+
+        for (var i = 0; i < points.length; i += 1) {
+            var point = points[i];
+            updatePointPosition(point, now);
+            applyPointActivity(point);
+            drawLines(point);
+            point.circle.draw();
         }
     }
 
-    function animate() {
-        if(animateHeader) {
-            ctx.clearRect(0, 0, width, height);
-            for(var i in points) {
-                // 根据距离检测点的活跃度
-                var distance = Math.abs(getDistance(target, points[i]));
-                if(distance < 4000) {
-                    points[i].active = 0.5;  // 从 0.3 提高到 0.5
-                    points[i].circle.active = 0.8;  // 从 0.6 提高到 0.8
-                } else if(distance < 20000) {
-                    points[i].active = 0.2;  // 从 0.1 提高到 0.2
-                    points[i].circle.active = 0.5;  // 从 0.3 提高到 0.5
-                } else if(distance < 40000) {
-                    points[i].active = 0.05;  // 从 0.02 提高到 0.05
-                    points[i].circle.active = 0.2;  // 从 0.1 提高到 0.2
-                } else {
-                    points[i].active = 0.01;  // 基础可见度从 0 改为 0.01
-                    points[i].circle.active = 0.05;  // 基础可见度从 0 改为 0.05
-                }
+    function renderStaticFrame() {
+        ctx.clearRect(0, 0, width, height);
 
-                drawLines(points[i]);
-                points[i].circle.draw();
+        for (var i = 0; i < points.length; i += 1) {
+            var point = points[i];
+            point.active = IDLE_LINE_OPACITY;
+            point.circle.active = IDLE_CIRCLE_OPACITY;
+            drawLines(point);
+            point.circle.draw();
+        }
+    }
+
+    function updatePointPosition(point, now) {
+        var elapsed = now - point.startTime;
+        var progress = point.duration === 0 ? 1 : Math.min(elapsed / point.duration, 1);
+        var eased = easeInOutCirc(progress);
+
+        point.x = point.startX + (point.targetX - point.startX) * eased;
+        point.y = point.startY + (point.targetY - point.startY) * eased;
+
+        if (progress >= 1) {
+            resetPointMotion(point, now);
+        }
+    }
+
+    function resetPointMotion(point, now) {
+        point.startX = point.x;
+        point.startY = point.y;
+        point.targetX = point.originX - SHIFT_RANGE + Math.random() * SHIFT_RANGE * 2;
+        point.targetY = point.originY - SHIFT_RANGE + Math.random() * SHIFT_RANGE * 2;
+        point.startTime = now;
+        point.duration = MIN_SHIFT_DURATION + Math.random() * SHIFT_DURATION_RANGE;
+    }
+
+    function applyPointActivity(point) {
+        var distanceSq = getDistanceSquared(target, point);
+
+        for (var i = 0; i < ACTIVE_RANGES.length; i += 1) {
+            if (distanceSq < ACTIVE_RANGES[i].distanceSq) {
+                point.active = ACTIVE_RANGES[i].lineOpacity;
+                point.circle.active = ACTIVE_RANGES[i].circleOpacity;
+                return;
             }
         }
-        requestAnimationFrame(animate);
+
+        point.active = IDLE_LINE_OPACITY;
+        point.circle.active = IDLE_CIRCLE_OPACITY;
     }
 
-    function shiftPoint(p) {
-        // 使用简单的缓动替代 TweenLite
-        var duration = 1000 + Math.random() * 1000;
-        var targetX = p.originX - 50 + Math.random() * 100;
-        var targetY = p.originY - 50 + Math.random() * 100;
-        var startX = p.x;
-        var startY = p.y;
-        var startTime = Date.now();
-
-        function update() {
-            var elapsed = Date.now() - startTime;
-            var progress = Math.min(elapsed / duration, 1);
-
-            // easeInOutCirc 缓动函数
-            var eased = progress < 0.5
-                ? (1 - Math.sqrt(1 - Math.pow(2 * progress, 2))) / 2
-                : (Math.sqrt(1 - Math.pow(-2 * progress + 2, 2)) + 1) / 2;
-
-            p.x = startX + (targetX - startX) * eased;
-            p.y = startY + (targetY - startY) * eased;
-
-            if(progress < 1) {
-                requestAnimationFrame(update);
-            } else {
-                shiftPoint(p);
-            }
+    function drawLines(point) {
+        if (!point.active) {
+            return;
         }
-        update();
-    }
 
-    // Canvas 绘制
-    function drawLines(p) {
-        if(!p.active) return;
-        for(var i in p.closest) {
+        ctx.strokeStyle = 'rgba(120,120,120,' + point.active + ')';
+
+        for (var i = 0; i < point.closest.length; i += 1) {
             ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.closest[i].x, p.closest[i].y);
-            ctx.strokeStyle = 'rgba(120,120,120,' + p.active + ')'; // 从 100 提高到 120，更亮
+            ctx.moveTo(point.x, point.y);
+            ctx.lineTo(point.closest[i].x, point.closest[i].y);
             ctx.stroke();
         }
     }
 
-    function Circle(pos, rad, color) {
-        var _this = this;
-
-        (function() {
-            _this.pos = pos || null;
-            _this.radius = rad || null;
-            _this.color = color || null;
-        })();
-
-        this.draw = function() {
-            if(!_this.active) return;
-            ctx.beginPath();
-            ctx.arc(_this.pos.x, _this.pos.y, _this.radius, 0, 2 * Math.PI, false);
-            ctx.fillStyle = 'rgba(120,120,120,' + _this.active + ')'; // 从 100 提高到 120，更亮
-            ctx.fill();
-        };
+    function Circle(position, radius) {
+        this.pos = position;
+        this.radius = radius;
+        this.active = IDLE_CIRCLE_OPACITY;
     }
 
-    // 工具函数
-    function getDistance(p1, p2) {
-        return Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2);
+    Circle.prototype.draw = function () {
+        if (!this.active) {
+            return;
+        }
+
+        ctx.beginPath();
+        ctx.arc(this.pos.x, this.pos.y, this.radius, 0, 2 * Math.PI, false);
+        ctx.fillStyle = 'rgba(120,120,120,' + this.active + ')';
+        ctx.fill();
+    };
+
+    function easeInOutCirc(progress) {
+        return progress < 0.5
+            ? (1 - Math.sqrt(1 - Math.pow(2 * progress, 2))) / 2
+            : (Math.sqrt(1 - Math.pow(-2 * progress + 2, 2)) + 1) / 2;
+    }
+
+    function getDistanceSquared(pointA, pointB) {
+        var deltaX = pointA.x - pointB.x;
+        var deltaY = pointA.y - pointB.y;
+        return deltaX * deltaX + deltaY * deltaY;
+    }
+
+    function getScrollTop() {
+        return window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
     }
 })();

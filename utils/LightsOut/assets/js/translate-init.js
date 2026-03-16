@@ -25,7 +25,7 @@
         }
     };
 
-    const forceLanguageSelectorStyle = () => {
+    let forceLanguageSelectorStyle = () => {
         // 检测当前是否为日间模式
         const isDayMode = document.body.classList.contains('day-mode');
 
@@ -104,6 +104,121 @@
                     });
                 }
             });
+        });
+    };
+
+    forceLanguageSelectorStyle = () => {
+        const navActions = document.querySelector('.nav-actions');
+        const themeToggleContainer = navActions ? navActions.querySelector('.theme-toggle-container') : null;
+        const placeInNav = Boolean(navActions && themeToggleContainer);
+        const referenceBtn = navActions ? navActions.querySelector('.nav-btn:not(.language-selector)') : null;
+        const referenceRect = referenceBtn ? referenceBtn.getBoundingClientRect() : null;
+        const referenceSize = referenceRect && referenceRect.width > 0 && referenceRect.height > 0
+            ? { width: Math.ceil(referenceRect.width), height: Math.ceil(referenceRect.height) }
+            : null;
+        const referenceStyles = referenceBtn ? window.getComputedStyle(referenceBtn) : null;
+
+        const elements = Array.from(document.querySelectorAll(SELECTORS.join(',')));
+        const roots = elements.filter(element => !elements.some(parent => parent !== element && parent.contains(element)));
+
+        roots.forEach(element => {
+            element.classList.add('nav-btn', 'language-selector');
+
+            if (placeInNav && element.parentElement !== navActions) {
+                navActions.insertBefore(element, themeToggleContainer);
+            }
+
+            if (placeInNav) {
+                element.style.setProperty('position', 'relative', 'important');
+                element.style.setProperty('top', 'auto', 'important');
+                element.style.setProperty('right', 'auto', 'important');
+                element.style.setProperty('left', 'auto', 'important');
+                element.style.setProperty('bottom', 'auto', 'important');
+                element.style.setProperty('z-index', '1', 'important');
+            } else {
+                element.style.setProperty('position', 'fixed', 'important');
+                element.style.setProperty('top', '20px', 'important');
+                element.style.setProperty('right', '20px', 'important');
+                element.style.setProperty('z-index', '9999', 'important');
+            }
+
+            const navOverrideProps = [
+                'display',
+                'align-items',
+                'justify-content',
+                'background',
+                'border',
+                'box-shadow',
+                'backdrop-filter',
+                'border-radius',
+                'font-size',
+                'font-family',
+                'padding',
+                'width'
+            ];
+
+            if (placeInNav) {
+                navOverrideProps.forEach(prop => element.style.removeProperty(prop));
+            }
+
+            if (placeInNav && referenceSize) {
+                element.style.setProperty('min-width', `${referenceSize.width}px`, 'important');
+                element.style.setProperty('min-height', `${referenceSize.height}px`, 'important');
+                element.style.setProperty('height', `${referenceSize.height}px`, 'important');
+            } else {
+                element.style.removeProperty('min-width');
+                element.style.removeProperty('min-height');
+                element.style.removeProperty('height');
+            }
+
+            if (placeInNav && referenceStyles) {
+                element.style.setProperty('background-color', referenceStyles.backgroundColor, 'important');
+                element.style.setProperty('border-color', referenceStyles.borderTopColor, 'important');
+                element.style.setProperty('border-width', referenceStyles.borderTopWidth, 'important');
+                element.style.setProperty('border-style', referenceStyles.borderTopStyle, 'important');
+                element.style.setProperty('box-shadow', referenceStyles.boxShadow, 'important');
+                element.style.setProperty('color', referenceStyles.color, 'important');
+                element.style.setProperty('border-radius', referenceStyles.borderRadius, 'important');
+                element.style.setProperty('font-weight', referenceStyles.fontWeight, 'important');
+                element.style.setProperty('overflow', 'visible', 'important');
+            } else {
+                [
+                    'background-color',
+                    'border-color',
+                    'border-width',
+                    'border-style',
+                    'box-shadow',
+                    'color',
+                    'border-radius',
+                    'font-weight',
+                    'overflow'
+                ].forEach(prop => element.style.removeProperty(prop));
+            }
+
+            element.style.setProperty('margin', '0', 'important');
+
+            const selectEl = element.querySelector('select');
+            if (selectEl) {
+                selectEl.style.setProperty('color', 'inherit', 'important');
+                selectEl.style.setProperty('background', 'transparent', 'important');
+                selectEl.style.setProperty('border', 'none', 'important');
+                selectEl.style.setProperty('font-size', '0.875rem', 'important');
+                selectEl.style.setProperty('text-align', 'center', 'important');
+                selectEl.style.setProperty('text-align-last', 'center', 'important');
+                selectEl.style.setProperty('cursor', 'pointer', 'important');
+                selectEl.style.setProperty('outline', 'none', 'important');
+                selectEl.style.setProperty('width', '100%', 'important');
+                selectEl.style.setProperty('height', '100%', 'important');
+                selectEl.style.setProperty('padding', '0 12px', 'important');
+                selectEl.style.setProperty('margin', '0', 'important');
+                selectEl.style.setProperty('position', 'absolute', 'important');
+                selectEl.style.setProperty('top', '0', 'important');
+                selectEl.style.setProperty('left', '0', 'important');
+                selectEl.style.setProperty('opacity', '1', 'important');
+                selectEl.style.setProperty('appearance', 'none', 'important');
+                selectEl.style.setProperty('-webkit-appearance', 'none', 'important');
+                selectEl.style.setProperty('-moz-appearance', 'none', 'important');
+            }
         });
     };
 

@@ -24,6 +24,111 @@ body {
     flex-direction: column;
 }
 
+/* ===== Navbar (aligned with SRT2TXT/ExcelGrep) ===== */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    width: 100%;
+    align-self: stretch;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+}
+
+.nav-content {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+}
+
+.logo-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.logo-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    object-fit: cover;
+}
+
+.logo-text-desktop {
+    font-weight: 900;
+    color: hsl(0 0% 95%);
+    letter-spacing: 0.05em;
+    font-size: 1.125rem;
+    font-family: 'Righteous', 'Microsoft YaHei', sans-serif;
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.nav-btn {
+    -webkit-tap-highlight-color: #0000;
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    background: #0000;
+    border: 1px solid #0000;
+    position: relative;
+    color: white;
+    transition: translate 0.1s ease-out, scale 0.1s ease-out;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.nav-btn::before,
+.nav-btn::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.nav-btn::before {
+    z-index: -1;
+    background: linear-gradient(
+        hsl(0 0% 100% / 0.18),
+        hsl(0 0% 4% / 0.7)
+    );
+    backdrop-filter: saturate(2) contrast(1) blur(10px);
+}
+
+.nav-btn::after {
+    box-shadow: 0 0 1px 0.8px hsl(0 0% 100% / 0.8) inset;
+    mask: linear-gradient(-35deg, #ffffff80, #ffffff30 30% 60%, #fff);
+}
+
+.nav-btn:active:not(:disabled) {
+    scale: 0.98;
+    translate: 0 1px;
+}
+
+.nav-btn:hover:not(:disabled) {
+    scale: 1.02;
+}
+
 /* ===== Header 样式 ===== */
 .header {
     text-align: center;
@@ -81,30 +186,6 @@ body {
     margin: 0 auto;
 }
 
-.return-home {
-    position: fixed;
-    top: 1rem;
-    left: 1rem;
-    z-index: 1000;
-    text-decoration: none;
-    color: hsl(0 0% 90%);
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px) saturate(1.2);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
-    font-size: 0.95rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.return-home:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
-    transform: translateX(-3px);
-}
 
 /* ===== 按钮统一样式 ===== */
 .btn {
@@ -195,6 +276,11 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     padding: 1rem;
+}
+
+.navbar + .fo-container,
+.navbar + .variant-container {
+    padding-top: 1.5rem;
 }
 
 .fo-header {
@@ -568,6 +654,261 @@ body {
     text-align: center;
 }
 
+/* ===== 变体玩法样式 ===== */
+.variant-colorful-page .fo-cell.hint-num {
+    color: #1f2d3d;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.variant-dec-page .fo-cell.hint-highlight {
+    background: #ff6b9d !important;
+    color: white !important;
+    box-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+}
+
+.variant-diamond-page .fo-cell-placeholder {
+    width: var(--cell-size, 40px);
+    height: var(--cell-size, 40px);
+    background: transparent;
+    border: none;
+    pointer-events: none;
+}
+
+.variant-diamond-page .diamond-layout {
+    display: grid;
+    place-items: center;
+}
+
+.variant-cube-page .cube-container {
+    perspective: 1000px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 500px;
+    margin: 20px 0;
+}
+
+.variant-cube-page .cube {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    transform-style: preserve-3d;
+    cursor: grab;
+    user-select: none;
+}
+
+.variant-cube-page .cube:active {
+    cursor: grabbing;
+}
+
+.variant-cube-page .cube-hint {
+    color: #666;
+    font-size: 0.9rem;
+    margin-left: 10px;
+}
+
+.variant-cube-page .cube-face {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    border: 2px solid #333;
+    background: rgba(255, 255, 255, 0.9);
+    display: grid;
+    gap: 2px;
+    padding: 5px;
+}
+
+.variant-cube-page .cube-face.front { transform: rotateY(0deg) translateZ(150px); }
+.variant-cube-page .cube-face.back { transform: rotateY(180deg) translateZ(150px); }
+.variant-cube-page .cube-face.right { transform: rotateY(90deg) translateZ(150px); }
+.variant-cube-page .cube-face.left { transform: rotateY(-90deg) translateZ(150px); }
+.variant-cube-page .cube-face.top { transform: rotateX(90deg) translateZ(150px); }
+.variant-cube-page .cube-face.bottom { transform: rotateX(-90deg) translateZ(150px); }
+
+.variant-polyhedron-page .polyhedron-container {
+    perspective: 1200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 500px;
+    margin: 20px 0;
+    position: relative;
+}
+
+.variant-polyhedron-page .polyhedron {
+    position: relative;
+    transform-style: preserve-3d;
+    cursor: grab;
+    user-select: none;
+    transition: transform 0.1s ease;
+}
+
+.variant-polyhedron-page .polyhedron:active {
+    cursor: grabbing;
+}
+
+.variant-polyhedron-page .polyhedron-hint {
+    color: #666;
+    font-size: 0.9rem;
+    margin-left: 10px;
+}
+
+.variant-polyhedron-page .dimension-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.variant-polyhedron-page .polyhedron-face {
+    position: absolute;
+    border: 2px solid #333;
+    background: rgba(255, 255, 255, 0.9);
+    display: grid;
+    gap: 2px;
+    padding: 5px;
+    box-sizing: border-box;
+}
+
+.variant-polyhedron-page .polyhedron-face.front { transform: rotateY(0deg) translateZ(var(--depth)); }
+.variant-polyhedron-page .polyhedron-face.back { transform: rotateY(180deg) translateZ(var(--depth)); }
+.variant-polyhedron-page .polyhedron-face.right { transform: rotateY(90deg) translateZ(var(--width)); }
+.variant-polyhedron-page .polyhedron-face.left { transform: rotateY(-90deg) translateZ(var(--width)); }
+.variant-polyhedron-page .polyhedron-face.top { transform: rotateX(90deg) translateZ(var(--height)); }
+.variant-polyhedron-page .polyhedron-face.bottom { transform: rotateX(-90deg) translateZ(var(--height)); }
+
+.variant-cube-page .cube-cell,
+.variant-polyhedron-page .cube-cell {
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.variant-cube-page .cube-cell.on,
+.variant-polyhedron-page .cube-cell.on {
+    background: #ffeb3b;
+    box-shadow: 0 0 10px rgba(255, 235, 59, 0.5);
+}
+
+.variant-cube-page .cube-cell.hint-highlight,
+.variant-polyhedron-page .cube-cell.hint-highlight {
+    background: #ff9800;
+    color: white;
+    font-weight: bold;
+}
+
+.variant-cube-page .face-label,
+.variant-polyhedron-page .face-label {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-weight: bold;
+    color: #333;
+}
+
+.variant-pic-page .fo-board {
+    --cell: 56px;
+}
+
+.variant-pic-page .pic-form .fo-row {
+    gap: 16px;
+    align-items: center;
+}
+
+.variant-pic-page .pic-form .inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.variant-pic-page .pic-form .inline input[type="number"] {
+    width: 84px;
+}
+
+.variant-pic-page .pic-form .url-input {
+    width: 340px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.variant-pic-page .pic-form .group {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+}
+
+.variant-pic-page .pic-form .group .left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.variant-pic-page .pic-form .hint {
+    color: #667085;
+    font-size: 12px;
+}
+
+.variant-pic-page .fo-cell.pic {
+    position: relative;
+    overflow: hidden;
+    background: transparent !important;
+}
+
+.variant-pic-page .fo-cell.pic .piece {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-repeat: no-repeat;
+    background-size: var(--bgW) var(--bgH);
+    transform-origin: center center;
+    transition: transform 120ms ease-out;
+}
+
+.variant-pic-page .fo-cell.pic.hint-num {
+    color: var(--hintColor, #1f2d3d);
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+}
+
+.variant-pic-page .fo-cell.pic .hintText {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    background: var(--hintBg, transparent);
+    border-radius: 6px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.variant-pic-page .fo-preview {
+    width: 120px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    background-size: cover;
+    background-position: center;
+}
+
 /* ===== 成功弹窗样式 ===== */
 .success-modal {
     position: fixed;
@@ -658,13 +999,6 @@ body {
 }
 
 @media (max-width: 768px) {
-    .return-home {
-        top: 0.5rem;
-        left: 0.5rem;
-        padding: 0.5rem 1rem;
-        font-size: 0.85rem;
-    }
-
     .header {
         padding: 1.5rem 1rem 1rem;
     }
@@ -698,42 +1032,53 @@ body {
     }
 }
 
+@media (max-width: 639px) {
+    .nav-content {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: center;
+        padding: 0.75rem 1rem;
+    }
+
+    .logo-wrapper {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .nav-actions {
+        justify-content: center;
+        width: 100%;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+}
+
+@media (min-width: 640px) {
+    .nav-content {
+        flex-direction: row;
+        padding: 0.75rem 1.5rem;
+    }
+}
+
+
 /* ===== 语言选择器样式 ===== */
 #translate,
 #translate .translate_selectLanguage_tag,
 .translate_selectLanguage_tag,
 div[id="translate"],
 div[id="translate"] .translate_selectLanguage_tag {
-    position: fixed !important;
-    top: 20px !important;
-    right: 20px !important;
-    z-index: 9999 !important;
-    background: rgba(255, 255, 255, 0.08) !important;
-    backdrop-filter: blur(20px) saturate(1.2) !important;
-    color: hsl(0 0% 90%) !important;
-    padding: 0 !important;
-    border-radius: 20px !important;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: 1 !important;
     cursor: pointer !important;
-    font-size: 0.9rem !important;
+    font-size: 0.875rem !important;
     font-family: inherit !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
-    transition: all 0.3s ease !important;
-    display: inline-block !important;
+    display: inline-flex !important;
+    align-items: center !important;
     margin: 0 !important;
-    min-width: 120px !important;
-    height: 36px !important;
-    overflow: visible !important;
-}
-
-#translate:hover,
-#translate .translate_selectLanguage_tag:hover,
-.translate_selectLanguage_tag:hover,
-div[id="translate"]:hover,
-div[id="translate"] .translate_selectLanguage_tag:hover {
-    background: rgba(255, 255, 255, 0.12) !important;
-    transform: translateY(-1px) !important;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3) !important;
+    overflow: hidden !important;
 }
 
 #translate select,
@@ -743,9 +1088,11 @@ div[id="translate"] select,
 div[id="translate"] .translate_selectLanguage_tag select {
     background: transparent !important;
     border: none !important;
-    color: hsl(0 0% 90%) !important;
-    font-size: 0.9rem !important;
+    color: inherit !important;
+    font-size: 0.85rem !important;
     font-family: inherit !important;
+    text-align: center !important;
+    text-align-last: center !important;
     cursor: pointer !important;
     outline: none !important;
     appearance: none !important;
@@ -753,7 +1100,7 @@ div[id="translate"] .translate_selectLanguage_tag select {
     -moz-appearance: none !important;
     width: 100% !important;
     height: 100% !important;
-    padding: 8px 16px !important;
+    padding: 0 12px !important;
     margin: 0 !important;
     position: absolute !important;
     top: 0 !important;
@@ -776,10 +1123,6 @@ div[id="translate"] .translate_selectLanguage_tag select option {
     .translate_selectLanguage_tag,
     div[id="translate"],
     div[id="translate"] .translate_selectLanguage_tag {
-        top: 10px !important;
-        right: 10px !important;
-        min-width: 100px !important;
-        height: 32px !important;
         font-size: 0.8rem !important;
     }
 
@@ -788,7 +1131,7 @@ div[id="translate"] .translate_selectLanguage_tag select option {
     .translate_selectLanguage_tag select,
     div[id="translate"] select,
     div[id="translate"] .translate_selectLanguage_tag select {
-        padding: 6px 12px !important;
+        padding: 0 10px !important;
         font-size: 0.8rem !important;
     }
 }
@@ -812,18 +1155,43 @@ body.day-mode .header h1 {
     text-shadow: .03em .03em 0 hsla(200, 60%, 60%, 1);
 }
 
-html.day-init .return-home,
-body.day-mode .return-home {
-    color: #4a5568;
-    background: rgba(255, 255, 255, 0.6);
-    border-color: rgba(0, 0, 0, 0.1);
+html.day-init .navbar,
+body.day-mode .navbar {
+    background-color: rgba(255, 255, 255, 0.7);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-html.day-init .return-home:hover,
-body.day-mode .return-home:hover {
+html.day-init .logo-text-desktop,
+body.day-mode .logo-text-desktop {
     color: #1a202c;
-    background: rgba(255, 255, 255, 0.8);
-    border-color: rgba(0, 0, 0, 0.15);
+    font-weight: bold;
+    text-shadow: none;
+}
+
+html.day-init .nav-btn,
+body.day-mode .nav-btn {
+    background: #ffffff;
+    color: #1a202c;
+    border: 2px solid #cbd5e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+html.day-init .nav-btn::before,
+body.day-mode .nav-btn::before {
+    background: none;
+    backdrop-filter: none;
+}
+
+html.day-init .nav-btn::after,
+body.day-mode .nav-btn::after {
+    display: none;
+}
+
+html.day-init .nav-btn:hover:not(:disabled),
+body.day-mode .nav-btn:hover:not(:disabled) {
+    background: #f7fafc;
+    border-color: #a0aec0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 html.day-init .fo-controls,
@@ -842,33 +1210,9 @@ body.day-mode {
     color: #2d3748;
 }
 
-body.day-mode .fo-header h1,
-body.day-mode .header h1 {
-    color: #2d3748;
-    text-shadow: .03em .03em 0 hsla(200, 60%, 60%, 1);
-}
-
 body.day-mode .fo-sub,
 body.day-mode .description {
     color: #4a5568;
-}
-
-body.day-mode .return-home {
-    color: #4a5568;
-    background: rgba(255, 255, 255, 0.6);
-    border-color: rgba(0, 0, 0, 0.1);
-}
-
-body.day-mode .return-home:hover {
-    color: #1a202c;
-    background: rgba(255, 255, 255, 0.8);
-    border-color: rgba(0, 0, 0, 0.15);
-}
-
-body.day-mode .fo-controls,
-body.day-mode .fo-help {
-    background: rgba(255, 255, 255, 0.5);
-    border-color: rgba(0, 0, 0, 0.1);
 }
 
 body.day-mode .fo-row label {
@@ -951,11 +1295,6 @@ body.day-mode .fo-help summary {
     color: #1a202c;
 }
 
-body.day-mode .variant-card {
-    background: rgba(255, 255, 255, 0.5);
-    border-color: rgba(0, 0, 0, 0.1);
-}
-
 body.day-mode .variant-card:hover {
     background: rgba(255, 255, 255, 0.7);
     border-color: rgba(0, 0, 0, 0.15);
@@ -988,25 +1327,7 @@ body.day-mode .hint-num {
 }
 
 /* 日间模式下的语言切换器 - 更明显的样式 */
-body.day-mode #translate,
-body.day-mode #translate .translate_selectLanguage_tag,
-body.day-mode .translate_selectLanguage_tag,
-body.day-mode div[id="translate"],
-body.day-mode div[id="translate"] .translate_selectLanguage_tag {
-    background: rgba(255, 255, 255, 0.85) !important;
-    border: 2px solid rgba(0, 0, 0, 0.2) !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-}
-
-body.day-mode #translate:hover,
-body.day-mode #translate .translate_selectLanguage_tag:hover,
-body.day-mode .translate_selectLanguage_tag:hover,
-body.day-mode div[id="translate"]:hover,
-body.day-mode div[id="translate"] .translate_selectLanguage_tag:hover {
-    background: rgba(255, 255, 255, 0.95) !important;
-    border-color: rgba(0, 0, 0, 0.3) !important;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
-}
+/* 日间模式语言选择器颜色由 nav-btn 统一控制 */
 
 body.day-mode #translate select,
 body.day-mode #translate .translate_selectLanguage_tag select,
@@ -1051,16 +1372,6 @@ body.day-mode .alien-purple {
 }
 
 /* ===== 日夜切换器样式 ===== */
-.theme-toggle {
-  position: fixed;
-  top: 20px;
-  right: 160px; /* 调整位置避免与语言切换器重叠 */
-  z-index: 1000;
-  user-select: none;
-  transform: scale(0.64);
-  transform-origin: top right;
-}
-
 .theme-toggle__checkbox {
   display: none;
 }
@@ -1240,22 +1551,39 @@ body.day-mode .alien-purple {
   transform: rotate(70deg);
 }
 
-@media (max-width: 768px) {
-  .theme-toggle {
-    top: 10px;
-    right: 140px; /* 移动端也要调整位置避免重叠 */
-    transform: scale(0.58);
-  }
-}
 
 /* ===== 页脚样式 ===== */
+/* ===== Navbar Theme Toggle ===== */
+.navbar .theme-toggle-container {
+  width: 60px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.navbar .theme-toggle {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  z-index: 1000;
+  user-select: none;
+  transform: scale(0.45);
+  transform-origin: center;
+}
+
+/* ===== 椤佃剼鏍�փ紡 ===== */
 .footer {
   position: relative;
   z-index: 1;
   width: 100%;
   padding: 2rem 1rem;
   text-align: center;
-  margin-top: auto;
+  margin-top: 3rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .footer p {
@@ -1263,11 +1591,16 @@ body.day-mode .alien-purple {
   font-size: 0.85rem;
   color: rgba(255, 255, 255, 0.4);
   transition: color 300ms ease-out;
+  line-height: 1.8;
 }
 
 /* 日间模式页脚样式 */
 body.day-mode .footer p {
   color: rgba(0, 0, 0, 0.5);
+}
+
+body.day-mode .footer {
+  border-top-color: rgba(0,0,0,0.1);
 }
 
 /* 页脚响应式 */
@@ -1281,46 +1614,4 @@ body.day-mode .footer p {
   }
 }
 
-/* =========================================
-   修复：日间模式下语言选择框样式
-   ========================================= */
-body.day-mode .language-selector select {
-    /* 将背景改为深色半透明，以便在浅色背景上显示 */
-    background-color: rgba(0, 0, 0, 0.05);
-    /* 将边框改为深色半透明 */
-    border-color: rgba(0, 0, 0, 0.15);
-    /* 确保文字颜色跟随主题变量 */
-    color: var(--text-color);
-}
 
-/* 鼠标悬停时的加深效果 */
-body.day-mode .language-selector select:hover {
-    background-color: rgba(0, 0, 0, 0.1);
-    border-color: rgba(0, 0, 0, 0.3);
-}
-
-/* 修复下拉选项菜单的颜色（防止白底白字） */
-body.day-mode .language-selector select option {
-    background-color: #ffffff;
-    color: #1d1d1f;
-}
-
-/* ===== 移动端适配修改 ===== */
-@media (max-width: 768px) {
-  .theme-toggle {
-    /* 1. 解除固定定位：改为 absolute，按钮会随页面滚动，不再一直挡在屏幕上 */
-    position: absolute;
-
-    /* 2. 调整位置：避免与右上角的语言选择框重叠 */
-    /* 语言框在 right: 20px，宽度约 120px，所以这里设为 150px 或更多 */
-    top: 20px;
-    right: 150px; 
-    
-    /* 3. 调整大小：修改 scale 的数值 (0.1 ~ 1.0) 即可改变大小 */
-    /* 原来是 0.58 (较小)，改大一点例如 0.65 或 0.7 方便点击 */
-    transform: scale(0.65);
-    
-    /* 确保原点在右上角，位置调整更直观 */
-    transform-origin: top right;
-  }
-}

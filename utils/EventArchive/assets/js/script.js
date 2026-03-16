@@ -13,12 +13,33 @@ document.addEventListener('DOMContentLoaded', () => {
     let selectedTags = new Set(); // 改为 Set 集合，支持多选
     let searchQuery = '';
 
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function safeUrl(value) {
+        const raw = String(value ?? '').trim();
+        if (!raw) return '';
+        if (/^(javascript|data|vbscript):/i.test(raw)) return '';
+        return raw;
+    }
+
+    function normalizeText(value) {
+        return String(value ?? '');
+    }
+
     // 新增：判断档案日期是否在最近一个月内
     function isRecentOneMonth(dateString) {
-        if (!dateString || dateString === "未知") return false;
+        const normalizedDate = normalizeText(dateString);
+        if (!normalizedDate || normalizedDate === "未知") return false;
         
         // 兼容处理：将 YYYY-MM-DD 转换为可被所有浏览器安全解析的格式
-        const gameDate = new Date(dateString.replace(/-/g, '/')); 
+        const gameDate = new Date(normalizedDate.replace(/-/g, '/')); 
         if (isNaN(gameDate.getTime())) return false;
         
         const today = new Date();
@@ -33,6 +54,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof gamesData !== 'undefined') {
         const allTags = new Set();
         gamesData.forEach(game => {
+            if (!Array.isArray(game.tags)) {
+                game.tags = game.tags ? [game.tags] : [];
+            }
             // 动态注入“有攻略”标签：如果含有 guideLink 且当前没有“有攻略”标签
             if (game.guideLink && (!game.tags || !game.tags.includes('有攻略'))) {
                 if (!game.tags) game.tags = [];
@@ -55,27 +79,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 拼装卡片模板函数 (保持原样)
     function createCardHTML(game) {
+        const safeTitle = escapeHtml(normalizeText(game.title || '未知标题'));
+        const safeDesc = escapeHtml(normalizeText(game.description || ''));
+        const descHtml = safeDesc.replace(/\n/g, '<br>');
+        const safeAuthor = escapeHtml(normalizeText(game.author || '未知作者'));
+        const safeDate = escapeHtml(normalizeText(game.date || '未知'));
+        const safeDuration = escapeHtml(normalizeText(game.duration || ''));
+        const platformRaw = normalizeText(game.platform || '');
+        const safePlatform = escapeHtml(platformRaw || '未知');
+        const coverUrl = escapeHtml(safeUrl(game.cover));
+        const authorUrl = escapeHtml(safeUrl(game.authorLink));
+        const guideUrl = escapeHtml(safeUrl(game.guideLink));
+        const playUrl = escapeHtml(safeUrl(game.playLink));
+
         const tagsHTML = (game.tags || []).map(tag => {
-            const isHorror = tag === "微恐" || tag.includes("恐");
+            const tagText = normalizeText(tag || '');
+            const isHorror = tagText === "微恐" || tagText.includes("恐");
             const tagClass = isHorror ? "tag-horror" : "tag-normal";
-            return `<span class="card-tag ${tagClass}">${tag}</span>`;
+            return `<span class="card-tag ${tagClass}">${escapeHtml(tagText)}</span>`;
         }).join('');
 
         const isNewArchive = isRecentOneMonth(game.date);
         const newBadge = isNewArchive ? `
             <div class="new-badge-wrapper"><div class="new-badge-text">NEW</div></div>` : '';
 
-        const coverHTML = game.cover ? 
-            `<img alt="${game.title}" loading="lazy" decoding="async" class="card-cover-img" src="${game.cover}">` : 
-            `<div class="card-cover-fallback"><div class="fallback-title">${game.title}</div></div>`;
+        const coverHTML = coverUrl ? 
+            `<img alt="${safeTitle}" loading="lazy" decoding="async" class="card-cover-img" src="${coverUrl}">` : 
+            `<div class="card-cover-fallback"><div class="fallback-title">${safeTitle}</div></div>`;
 
-        const guideHTML = game.guideLink ? `
-            <a href="${game.guideLink}" target="_blank" rel="noreferrer" class="guide-btn">
+        const guideHTML = guideUrl ? `
+            <a href="${guideUrl}" target="_blank" rel="noreferrer" class="guide-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="guide-icon"><path d="M12 7v14"></path><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path></svg>
                 <span>攻略</span>
             </a>` : '';
 
-        const mobileIcon = (game.platform && game.platform.includes('Mobile')) ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="device-icon"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"></rect><path d="M12 18h.01"></path></svg>` : '';
+        const mobileIcon = (platformRaw && platformRaw.includes('Mobile')) ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="device-icon"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"></rect><path d="M12 18h.01"></path></svg>` : '';
+        const authorHTML = authorUrl
+            ? `<a href="${authorUrl}" target="_blank" rel="noreferrer" class="author-link">${safeAuthor}</a>`
+            : `<span class="author-link">${safeAuthor}</span>`;
+        const playLinkAttrs = playUrl
+            ? `href="${playUrl}" target="_blank" rel="noreferrer"`
+            : `href="#" aria-disabled="true"`;
 
         return `
             <div class="archive-card group">
@@ -88,32 +132,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 
                 <div class="card-content">
-                    <h3 class="card-title" title="${game.title}">${game.title}</h3>
-                    <p class="card-desc custom-scrollbar">${game.description.replace(/\n/g, '<br>')}</p>
+                    <h3 class="card-title" title="${safeTitle}">${safeTitle}</h3>
+                    <p class="card-desc custom-scrollbar">${descHtml}</p>
                     <div class="card-divider"></div>
                     <div class="card-meta-grid">
                         <div class="meta-item truncate">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-icon"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                            <a href="${game.authorLink}" target="_blank" rel="noreferrer" class="author-link">${game.author}</a>
+                            ${authorHTML}
                         </div>
                         <div class="meta-item truncate">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-icon"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>
-                            <span>${game.date}</span>
+                            <span>${safeDate}</span>
                         </div>
                         <div class="meta-item truncate">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="meta-icon"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="10"></circle></svg>
-                            <span>${game.duration}</span>
+                            <span>${safeDuration}</span>
                         </div>
                         <div class="meta-item truncate">
                             <div class="platform-icons">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="device-icon"><rect width="20" height="14" x="2" y="3" rx="2"></rect><line x1="8" x2="16" y1="21" y2="21"></line><line x1="12" x2="12" y1="17" y2="21"></line></svg>
                                 ${mobileIcon}
                             </div>
-                            <span class="truncate">平台: ${game.platform}</span>
+                            <span class="truncate">平台: ${safePlatform}</span>
                         </div>
                     </div>
                     <div class="card-footer">
-                        <a href="${game.playLink}" target="_blank" rel="noreferrer" class="play-btn">
+                        <a ${playLinkAttrs} class="play-btn">
                             <span>启动研究</span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="arrow-icon"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>
                         </a>
@@ -129,13 +173,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof gamesData === 'undefined') return;
 
         const filteredData = gamesData.filter(g => {
-            // 增加容错：用 (g.title || '') 确保即使数据是 null 也能正常转换字符串而不报错崩溃
-            const matchSearch = (g.title || '').toLowerCase().includes(searchQuery) || 
-                                (g.author || '').toLowerCase().includes(searchQuery) ||
-                                (g.description || '').toLowerCase().includes(searchQuery);
+            const titleText = normalizeText(g.title).toLowerCase();
+            const authorText = normalizeText(g.author).toLowerCase();
+            const descText = normalizeText(g.description).toLowerCase();
+            const matchSearch = titleText.includes(searchQuery) || 
+                                authorText.includes(searchQuery) ||
+                                descText.includes(searchQuery);
                                 
             const matchTag = selectedTags.size === 0 || 
-                             Array.from(selectedTags).every(tag => g.tags && g.tags.includes(tag));
+                             Array.from(selectedTags).every(tag => Array.isArray(g.tags) && g.tags.includes(tag));
                              
             return matchSearch && matchTag;
         });
@@ -229,7 +275,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => {
             if (typeof gamesData === 'undefined' || gamesData.length === 0) return;
             const randomGame = gamesData[Math.floor(Math.random() * gamesData.length)];
-            window.open(randomGame.playLink, '_blank');
+            const playLink = safeUrl(randomGame.playLink);
+            if (playLink) {
+                window.open(playLink, '_blank');
+            }
         });
     });
 

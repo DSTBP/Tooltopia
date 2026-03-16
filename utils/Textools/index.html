@@ -12,20 +12,29 @@
     <link rel="stylesheet" href="./assets/css/style.css">
 </head>
 <body>
-    <div class="theme-toggle">
-        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
-        <label for="themeToggle" class="theme-toggle__btn">
-            <span class="theme-toggle__feature"></span>
-        </label>
-    </div>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="Logo" class="logo-icon">
+                <span class="logo-text-desktop">Textools</span>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <button id="backToHomeBtn" class="nav-btn" style="display: none;">返回功能选择</button>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <div id="background-wrapper"></div>
     <div class="page-container">
-        <div class="nav-bar">
-            <a href="../../index.html" class="back-link">← 返回首页</a>
-            <button id="backToHomeBtn" class="back-link" style="display: none; background:none; border:none; cursor:pointer;">← 返回功能选择</button>
-        </div>
-
         <div class="header">
             <h1 data-shadow='文本处理工具箱'>文本处理工具箱</h1>
             <p class="subtitle" id="mainSubtitle">请选择您需要的功能</p>
@@ -53,7 +62,7 @@
                     <div class="upload-area">
                         <div class="file-upload">
                             <div class="file-upload-area" id="fileUploadArea">
-                                <input type="file" id="fileInput" accept=".txt,.doc,.docx,.pdf" multiple style="display: none;">
+                                <input type="file" id="fileInput" accept=".txt,.docx,.pdf" multiple style="display: none;">
                                 <div class="upload-icon">📁</div>
                                 <p class="upload-text">点击批量选择文件，或拖拽文件到此处</p>
                                 <p class="upload-hint">支持 .txt, .docx, .pdf 格式文件</p>

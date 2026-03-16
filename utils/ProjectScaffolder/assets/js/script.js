@@ -1,22 +1,21 @@
 class ProjectScaffolder {
     constructor() {
-        // UI Elements
         this.genTab = document.getElementById('genTab');
         this.parseTab = document.getElementById('parseTab');
         this.genContent = document.getElementById('genContent');
         this.parseContent = document.getElementById('parseContent');
-        
+
         this.treeInput = document.getElementById('treeInput');
         this.addHeaderComments = document.getElementById('addHeaderComments');
         this.metaInputs = document.getElementById('metaInputs');
         this.inputAuthor = document.getElementById('inputAuthor');
         this.inputEditor = document.getElementById('inputEditor');
-        
+
         this.fileUploadArea = document.getElementById('fileUploadArea');
         this.fileInput = document.getElementById('fileInput');
         this.fileName = document.getElementById('fileName');
         this.extractHeaderComments = document.getElementById('extractHeaderComments');
-        
+
         this.outputTitle = document.getElementById('outputTitle');
         this.statusInfo = document.getElementById('statusInfo');
         this.genResult = document.getElementById('genResult');
@@ -24,355 +23,396 @@ class ProjectScaffolder {
         this.actionBtn = document.getElementById('actionBtn');
         this.copyBtn = document.getElementById('copyBtn');
         this.clearBtn = document.getElementById('clearBtn');
-        
-        this.currentMode = 'generate'; // 'generate' or 'parse'
+
+        this.currentMode = 'generate';
         this.zipFile = null;
-        
+        this.notificationElement = null;
+        this.notificationTimer = 0;
+        this.isBusy = false;
+        this.descriptionPattern = /(?:@Description|Description)\s*:\s*(.*)/i;
+        this.textFileExtensions = new Set([
+            'c', 'cc', 'cpp', 'css', 'go', 'h', 'hpp', 'html', 'htm', 'java', 'js', 'jsx',
+            'json', 'kt', 'md', 'mjs', 'py', 'rb', 'rs', 'scss', 'sh', 'sql', 'svg', 'toml',
+            'ts', 'tsx', 'txt', 'vue', 'xml', 'yaml', 'yml'
+        ]);
+
         this.bindEvents();
+        this.syncMetaInputState();
     }
-    
+
     bindEvents() {
-        // Tab Switching
-        this.genTab.addEventListener('click', () => this.switchMode('generate'));
-        this.parseTab.addEventListener('click', () => this.switchMode('parse'));
-        
-        // Checkbox Toggle
-        this.addHeaderComments.addEventListener('change', (e) => {
-            this.metaInputs.style.opacity = e.target.checked ? '1' : '0.5';
-            this.metaInputs.style.pointerEvents = e.target.checked ? 'auto' : 'none';
+        this.genTab?.addEventListener('click', () => this.switchMode('generate'));
+        this.parseTab?.addEventListener('click', () => this.switchMode('parse'));
+
+        this.addHeaderComments?.addEventListener('change', () => {
+            this.syncMetaInputState();
         });
-        
-        // File Upload Drag & Drop
-        this.fileUploadArea.addEventListener('click', () => this.fileInput.click());
-        this.fileUploadArea.addEventListener('dragover', (e) => { e.preventDefault(); this.fileUploadArea.classList.add('drag-over'); });
-        this.fileUploadArea.addEventListener('dragleave', () => this.fileUploadArea.classList.remove('drag-over'));
-        this.fileUploadArea.addEventListener('drop', (e) => this.handleDrop(e));
-        this.fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
-        
-        // Actions
-        this.actionBtn.addEventListener('click', () => this.handleAction());
-        this.copyBtn.addEventListener('click', () => this.copyResult());
-        this.clearBtn.addEventListener('click', () => this.clearAll());
+
+        if (this.fileUploadArea && this.fileInput) {
+            this.fileUploadArea.addEventListener('click', () => this.fileInput.click());
+            this.fileUploadArea.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                this.fileUploadArea.classList.add('drag-over');
+            });
+            this.fileUploadArea.addEventListener('dragleave', () => {
+                this.fileUploadArea.classList.remove('drag-over');
+            });
+            this.fileUploadArea.addEventListener('drop', (event) => this.handleDrop(event));
+            this.fileInput.addEventListener('change', (event) => this.handleFileSelect(event));
+        }
+
+        this.actionBtn?.addEventListener('click', () => this.handleAction());
+        this.copyBtn?.addEventListener('click', () => this.copyResult());
+        this.clearBtn?.addEventListener('click', () => this.clearAll());
     }
-    
+
+    setBusy(isBusy) {
+        this.isBusy = isBusy;
+        if (this.actionBtn) this.actionBtn.disabled = isBusy;
+        if (this.copyBtn && this.currentMode === 'parse') this.copyBtn.disabled = isBusy;
+        if (this.clearBtn) this.clearBtn.disabled = isBusy;
+        if (this.genTab) this.genTab.disabled = isBusy;
+        if (this.parseTab) this.parseTab.disabled = isBusy;
+    }
+
+    syncMetaInputState() {
+        if (!this.metaInputs || !this.addHeaderComments) return;
+        const enabled = this.addHeaderComments.checked;
+        this.metaInputs.style.opacity = enabled ? '1' : '0.5';
+        this.metaInputs.style.pointerEvents = enabled ? 'auto' : 'none';
+    }
+
     switchMode(mode) {
         this.currentMode = mode;
-        if (mode === 'generate') {
-            this.genTab.classList.add('active');
-            this.parseTab.classList.remove('active');
-            this.genContent.classList.add('active');
-            this.parseContent.classList.remove('active');
-            
-            this.genResult.style.display = 'flex';
-            this.parseResult.style.display = 'none';
-            this.actionBtn.textContent = '生成 ZIP压缩包';
-            this.copyBtn.style.display = 'none';
-            this.outputTitle.textContent = '生成结果';
-        } else {
-            this.parseTab.classList.add('active');
-            this.genTab.classList.remove('active');
-            this.parseContent.classList.add('active');
-            this.genContent.classList.remove('active');
-            
-            this.genResult.style.display = 'none';
-            this.parseResult.style.display = 'block';
-            this.actionBtn.textContent = '开始解析结构';
-            this.copyBtn.style.display = 'inline-block';
-            this.outputTitle.textContent = '解析结果';
-        }
+        const isGenerate = mode === 'generate';
+
+        this.genTab?.classList.toggle('active', isGenerate);
+        this.parseTab?.classList.toggle('active', !isGenerate);
+        this.genContent?.classList.toggle('active', isGenerate);
+        this.parseContent?.classList.toggle('active', !isGenerate);
+
+        if (this.genResult) this.genResult.style.display = isGenerate ? 'flex' : 'none';
+        if (this.parseResult) this.parseResult.style.display = isGenerate ? 'none' : 'block';
+        if (this.actionBtn) this.actionBtn.textContent = isGenerate ? '生成 ZIP 压缩包' : '开始解析结果';
+        if (this.copyBtn) this.copyBtn.style.display = isGenerate ? 'none' : 'inline-block';
+        if (this.outputTitle) this.outputTitle.textContent = isGenerate ? '生成结果' : '解析结果';
+
         this.updateStatus('就绪');
     }
-    
-    handleDrop(e) {
-        e.preventDefault();
-        this.fileUploadArea.classList.remove('drag-over');
-        const files = e.dataTransfer.files;
-        if (files.length > 0 && files[0].name.endsWith('.zip')) {
-            this.processZipFile(files[0]);
-        } else {
+
+    isZipFile(file) {
+        return Boolean(file && file.name && file.name.toLowerCase().endsWith('.zip'));
+    }
+
+    handleDrop(event) {
+        event.preventDefault();
+        this.fileUploadArea?.classList.remove('drag-over');
+        const file = event.dataTransfer?.files?.[0] || null;
+        if (!this.isZipFile(file)) {
             this.showNotification('请上传 .zip 格式文件', 'error');
+            return;
         }
+        this.processZipFile(file);
     }
-    
-    handleFileSelect(e) {
-        const file = e.target.files[0];
-        if (file && file.name.endsWith('.zip')) {
-            this.processZipFile(file);
-        } else {
-            this.fileInput.value = '';
+
+    handleFileSelect(event) {
+        const file = event.target.files?.[0] || null;
+        if (!this.isZipFile(file)) {
+            if (this.fileInput) this.fileInput.value = '';
+            this.showNotification('请上传 .zip 格式文件', 'error');
+            return;
         }
+        this.processZipFile(file);
     }
-    
+
     processZipFile(file) {
         this.zipFile = file;
-        this.fileName.textContent = file.name;
+        if (this.fileName) this.fileName.textContent = file.name;
         this.updateStatus('已加载文件');
     }
-    
+
     async handleAction() {
+        if (this.isBusy) return;
         if (this.currentMode === 'generate') {
             await this.generateZip();
         } else {
             await this.parseZip();
         }
     }
-    
-    // ================= Logic: Generate Zip from Tree =================
-    
+
     async generateZip() {
-        const input = this.treeInput.value.trim();
+        if (typeof JSZip === 'undefined') {
+            this.showNotification('JSZip 未加载，无法生成 ZIP 文件', 'error');
+            return;
+        }
+
+        const input = this.treeInput?.value.trim() || '';
         if (!input) {
             this.showNotification('请输入目录结构', 'error');
             return;
         }
-        
+
+        const entries = this.parseTreeInput(input);
+        if (entries.length === 0) {
+            this.showNotification('目录树内容无效，无法生成项目结构', 'error');
+            return;
+        }
+
         this.updateStatus('正在生成...');
-        const zip = new JSZip();
-        const lines = input.split('\n');
-        
-        // State for path tracking
-        const pathStack = []; // stores {indent: number, name: string}
-        let rootDetected = false;
-        
-        const now = new Date();
-        const dateStr = this.formatDate(now);
-        const timeStr = this.formatDate(now); // Same format for simplicity
-        
-        for (let line of lines) {
-            if (!line.trim()) continue;
-            
-            // 1. Parse Indentation & Name & Comment
-            // Regex matches: (indentation)(connector)(filename)( # comment)?
-            // handling "│   ", "├── ", "└── " etc.
-            
-            // Special handling for root folder (no symbols usually)
-            let cleanLine = line.replace(/[│]/g, ' '); // Replace pipe with space to calc indent
-            
-            // Calculate indent level (approximate by spaces)
-            const indentMatch = cleanLine.match(/^(\s*)(?:├──|└──)?\s*(.*)/);
-            const rawIndent = indentMatch[1].length;
-            let contentPart = indentMatch[2];
-            
-            // Extract comment
-            let comment = '';
-            const commentIndex = contentPart.indexOf('#');
-            if (commentIndex !== -1) {
-                comment = contentPart.substring(commentIndex + 1).trim();
-                contentPart = contentPart.substring(0, commentIndex).trim();
-            } else {
-                contentPart = contentPart.trim();
-            }
-            
-            if (!contentPart) continue;
-            
-            const isDirectory = contentPart.endsWith('/');
-            const name = isDirectory ? contentPart.slice(0, -1) : contentPart;
-            
-            // 2. Determine Hierarchy
-            // If it's the very first line and looks like a root folder
-            if (!rootDetected && pathStack.length === 0) {
-                pathStack.push({ indent: -1, name: name });
-                rootDetected = true;
-                // Add root folder to zip
-                zip.folder(name);
-                continue;
-            }
-            
-            // Pop stack until we find the parent (indentation < current)
-            // Note: Tree output indentation is usually 4 chars per level
-            while (pathStack.length > 0 && pathStack[pathStack.length - 1].indent >= rawIndent) {
+        this.setBusy(true);
+
+        try {
+            const zip = new JSZip();
+            const timestamp = this.formatTimestamp(new Date());
+
+            entries.forEach((entry) => {
+                if (entry.isDirectory) {
+                    zip.folder(entry.path);
+                    return;
+                }
+
+                const content = this.addHeaderComments?.checked
+                    ? this.generateFileHeader(entry.name, entry.comment, timestamp)
+                    : '';
+                zip.file(entry.path, content);
+            });
+
+            const archiveName = this.getArchiveName(entries);
+            const blob = await zip.generateAsync({ type: 'blob' });
+            this.downloadBlob(blob, archiveName);
+
+            this.updateStatus('生成完成');
+            this.showNotification('压缩包已开始下载', 'success');
+        } catch (error) {
+            this.updateStatus('生成失败');
+            this.showNotification(`生成失败: ${error.message}`, 'error');
+        } finally {
+            this.setBusy(false);
+        }
+    }
+
+    parseTreeInput(input) {
+        const lines = input.split(/\r?\n/);
+        const entries = [];
+        const pathStack = [];
+
+        lines.forEach((rawLine) => {
+            if (!rawLine.trim()) return;
+
+            const lineInfo = this.parseTreeLine(rawLine);
+            if (!lineInfo || !lineInfo.name) return;
+
+            while (pathStack.length > 0 && pathStack[pathStack.length - 1].depth >= lineInfo.depth) {
                 pathStack.pop();
             }
-            
-            // Build full path
-            const currentPath = pathStack.map(p => p.name).join('/');
-            const fullPath = currentPath ? `${currentPath}/${name}` : name;
-            
-            if (isDirectory) {
-                zip.folder(fullPath);
-                pathStack.push({ indent: rawIndent, name: name });
-            } else {
-                // It's a file
-                let content = '';
-                if (this.addHeaderComments.checked) {
-                    content = this.generateFileHeader(name, comment, dateStr, timeStr);
-                }
-                zip.file(fullPath, content);
+
+            const parentPath = pathStack.length > 0 ? pathStack[pathStack.length - 1].path : '';
+            const fullPath = parentPath ? `${parentPath}/${lineInfo.name}` : lineInfo.name;
+
+            entries.push({
+                name: lineInfo.name,
+                path: fullPath,
+                isDirectory: lineInfo.isDirectory,
+                comment: lineInfo.comment
+            });
+
+            if (lineInfo.isDirectory) {
+                pathStack.push({
+                    depth: lineInfo.depth,
+                    path: fullPath
+                });
             }
-        }
-        
-        // Trigger Download
-        const blob = await zip.generateAsync({type: "blob"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = "project_scaffold.zip";
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        this.updateStatus('生成完成');
-        this.showNotification('压缩包已开始下载', 'success');
+        });
+
+        return entries;
     }
-    
-    generateFileHeader(filename, description, date, time) {
-        const ext = filename.split('.').pop().toLowerCase();
-        const author = this.inputAuthor.value || 'Developer';
-        const editor = this.inputEditor.value || author;
-        
-        // Template Data
+
+    parseTreeLine(line) {
+        const expandedLine = line.replace(/\t/g, '    ');
+        const commentIndex = expandedLine.indexOf('#');
+        const comment = commentIndex === -1 ? '' : expandedLine.slice(commentIndex + 1).trim();
+        const contentWithoutComment = commentIndex === -1 ? expandedLine : expandedLine.slice(0, commentIndex);
+        const sanitized = contentWithoutComment
+            .replace(/[│┃]/g, ' ')
+            .replace(/[├└┌┬┴┼┣┗]/g, ' ')
+            .replace(/[─━]/g, ' ')
+            .replace(/[┠┨┯┷┿╞╘╟]/g, ' ')
+            .trimEnd();
+
+        if (!sanitized.trim()) return null;
+
+        const leadingSpaces = sanitized.match(/^\s*/)?.[0].length || 0;
+        const depth = Math.floor(leadingSpaces / 4);
+        const content = sanitized.trim();
+        const isDirectory = content.endsWith('/');
+        const name = isDirectory ? content.slice(0, -1).trim() : content.trim();
+
+        if (!name) return null;
+
+        return {
+            depth,
+            name,
+            isDirectory,
+            comment
+        };
+    }
+
+    generateFileHeader(filename, description, timestamp) {
+        const ext = filename.includes('.') ? filename.split('.').pop().toLowerCase() : '';
+        const author = (this.inputAuthor?.value || '').trim() || 'Developer';
+        const editor = (this.inputEditor?.value || '').trim() || author;
         const info = {
             desc: description || filename,
-            author: author,
-            date: `${date} ${time.split(' ')[1] || ''}`, // Rough fix
-            editor: editor
+            author,
+            editor,
+            timestamp
         };
-        
-        // Python Style
-        if (['py'].includes(ext)) {
-            return `'''
-Description: ${info.desc}
-Author: ${info.author}
-Date: ${info.date}
-LastEditTime: ${info.date}
-LastEditors: ${info.editor}
-'''
-`;
+
+        if (ext === 'py') {
+            return `'''\nDescription: ${info.desc}\nAuthor: ${info.author}\nDate: ${info.timestamp}\nLastEditTime: ${info.timestamp}\nLastEditors: ${info.editor}\n'''\n`;
         }
-        
-        // HTML/XML Style
-        if (['html', 'xml', 'htm', 'vue'].includes(ext)) {
-            return ``;
+
+        if (['html', 'htm', 'xml', 'vue'].includes(ext)) {
+            return `<!--\nDescription: ${info.desc}\nAuthor: ${info.author}\nDate: ${info.timestamp}\nLastEditTime: ${info.timestamp}\nLastEditors: ${info.editor}\n-->\n`;
         }
-        
-        // Shell/Yaml Style
-        if (['yaml', 'yml', 'sh', 'conf', 'properties'].includes(ext)) {
-            return `# 
-# Description: ${info.desc}
-# Author: ${info.author}
-# Date: ${info.date}
-# LastEditTime: ${info.date}
-# LastEditors: ${info.editor}
-#
-`;
+
+        if (['yaml', 'yml', 'sh', 'conf', 'properties', 'toml'].includes(ext)) {
+            return `# Description: ${info.desc}\n# Author: ${info.author}\n# Date: ${info.timestamp}\n# LastEditTime: ${info.timestamp}\n# LastEditors: ${info.editor}\n`;
         }
-        
-        // Default C-Style (JS, C, CPP, Java, CSS, etc.)
-        return `/*
- * @Description: ${info.desc}
- * @Author: ${info.author}
- * @Date: ${info.date}
- * @LastEditTime: ${info.date}
- * @LastEditors: ${info.editor}
- */
-`;
+
+        return `/*\n * @Description: ${info.desc}\n * @Author: ${info.author}\n * @Date: ${info.timestamp}\n * @LastEditTime: ${info.timestamp}\n * @LastEditors: ${info.editor}\n */\n`;
     }
-    
-    // ================= Logic: Parse Zip to Tree =================
-    
+
+    getArchiveName(entries) {
+        const firstDirectory = entries.find((entry) => entry.isDirectory);
+        const baseName = firstDirectory ? firstDirectory.name : 'project_scaffold';
+        return `${this.sanitizeFilename(baseName) || 'project_scaffold'}.zip`;
+    }
+
     async parseZip() {
+        if (typeof JSZip === 'undefined') {
+            this.showNotification('JSZip 未加载，无法解析 ZIP 文件', 'error');
+            return;
+        }
+
         if (!this.zipFile) {
             this.showNotification('请先上传 ZIP 文件', 'error');
             return;
         }
-        
+
         this.updateStatus('正在解析...');
+        this.setBusy(true);
+
         try {
             const zip = await JSZip.loadAsync(this.zipFile);
-            const fileStructure = {}; // Nested object representation
-            
-            // 1. Build structure object
-            const filePaths = Object.keys(zip.files).sort();
-            
-            for (const path of filePaths) {
-                const parts = path.split('/');
+            const fileStructure = {};
+            const filePaths = Object.keys(zip.files)
+                .filter((path) => path && !path.startsWith('__MACOSX/'))
+                .sort();
+
+            filePaths.forEach((path) => {
+                const zipEntry = zip.files[path];
+                const parts = path.split('/').filter(Boolean);
                 let current = fileStructure;
-                
-                for (let i = 0; i < parts.length; i++) {
-                    const part = parts[i];
-                    if (!part) continue; // Trailing slash results in empty part
-                    
+
+                parts.forEach((part, index) => {
                     if (!current[part]) {
-                        current[part] = { 
-                            __isDir: (i < parts.length - 1) || zip.files[path].dir, 
+                        current[part] = {
+                            __isDir: index < parts.length - 1 || zipEntry.dir,
                             __path: path,
-                            __children: {} 
+                            __children: {}
                         };
                     }
                     current = current[part].__children;
-                }
+                });
+            });
+
+            const descriptionMap = this.extractHeaderComments?.checked
+                ? await this.buildDescriptionMap(zip, filePaths)
+                : new Map();
+            const lines = [];
+            this.renderTree(fileStructure, '', descriptionMap, lines);
+            const treeOutput = lines.join('');
+            if (this.parseResult) {
+                this.parseResult.value = treeOutput;
             }
-            
-            // 2. Generate Tree String (Recursive)
-            let treeOutput = "";
-            const rootKeys = Object.keys(fileStructure);
-            
-            // Handle root folder explicitly if it exists as a single top-level dir
-            let rootObj = fileStructure;
-            let startDepth = 0;
-            
-            // Traverse
-            treeOutput = await this.renderTree(rootObj, "", zip);
-            
-            this.parseResult.value = treeOutput;
             this.updateStatus('解析完成');
-            
-        } catch (e) {
-            console.error(e);
-            this.showNotification('ZIP 解析失败: ' + e.message, 'error');
+        } catch (error) {
+            console.error(error);
+            this.updateStatus('解析失败');
+            this.showNotification(`ZIP 解析失败: ${error.message}`, 'error');
+        } finally {
+            this.setBusy(false);
         }
     }
-    
-    async renderTree(structure, prefix, zip) {
-        let output = "";
+
+    renderTree(structure, prefix, descriptionMap, lines) {
         const keys = Object.keys(structure).sort((a, b) => {
-            // Folders first, then files
             const aIsDir = structure[a].__isDir;
             const bIsDir = structure[b].__isDir;
             if (aIsDir && !bIsDir) return -1;
             if (!aIsDir && bIsDir) return 1;
             return a.localeCompare(b);
         });
-        
-        for (let i = 0; i < keys.length; i++) {
+
+        for (let i = 0; i < keys.length; i += 1) {
             const key = keys[i];
             const node = structure[key];
-            const isLast = (i === keys.length - 1);
-            
-            const connector = isLast ? "└── " : "├── ";
-            const childPrefix = isLast ? "    " : "│   ";
-            
-            // Check for comment description
-            let comment = "";
-            if (!node.__isDir && this.extractHeaderComments.checked) {
-                try {
-                    // Fetch partial content to find description
-                    const file = zip.file(node.__path);
-                    if (file) {
-                        const content = await file.async("string");
-                        // Regex to find @Description: xxx or Description: xxx
-                        const match = content.match(/(?:@Description|Description)\s*:\s*(.*)/i);
-                        if (match && match[1]) {
-                            comment = `  # ${match[1].trim()}`;
-                        }
-                    }
-                } catch (e) {
-                    // Ignore read errors
-                }
-            }
-            
-            const line = `${prefix}${connector}${key}${node.__isDir ? "/" : ""}${comment}\n`;
-            output += line;
-            
+            const isLast = i === keys.length - 1;
+            const connector = isLast ? '└── ' : '├── ';
+            const childPrefix = isLast ? '    ' : '│   ';
+
+            const comment = !node.__isDir ? (descriptionMap.get(node.__path) || '') : '';
+
+            lines.push(`${prefix}${connector}${key}${node.__isDir ? '/' : ''}${comment}\n`);
+
             if (node.__isDir) {
-                output += await this.renderTree(node.__children, prefix + childPrefix, zip);
+                this.renderTree(node.__children, prefix + childPrefix, descriptionMap, lines);
             }
         }
-        return output;
     }
 
-    // ================= Utils =================
-    
-    formatDate(date) {
+    async buildDescriptionMap(zip, filePaths) {
+        const descriptionMap = new Map();
+        const tasks = filePaths
+            .filter((path) => {
+                if (zip.files[path]?.dir) {
+                    return false;
+                }
+                const filename = path.split('/').pop() || '';
+                const ext = filename.includes('.') ? filename.split('.').pop().toLowerCase() : '';
+                return this.textFileExtensions.has(ext);
+            })
+            .map(async (path) => {
+                const comment = await this.extractDescription(zip.file(path));
+                if (comment) {
+                    descriptionMap.set(path, comment);
+                }
+            });
+
+        await Promise.all(tasks);
+        return descriptionMap;
+    }
+
+    async extractDescription(file) {
+        if (!file) return '';
+
+        const filename = file.name.split('/').pop() || '';
+        const ext = filename.includes('.') ? filename.split('.').pop().toLowerCase() : '';
+        if (!this.textFileExtensions.has(ext)) {
+            return '';
+        }
+
+        try {
+            const content = await file.async('string');
+            const match = content.match(this.descriptionPattern);
+            return match && match[1] ? `  # ${match[1].trim()}` : '';
+        } catch (error) {
+            return '';
+        }
+    }
+
+    formatTimestamp(date) {
         const y = date.getFullYear();
         const m = String(date.getMonth() + 1).padStart(2, '0');
         const d = String(date.getDate()).padStart(2, '0');
@@ -381,35 +421,98 @@ LastEditors: ${info.editor}
         const s = String(date.getSeconds()).padStart(2, '0');
         return `${y}-${m}-${d} ${h}:${min}:${s}`;
     }
-    
-    copyResult() {
-        if (this.parseResult.value) {
-            navigator.clipboard.writeText(this.parseResult.value);
+
+    async copyResult() {
+        const text = this.parseResult?.value || '';
+        if (!text) return;
+
+        try {
+            if (navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                this.copyTextFallback(text);
+            }
             this.showNotification('已复制到剪贴板', 'success');
+        } catch (error) {
+            try {
+                this.copyTextFallback(text);
+                this.showNotification('已复制到剪贴板', 'success');
+            } catch (fallbackError) {
+                this.showNotification('复制失败，请手动复制', 'error');
+            }
         }
     }
-    
+
+    copyTextFallback(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        textarea.remove();
+    }
+
     clearAll() {
-        this.treeInput.value = '';
-        this.fileInput.value = '';
-        this.fileName.textContent = '';
+        if (this.treeInput) this.treeInput.value = '';
+        if (this.fileInput) this.fileInput.value = '';
+        if (this.fileName) this.fileName.textContent = '';
+        if (this.parseResult) this.parseResult.value = '';
         this.zipFile = null;
-        this.parseResult.value = '';
-        this.genResult.style.display = (this.currentMode === 'generate') ? 'flex' : 'none';
-        this.parseResult.style.display = (this.currentMode === 'parse') ? 'block' : 'none';
+        this.updateStatus('就绪');
+
+        if (this.currentMode === 'generate') {
+            if (this.genResult) this.genResult.style.display = 'flex';
+            if (this.parseResult) this.parseResult.style.display = 'none';
+        } else {
+            if (this.genResult) this.genResult.style.display = 'none';
+            if (this.parseResult) this.parseResult.style.display = 'block';
+        }
     }
-    
+
     updateStatus(text) {
-        this.statusInfo.textContent = text;
+        if (this.statusInfo) {
+            this.statusInfo.textContent = text;
+        }
     }
-    
-    showNotification(msg, type) {
-        // Reuse existing notification logic if available in style or create simple alert
-        const div = document.createElement('div');
-        div.className = `notification ${type} show`;
-        div.textContent = msg;
-        document.body.appendChild(div);
-        setTimeout(() => div.remove(), 3000);
+
+    downloadBlob(blob, filename) {
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = objectUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(objectUrl);
+    }
+
+    sanitizeFilename(value) {
+        return String(value || '')
+            .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_')
+            .replace(/\s+/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .slice(0, 80);
+    }
+
+    showNotification(message, type) {
+        if (!this.notificationElement) {
+            this.notificationElement = document.createElement('div');
+            document.body.appendChild(this.notificationElement);
+        }
+
+        window.clearTimeout(this.notificationTimer);
+        this.notificationElement.className = `notification ${type} show`;
+        this.notificationElement.textContent = message;
+
+        this.notificationTimer = window.setTimeout(() => {
+            if (this.notificationElement) {
+                this.notificationElement.classList.remove('show');
+            }
+        }, 3000);
     }
 }
 

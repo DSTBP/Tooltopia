@@ -58,7 +58,7 @@ body {
         ) 0 0 / 0.375em 0.375em,
         var(--bg-panel);
     min-height: 100vh;
-    padding: 20px;
+    padding: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     position: relative;
@@ -77,33 +77,115 @@ body {
     position: relative;
     z-index: 2;
     flex: 1;
+    padding: 20px 1rem;
 }
 
 /* =========================================
    2. 导航与头部区域
    ========================================= */
-.nav-bar {
+/* Navbar (aligned with SRT2TXT/ExcelGrep) */
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    width: 100%;
+    align-self: stretch;
+    background-color: rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px) saturate(1.2);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+}
+
+.nav-content {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0.75rem 1rem;
     display: flex;
-    gap: 20px;
-    margin-bottom: 1.5rem;
     align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
 }
 
-.back-link, .back-btn {
-    color: var(--text-secondary);
-    text-decoration: none;
-    transition: color 0.3s ease;
-    font-size: 1rem;
-    display: inline-flex;
+.logo-wrapper {
+    display: flex;
     align-items: center;
-    background: none;
-    border: none;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.logo-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    object-fit: cover;
+}
+
+.logo-text-desktop {
+    font-weight: 900;
+    color: hsl(0 0% 95%);
+    letter-spacing: 0.05em;
+    font-size: 1.125rem;
+    font-family: 'Righteous', 'Microsoft YaHei', sans-serif;
+}
+
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.nav-btn {
+    -webkit-tap-highlight-color: #0000;
     cursor: pointer;
-    font-family: inherit;
+    border-radius: 12px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    background: #0000;
+    border: 1px solid #0000;
+    position: relative;
+    color: white;
+    transition: translate 0.1s ease-out, scale 0.1s ease-out;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: center;
+    text-decoration: none;
 }
 
-.back-link:hover, .back-btn:hover {
-    color: #fff;
+.nav-btn::before,
+.nav-btn::after {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.nav-btn::before {
+    z-index: -1;
+    background: linear-gradient(
+        hsl(0 0% 100% / 0.18),
+        hsl(0 0% 4% / 0.7)
+    );
+    backdrop-filter: saturate(2) contrast(1) blur(10px);
+}
+
+.nav-btn::after {
+    box-shadow: 0 0 1px 0.8px hsl(0 0% 100% / 0.8) inset;
+    mask: linear-gradient(-35deg, #ffffff80, #ffffff30 30% 60%, #fff);
+}
+
+.nav-btn:active:not(:disabled) {
+    scale: 0.98;
+    translate: 0 1px;
+}
+
+.nav-btn:hover:not(:disabled) {
+    scale: 1.02;
 }
 
 .header {
@@ -699,7 +781,8 @@ textarea:focus {
     width: 100%;
     padding: 2rem 1rem;
     text-align: center;
-    margin-top: auto;
+    margin-top: 3rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .footer p {
@@ -707,6 +790,7 @@ textarea:focus {
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.4);
     transition: color 300ms ease-out;
+    line-height: 1.8;
 }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
@@ -788,6 +872,39 @@ body.day-mode .btn:hover:not(:disabled) {
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+body.day-mode .navbar {
+    background-color: rgba(255, 255, 255, 0.7);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+body.day-mode .logo-text-desktop {
+    color: #1a202c;
+    font-weight: bold;
+    text-shadow: none;
+}
+
+body.day-mode .nav-btn {
+    background: #ffffff;
+    color: #1a202c;
+    border: 2px solid #cbd5e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+body.day-mode .nav-btn::before {
+    background: none;
+    backdrop-filter: none;
+}
+
+body.day-mode .nav-btn::after {
+    display: none;
+}
+
+body.day-mode .nav-btn:hover:not(:disabled) {
+    background: #f7fafc;
+    border-color: #a0aec0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
 body.day-mode .file-upload-area {
     background: rgba(255, 255, 255, 0.6);
 }
@@ -828,11 +945,15 @@ body.day-mode .footer p {
     color: rgba(0, 0, 0, 0.5);
 }
 
+body.day-mode .footer {
+    border-top-color: rgba(0,0,0,0.1);
+}
+
 /* =========================================
    10. 响应式布局 (Media Queries)
    ========================================= */
 @media screen and (max-width: 768px) {
-    body { padding: 10px; }
+    body { padding: 0; }
     
     .header h1 { font-size: 2.5em; }
     
@@ -860,6 +981,34 @@ body.day-mode .footer p {
     .radio-option input[type="text"] { width: 100%; margin-top: 5px; }
     
     .search-controls-bar { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
+
+@media (max-width: 639px) {
+    .nav-content {
+        flex-direction: column;
+        gap: 0.75rem;
+        align-items: center;
+        padding: 0.75rem 1rem;
+    }
+
+    .logo-wrapper {
+        justify-content: center;
+        width: 100%;
+    }
+
+    .nav-actions {
+        justify-content: center;
+        width: 100%;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+}
+
+@media (min-width: 640px) {
+    .nav-content {
+        flex-direction: row;
+        padding: 0.75rem 1.5rem;
+    }
 }
 
 /* 主题切换器位置 (保留原有逻辑) */
@@ -1119,21 +1268,42 @@ body.day-mode .result-header.error {
    11. 原版日夜切换器动画 (星星、云朵、陨石坑)
    ========================================= */
 .theme-toggle {
+  --theme-toggle-scale: 0.52;
   position: fixed;
-  top: 20px;
-  right: 20px;
+  top: clamp(12px, 2vw, 20px);
+  right: clamp(12px, 2vw, 20px);
   z-index: 1000;
   user-select: none;
-  transform: scale(0.64);
+  transform: scale(var(--theme-toggle-scale));
   transform-origin: top right;
 }
 
-.theme-toggle__checkbox { display: none; }
+.theme-toggle__checkbox {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
 
 .theme-toggle__btn {
   display: block; position: relative; width: 125px; height: 70px;
   border-radius: 70px; border: 5px solid #1c1c1c; background-color: #3c4145;
-  cursor: pointer; transition: all 350ms ease-in;
+  cursor: pointer; transition: all 350ms ease-in; -webkit-tap-highlight-color: transparent;
+}
+
+.theme-toggle__checkbox:focus-visible + .theme-toggle__btn {
+  outline: 3px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 4px;
+}
+
+body.day-mode .theme-toggle__checkbox:focus-visible + .theme-toggle__btn {
+  outline-color: rgba(0, 0, 0, 0.55);
 }
 
 .theme-toggle__btn::before {
@@ -1199,8 +1369,39 @@ body.day-mode .result-header.error {
   left: 25px; transform: rotate(70deg);
 }
 
+@media (min-width: 769px) and (max-width: 1024px) {
+  .theme-toggle { --theme-toggle-scale: 0.47; }
+}
+
 @media (max-width: 768px) {
-  .theme-toggle { top: 10px; right: 10px; transform: scale(0.58); }
+  .theme-toggle {
+    --theme-toggle-scale: 0.42;
+    position: absolute;
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    right: 10px;
+    z-index: 2;
+  }
+}
+
+.navbar .theme-toggle-container {
+  width: 60px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.navbar .theme-toggle {
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  z-index: 1000;
+  user-select: none;
+  transform: scale(0.45);
+  transform-origin: center;
 }
 
 /* =========================================
@@ -1236,6 +1437,32 @@ body.day-mode .album-card {
 }
 body.day-mode .album-card h3 { color: #2d3748; }
 body.day-mode .album-card p { color: #4a5568; }
+
+/* 白马村游记预览保持原有纸张底色，避免日间模式偏灰 */
+body.day-mode #baimaPreviewBox {
+    background: #F2EFE8 !important;
+}
+
+/* 白马村游记日间模式统一样式，避免偏灰色 */
+body.day-mode #tradReferenceBox {
+    background: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+}
+
+body.day-mode #tradReferenceBox b {
+    color: #b45309 !important;
+}
+
+body.day-mode .baima-control-row {
+    background: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+}
+
+body.day-mode .baima-tip {
+    background: var(--input-bg) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--input-border);
+}
 
 body.day-mode .btn-secondary {
     background: #ffffff;

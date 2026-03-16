@@ -2,7 +2,7 @@
  * @Description: 
  * @Author: DSTBP
  * @Date: 2026-01-07 20:49:41
- * @LastEditTime: 2026-01-07 20:51:29
+ * @LastEditTime: 2026-03-15 08:48:26
  * @LastEditors: DSTBP
 -->
 <!DOCTYPE html>
@@ -16,13 +16,25 @@
     <script src="assets/js/theme-init.js"></script>
 </head>
 <body class="landing-page">
-    <!-- 日夜切换器 -->
-    <div class="theme-toggle">
-        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
-        <label for="themeToggle" class="theme-toggle__btn">
-            <span class="theme-toggle__feature"></span>
-        </label>
-    </div>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="Logo" class="logo-icon">
+                <div class="logo-text-desktop">CSCSourceFormatter</div>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <div id="background-wrapper"></div>
     <div class="page-container">

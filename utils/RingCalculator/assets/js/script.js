@@ -9,6 +9,13 @@ let pointId = 0;
 let arcId = 0;
 let offsetId = 0;
 let readoutExpressions = [];
+let lastLegendSignature = '';
+let dragPointId = null;
+const readoutCardMap = new Map();
+const latexValidationCache = new Map();
+const pendingTypesetTargets = new Set();
+let typesetFrameId = 0;
+let typesetChain = Promise.resolve();
 
 const ringSvg = document.getElementById('ringSvg');
 const ringBase = ringSvg ? ringSvg.querySelector('.ring-base') : null;
@@ -59,11 +66,37 @@ const arcPalette = ['#ffd166', '#60a5fa', '#fca5a5', '#34d399', '#a78bfa', '#fb7
 
 function modValue(value) {
     const n = state.N;
-    return ((value % n) + n) % n;
+    const numeric = Number(value);
+    const safeValue = Number.isFinite(numeric) ? Math.round(numeric) : 0;
+    return ((safeValue % n) + n) % n;
 }
 
 function clampValue(value, max) {
-    return Math.max(0, Math.min(max, value));
+    const numeric = Number(value);
+    const safeValue = Number.isFinite(numeric) ? Math.round(numeric) : 0;
+    return Math.max(0, Math.min(max, safeValue));
+}
+
+function getMaxRingValue() {
+    return Math.max(0, state.N - 1);
+}
+
+function queueMathTypeset(...targets) {
+    if (!window.MathJax?.typesetPromise) return;
+    targets.filter(Boolean).forEach((target) => pendingTypesetTargets.add(target));
+    if (typesetFrameId) return;
+
+    typesetFrameId = window.requestAnimationFrame(() => {
+        typesetFrameId = 0;
+        const nodes = Array.from(pendingTypesetTargets).filter((node) => node?.isConnected);
+        pendingTypesetTargets.clear();
+        if (nodes.length === 0) return;
+
+        typesetChain = typesetChain
+            .catch(() => {})
+            .then(() => window.MathJax.typesetPromise(nodes))
+            .catch(() => {});
+    });
 }
 
 function indexToAngle(index) {
@@ -91,7 +124,7 @@ function arcPath(startIndex, endIndex, radius) {
 
 function updateTicks() {
     if (!elements.tickGroup) return;
-    elements.tickGroup.innerHTML = '';
+    const fragment = document.createDocumentFragment();
     const majorStep = state.N >= 32 ? 8 : 4;
     const fontSize = state.N <= 16 ? 16 : state.N <= 32 ? 14 : 12;
 
@@ -107,7 +140,7 @@ function updateTicks() {
         line.setAttribute('x2', outer.x);
         line.setAttribute('y2', outer.y);
         line.setAttribute('class', `tick-line${isMajor ? ' major' : ''}`);
-        elements.tickGroup.appendChild(line);
+        fragment.appendChild(line);
 
         const labelPos = polar(ring.radius + 20, angle);
         const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -116,8 +149,10 @@ function updateTicks() {
         label.setAttribute('class', 'tick-label');
         label.setAttribute('style', `font-size: ${fontSize}px;`);
         label.textContent = i === 0 ? `0/${state.N}` : i;
-        elements.tickGroup.appendChild(label);
+        fragment.appendChild(label);
     }
+
+    elements.tickGroup.replaceChildren(fragment);
 }
 
 function getColor(item, index, palette) {
@@ -129,6 +164,7 @@ function getColor(item, index, palette) {
 
 const pointColor = (point, index) => getColor(point, index, pointPalette);
 const arcColor = (arc, index) => getColor(arc, index, arcPalette);
+const RESERVED_VARIABLE_KEYS = new Set(['n']);
 
 function latexText(value) {
     return String(value)
@@ -152,11 +188,16 @@ function isLikelyLatex(value) {
 }
 
 const isValidLatex = (value) => {
+    if (latexValidationCache.has(value)) {
+        return latexValidationCache.get(value);
+    }
     if (!window.MathJax?.tex2svg) return false;
     try {
         window.MathJax.tex2svg(value);
+        latexValidationCache.set(value, true);
         return true;
     } catch (error) {
+        latexValidationCache.set(value, false);
         return false;
     }
 };
@@ -192,6 +233,17 @@ const getById = (collection, id) => collection.find(item => item.id === id) || n
 const getPointById = (pointId) => getById(state.points, pointId);
 const getOffsetById = (offsetId) => getById(state.offsets, offsetId);
 
+function getDragPoint() {
+    const cachedPoint = dragPointId ? getPointById(dragPointId) : null;
+    if (cachedPoint && cachedPoint.name.trim().toLowerCase() === 'x') {
+        return cachedPoint;
+    }
+
+    const nextPoint = state.points.find((entry) => entry.name.trim().toLowerCase() === 'x') || null;
+    dragPointId = nextPoint ? nextPoint.id : null;
+    return nextPoint;
+}
+
 function getLabelById(collection, id, labelFn) {
     const index = collection.findIndex(item => item.id === id);
     return index === -1 ? '' : labelFn(collection[index], index);
@@ -222,14 +274,17 @@ function getSelectedArc() {
 }
 
 const updateValue = (item, value, max) => {
-    const clamped = clampValue(Number(value), max);
+    const upperBound = Math.max(0, Number(max) - 1);
+    const fallback = Number.isFinite(item.value) ? item.value : 0;
+    const nextValue = Number.isFinite(Number(value)) ? Number(value) : fallback;
+    const clamped = clampValue(nextValue, upperBound);
     item.value = clamped;
     if (item.slider) item.slider.value = clamped;
     if (item.input) item.input.value = clamped;
 };
 
 function updateRanges() {
-    const pointMax = state.N;
+    const pointMax = getMaxRingValue();
     const updateItemRange = (item) => {
         if (item.slider) {
             item.slider.min = 0;
@@ -307,6 +362,7 @@ function buildPointRow(point) {
 
     nameInput.addEventListener('input', () => {
         point.name = nameInput.value;
+        dragPointId = null;
         updateArcSelectOptions();
         updateArcPointOptions();
         updateDisplay();
@@ -337,6 +393,9 @@ function buildPointRow(point) {
 
     removeBtn.addEventListener('click', () => {
         state.points = state.points.filter((entry) => entry.id !== point.id);
+        if (dragPointId === point.id) {
+            dragPointId = null;
+        }
         row.remove();
         updateArcSelectOptions();
         updateArcPointOptions();
@@ -356,6 +415,7 @@ function buildPointRow(point) {
 
 function addPoint() {
     pointId += 1;
+    dragPointId = null;
     const point = {
         id: pointId,
         name: '',
@@ -478,14 +538,15 @@ function ensureArcPointSelection(arc) {
 }
 
 function fillPointSelect(select, selectedId) {
-    select.innerHTML = '';
+    const fragment = document.createDocumentFragment();
     if (state.points.length === 0) {
         const option = document.createElement('option');
         option.value = '';
         option.textContent = '无点';
         option.disabled = option.selected = true;
-        select.appendChild(option);
+        fragment.appendChild(option);
         select.disabled = true;
+        select.replaceChildren(fragment);
         return;
     }
     select.disabled = false;
@@ -494,8 +555,9 @@ function fillPointSelect(select, selectedId) {
         option.value = String(point.id);
         option.textContent = pointLabel(point, index);
         option.selected = point.id === selectedId;
-        select.appendChild(option);
+        fragment.appendChild(option);
     });
+    select.replaceChildren(fragment);
 }
 
 function updateArcPointOptions() {
@@ -517,12 +579,13 @@ function getSelectedOffsetIds(container) {
 }
 
 function renderOffsetMulti(container, selectedIds, onChange) {
-    container.innerHTML = '';
+    const fragment = document.createDocumentFragment();
     if (state.offsets.length === 0) {
         const empty = document.createElement('span');
         empty.className = 'offset-empty';
         empty.textContent = '无偏移';
-        container.appendChild(empty);
+        fragment.appendChild(empty);
+        container.replaceChildren(fragment);
         return;
     }
     const selectedSet = new Set(selectedIds);
@@ -537,8 +600,9 @@ function renderOffsetMulti(container, selectedIds, onChange) {
         const text = document.createElement('span');
         text.textContent = offsetLabel(offset, index);
         label.append(input, text);
-        container.appendChild(label);
+        fragment.appendChild(label);
     });
+    container.replaceChildren(fragment);
 }
 
 const validateOffsetIds = (item) => {
@@ -678,21 +742,30 @@ function addArc() {
 
 function updateArcSelectOptions() {
     if (!elements.arcSelect) return;
-    elements.arcSelect.innerHTML = '';
+    const previousSelectedId = elements.arcSelect.value ? Number(elements.arcSelect.value) : null;
+    const fragment = document.createDocumentFragment();
     if (state.arcs.length === 0) {
         const option = document.createElement('option');
         option.value = '';
         option.textContent = '无弧段';
-        elements.arcSelect.appendChild(option);
+        fragment.appendChild(option);
+        elements.arcSelect.disabled = true;
+        elements.arcSelect.replaceChildren(fragment);
         return;
     }
+    elements.arcSelect.disabled = false;
+    const selectedId = state.arcs.some((arc) => arc.id === previousSelectedId)
+        ? previousSelectedId
+        : state.arcs[0].id;
     state.arcs.forEach((arc, index) => {
         const option = document.createElement('option');
         option.value = String(arc.id);
         const name = arc.name.trim() || `弧段 ${index + 1}`;
         option.textContent = name;
-        elements.arcSelect.appendChild(option);
+        option.selected = arc.id === selectedId;
+        fragment.appendChild(option);
     });
+    elements.arcSelect.replaceChildren(fragment);
 }
 
 function buildVariableMap() {
@@ -700,8 +773,11 @@ function buildVariableMap() {
     const addEntry = (name, value) => {
         const normalized = normalizeVariableKey(name);
         if (!normalized) return;
-        values[normalized] = value;
         const lower = normalized.toLowerCase();
+        if (RESERVED_VARIABLE_KEYS.has(lower)) {
+            return;
+        }
+        values[normalized] = value;
         if (lower !== normalized) {
             values[lower] = value;
         }
@@ -824,48 +900,46 @@ function renderReadoutCards() {
     const container = elements.readoutContainer;
     if (!container) return;
 
-    const existing = new Map(
-        Array.from(container.querySelectorAll('.readout-card')).map(card => [card.dataset.expr, card])
-    );
-
-    existing.forEach((card, key) => {
-        if (!readoutExpressions.includes(key)) card.remove();
+    Array.from(readoutCardMap.keys()).forEach((expr) => {
+        if (!readoutExpressions.includes(expr)) {
+            readoutCardMap.get(expr)?.remove();
+            readoutCardMap.delete(expr);
+        }
     });
 
     readoutExpressions.forEach((expr) => {
-        if (existing.has(expr)) return;
+        if (readoutCardMap.has(expr)) return;
         const card = document.createElement('div');
         card.className = 'readout-card';
         card.dataset.expr = expr;
         const label = document.createElement('span');
         label.className = 'readout-label';
-        label.innerHTML = formatExpressionLabel(expr);
+        label.textContent = formatExpressionLabel(expr);
         const value = document.createElement('span');
         value.className = 'readout-value mono';
         value.textContent = '0';
         card.append(label, value);
         container.appendChild(card);
+        readoutCardMap.set(expr, card);
     });
 
-    if (window.MathJax?.typesetPromise) {
-        window.MathJax.typesetPromise([container]);
-    }
+    queueMathTypeset(container);
 }
 
 function parseReadoutInput() {
     if (!elements.readoutInput) return;
-    readoutExpressions = elements.readoutInput.value
-        .split(/[,，;；\n]+/)
-        .map((item) => item.trim())
-        .filter(Boolean);
+    readoutExpressions = Array.from(new Set(
+        elements.readoutInput.value
+            .split(/[,，;；\n]+/)
+            .map((item) => item.trim())
+            .filter(Boolean)
+    ));
     renderReadoutCards();
 }
 
 function updateReadoutValues(values) {
-    const container = elements.readoutContainer;
-    if (!container) return;
     readoutExpressions.forEach((expr) => {
-        const card = container.querySelector(`.readout-card[data-expr="${expr}"]`);
+        const card = readoutCardMap.get(expr);
         if (!card) return;
         const valueEl = card.querySelector('.readout-value');
         if (!valueEl) return;
@@ -886,8 +960,8 @@ function getArcEndpoints(arc) {
 
 function drawArcs() {
     if (!elements.arcGroupTarget || !elements.arcGroupOffset) return;
-    elements.arcGroupTarget.innerHTML = '';
-    elements.arcGroupOffset.innerHTML = '';
+    const targetFragment = document.createDocumentFragment();
+    const offsetFragment = document.createDocumentFragment();
 
     state.arcs.forEach((arc, index) => {
         const endpoints = getArcEndpoints(arc);
@@ -903,7 +977,7 @@ function drawArcs() {
             path.setAttribute('data-arc-kind', 'target');
             path.style.stroke = color;
             path.style.color = color;
-            elements.arcGroupTarget.appendChild(path);
+            targetFragment.appendChild(path);
         }
 
         const offsetIds = Array.isArray(arc.offsetIds) ? arc.offsetIds : [];
@@ -920,16 +994,19 @@ function drawArcs() {
                 path.setAttribute('data-arc-kind', 'offset');
                 path.style.stroke = color;
                 path.style.color = color;
-                elements.arcGroupOffset.appendChild(path);
+                offsetFragment.appendChild(path);
             }
         }
     });
+
+    elements.arcGroupTarget.replaceChildren(targetFragment);
+    elements.arcGroupOffset.replaceChildren(offsetFragment);
 }
 
-function drawPoints(variableMap) {
+function drawPoints() {
     if (!elements.arrowGroup || !elements.pointGroup) return;
-    elements.arrowGroup.innerHTML = '';
-    elements.pointGroup.innerHTML = '';
+    const arrowFragment = document.createDocumentFragment();
+    const pointFragment = document.createDocumentFragment();
 
     const visiblePoints = state.points.filter((point) => !point.hidden);
     visiblePoints.forEach((point, index) => {
@@ -942,22 +1019,45 @@ function drawPoints(variableMap) {
         line.setAttribute('stroke', color);
         line.setAttribute('color', color);
         setArrowPosition(line, angleIndex, ring.pointRadius);
-        elements.arrowGroup.appendChild(line);
+        arrowFragment.appendChild(line);
 
         const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         dot.setAttribute('class', 'ring-point');
         dot.setAttribute('r', '6');
         dot.setAttribute('fill', color);
         setPointPosition(dot, angleIndex, ring.pointRadius);
-        elements.pointGroup.appendChild(dot);
+        pointFragment.appendChild(dot);
     });
-
+    elements.arrowGroup.replaceChildren(arrowFragment);
+    elements.pointGroup.replaceChildren(pointFragment);
 }
 
 function renderLegend() {
     const container = elements.legendList;
     if (!container) return;
-    container.innerHTML = '';
+
+    const legendSignature = JSON.stringify({
+        points: state.points.map((point, index) => ({
+            id: point.id,
+            label: pointLabel(point, index),
+            hidden: Boolean(point.hidden),
+            color: point.color || pointPalette[index % pointPalette.length]
+        })),
+        arcs: state.arcs.map((arc, index) => ({
+            id: arc.id,
+            name: arc.name.trim(),
+            startPointId: arc.startPointId,
+            endPointId: arc.endPointId,
+            color: arcColor(arc, index)
+        }))
+    });
+
+    if (legendSignature === lastLegendSignature) {
+        return;
+    }
+
+    lastLegendSignature = legendSignature;
+    const fragment = document.createDocumentFragment();
 
     state.points.forEach((point, index) => {
         const item = document.createElement('div');
@@ -972,7 +1072,7 @@ function renderLegend() {
         label.textContent = formatInlineMath(pointLabel(point, index));
 
         item.append(dot, label);
-        container.appendChild(item);
+        fragment.appendChild(item);
     });
 
     state.arcs.forEach((arc, index) => {
@@ -996,12 +1096,11 @@ function renderLegend() {
             : (name ? formatInlineMath(name) : `弧段 ${index + 1}`);
 
         item.append(swatch, label);
-        container.appendChild(item);
+        fragment.appendChild(item);
     });
 
-    if (window.MathJax?.typesetPromise) {
-        window.MathJax.typesetPromise([container]).catch(() => {});
-    }
+    container.replaceChildren(fragment);
+    queueMathTypeset(container);
 }
 
 function updateWrapIndicator() {
@@ -1014,9 +1113,9 @@ function updateWrapIndicator() {
     const arc = getSelectedArc();
     if (!arc) {
         elements.wrapValue.textContent = '-';
-        elements.wrapFormula.innerHTML = '\\(1\\{\\text{start} > \\text{end}\\}\\)';
+        elements.wrapFormula.textContent = '\\(1\\{\\text{start} > \\text{end}\\}\\)';
         if (elements.intervalFormula) {
-            elements.intervalFormula.innerHTML = '\\([\\text{start}, \\text{end})\\)';
+            elements.intervalFormula.textContent = '\\([\\text{start}, \\text{end})\\)';
         }
         return;
     }
@@ -1034,13 +1133,13 @@ function updateWrapIndicator() {
     const formula = useOffset
         ? `\\(1\\{${startTerm} + ${offsetExpression} > ${endTerm} + ${offsetExpression}\\}\\)`
         : `\\(1\\{${startTerm} > ${endTerm}\\}\\)`;
-    elements.wrapFormula.innerHTML = formula;
+    elements.wrapFormula.textContent = formula;
 
     const endpoints = getArcEndpoints(arc);
     if (!endpoints) {
         elements.wrapValue.textContent = '-';
         if (elements.intervalFormula) {
-            elements.intervalFormula.innerHTML = '\\([\\text{start}, \\text{end})\\)';
+            elements.intervalFormula.textContent = '\\([\\text{start}, \\text{end})\\)';
         }
         return;
     }
@@ -1052,7 +1151,7 @@ function updateWrapIndicator() {
     if (useOffset && offsetIds.length === 0) {
         elements.wrapValue.textContent = '-';
         if (elements.intervalFormula) {
-            elements.intervalFormula.innerHTML = `\\([${intervalStart}, ${intervalEnd})\\)`;
+            elements.intervalFormula.textContent = `\\([${intervalStart}, ${intervalEnd})\\)`;
         }
         return;
     }
@@ -1061,7 +1160,7 @@ function updateWrapIndicator() {
     const wrap = useOffset ? modValue(start + offsetValue) > modValue(end + offsetValue) : start > end;
     elements.wrapValue.textContent = wrap ? '1' : '0';
     if (elements.intervalFormula) {
-        elements.intervalFormula.innerHTML = wrap
+        elements.intervalFormula.textContent = wrap
             ? `\\([${intervalStart}, N-1] \\cup [0, ${intervalEnd})\\)`
             : `\\([${intervalStart}, ${intervalEnd})\\)`;
     }
@@ -1087,7 +1186,7 @@ function updateDisplay() {
     const variableMap = buildVariableMap();
     updateReadoutValues(variableMap);
     drawArcs();
-    drawPoints(variableMap);
+    drawPoints();
     updateWrapIndicator();
     renderLegend();
 
@@ -1095,9 +1194,7 @@ function updateDisplay() {
         setPointPosition(elements.pointZero, 0, ring.pointRadius);
     }
 
-    if (window.MathJax?.typesetPromise) {
-        window.MathJax.typesetPromise([elements.wrapFormula, elements.intervalFormula].filter(Boolean));
-    }
+    queueMathTypeset(elements.wrapFormula, elements.intervalFormula);
 }
 
 function updateAll() {
@@ -1114,8 +1211,8 @@ function pointerToIndex(event) {
     const y = (event.clientY - rect.top) * scaleY;
     const angle = Math.atan2(y - ring.center, x - ring.center);
     const normalized = (angle + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
-    const rawIndex = Math.round((normalized / (Math.PI * 2)) * state.N) % state.N;
-    return clampValue(rawIndex, state.N);
+    const rawIndex = Math.round((normalized / (Math.PI * 2)) * state.N);
+    return modValue(rawIndex);
 }
 
 function initPointerEvents() {
@@ -1124,7 +1221,7 @@ function initPointerEvents() {
 
     const updateFromPointer = (event) => {
         const index = pointerToIndex(event);
-        const point = state.points.find((entry) => entry.name.trim().toLowerCase() === 'x');
+        const point = getDragPoint();
         if (!point) return;
         updateValue(point, index, state.N);
         updateDisplay();
@@ -1143,16 +1240,27 @@ function initPointerEvents() {
 
     elements.hitRing.addEventListener('pointerup', (event) => {
         dragging = false;
-        elements.hitRing.releasePointerCapture(event.pointerId);
+        if (elements.hitRing.hasPointerCapture?.(event.pointerId)) {
+            elements.hitRing.releasePointerCapture(event.pointerId);
+        }
     });
 
     elements.hitRing.addEventListener('pointerleave', () => {
         dragging = false;
     });
+
+    elements.hitRing.addEventListener('pointercancel', (event) => {
+        dragging = false;
+        if (elements.hitRing.hasPointerCapture?.(event.pointerId)) {
+            elements.hitRing.releasePointerCapture(event.pointerId);
+        }
+    });
 }
 
 function applyModFromSelect() {
-    state.N = Number(elements.modSelect.value);
+    const nextModulus = Number(elements.modSelect?.value);
+    state.N = Number.isInteger(nextModulus) && nextModulus > 1 ? nextModulus : 16;
+    dragPointId = null;
     state.points.forEach((point) => {
         updateValue(point, point.value, state.N);
     });
@@ -1177,6 +1285,10 @@ function init() {
         state.points = [];
         state.arcs = [];
         state.offsets = [];
+        dragPointId = null;
+        lastLegendSignature = '';
+        readoutCardMap.clear();
+        pendingTypesetTargets.clear();
         if (elements.pointList) elements.pointList.innerHTML = '';
         if (elements.arcList) elements.arcList.innerHTML = '';
         if (elements.offsetList) elements.offsetList.innerHTML = '';

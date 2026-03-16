@@ -12,17 +12,28 @@
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
 </head>
 <body>
-    <!-- 日夜切换器 -->
-    <div class="theme-toggle">
-        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
-        <label for="themeToggle" class="theme-toggle__btn">
-            <span class="theme-toggle__feature"></span>
-        </label>
-    </div>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="Logo" class="logo-icon">
+                <span class="logo-text-desktop">Weyl Sequence</span>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <div id="background-wrapper"></div>
     <div class="page-container">
-        <a href="../../index.html" class="back-btn">← 返回首页</a>
         <div class="header">
             <h1 data-shadow='Weyl Sequence Visualization'>Weyl Sequence Visualization</h1>
             <p class="subtitle">在圆形跑道上，一个点每次向前走固定长度 α（α 不是跑道长度的整数倍）。因为 α 是无理数，点永远不会刚好走回原来的位置，轨迹会在跑道上均匀填满。</p>

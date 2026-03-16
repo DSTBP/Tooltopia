@@ -12,17 +12,28 @@
     <link rel="stylesheet" href="./assets/css/style.css">
 </head>
 <body>
-    <!-- 日夜切换器 -->
-    <div class="theme-toggle">
-        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
-        <label for="themeToggle" class="theme-toggle__btn">
-            <span class="theme-toggle__feature"></span>
-        </label>
-    </div>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="Logo" class="logo-icon">
+                <span class="logo-text-desktop">ExcelGrep</span>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
     <div id="background-wrapper"></div>
     <div class="page-container">
-        <a href="../../index.html" class="back-btn">← 返回首页</a>
         <div class="header">
             <h1 data-shadow='表格筛选检索工具'>表格筛选检索工具</h1>
             <p class="subtitle">支持 Excel、CSV、Markdown 表格的多列条件搜索</p>
@@ -103,11 +114,12 @@
             </div>
         </div>
     </div>
+    </div>
 
     <!-- 页脚 -->
     <footer class="footer">
         <p>Copyright © 2024 Tooltopia. All Rights Reserved.</p>
-                <p>Designed by DSTBP</p>
+        <p>Designed by DSTBP</p>
     </footer>
 
     <!-- 引入必要的库 -->

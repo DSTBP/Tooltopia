@@ -3,21 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#3b3b3b">
     <title>Project Scaffolder - 项目结构生成工具</title>
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
-    <div class="theme-toggle">
-        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
-        <label for="themeToggle" class="theme-toggle__btn">
-            <span class="theme-toggle__feature"></span>
-        </label>
-    </div>
+    <script>
+        try {
+            if (window.localStorage && localStorage.getItem('tooltopia-theme') === 'day') {
+                document.body.classList.add('day-mode');
+            }
+        } catch (error) {}
+    </script>
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="Logo" class="logo-icon">
+                <span class="logo-text-desktop">ProjectScaffolder</span>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
 
+    <div id="background-wrapper"></div>
     <div class="page-container">
-        <a href="../../index.html" class="back-btn">← 返回首页</a>
         <div class="container">
             <header>
                 <h1 data-shadow='Project Scaffolder'>Project Scaffolder</h1>

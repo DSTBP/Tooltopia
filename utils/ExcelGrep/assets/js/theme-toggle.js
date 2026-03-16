@@ -1,41 +1,63 @@
 (() => {
     const themeToggle = document.getElementById('themeToggle');
     const body = document.body;
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
     const THEME_KEY = 'tooltopia-theme';
+    const THEME_COLORS = {
+        day: '#f0f4f8',
+        night: '#667eea'
+    };
 
-    // 从 localStorage 读取保存的主题偏好
+    function readStoredTheme() {
+        try {
+            return localStorage.getItem(THEME_KEY);
+        } catch (error) {
+            return null;
+        }
+    }
+
+    function saveThemePreference(theme) {
+        try {
+            localStorage.setItem(THEME_KEY, theme);
+        } catch (error) {
+            // Ignore storage write failures and keep the current UI state.
+        }
+    }
+
+    function updateThemeColor(theme) {
+        if (themeMeta) {
+            themeMeta.setAttribute('content', THEME_COLORS[theme] || THEME_COLORS.night);
+        }
+    }
+
+    function applyTheme(theme) {
+        const isDayMode = theme === 'day';
+        body.classList.toggle('day-mode', isDayMode);
+        updateThemeColor(isDayMode ? 'day' : 'night');
+
+        if (themeToggle) {
+            themeToggle.checked = isDayMode;
+        }
+    }
+
     function loadThemePreference() {
-        const savedTheme = localStorage.getItem(THEME_KEY);
-        if (savedTheme === 'day') {
-            body.classList.add('day-mode');
-            themeToggle.checked = true;
-        } else {
-            body.classList.remove('day-mode');
-            themeToggle.checked = false;
-        }
+        const savedTheme = readStoredTheme();
+        applyTheme(savedTheme === 'day' ? 'day' : 'night');
     }
 
-    // 保存主题偏好到 localStorage
-    function saveThemePreference(isDayMode) {
-        localStorage.setItem(THEME_KEY, isDayMode ? 'day' : 'night');
-    }
-
-    // 切换主题
     function toggleTheme() {
-        const isDayMode = themeToggle.checked;
-
-        if (isDayMode) {
-            body.classList.add('day-mode');
-        } else {
-            body.classList.remove('day-mode');
+        if (!themeToggle) {
+            return;
         }
 
-        saveThemePreference(isDayMode);
+        const theme = themeToggle.checked ? 'day' : 'night';
+        applyTheme(theme);
+        saveThemePreference(theme);
     }
 
-    // 页面加载时恢复主题
     loadThemePreference();
 
-    // 监听切换器变化
-    themeToggle.addEventListener('change', toggleTheme);
+    if (themeToggle) {
+        themeToggle.addEventListener('change', toggleTheme);
+    }
 })();
