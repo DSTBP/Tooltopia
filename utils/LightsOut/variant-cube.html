@@ -142,21 +142,24 @@
         // 立方体尺寸配置（2x2到8x8）
         const cubeSizes = [2, 3, 4, 5, 6, 7, 8];
         const levelConfigs = [];
+        const randomDifficulties = [0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.32];
+        const randomCountsBySize = [13, 13, 13, 13, 13, 13, 11];
         
-        // 为每个尺寸创建4个关卡
-        for (const size of cubeSizes) {
+        // 为每个尺寸创建多个关卡，总计 96 关
+        for (let i = 0; i < cubeSizes.length; i++) {
+            const size = cubeSizes[i];
             // 第一个：全灭模式
             levelConfigs.push({ size, moves: 0, mode: 'allOff' });
             
-            // 后面三个：随机模式，不同难度
             const area = 6 * size * size;
-            for (let i = 1; i <= 3; i++) {
-                const difficulty = 0.1 + (i - 1) * 0.05; // 0.1, 0.15, 0.2
+            const randomCount = randomCountsBySize[i] ?? randomDifficulties.length;
+            for (let j = 0; j < randomCount; j++) {
+                const difficulty = randomDifficulties[j % randomDifficulties.length];
                 const moves = Math.max(1, Math.min(area, Math.round(area * difficulty)));
                 levelConfigs.push({ size, moves, mode: 'random' });
             }
         }
-        TOTAL_LEVELS = levelConfigs.length; // 7个尺寸 × 4个关卡 = 28关
+        TOTAL_LEVELS = levelConfigs.length; // 96 关
 
         let currentLevelIndex = 0;
         let cubeSize = levelConfigs[0].size;
@@ -205,6 +208,7 @@
         }
 
         function renderCube(){
+            updateCubeScale();
             // 清空所有面的内容
             const faces = cubeEl.querySelectorAll('.cube-face');
             faces.forEach(face => {
@@ -429,6 +433,15 @@
                 moveCount = 0; undoStack = [];
                 renderCube();
             }
+        }
+
+        function updateCubeScale(){
+            const minSize = 240;
+            const maxSize = 340;
+            const clamped = clamp(cubeSize, 2, 8);
+            const t = (clamped - 2) / 6;
+            const px = Math.round(minSize + (maxSize - minSize) * t);
+            cubeEl.style.setProperty('--cube-size', `${px}px`);
         }
 
         function toggleHint(){

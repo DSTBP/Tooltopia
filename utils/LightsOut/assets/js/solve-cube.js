@@ -113,9 +113,9 @@ class LightsOutCubeSolver {
         for (let face = 0; face < 6; face++) {
             for (let r = 0; r < this.n; r++) {
                 for (let c = 0; c < this.n; c++) {
-                    const rowIdx = this.index(face, r, c);
-                    for (const colIdx of this.neighbors(face, r, c)) {
-                        this.A[rowIdx][colIdx] ^= 1;  // GF(2)加法
+                    const buttonIdx = this.index(face, r, c);
+                    for (const affectedIdx of this.neighbors(face, r, c)) {
+                        this.A[affectedIdx][buttonIdx] ^= 1;  // GF(2)加法
                     }
                 }
             }
