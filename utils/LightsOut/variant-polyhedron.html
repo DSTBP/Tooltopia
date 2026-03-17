@@ -155,18 +155,25 @@
             {l: 2, m: 3, n: 5}, {l: 3, m: 2, n: 4}, {l: 2, m: 4, n: 3}
         ];
         
+        const randomDifficulties = [0.1, 0.13, 0.16, 0.19, 0.22, 0.25, 0.28, 0.31];
+        const randomCountsByConfig = [7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 6, 6];
         const levelConfigs = [];
-        // 为每个配置创建2个关卡
-        for (const config of polyhedronConfigs) {
+        // 为每个配置创建多个关卡，总计 96 关
+        for (let i = 0; i < polyhedronConfigs.length; i++) {
+            const config = polyhedronConfigs[i];
             // 全灭模式
             levelConfigs.push({ l: config.l, m: config.m, n: config.n, moves: 0, mode: 'allOff' });
             
             // 随机模式
             const totalCells = 2 * (config.l * config.m + config.l * config.n + config.m * config.n);
-            const moves = Math.max(1, Math.min(totalCells, Math.round(totalCells * 0.15)));
-            levelConfigs.push({ l: config.l, m: config.m, n: config.n, moves, mode: 'random' });
+            const randomCount = randomCountsByConfig[i] ?? randomDifficulties.length;
+            for (let j = 0; j < randomCount; j++) {
+                const difficulty = randomDifficulties[j % randomDifficulties.length];
+                const moves = Math.max(1, Math.min(totalCells, Math.round(totalCells * difficulty)));
+                levelConfigs.push({ l: config.l, m: config.m, n: config.n, moves, mode: 'random' });
+            }
         }
-        TOTAL_LEVELS = levelConfigs.length;
+        TOTAL_LEVELS = levelConfigs.length; // 96 关
 
         let currentLevelIndex = 0;
         let polyLength = levelConfigs[0].l;
@@ -248,10 +255,17 @@
         }
 
         function renderPolyhedron(){
-            const CELL_PX = 38;
             const GAP_PX = 2;
             const PAD_PX = 5;
-            const BORDER_PX = 2;
+            const BORDER_PX = 1;
+            const maxDim = Math.max(polyLength, polyWidth, polyHeight);
+            const minSize = 240;
+            const maxSize = 340;
+            const t = (maxDim - 2) / 4;
+            const targetSize = Math.round(minSize + (maxSize - minSize) * t);
+            const CELL_PX = Math.round(
+                (targetSize - (maxDim - 1) * GAP_PX - PAD_PX * 2 - BORDER_PX * 2) / maxDim
+            );
             const calcSidePx = (count) => count * CELL_PX + (count - 1) * GAP_PX + PAD_PX * 2 + BORDER_PX * 2;
 
             const depthPx = calcSidePx(polyLength);
