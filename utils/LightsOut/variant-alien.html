@@ -150,7 +150,8 @@
                 specialIndex++;
             }
         }
-        const alienSizes = finalSizes;
+        const maxLevelSizes = 32;
+        const alienSizes = finalSizes.slice(0, maxLevelSizes);
         
         const levelConfigs = [];
         for (const [r, c] of alienSizes) {
@@ -164,7 +165,7 @@
             // 第三关：可解随机状态 → 全紫(3)
             levelConfigs.push({ rows, cols, mode: 'solvableRandom', target: 3 });
         }
-        TOTAL_LEVELS = levelConfigs.length; // 每个尺寸3关，共 (40+15) * 3 = 165 关
+        TOTAL_LEVELS = levelConfigs.length; // 每个尺寸3关，共 32 * 3 = 96 关
 
         let currentLevelIndex = 0;
         let rows = levelConfigs[0].rows;
@@ -248,51 +249,16 @@
                 renderBoard();
                 return;
             }
-            const before = deepClone(grid);
-            applyAlienFlip(r, c, true);
             if (hintMode) {
-                // 检查哪些格子被改变了
-                const changed = new Set();
-                for(let i=0;i<rows;i++){
-                    for(let j=0;j<cols;j++){
-                        if (before[i][j] !== grid[i][j]) changed.add(i+','+j);
-                    }
+                // 仅减少"被点击的那个格子"的提示数字；周围受影响的格子不减少
+                const k = r+','+c;
+                if (hintCounts.has(k)) {
+                    let v = hintCounts.get(k) - 1;
+                    if (v <= 0) hintCounts.delete(k); 
+                    else hintCounts.set(k, v);
                 }
-                
-                // 计算期望改变的格子（整行+整列）
-                const expected = new Set();
-                // 整行
-                for (let cc = 0; cc < cols; cc++) {
-                    expected.add(r+','+cc);
-                }
-                // 整列（不重复点击位置）
-                for (let rr = 0; rr < rows; rr++) {
-                    if (rr !== r) {
-                        expected.add(rr+','+c);
-                    }
-                }
-                
-                // 验证是否是直接点击
-                let isDirectClick = true;
-                for (const key of expected){ 
-                    if (!changed.has(key)) { 
-                        isDirectClick = false; 
-                        break; 
-                    } 
-                }
-                if (isDirectClick && changed.size !== expected.size) isDirectClick = false;
-
-                if (isDirectClick) {
-                    // 仅减少"被点击的那个格子"的提示数字；周围受影响的格子不减少
-                    const k = r+','+c;
-                    if (hintCounts.has(k)) {
-                        let v = hintCounts.get(k) - 1;
-                        if (v <= 0) hintCounts.delete(k); 
-                        else hintCounts.set(k, v);
-                    }
-                }
-                renderBoard();
             }
+            applyAlienFlip(r, c, true);
         }
 
         function applyAlienFlip(r, c, recordHistory){
@@ -382,22 +348,6 @@
             undoStack = [];
             renderBoard();
             if (minStepsWrap) { minStepsWrap.classList.add('is-hidden'); }
-            
-            // 控制台打印初始矩阵（以目标颜色为0的格式）
-            const targetColor = config.target;
-            const transformedMatrix = grid.map(row => 
-                row.map(cell => (cell - targetColor + 4) % 4)
-            );
-            
-            // 格式化为字符串形式
-            const matrixStr = '[\n' + 
-                transformedMatrix.map(row => 
-                    '        [' + row.join(', ') + ']'
-                ).join(',\n') + 
-                '\n    ]';
-            
-            console.log(`第 ${levelIndex + 1} 关初始矩阵 (${rows}x${cols}, 目标：全${targetColors[config.target]}):`);
-            console.log(matrixStr);
         }
 
         function enterCustomizeMode(){
@@ -438,6 +388,13 @@
             if (hintMode) { exitHintMode(); } else { enterHintMode(); }
         }
         function enterHintMode(){
+            const area = rows * cols;
+            if (area > 600) {
+                hintCounts = new Map();
+                if (minStepsWrap) { minStepsWrap.classList.add('is-hidden'); }
+                statusText.textContent = '盘面过大，已禁用提示';
+                return;
+            }
             try {
                 // 获取当前关卡的目标颜色
                 const config = levelConfigs[currentLevelIndex];
@@ -505,28 +462,49 @@
             renderBoard();
         }
 
+        function isAlienSolvable(gridState, target){
+            try {
+                const transformed = gridState.map(row =>
+                    row.map(cell => (cell - target + 4) % 4)
+                );
+                const solver = new AlienTilesSolver(transformed, 4);
+                const [flips] = solver.solve();
+                return !!flips;
+            } catch (err) {
+                return false;
+            }
+        }
+
         function generateSolvableAlienInitial(r, c, target){
             // 从目标状态开始，进行随机翻转生成可解状态
-            const g = createMatrix(r, c, target); // 全目标色
-            
-            // 随机进行一些翻转操作
-            const numFlips = Math.min(r * c, Math.max(5, Math.floor(r * c * 0.3)));
-            for (let i = 0; i < numFlips; i++) {
-                const rr = Math.floor(Math.random() * r);
-                const cc = Math.floor(Math.random() * c);
-                
-                // 应用异形图块翻转：整行和整列
-                for (let j = 0; j < c; j++) {
-                    g[rr][j] = (g[rr][j] + 1) % 4;
-                }
-                for (let j = 0; j < r; j++) {
-                    if (j !== rr) { // 避免重复翻转
-                        g[j][cc] = (g[j][cc] + 1) % 4;
+            const maxAttempts = 30;
+            for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                const g = createMatrix(r, c, target); // 全目标色
+
+                // 随机进行一些翻转操作
+                const numFlips = Math.min(r * c, Math.max(5, Math.floor(r * c * 0.3)));
+                for (let i = 0; i < numFlips; i++) {
+                    const rr = Math.floor(Math.random() * r);
+                    const cc = Math.floor(Math.random() * c);
+
+                    // 应用异形图块翻转：整行和整列
+                    for (let j = 0; j < c; j++) {
+                        g[rr][j] = (g[rr][j] + 1) % 4;
+                    }
+                    for (let j = 0; j < r; j++) {
+                        if (j !== rr) { // 避免重复翻转
+                            g[j][cc] = (g[j][cc] + 1) % 4;
+                        }
                     }
                 }
+
+                if (isAlienSolvable(g, target)) {
+                    return g;
+                }
             }
-            
-            return g;
+
+            // 兜底：返回目标盘面，保证可解
+            return createMatrix(r, c, target);
         }
 
         function generateRandomAlienInitial(r, c){
@@ -554,7 +532,7 @@
                     </div>
                 </div>`;
             document.body.appendChild(modal);
-            const cleanup = () => { if (modal && modal.parentNode) modal.parentNode.removeChild(modal); };
+            const cleanup = () => cancelSuccessTimer();
             modal.addEventListener('click', (e)=>{ if (e.target === modal) cleanup(); });
             modal.querySelector('#closeModal').addEventListener('click', cleanup);
             modal.querySelector('#nextNow').addEventListener('click', ()=>{ cleanup(); switchLevel(currentLevelIndex+1); });

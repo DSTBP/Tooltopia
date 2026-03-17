@@ -86,24 +86,24 @@
             </div>
 
             <div class="fo-board-wrap">
-                <div class="cube-container">
-                    <div id="cube" class="cube">
-                        <div class="cube-face front" data-face="2">
+                <div class="polyhedron-container">
+                    <div id="polyhedron" class="polyhedron">
+                        <div class="polyhedron-face front" data-face="2">
                             <div class="face-label">前面</div>
                         </div>
-                        <div class="cube-face back" data-face="4">
+                        <div class="polyhedron-face back" data-face="4">
                             <div class="face-label">后面</div>
                         </div>
-                        <div class="cube-face right" data-face="3">
+                        <div class="polyhedron-face right" data-face="3">
                             <div class="face-label">右面</div>
                         </div>
-                        <div class="cube-face left" data-face="1">
+                        <div class="polyhedron-face left" data-face="1">
                             <div class="face-label">左面</div>
                         </div>
-                        <div class="cube-face top" data-face="0">
+                        <div class="polyhedron-face top" data-face="0">
                             <div class="face-label">上面</div>
                         </div>
-                        <div class="cube-face bottom" data-face="5">
+                        <div class="polyhedron-face bottom" data-face="5">
                             <div class="face-label">下面</div>
                         </div>
                     </div>
@@ -112,10 +112,10 @@
         </section>
     </div>
 
-    <script src="assets/js/solve-cube.js"></script>
+    <script src="assets/js/solve-polyhedron.js"></script>
     <script>
     (function(){
-        const cubeEl = document.getElementById('cube');
+        const polyhedronEl = document.getElementById('polyhedron');
         const levelSelect = document.getElementById('levelSelect');
         const prevLevelBtn = document.getElementById('prevLevel');
         const nextLevelBtn = document.getElementById('nextLevel');
@@ -177,22 +177,21 @@
         let undoStack = [];
         const initialStates = Array(TOTAL_LEVELS).fill(null);
         
-        // 多面体几何函数
+        // 多面体（长方体）几何函数
+        // 面编号与页面 data-face 保持一致：
+        // 0=上, 1=左, 2=前, 3=右, 4=后, 5=下
         function createPolyhedron(length, width, height, fill = 0) {
-            // 创建长方体的6个面
-            // 面0: 前面 (width × height)
-            // 面1: 后面 (width × height) 
-            // 面2: 右面 (length × height)
-            // 面3: 左面 (length × height)
-            // 面4: 上面 (length × width)
-            // 面5: 下面 (length × width)
+            // 长方体 3 个维度：
+            // length: 前后深度（对应上/下面的“行”）
+            // width: 左右宽度（对应上/下面的“列”）
+            // height: 上下高度（对应前/后/左/右面的“行”）
             return [
-                Array.from({length: height}, () => Array(width).fill(fill)),  // 前面
-                Array.from({length: height}, () => Array(width).fill(fill)),  // 后面
-                Array.from({length: height}, () => Array(length).fill(fill)), // 右面
-                Array.from({length: height}, () => Array(length).fill(fill)), // 左面
-                Array.from({length: width}, () => Array(length).fill(fill)),  // 上面
-                Array.from({length: width}, () => Array(length).fill(fill))   // 下面
+                Array.from({ length: length }, () => Array(width).fill(fill)),   // 0 上面 (L x W)
+                Array.from({ length: height }, () => Array(length).fill(fill)),  // 1 左面 (H x L)
+                Array.from({ length: height }, () => Array(width).fill(fill)),   // 2 前面 (H x W)
+                Array.from({ length: height }, () => Array(length).fill(fill)),  // 3 右面 (H x L)
+                Array.from({ length: height }, () => Array(width).fill(fill)),   // 4 后面 (H x W)
+                Array.from({ length: length }, () => Array(width).fill(fill))    // 5 下面 (L x W)
             ];
         }
 
@@ -233,21 +232,41 @@
         
         function getFaceDimensions(face) {
             // 返回每个面的 [行数, 列数]
-            switch(face) {
-                case 0: case 1: // 前面、后面 (width × height)
-                    return [polyHeight, polyWidth];
-                case 2: case 3: // 右面、左面 (length × height)  
-                    return [polyHeight, polyLength];
-                case 4: case 5: // 上面、下面 (length × width)
-                    return [polyWidth, polyLength];
+            switch (face) {
+                case 0: // 上面
+                case 5: // 下面
+                    return [polyLength, polyWidth]; // L x W
+                case 2: // 前面
+                case 4: // 后面
+                    return [polyHeight, polyWidth]; // H x W
+                case 1: // 左面
+                case 3: // 右面
+                    return [polyHeight, polyLength]; // H x L
                 default:
                     return [polyHeight, polyWidth];
             }
         }
 
         function renderPolyhedron(){
+            const CELL_PX = 38;
+            const GAP_PX = 2;
+            const PAD_PX = 5;
+            const BORDER_PX = 2;
+            const calcSidePx = (count) => count * CELL_PX + (count - 1) * GAP_PX + PAD_PX * 2 + BORDER_PX * 2;
+
+            const depthPx = calcSidePx(polyLength);
+            const widthPx = calcSidePx(polyWidth);
+            const heightPx = calcSidePx(polyHeight);
+            const polySize = Math.max(depthPx, widthPx, heightPx);
+
+            polyhedronEl.style.width = `${polySize}px`;
+            polyhedronEl.style.height = `${polySize}px`;
+            polyhedronEl.style.setProperty('--depth', `${Math.round(depthPx / 2)}px`);
+            polyhedronEl.style.setProperty('--width', `${Math.round(widthPx / 2)}px`);
+            polyhedronEl.style.setProperty('--height', `${Math.round(heightPx / 2)}px`);
+
             // 清空所有面的内容
-            const faces = cubeEl.querySelectorAll('.cube-face');
+            const faces = polyhedronEl.querySelectorAll('.polyhedron-face');
             faces.forEach(face => {
                 face.innerHTML = '';
                 const faceLabel = document.createElement('div');
@@ -258,10 +277,18 @@
 
             // 为每个面渲染格子 - 考虑不同面的不同尺寸
             for (let face = 0; face < 6; face++) {
-                const faceEl = cubeEl.querySelector(`[data-face="${face}"]`);
+                const faceEl = polyhedronEl.querySelector(`[data-face="${face}"]`);
                 const [rows, cols] = getFaceDimensions(face);
-                faceEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-                faceEl.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+                const faceW = calcSidePx(cols);
+                const faceH = calcSidePx(rows);
+                faceEl.style.width = `${faceW}px`;
+                faceEl.style.height = `${faceH}px`;
+                faceEl.style.left = `${Math.round((polySize - faceW) / 2)}px`;
+                faceEl.style.top = `${Math.round((polySize - faceH) / 2)}px`;
+
+                faceEl.style.gridTemplateColumns = `repeat(${cols}, ${CELL_PX}px)`;
+                faceEl.style.gridTemplateRows = `repeat(${rows}, ${CELL_PX}px)`;
                 
                 for (let r = 0; r < rows; r++) {
                     for (let c = 0; c < cols; c++) {
@@ -335,18 +362,82 @@
         }
 
         function getPolyhedronNeighbors(face, r, c) {
-            const neighbors = [[face, r, c]]; // 自身
+            // 0=上, 1=左, 2=前, 3=右, 4=后, 5=下
+            const neighbors = [];
+            const seen = new Set();
+            const L = polyLength;
+            const W = polyWidth;
+            const H = polyHeight;
+
+            const add = (f, rr, cc) => {
+                const [fr, fc] = getFaceDimensions(f);
+                if (rr < 0 || rr >= fr || cc < 0 || cc >= fc) return;
+                const key = `${f},${rr},${cc}`;
+                if (seen.has(key)) return;
+                seen.add(key);
+                neighbors.push([f, rr, cc]);
+            };
+
+            add(face, r, c); // self
+
             const [faceRows, faceCols] = getFaceDimensions(face);
-            
-            // 面内邻居（上下左右）
-            if (r > 0) neighbors.push([face, r - 1, c]);
-            if (r < faceRows - 1) neighbors.push([face, r + 1, c]);
-            if (c > 0) neighbors.push([face, r, c - 1]);
-            if (c < faceCols - 1) neighbors.push([face, r, c + 1]);
-            
-            // 跨面邻居暂时简化 - 只处理面内邻居以确保游戏一致性
-            // 在长方体中实现正确的跨面邻居需要更复杂的几何计算
-            
+
+            // up
+            if (r > 0) {
+                add(face, r - 1, c);
+            } else {
+                switch (face) {
+                    case 0: add(4, 0, W - 1 - c); break;          // 上 -> 后
+                    case 5: add(2, H - 1, c); break;              // 下 -> 前
+                    case 2: add(0, L - 1, c); break;              // 前 -> 上
+                    case 4: add(0, 0, W - 1 - c); break;          // 后 -> 上
+                    case 1: add(0, c, 0); break;                  // 左 -> 上
+                    case 3: add(0, L - 1 - c, W - 1); break;      // 右 -> 上
+                }
+            }
+
+            // down
+            if (r < faceRows - 1) {
+                add(face, r + 1, c);
+            } else {
+                switch (face) {
+                    case 0: add(2, 0, c); break;                  // 上 -> 前
+                    case 5: add(4, H - 1, W - 1 - c); break;      // 下 -> 后
+                    case 2: add(5, 0, c); break;                  // 前 -> 下
+                    case 4: add(5, L - 1, W - 1 - c); break;      // 后 -> 下
+                    case 1: add(5, L - 1 - c, 0); break;          // 左 -> 下
+                    case 3: add(5, c, W - 1); break;              // 右 -> 下
+                }
+            }
+
+            // left
+            if (c > 0) {
+                add(face, r, c - 1);
+            } else {
+                switch (face) {
+                    case 0: add(1, 0, r); break;                  // 上 -> 左
+                    case 5: add(1, H - 1, L - 1 - r); break;      // 下 -> 左
+                    case 2: add(1, r, L - 1); break;              // 前 -> 左
+                    case 4: add(3, r, L - 1); break;              // 后 -> 右
+                    case 1: add(4, r, W - 1); break;              // 左 -> 后
+                    case 3: add(2, r, W - 1); break;              // 右 -> 前
+                }
+            }
+
+            // right
+            if (c < faceCols - 1) {
+                add(face, r, c + 1);
+            } else {
+                switch (face) {
+                    case 0: add(3, 0, L - 1 - r); break;          // 上 -> 右
+                    case 5: add(3, H - 1, r); break;              // 下 -> 右
+                    case 2: add(3, r, 0); break;                  // 前 -> 右
+                    case 4: add(1, r, 0); break;                  // 后 -> 左
+                    case 1: add(2, r, 0); break;                  // 左 -> 前
+                    case 3: add(4, r, 0); break;                  // 右 -> 后
+                }
+            }
+
             return neighbors;
         }
 
@@ -496,10 +587,10 @@
         function enterHintMode(){
             try {
                 // 将游戏状态转换为求解器期望的格式：灯亮=0，灯灭=1
-                const solverInput = cube.map(face => 
+                const solverInput = polyhedron.map(face =>
                     face.map(row => row.map(cell => cell === 1 ? 0 : 1))
                 );
-                const solver = new LightsOutCubeSolver(solverInput);
+                const solver = new PolyhedronLightsOutSolver(polyLength, polyWidth, polyHeight, solverInput);
                 const [minFlips, solution] = solver.solve();
                 
                 if (!solver.hasSolution) {
@@ -510,9 +601,10 @@
                 // 将解决方案转换为提示集合
                 hintSet = new Set();
                 for (let face = 0; face < 6; face++) {
-                    for (let r = 0; r < cubeSize; r++) {
-                        for (let c = 0; c < cubeSize; c++) {
-                            if (solution[face][r][c] === 1) {
+                    const [faceRows, faceCols] = getFaceDimensions(face);
+                    for (let r = 0; r < faceRows; r++) {
+                        for (let c = 0; c < faceCols; c++) {
+                            if (solution[face] && solution[face][r] && solution[face][r][c] === 1) {
                                 hintSet.add(`${face},${r},${c}`);
                             }
                         }
@@ -537,55 +629,14 @@
             renderPolyhedron();
         }
 
-        function generateRandomInitialCube(size, moves){
-            const cube = createCube(size, 1); // 全亮开始
-            const used = new Set();
-            let steps = Math.max(1, Math.min(6 * size * size, moves|0));
-            
-            while (steps-- > 0){
-                let face, r, c, key, guard=0;
-                do {
-                    face = Math.floor(Math.random() * 6);
-                    r = Math.floor(Math.random() * size);
-                    c = Math.floor(Math.random() * size);
-                    key = `${face}:${r}:${c}`; guard++;
-                    if (guard > 8) break;
-                } while (used.has(key));
-                used.add(key);
-                
-                // 应用翻转
-                const neighbors = getCubeNeighbors(face, r, c);
-                for (const [f, row, col] of neighbors) {
-                    cube[f][row][col] = cube[f][row][col] ^ 1;
-                }
-            }
-            
-            // 保证不是全亮
-            let allOn = true;
-            outer: for (let f = 0; f < 6; f++) {
-                for (let i = 0; i < size; i++) {
-                    for (let j = 0; j < size; j++) {
-                        if (cube[f][i][j] !== 1) { allOn = false; break outer; }
-                    }
-                }
-            }
-            if (allOn) {
-                const neighbors = getCubeNeighbors(0, 0, 0);
-                for (const [f, row, col] of neighbors) {
-                    cube[f][row][col] = cube[f][row][col] ^ 1;
-                }
-            }
-            return { cube: cube };
-        }
-
         function setupCubeDrag() {
             // 为立方体和所有格子添加事件监听器
-            cubeEl.addEventListener('mousedown', onMouseDown);
+            polyhedronEl.addEventListener('mousedown', onMouseDown);
             document.addEventListener('mousemove', onMouseMove);
             document.addEventListener('mouseup', onMouseUp);
             
             // 触摸设备支持
-            cubeEl.addEventListener('touchstart', onTouchStart, { passive: false });
+            polyhedronEl.addEventListener('touchstart', onTouchStart, { passive: false });
             document.addEventListener('touchmove', onTouchMove, { passive: false });
             document.addEventListener('touchend', onTouchEnd);
         }
@@ -710,7 +761,7 @@
         }
 
         function updateCubeTransform() {
-            cubeEl.style.transform = `rotateX(${cubeRotation.x}deg) rotateY(${cubeRotation.y}deg)`;
+            polyhedronEl.style.transform = `rotateX(${cubeRotation.x}deg) rotateY(${cubeRotation.y}deg)`;
         }
 
         function showSuccessModal(){
@@ -719,7 +770,7 @@
             modal.className = 'success-modal';
             modal.innerHTML = `
                 <div class="modal-content">
-                    <h3>立方体点亮成功！</h3>
+                    <h3>通关成功</h3>
                     <p>5 秒后自动进入下一关…</p>
                     <div class="modal-buttons">
                         <button class="btn btn-primary" id="nextNow">立即下一关</button>
@@ -727,7 +778,7 @@
                     </div>
                 </div>`;
             document.body.appendChild(modal);
-            const cleanup = () => { if (modal && modal.parentNode) modal.parentNode.removeChild(modal); };
+            const cleanup = () => cancelSuccessTimer();
             modal.addEventListener('click', (e)=>{ if (e.target === modal) cleanup(); });
             modal.querySelector('#closeModal').addEventListener('click', cleanup);
             modal.querySelector('#nextNow').addEventListener('click', ()=>{ cleanup(); switchLevel(currentLevelIndex+1); });

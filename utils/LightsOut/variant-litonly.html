@@ -237,12 +237,12 @@
                 const [hintR, hintC] = hintSteps[hintStepIndex];
                 if (r === hintR && c === hintC) {
                     hintStepIndex++;
+                    renderBoard(); // 先更新提示显示（renderBoard 会清空 statusText）
                     if (hintStepIndex < hintSteps.length) {
                         statusText.textContent = `仅熄灭可按解法需要 ${hintSteps.length} 步 (当前第 ${hintStepIndex + 1} 步)`;
                     } else {
                         statusText.textContent = `仅熄灭可按解法需要 ${hintSteps.length} 步 (已完成所有提示步骤)`;
                     }
-                    renderBoard(); // 更新提示显示
                 }
             }
         }
@@ -317,6 +317,15 @@
 
         function toggleHint(){ if(isCustomizing) return; if(hintMode) exitHintMode(); else enterHintMode(); }
         function enterHintMode(){
+            const area = rows * cols;
+            if (cols > 30) {
+                statusText.textContent = '提示仅支持列数 ≤ 30（当前列数过大）';
+                return;
+            }
+            if (area > 600) {
+                statusText.textContent = '盘面过大，已禁用提示';
+                return;
+            }
             try {
                 // 转换为求解器格式：亮=0，灭=1
                 const solverInput = grid.map(row => row.map(cell => cell === 1 ? 0 : 1));
@@ -364,7 +373,7 @@
                     </div>
                 </div>`;
             document.body.appendChild(modal);
-            const cleanup=()=>{ if(modal&&modal.parentNode) modal.parentNode.removeChild(modal); };
+            const cleanup=()=>cancelSuccessTimer();
             modal.addEventListener('click',(e)=>{ if(e.target===modal) cleanup(); });
             modal.querySelector('#closeModal').addEventListener('click', cleanup);
             modal.querySelector('#nextNow').addEventListener('click', ()=>{ cleanup(); switchLevel(currentLevelIndex+1); });

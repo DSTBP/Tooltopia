@@ -321,8 +321,9 @@
             } else if (face === 4) { // 后面
                 if (r === 0) neighbors.push([0, 0, cubeSize - 1 - c]); // 上面
                 if (r === cubeSize - 1) neighbors.push([5, cubeSize - 1, cubeSize - 1 - c]); // 下面
-                if (c === 0) neighbors.push([3, r, cubeSize - 1]); // 右面
-                if (c === cubeSize - 1) neighbors.push([1, r, 0]); // 左面
+                // 注意：后面与左右面相邻时需要镜像 r（与 solve-cube.js 的邻居逻辑保持一致）
+                if (c === 0) neighbors.push([3, cubeSize - 1 - r, cubeSize - 1]); // 右面
+                if (c === cubeSize - 1) neighbors.push([1, cubeSize - 1 - r, 0]); // 左面
             } else if (face === 1) { // 左面
                 if (r === 0) neighbors.push([0, c, 0]); // 上面
                 if (r === cubeSize - 1) neighbors.push([5, cubeSize - 1 - c, 0]); // 下面
@@ -668,7 +669,7 @@
                     </div>
                 </div>`;
             document.body.appendChild(modal);
-            const cleanup = () => { if (modal && modal.parentNode) modal.parentNode.removeChild(modal); };
+            const cleanup = () => cancelSuccessTimer();
             modal.addEventListener('click', (e)=>{ if (e.target === modal) cleanup(); });
             modal.querySelector('#closeModal').addEventListener('click', cleanup);
             modal.querySelector('#nextNow').addEventListener('click', ()=>{ cleanup(); switchLevel(currentLevelIndex+1); });

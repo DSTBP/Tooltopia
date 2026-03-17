@@ -304,7 +304,8 @@ function generateBinaryMatrix(rows, cols, seed = null) {
 }
 
 // quick demo if run directly
-if (require.main === module) {
+// Guarded so this file can be loaded in browsers without throwing on `require`.
+if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
   const rows = 25, cols = 25;
   const mat = generateBinaryMatrix(rows, cols, 42);
   const solver = new KnightLightsOutSolver(mat, { maxEnumBits: 20 });

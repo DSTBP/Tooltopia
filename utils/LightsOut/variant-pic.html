@@ -119,6 +119,8 @@
         let hintMode = false; // 是否显示提示
         let hintCounts = new Map(); // key -> remain
         let imgUrl = '';
+        let imageRequestId = 0; // 用于忽略过期的异步加载回调（防止乱序覆盖）
+        const createdBlobUrls = new Set(); // 仅记录本页 createObjectURL() 生成的 blob URL
         let naturalW = 0, naturalH = 0;
         let hintTextColor = '#1f2d3d';
         let hintBgColor = 'rgba(255,255,255,0.0)';
@@ -157,6 +159,7 @@
                 })
                 .then(blob => {
                     const blobUrl = URL.createObjectURL(blob);
+                    createdBlobUrls.add(blobUrl);
                     console.log(`用户图片链接代理成功，blob 地址: ${blobUrl}`);
                     setImageUrl(blobUrl, false, 0);
                 })
@@ -181,24 +184,36 @@
                 return;
             }
             
-            // 清除之前的URL（如果存在）
-            if (imgUrl && imgUrl.startsWith('blob:')) {
-                URL.revokeObjectURL(imgUrl);
-            }
-            
             const url = URL.createObjectURL(file);
+            createdBlobUrls.add(url);
             setImageUrl(url, false, 0);
-            
+             
             // 重置文件输入框，确保下次选择相同文件时也能触发change事件
             e.target.value = '';
         }
 
+        function revokeManagedBlobUrl(url) {
+            if (!url || typeof url !== 'string') return;
+            if (!url.startsWith('blob:')) return;
+            if (!createdBlobUrls.has(url)) return;
+            try { URL.revokeObjectURL(url); } catch (_) {}
+            createdBlobUrls.delete(url);
+        }
+
+        function cleanupBlobUrlsExceptCurrent() {
+            for (const u of Array.from(createdBlobUrls)) {
+                if (u !== imgUrl) revokeManagedBlobUrl(u);
+            }
+        }
+
         function setImageUrl(url, isFromRandomImage = false, currentIndex = 0) {
             if (!url) return;
+            const requestId = ++imageRequestId;
+            const resolvedUrl = url;
             
             // 更新全局图片URL，更新预览区背景（先显示占位，提升体验）
-            imgUrl = url;
-            previewEl.style.backgroundImage = `url('${imgUrl}')`;
+            imgUrl = resolvedUrl;
+            previewEl.style.backgroundImage = `url('${resolvedUrl}')`;
             // 可选：添加加载中样式（如模糊过渡）
             previewEl.style.opacity = '0.5';
             
@@ -209,6 +224,7 @@
 
             // 图片加载成功回调
             img.onload = () => {
+                if (requestId !== imageRequestId) return; // 过期请求，忽略
                 // 恢复预览区透明度，标记真实图片尺寸
                 previewEl.style.opacity = '1';
                 naturalW = img.naturalWidth;
@@ -218,11 +234,15 @@
                 console.log(`第 ${currentIndex + 1} 个图源加载成功: ${imgUrl}`);
                 // 图片加载成功后执行随机打乱（原逻辑保留）
                 shuffleRandom();
+                // 清理历史 blob URL，避免内存泄漏
+                cleanupBlobUrlsExceptCurrent();
             };
             
             // 图片加载失败回调
             img.onerror = (error) => {
+                if (requestId !== imageRequestId) return; // 过期请求，忽略
                 console.error(`第 ${currentIndex + 1} 个图源加载失败:`, error);
+                revokeManagedBlobUrl(resolvedUrl);
                 // 清空无效URL和预览区背景
                 imgUrl = '';
                 previewEl.style.backgroundImage = 'none';
@@ -238,7 +258,7 @@
             };
             
             // 触发图片加载（必须放在最后，确保onload/onerror已绑定）
-            img.src = imgUrl;
+            img.src = resolvedUrl;
         }
 
         function onSizeChange(){
@@ -321,6 +341,7 @@
                     })
                     .then(blob => {
                         const blobUrl = URL.createObjectURL(blob);
+                        createdBlobUrls.add(blobUrl);
                         console.log(`AllOrigins 成功，blob 地址: ${blobUrl}`);
                         setImageUrl(blobUrl, true, index);
                     })
@@ -414,29 +435,13 @@
             if(!cell) return;
             const r = parseInt(cell.getAttribute('data-r'),10);
             const c = parseInt(cell.getAttribute('data-c'),10);
-
-            const before = deepClone(grid);
-            applyFlip(r,c,true);
-
             if (hintMode){
-                // 确认真实点击（仅这五个格子变化）
-                const deltas=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
-                const changed=new Set();
-                for(let i=0;i<rows;i++) for(let j=0;j<cols;j++) if((before[i][j]%K)!==(grid[i][j]%K)) changed.add(i+','+j);
-                const expected=new Set();
-                for(const [dr,dc] of deltas){ const rr=r+dr, cc=c+dc; if(inBounds(rr,cc)) expected.add(rr+','+cc); }
-                let isDirect=true; for(const key of expected){ if(!changed.has(key)){ isDirect=false; break; } }
-                if (isDirect && changed.size!==expected.size) isDirect=false;
-                if (isDirect){
-                    const k=r+','+c;
-                    if(hintCounts.has(k)){
-                        let v=hintCounts.get(k)-1; if(v<=0) hintCounts.delete(k); else hintCounts.set(k,v);
-                    }
+                const k=r+','+c;
+                if(hintCounts.has(k)){
+                    let v=hintCounts.get(k)-1; if(v<=0) hintCounts.delete(k); else hintCounts.set(k,v);
                 }
-                // 仍需展示旋转动画后的状态
-                renderBoard();
-                animatePiecesFromTo(before, grid);
             }
+            applyFlip(r,c,true);
         }
 
         function applyFlip(r,c,record){

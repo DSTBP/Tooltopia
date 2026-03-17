@@ -112,15 +112,23 @@
         // 菱形尺寸配置（只用奇数）
         const diamondSizes = [3, 5, 7, 9, 11, 13, 15, 17, 19, 21];
         
+        const randomRepeats = 8;
+        const extraRandomRepeats = 1;
+        const extraSizeCount = 6;
+
         const levelConfigs = [];
-        for (const size of diamondSizes) {
-            // 每个尺寸两关：全灭关 + 随机关
+        for (let i = 0; i < diamondSizes.length; i++) {
+            const size = diamondSizes[i];
+            // 每个尺寸：全灭关 + 多个随机关（用于扩展关卡数量）
             levelConfigs.push({ size, moves: 0, mode: 'allOff' });
             const area = getDiamondArea(size);
             const moves = Math.max(1, Math.min(area, Math.round(area * 0.25)));
-            levelConfigs.push({ size, moves, mode: 'random' });
+            const randomCount = randomRepeats + (i < extraSizeCount ? extraRandomRepeats : 0);
+            for (let j = 0; j < randomCount; j++) {
+                levelConfigs.push({ size, moves, mode: 'random' });
+            }
         }
-        TOTAL_LEVELS = levelConfigs.length;
+        TOTAL_LEVELS = levelConfigs.length; // 96 关
 
         let currentLevelIndex = 0;
         let diamondSize = levelConfigs[0].size;
@@ -425,11 +433,8 @@
                     // 将求解结果转换为提示集合，需要进行坐标转换
                     const gridFlips = result.flips.map(([solverRow, solverCol]) => {
                         const [gridRow, gridCol] = solverCoordsToGridCoords(solverRow, solverCol, diamondSize);
-                        console.log(`求解器坐标 (${solverRow},${solverCol}) -> 网格坐标 (${gridRow},${gridCol})`);
                         return gridRow + ',' + gridCol;
                     });
-                    console.log('求解器返回的翻转位置:', result.flips);
-                    console.log('转换后的网格坐标:', gridFlips);
                     hintSet = new Set(gridFlips);
                     clickedHints.clear();
                     hintMode = true;
@@ -530,7 +535,7 @@
                     </div>
                 </div>`;
             document.body.appendChild(modal);
-            const cleanup = () => { if (modal && modal.parentNode) modal.parentNode.removeChild(modal); };
+            const cleanup = () => cancelSuccessTimer();
             modal.addEventListener('click', (e)=>{ if (e.target === modal) cleanup(); });
             modal.querySelector('#closeModal').addEventListener('click', cleanup);
             modal.querySelector('#nextNow').addEventListener('click', ()=>{ cleanup(); switchLevel(currentLevelIndex+1); });

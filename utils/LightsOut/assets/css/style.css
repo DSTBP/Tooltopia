@@ -662,6 +662,13 @@ body {
     text-shadow: 0 1px 0 rgba(255,255,255,0.6);
 }
 
+.variant-dec-page .fo-cell {
+    color: hsl(0 0% 92%);
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
 .variant-dec-page .fo-cell.hint-highlight {
     background: #ff6b9d !important;
     color: white !important;
@@ -1264,6 +1271,12 @@ body.day-mode .fo-cell {
     border: 2px solid rgba(0, 0, 0, 0.3);
     color: #4a5568;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+html.day-init .variant-dec-page .fo-cell,
+body.day-mode .variant-dec-page .fo-cell {
+    color: #4a5568;
+    text-shadow: none;
 }
 
 body.day-mode .fo-cell:hover {

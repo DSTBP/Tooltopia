@@ -338,9 +338,7 @@
             </div>`;
         document.body.appendChild(modal);
 
-        const cleanup = () => {
-            if (modal && modal.parentNode) modal.parentNode.removeChild(modal);
-        };
+        const cleanup = () => cancelSuccessTimer();
         modal.addEventListener('click', (e) => {
             if (e.target === modal) cleanup();
         });

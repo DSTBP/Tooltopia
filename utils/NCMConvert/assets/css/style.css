@@ -290,6 +290,17 @@ body.day-mode .format-selection-area label {
     color: white;
 }
 
+.format-hint {
+    margin: -8px 0 18px;
+    color: hsl(0 0% 75%);
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+body.day-mode .format-hint {
+    color: #4a5568;
+}
+
 body.day-mode .format-select {
     background: #fff;
     border-color: #cbd5e0;
@@ -845,6 +856,62 @@ body.day-mode .music-artist { color: #718096; }
 .music-player:hover { 
     opacity: 1; 
     filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.3));
+}
+
+.download-btn {
+    -webkit-tap-highlight-color: #0000;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    color: hsl(0 0% 92%);
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset;
+    opacity: 0.9;
+    transition: transform 0.1s ease-out, opacity 0.1s ease-out, background 0.2s ease;
+}
+
+.download-btn:hover {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.35);
+    transform: translateY(-1px);
+}
+
+.download-btn:active {
+    transform: translateY(0);
+}
+
+body.day-mode .download-btn {
+    color: #1a202c;
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+body.day-mode .download-btn:hover {
+    background: #ffffff;
+}
+
+.preview-unavailable {
+    color: hsl(0 0% 70%);
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px dashed rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.15);
+    user-select: none;
+}
+
+body.day-mode .preview-unavailable {
+    color: #718096;
+    border-color: rgba(0, 0, 0, 0.15);
+    background: rgba(255, 255, 255, 0.65);
 }
 
 /* === 删除按钮 === */

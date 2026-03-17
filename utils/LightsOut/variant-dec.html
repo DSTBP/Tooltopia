@@ -214,9 +214,6 @@
                     cell.className = 'fo-cell';
                     const v = grid[r][c] % modValue;
                     cell.textContent = String(v);
-                    cell.style.color = '#333';
-                    cell.style.fontWeight = 'bold';
-                    cell.style.fontSize = '1.1rem';
                     cell.setAttribute('data-r', String(r));
                     cell.setAttribute('data-c', String(c));
                     if (hintMode) {
@@ -244,32 +241,15 @@
                 renderBoard();
                 return;
             }
-            const before = deepClone(grid);
-            applyFlip(r, c, true);
             if (hintMode) {
-                const deltas=[[0,0],[1,0],[-1,0],[0,1],[0,-1]];
-                const changed = new Set();
-                for(let i=0;i<rows;i++){
-                    for(let j=0;j<cols;j++){
-                        if ((before[i][j] % modValue) !== (grid[i][j] % modValue)) changed.add(i+','+j);
-                    }
+                // 点击后移除该格子的提示高亮
+                const k = r+','+c;
+                if (hintCounts.has(k)) {
+                    let v = hintCounts.get(k) - 1;
+                    if (v <= 0) hintCounts.delete(k); else hintCounts.set(k, v);
                 }
-                const expected = new Set();
-                for(const [dr,dc] of deltas){ const rr=r+dr, cc=c+dc; if(inBounds(rr,cc)) expected.add(rr+','+cc); }
-                let isDirectClick = true;
-                for (const key of expected){ if (!changed.has(key)) { isDirectClick = false; break; } }
-                if (isDirectClick && changed.size !== expected.size) isDirectClick = false;
-
-                if (isDirectClick) {
-                    // 点击后移除该格子的提示高亮
-                    const k = r+','+c;
-                    if (hintCounts.has(k)) {
-                        let v = hintCounts.get(k) - 1;
-                        if (v <= 0) hintCounts.delete(k); else hintCounts.set(k, v);
-                    }
-                }
-                renderBoard();
             }
+            applyFlip(r, c, true);
         }
 
         function applyFlip(r, c, recordHistory){
@@ -334,6 +314,13 @@
         }
 
         function enterHintMode(){
+            const area = rows * cols;
+            if (area > 600) {
+                hintCounts = new Map();
+                if (minStepsWrap) { minStepsWrap.classList.add('is-hidden'); }
+                statusText.textContent = '盘面过大，已禁用提示';
+                return;
+            }
             try {
                 // 将递减问题转换为等价的加法问题
                 // 对于递减操作 (v - 1) mod N，等价于加法操作 (v + (N-1)) mod N
@@ -424,7 +411,7 @@
                     </div>
                 </div>`;
             document.body.appendChild(modal);
-            const cleanup=()=>{ if(modal&&modal.parentNode) modal.parentNode.removeChild(modal); };
+            const cleanup=()=>cancelSuccessTimer();
             modal.addEventListener('click',(e)=>{ if(e.target===modal) cleanup(); });
             modal.querySelector('#closeModal').addEventListener('click', cleanup);
             modal.querySelector('#nextNow').addEventListener('click', ()=>{ cleanup(); switchLevel(currentLevelIndex+1); });

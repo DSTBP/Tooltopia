@@ -53,11 +53,13 @@
                                 <option value="mp3" selected>MP3 (默认)</option>
                                 <option value="flac">FLAC</option>
                                 <option value="wav">WAV</option>
-                                <option value="aac">AAC (m4a)</option>
+                                <option value="m4a">M4A</option>
                                 <option value="ogg">OGG</option>
+                                <option value="wma">WMA</option>
                                 <!-- <option value="alac">ALAC (m4a)</option> -->
                             </select>
                         </div>
+                        <p class="format-hint">注：WMA 在部分浏览器中无法直接预览播放，导出后请下载用本地播放器打开。</p>
 
                         <div class="tab-content active" id="fileContent">
                             <div class="file-upload-area" id="fileUploadArea">
@@ -104,7 +106,7 @@
                     </div>
                     <div class="explanation-item">
                         <h3>转换须知</h3>
-                        <p>选择“保持原始格式”速度最快且无音质损失（直接还原为 NCM 内封装的 MP3 或 FLAC）。如需将 NCM 转换为其他特定格式（如 WAV、AAC），浏览器需要下载转换组件，初次加载可能较慢。</p>
+                        <p>选择“保持原始格式”速度最快且无音质损失（直接还原为 NCM 内封装的 MP3 或 FLAC）。如需将 NCM 转换为其他特定格式（如 WAV、M4A、WMA），浏览器需要下载转换组件，初次加载可能较慢。</p>
                     </div>
                 </div>
                 
@@ -149,11 +151,11 @@
                                 <td>低比特率下音质差</td>
                             </tr>
                             <tr>
-                                <td>AAC</td>
+                                <td>M4A</td>
                                 <td><span class="tag lossy">有损</span></td>
-                                <td>音质优于MP3</td>
-                                <td>音质好，支持多声道</td>
-                                <td>兼容性不如MP3</td>
+                                <td>AAC 常用封装（.m4a）</td>
+                                <td>音质好，体积小，移动端友好</td>
+                                <td>部分老设备兼容性不如 MP3</td>
                             </tr>
                             <tr>
                                 <td>OGG</td>
@@ -161,6 +163,13 @@
                                 <td>开放源代码</td>
                                 <td>无专利限制</td>
                                 <td>兼容性一般</td>
+                            </tr>
+                            <tr>
+                                <td>WMA</td>
+                                <td><span class="tag lossy">有损</span></td>
+                                <td>Windows 平台常见格式</td>
+                                <td>压缩率高，文件较小</td>
+                                <td>多平台兼容性一般</td>
                             </tr>
                         </tbody>
                     </table>

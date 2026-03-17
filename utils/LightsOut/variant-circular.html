@@ -348,6 +348,11 @@
             if (hintMode) { exitHintMode(); } else { enterHintMode(); }
         }
         function enterHintMode(){
+            const area = rows * cols;
+            if (area > 600) {
+                statusText.textContent = '盘面过大，已禁用提示';
+                return;
+            }
             try {
                 // 将游戏状态转换为求解器期望的格式：灯亮=0，灯灭=1
                 const solverInput = grid.map(row => row.map(cell => cell === 1 ? 0 : 1));
@@ -419,7 +424,7 @@
                     </div>
                 </div>`;
             document.body.appendChild(modal);
-            const cleanup = () => { if (modal && modal.parentNode) modal.parentNode.removeChild(modal); };
+            const cleanup = () => cancelSuccessTimer();
             modal.addEventListener('click', (e)=>{ if (e.target === modal) cleanup(); });
             modal.querySelector('#closeModal').addEventListener('click', cleanup);
             modal.querySelector('#nextNow').addEventListener('click', ()=>{ cleanup(); switchLevel(currentLevelIndex+1); });
