@@ -9,7 +9,14 @@
     <link rel="stylesheet" href="../../assets/css/loader.css">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <script>
-        document.documentElement.classList.add('is-loading');
+        (function () {
+            try {
+                if (localStorage.getItem('tooltopia-theme') === 'day') {
+                    document.documentElement.classList.add('day-init');
+                }
+            } catch (error) {}
+            document.documentElement.classList.add('is-loading');
+        })();
     </script>
     <script src="assets/js/theme-init.js"></script>
 </head>

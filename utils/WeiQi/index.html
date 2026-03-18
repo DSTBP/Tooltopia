@@ -12,7 +12,14 @@
     <link rel="stylesheet" href="./assets/css/translate.css">
     <link rel="stylesheet" href="../../assets/css/loader.css">
     <script>
-        document.documentElement.classList.add('is-loading');
+        (function () {
+            try {
+                if (localStorage.getItem('tooltopia-theme') === 'day') {
+                    document.documentElement.classList.add('day-init');
+                }
+            } catch (error) {}
+            document.documentElement.classList.add('is-loading');
+        })();
     </script>
     <style>
         :root { --primary: #667eea; --bg-glass: rgba(255, 255, 255, 0.05); --border-glass: rgba(255, 255, 255, 0.1); }

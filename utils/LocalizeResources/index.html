@@ -13,7 +13,14 @@
     <link rel="stylesheet" href="./assets/css/translate.css">
     <link rel="stylesheet" href="../../assets/css/loader.css">
     <script>
-        document.documentElement.classList.add('is-loading');
+        (function () {
+            try {
+                if (localStorage.getItem('tooltopia-theme') === 'day') {
+                    document.documentElement.classList.add('day-init');
+                }
+            } catch (error) {}
+            document.documentElement.classList.add('is-loading');
+        })();
     </script>
     <script>
         // 在 head 中立即执行，确保在 body 渲染前应用主题

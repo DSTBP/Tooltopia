@@ -15,7 +15,14 @@
     <link rel="stylesheet" href="assets/css/translate.css">
     <link rel="stylesheet" href="../../assets/css/loader.css">
     <script>
-        document.documentElement.classList.add('is-loading');
+        (function () {
+            try {
+                if (localStorage.getItem('tooltopia-theme') === 'day') {
+                    document.documentElement.classList.add('day-init');
+                }
+            } catch (error) {}
+            document.documentElement.classList.add('is-loading');
+        })();
     </script>
     
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" crossorigin="anonymous"></script>

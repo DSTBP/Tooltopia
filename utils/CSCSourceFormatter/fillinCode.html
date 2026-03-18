@@ -9,7 +9,14 @@
     <link rel="stylesheet" href="../../assets/css/loader.css">
     <title>源代码生成工具</title>
     <script>
-        document.documentElement.classList.add('is-loading');
+        (function () {
+            try {
+                if (localStorage.getItem('tooltopia-theme') === 'day') {
+                    document.documentElement.classList.add('day-init');
+                }
+            } catch (error) {}
+            document.documentElement.classList.add('is-loading');
+        })();
     </script>
     <script src="assets/js/theme-init.js"></script>
 </head>
