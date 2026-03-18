@@ -1,6 +1,7 @@
 (() => {
     const themeToggle = document.getElementById('themeToggle');
     const body = document.body;
+    const html = document.documentElement;
     const THEME_KEY = 'tooltopia-theme';
 
     // 从 localStorage 读取保存的主题偏好
@@ -12,6 +13,9 @@
         } else {
             body.classList.remove('day-mode');
             themeToggle.checked = false;
+        }
+        if (html.classList.contains('day-init')) {
+            html.classList.remove('day-init');
         }
     }
 
@@ -30,6 +34,9 @@
             body.classList.remove('day-mode');
         }
 
+        if (html.classList.contains('day-init')) {
+            html.classList.remove('day-init');
+        }
         saveThemePreference(isDayMode);
     }
 

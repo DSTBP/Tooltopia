@@ -3,6 +3,7 @@
     if (!themeToggle) return;
 
     const body = document.body;
+    const html = document.documentElement;
     const THEME_KEY = 'tooltopia-theme';
     const themeMeta = document.querySelector('meta[name="theme-color"]');
 
@@ -29,6 +30,9 @@
         themeToggle.checked = isDayMode;
         if (themeMeta) {
             themeMeta.setAttribute('content', isDayMode ? '#f0f4f8' : '#3b3b3b');
+        }
+        if (html.classList.contains('day-init')) {
+            html.classList.remove('day-init');
         }
     }
 

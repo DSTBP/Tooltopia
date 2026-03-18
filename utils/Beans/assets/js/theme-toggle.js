@@ -1,6 +1,7 @@
 (() => {
     const themeToggle = document.getElementById('themeToggle');
     const body = document.body;
+    const html = document.documentElement;
     const themeMeta = document.querySelector('meta[name="theme-color"]');
     const THEME_KEY = 'tooltopia-theme';
     const THEME_COLORS = {
@@ -35,6 +36,9 @@
 
         body.classList.toggle('day-mode', isDayMode);
         updateThemeColor(isDayMode ? 'day' : 'night');
+        if (html.classList.contains('day-init')) {
+            html.classList.remove('day-init');
+        }
 
         if (themeToggle) {
             themeToggle.checked = isDayMode;
