@@ -27,6 +27,7 @@ div[id="translate"] .translate_selectLanguage_tag select {
     background: transparent !important;
     border: none !important;
     color: inherit !important;
+    color-scheme: dark !important;
     font-size: 0.85rem !important;
     font-family: inherit !important;
     text-align: center !important;
@@ -82,8 +83,15 @@ body.day-mode #translate select,
 body.day-mode #translate .translate_selectLanguage_tag select,
 body.day-mode .translate_selectLanguage_tag select,
 body.day-mode div[id="translate"] select,
-body.day-mode div[id="translate"] .translate_selectLanguage_tag select {
+body.day-mode div[id="translate"] .translate_selectLanguage_tag select,
+html.day-init .language-selector select,
+html.day-init #translate select,
+html.day-init #translate .translate_selectLanguage_tag select,
+html.day-init .translate_selectLanguage_tag select,
+html.day-init div[id="translate"] select,
+html.day-init div[id="translate"] .translate_selectLanguage_tag select {
     color: #1a202c !important;
+    color-scheme: light !important;
 }
 
 body.day-mode .language-selector select option,
@@ -91,7 +99,44 @@ body.day-mode #translate select option,
 body.day-mode #translate .translate_selectLanguage_tag select option,
 body.day-mode .translate_selectLanguage_tag select option,
 body.day-mode div[id="translate"] select option,
-body.day-mode div[id="translate"] .translate_selectLanguage_tag select option {
+body.day-mode div[id="translate"] .translate_selectLanguage_tag select option,
+html.day-init .language-selector select option,
+html.day-init #translate select option,
+html.day-init #translate .translate_selectLanguage_tag select option,
+html.day-init .translate_selectLanguage_tag select option,
+html.day-init div[id="translate"] select option,
+html.day-init div[id="translate"] .translate_selectLanguage_tag select option {
     background: #ffffff !important;
     color: #1a202c !important;
+}
+
+/* Mobile contrast fix for native select rendering */
+@media (max-width: 768px) {
+    .language-selector select,
+    #translate select,
+    #translate .translate_selectLanguage_tag select,
+    .translate_selectLanguage_tag select,
+    div[id="translate"] select,
+    div[id="translate"] .translate_selectLanguage_tag select {
+        background-color: transparent !important;
+        color: #f8fafc !important;
+        -webkit-text-fill-color: #f8fafc !important;
+    }
+
+    body.day-mode .language-selector select,
+    body.day-mode #translate select,
+    body.day-mode #translate .translate_selectLanguage_tag select,
+    body.day-mode .translate_selectLanguage_tag select,
+    body.day-mode div[id="translate"] select,
+    body.day-mode div[id="translate"] .translate_selectLanguage_tag select,
+    html.day-init .language-selector select,
+    html.day-init #translate select,
+    html.day-init #translate .translate_selectLanguage_tag select,
+    html.day-init .translate_selectLanguage_tag select,
+    html.day-init div[id="translate"] select,
+    html.day-init div[id="translate"] .translate_selectLanguage_tag select {
+        background-color: #ffffff !important;
+        color: #1a202c !important;
+        -webkit-text-fill-color: #1a202c !important;
+    }
 }
