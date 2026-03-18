@@ -8,7 +8,11 @@
     <title>異常事件研究所</title>
     <link href="assets/css/style.css" rel="stylesheet">
     <link href="assets/css/translate.css" rel="stylesheet">
+    <link href="../../assets/css/loader.css" rel="stylesheet">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <script>
+        document.documentElement.classList.add('is-loading');
+    </script>
 </head>
 <body>
     <script>
@@ -28,6 +32,17 @@
             }
         })();
     </script>
+    <div id="page-loader" class="page-loader" aria-live="polite" aria-busy="true">
+        <div class="spinner-box" aria-hidden="true">
+            <div class="blue-orbit leo"></div>
+            <div class="green-orbit leo"></div>
+            <div class="red-orbit leo"></div>
+            <div class="white-orbit w1 leo"></div>
+            <div class="white-orbit w2 leo"></div>
+            <div class="white-orbit w3 leo"></div>
+        </div>
+        <div class="loader-text">Loading...</div>
+    </div>
     <div id="root">
         <div class="app-container">
             
@@ -148,6 +163,7 @@
             </footer>
         </div>
     </div>
+    <script src="../../assets/js/loader.js"></script>
     <script src="assets/js/translate-init.js"></script>
     <script src="assets/js/theme-toggle.js"></script>
     <script src="assets/js/data.js"></script>

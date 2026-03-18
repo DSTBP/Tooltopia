@@ -10,6 +10,10 @@
     <title>围棋对弈 - Tooltopia</title>
     <link rel="stylesheet" href="./assets/css/style.css">
     <link rel="stylesheet" href="./assets/css/translate.css">
+    <link rel="stylesheet" href="../../assets/css/loader.css">
+    <script>
+        document.documentElement.classList.add('is-loading');
+    </script>
     <style>
         :root { --primary: #667eea; --bg-glass: rgba(255, 255, 255, 0.05); --border-glass: rgba(255, 255, 255, 0.1); }
         body.day-mode .header h1 { color: #2d3748; text-shadow: .03em .03em 0 hsla(200, 60%, 60%, 1); }
@@ -71,6 +75,17 @@
     </style>
 </head>
 <body>
+    <div id="page-loader" class="page-loader" aria-live="polite" aria-busy="true">
+        <div class="spinner-box" aria-hidden="true">
+            <div class="blue-orbit leo"></div>
+            <div class="green-orbit leo"></div>
+            <div class="red-orbit leo"></div>
+            <div class="white-orbit w1 leo"></div>
+            <div class="white-orbit w2 leo"></div>
+            <div class="white-orbit w3 leo"></div>
+        </div>
+        <div class="loader-text">Loading...</div>
+    </div>
     <nav class="navbar">
         <div class="nav-content">
             <div class="logo-wrapper">
@@ -370,6 +385,7 @@
                 <p>Designed by DSTBP</p>
     </footer>
 
+    <script src="../../assets/js/loader.js"></script>
     <script src="./assets/js/translate-init.js"></script>
     <script src="./assets/js/theme-toggle.js"></script>
     <script src="./assets/js/peerjs.min.js"></script>

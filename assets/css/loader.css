@@ -22,7 +22,7 @@ html.is-loaded body > :not(#page-loader) {
   align-items: center;
   justify-content: center;
   gap: 1.5rem;
-  background: var(--bg);
+  background: var(--bg, #0a0a0a);
   transition: opacity 0.4s ease, visibility 0.4s ease;
 }
 
@@ -33,7 +33,7 @@ html.is-loaded .page-loader {
 }
 
 .page-loader .loader-text {
-  color: var(--fg);
+  color: var(--fg, #e0e0e0);
   font-size: 0.9rem;
   letter-spacing: 0.2em;
   text-transform: uppercase;

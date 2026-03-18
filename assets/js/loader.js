@@ -15,9 +15,46 @@
     }, 500);
   };
 
+  const waitForTranslate = done => {
+    const host = document.querySelector('[data-translate-host]');
+    if (!host) {
+      done();
+      return;
+    }
+
+    const start = Date.now();
+    const timeoutMs = 6000;
+
+    const isTranslateReady = () => {
+      const translateApi = window.translate;
+      const hasApi =
+        translateApi &&
+        typeof translateApi === 'object' &&
+        typeof translateApi.version === 'string' &&
+        translateApi.service &&
+        typeof translateApi.service.use === 'function';
+      const hasSelect = document.querySelector('#translate select');
+      return Boolean(hasApi && hasSelect);
+    };
+
+    const check = () => {
+      if (isTranslateReady() || Date.now() - start > timeoutMs) {
+        done();
+        return;
+      }
+      requestAnimationFrame(check);
+    };
+
+    check();
+  };
+
+  const onLoad = () => {
+    waitForTranslate(markLoaded);
+  };
+
   if (document.readyState === 'complete') {
-    markLoaded();
+    onLoad();
   } else {
-    window.addEventListener('load', markLoaded, { once: true });
+    window.addEventListener('load', onLoad, { once: true });
   }
 })();

@@ -19,6 +19,10 @@
     <title>游戏存档编辑器 - GameSaveEditor</title>
     <link rel="stylesheet" href="./assets/css/style.css">
     <link rel="stylesheet" href="./assets/css/translate.css">
+    <link rel="stylesheet" href="../../assets/css/loader.css">
+    <script>
+        document.documentElement.classList.add('is-loading');
+    </script>
 </head>
 <body>
     <script>
@@ -28,6 +32,17 @@
             }
         } catch (error) {}
     </script>
+    <div id="page-loader" class="page-loader" aria-live="polite" aria-busy="true">
+        <div class="spinner-box" aria-hidden="true">
+            <div class="blue-orbit leo"></div>
+            <div class="green-orbit leo"></div>
+            <div class="red-orbit leo"></div>
+            <div class="white-orbit w1 leo"></div>
+            <div class="white-orbit w2 leo"></div>
+            <div class="white-orbit w3 leo"></div>
+        </div>
+        <div class="loader-text">Loading...</div>
+    </div>
     <nav class="navbar">
         <div class="nav-content">
             <div class="logo-wrapper">
@@ -112,6 +127,7 @@
                 <p>Designed by DSTBP</p>
     </footer>
 
+    <script src="../../assets/js/loader.js"></script>
     <script src="./assets/js/translate-init.js"></script>
     <script src="./assets/js/theme-toggle.js"></script>
     <script src="./assets/js/script.js"></script>
