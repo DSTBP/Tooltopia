@@ -10,6 +10,7 @@
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <title>科学计算器 - MachineLearningCalculator</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/translate.css">
 </head>
 <body>
 <script>
@@ -27,6 +28,7 @@
             </div>
             <div class="nav-actions">
                 <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div id="translate" class="nav-btn language-selector" data-translate-host></div>
                 <div class="theme-toggle-container">
                     <div class="theme-toggle">
                         <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日间模式">
@@ -406,6 +408,7 @@
     </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+    <script src="assets/js/translate-init.js"></script>
     <script src="assets/js/theme-toggle.js"></script>
     <script src="assets/js/calculator.js"></script>
 </body>

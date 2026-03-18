@@ -1,9 +1,9 @@
 (() => {
-    const BOOTSTRAP_KEY = '__lightsoutTranslateBootstrap__';
+    const BOOTSTRAP_KEY = '__gamesaveTranslateBootstrap__';
     if (window[BOOTSTRAP_KEY]) return;
     window[BOOTSTRAP_KEY] = true;
 
-    const TRANSLATE_SRC = 'assets/js/translate.js';
+    const TRANSLATE_SRC = '../LightsOut/assets/js/translate.js';
     const HOST_SELECTOR = '[data-translate-host]';
 
     const getHost = () => {
@@ -139,7 +139,7 @@
                 setTimeout(syncTitleShadow, 1000);
             })
             .catch(error => {
-                console.warn('[LightsOut] Translation bootstrap failed:', error);
+                console.warn('[GameSaveEditor] Translation bootstrap failed:', error);
             });
     };
 

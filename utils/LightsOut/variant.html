@@ -16,6 +16,7 @@
     <title>Lights Out - 变体中心</title>
     <link rel="icon" href="favicon.png">
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/translate.css">
     
     <script src="assets/js/theme-init.js"></script>
 </head>
@@ -29,6 +30,7 @@
             </div>
             <div class="nav-actions">
                 <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div id="translate" class="nav-btn language-selector" data-translate-host></div>
                 <div class="theme-toggle-container">
                     <div class="theme-toggle">
                         <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox">
@@ -137,9 +139,7 @@
     </footer>
 
     <!-- translate.js 多语言翻译功能 -->
-    <script src="assets/js/translate.js"></script>
     <!-- 同步标题阴影（用于翻译后保持效果） -->
-    <script src="assets/js/sync-title-shadow.js"></script>
 
     <script src="assets/js/translate-init.js"></script>
     <script src="assets/js/theme-toggle.js"></script>

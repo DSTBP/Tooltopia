@@ -10,6 +10,7 @@
     <meta name="theme-color" content="#667eea">
     <title>资源本地化工具 - LocalizeResources</title>
     <link rel="stylesheet" href="./assets/css/style.css">
+    <link rel="stylesheet" href="./assets/css/translate.css">
     <script>
         // 在 head 中立即执行，确保在 body 渲染前应用主题
         (function() {
@@ -33,6 +34,7 @@
             </div>
             <div class="nav-actions">
                 <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div id="translate" class="nav-btn language-selector" data-translate-host></div>
                 <div class="theme-toggle-container">
                     <div class="theme-toggle">
                         <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
@@ -122,6 +124,7 @@
                 <p>Designed by DSTBP</p>
     </footer>
 
+    <script src="./assets/js/translate-init.js"></script>
     <script src="./assets/js/theme-toggle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="./assets/js/script.js"></script>

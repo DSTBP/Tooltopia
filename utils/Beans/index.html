@@ -7,6 +7,7 @@
     <meta name="color-scheme" content="dark light">
     <title>拼豆颜色替换工具</title>
     <link rel="stylesheet" href="./assets/css/style.css">
+    <link rel="stylesheet" href="./assets/css/translate.css">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
@@ -36,6 +37,7 @@
             </div>
             <div class="nav-actions">
                 <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div id="translate" class="nav-btn language-selector" data-translate-host></div>
                 <div class="theme-toggle-container">
                     <div class="theme-toggle">
                         <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
@@ -202,6 +204,7 @@
         <p>Designed by DSTBP</p>
     </footer>
 
+    <script src="./assets/js/translate-init.js"></script>
     <script src="./assets/js/theme-toggle.js"></script>
     <script src="./assets/js/colorsData.js"></script>
     <script src="./assets/js/script.js"></script>

@@ -9,6 +9,7 @@
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <title>围棋对弈 - Tooltopia</title>
     <link rel="stylesheet" href="./assets/css/style.css">
+    <link rel="stylesheet" href="./assets/css/translate.css">
     <style>
         :root { --primary: #667eea; --bg-glass: rgba(255, 255, 255, 0.05); --border-glass: rgba(255, 255, 255, 0.1); }
         body.day-mode .header h1 { color: #2d3748; text-shadow: .03em .03em 0 hsla(200, 60%, 60%, 1); }
@@ -78,6 +79,7 @@
             </div>
             <div class="nav-actions">
                 <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div id="translate" class="nav-btn language-selector" data-translate-host></div>
                 <div class="theme-toggle-container">
                     <div class="theme-toggle">
                         <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
@@ -368,6 +370,7 @@
                 <p>Designed by DSTBP</p>
     </footer>
 
+    <script src="./assets/js/translate-init.js"></script>
     <script src="./assets/js/theme-toggle.js"></script>
     <script src="./assets/js/peerjs.min.js"></script>
     <script src="./assets/js/script.js"></script>

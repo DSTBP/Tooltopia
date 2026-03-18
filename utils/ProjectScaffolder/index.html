@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#3b3b3b">
     <title>Project Scaffolder - 项目结构生成工具</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/translate.css">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
@@ -25,6 +26,7 @@
             </div>
             <div class="nav-actions">
                 <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div id="translate" class="nav-btn language-selector" data-translate-host></div>
                 <div class="theme-toggle-container">
                     <div class="theme-toggle">
                         <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
@@ -154,6 +156,7 @@ DeepFMMPC-v4.0/
         <p>Designed by DSTBP</p>
     </footer>
 
+    <script src="assets/js/translate-init.js"></script>
     <script src="assets/js/theme-toggle.js"></script>
     <script src="assets/js/script.js"></script>
 </body>
