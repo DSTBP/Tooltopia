@@ -39,6 +39,32 @@ html.is-loaded .page-loader {
   text-transform: uppercase;
 }
 
+.page-loader::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top, rgba(233, 69, 96, 0.18), transparent 55%);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+body.day-mode .page-loader {
+  background: var(--bg, #f0f4f8);
+}
+
+body.day-mode .page-loader::before {
+  background: radial-gradient(circle at top, rgba(99, 179, 237, 0.25), transparent 60%);
+  opacity: 0.5;
+}
+
+.page-loader .loader-text {
+  color: var(--fg, #e0e0e0);
+}
+
+body.day-mode .page-loader .loader-text {
+  color: #1a202c;
+}
+
 .spinner-box {
   width: 200px;
   height: 200px;
@@ -82,6 +108,22 @@ html.is-loaded .page-loader {
   height: 48px;
   border: 2px solid #ffffff;
   animation: spin3D 10s linear 0s infinite;
+}
+
+body.day-mode .blue-orbit {
+  border-color: rgba(99, 179, 237, 0.6);
+}
+
+body.day-mode .green-orbit {
+  border-color: rgba(104, 211, 145, 0.6);
+}
+
+body.day-mode .red-orbit {
+  border-color: rgba(245, 101, 101, 0.55);
+}
+
+body.day-mode .white-orbit {
+  border-color: rgba(26, 32, 44, 0.35);
 }
 
 .w1 {
