@@ -115,22 +115,22 @@ html.day-init .page-loader .loader-text {
 
 body.day-mode .blue-orbit,
 html.day-init .blue-orbit {
-  border-color: rgba(99, 179, 237, 0.6);
+  border-color: rgba(49, 130, 206, 0.75);
 }
 
 body.day-mode .green-orbit,
 html.day-init .green-orbit {
-  border-color: rgba(104, 211, 145, 0.6);
+  border-color: rgba(38, 169, 99, 0.75);
 }
 
 body.day-mode .red-orbit,
 html.day-init .red-orbit {
-  border-color: rgba(245, 101, 101, 0.55);
+  border-color: rgba(220, 38, 38, 0.7);
 }
 
 body.day-mode .white-orbit,
 html.day-init .white-orbit {
-  border-color: rgba(26, 32, 44, 0.35);
+  border-color: rgba(26, 32, 44, 0.55);
 }
 
 .w1 {
