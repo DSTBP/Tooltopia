@@ -7,6 +7,7 @@
     <meta name="color-scheme" content="dark light">
     <title>異常事件研究所</title>
     <link href="assets/css/style.css" rel="stylesheet">
+    <link href="assets/css/translate.css" rel="stylesheet">
     <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
 </head>
 <body>
@@ -59,6 +60,9 @@
                             <div class="tooltip">不知道玩哪个？试试运气？</div>
                         </div>
                         
+                        <div class="desktop-random">
+                            <div id="translate" class="btn-primary shadow-btn language-selector" data-translate-host></div>
+                        </div>
                         <div class="theme-toggle-container">
                             <div class="theme-toggle">
                                 <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
@@ -144,6 +148,7 @@
             </footer>
         </div>
     </div>
+    <script src="assets/js/translate-init.js"></script>
     <script src="assets/js/theme-toggle.js"></script>
     <script src="assets/js/data.js"></script>
     <script src="assets/js/script.js"></script>
