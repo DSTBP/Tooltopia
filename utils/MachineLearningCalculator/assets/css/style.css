@@ -150,40 +150,15 @@ body {
 /* =========================================
    2. 头部与导航样式
    ========================================= */
-.back-btn {
-    display: inline-block;
-    margin-bottom: 1.5rem;
-    color: hsl(0 0% 85%);
-    text-decoration: none;
-    transition: color 0.3s ease;
-    font-size: 1rem;
-}
-
-.back-btn:hover {
-    color: hsl(0 0% 100%);
-}
-
-.navigation-links {
+.nav-sub-actions {
     display: flex;
-    gap: 15px;
-    margin-bottom: 1rem;
     align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
-.navigation-links a, .navigation-links button {
-    color: hsl(0 0% 85%);
-    text-decoration: none;
-    transition: color 0.3s ease;
-    font-size: 1rem;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    font-family: inherit;
-}
-
-.navigation-links a:hover, .navigation-links button:hover {
-    color: hsl(0 0% 100%);
+.nav-sub-actions .nav-btn {
+    padding: 0.5rem 0.9rem;
 }
 
 .header {
@@ -800,6 +775,23 @@ select.input-field option {
     color: white;
 }
 
+body:not(.day-mode) input[type="date"].input-field,
+body:not(.day-mode) input[type="datetime-local"].input-field {
+    color-scheme: dark;
+}
+
+body:not(.day-mode) input[type="date"].input-field::-webkit-calendar-picker-indicator,
+body:not(.day-mode) input[type="datetime-local"].input-field::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.15);
+    opacity: 0.9;
+    cursor: pointer;
+}
+
+body:not(.day-mode) input[type="date"].input-field::-webkit-calendar-picker-indicator:hover,
+body:not(.day-mode) input[type="datetime-local"].input-field::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
 /* 转换器组件 */
 .converter-grid {
     margin-top: 30px;
@@ -838,6 +830,60 @@ select.input-field option {
     color: hsl(0 0% 70%);
     font-size: 0.9rem;
     margin-bottom: 14px;
+}
+
+.date-tool {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 12px;
+    border: 1px dashed rgba(255, 255, 255, 0.15);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.date-tool-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.date-tool-grid .date-tool {
+    margin-top: 0;
+}
+
+.date-tool:first-of-type {
+    margin-top: 0;
+}
+
+.date-tool-header {
+    color: hsl(0 0% 90%);
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+}
+
+.calendar-fields {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.unit-row.three-cols .input-field {
+    flex: 1 1 120px;
+    min-width: 110px;
+}
+
+.inline-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    color: hsl(0 0% 78%);
+    font-size: 0.9rem;
+}
+
+.inline-check input {
+    accent-color: hsl(122 40% 70%);
 }
 
 .converter-panel .input-field {
@@ -1039,6 +1085,7 @@ select.input-field option {
     /* 合并自 more.html 的响应式 */
     .features-grid { grid-template-columns: 1fr; }
     .results-grid { grid-template-columns: 1fr; }
+    .date-tool-grid { grid-template-columns: 1fr; }
     .button-group { flex-direction: column; }
     .tableau th, .tableau td { padding: 6px 8px; min-width: 50px; }
 }
@@ -1140,7 +1187,6 @@ body.day-mode .step-title {
     text-shadow: none;
 }
 
-body.day-mode .back-btn,
 body.day-mode .subtitle,
 body.day-mode .section-heading small,
 body.day-mode .panel-desc,
@@ -1151,10 +1197,6 @@ body.day-mode .small-label,
 body.day-mode .radio-group label,
 body.day-mode .step-section p {
     color: #4a5568;
-}
-
-body.day-mode .back-btn:hover {
-    color: #1d4ed8;
 }
 
 body.day-mode .small-text {
@@ -1180,6 +1222,11 @@ body.day-mode .matrix-input:focus,
 body.day-mode .input-group textarea:focus {
     background: rgba(255, 255, 255, 0.9);
     border-color: rgba(0, 0, 0, 0.25);
+}
+
+body.day-mode input[type="date"].input-field,
+body.day-mode input[type="datetime-local"].input-field {
+    color-scheme: light;
 }
 
 /* 日间按钮 */
@@ -1272,7 +1319,20 @@ body.day-mode .converter-panel h2 {
     color: #1a202c;
 }
 
-body.day-mode .result-text,
+body.day-mode .date-tool {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+body.day-mode .date-tool-header,
+body.day-mode .inline-check {
+    color: #2d3748;
+}
+
+body.day-mode .result-text {
+    color: #15803d;
+}
+
 body.day-mode .info-text {
     color: #2d3748;
 }
@@ -1303,16 +1363,6 @@ body.day-mode .history-expression {
 
 body.day-mode .history-result {
     color: #2d3748;
-}
-
-body.day-mode .navigation-links a,
-body.day-mode .navigation-links button {
-    color: #4a5568;
-}
-
-body.day-mode .navigation-links a:hover,
-body.day-mode .navigation-links button:hover {
-    color: #1a202c;
 }
 
 /* 日间模式：单纯形法表格 */

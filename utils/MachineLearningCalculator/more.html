@@ -59,7 +59,11 @@
             </div>
             <div class="nav-actions">
                 <a href="../../index.html" class="nav-btn">返回主页</a>
-                <a href="index.html" class="nav-btn">返回计算器</a>
+                <a id="menu-back-btn" href="index.html" class="nav-btn">返回计算器</a>
+                <div id="nav-bar" class="nav-sub-actions" style="display:none;">
+                    <button type="button" class="nav-btn" onclick="switchView('menu')">返回更多</button>
+                    <a href="index.html" class="nav-btn">返回计算器</a>
+                </div>
                 <div id="translate" class="nav-btn language-selector" data-translate-host></div>
                 <div class="theme-toggle-container">
                     <div class="theme-toggle">
@@ -76,19 +80,9 @@
     <div id="background-wrapper"></div>
     
     <div class="page-container">
-        <div id="nav-bar" class="navigation-links" style="display:none;">
-            <button onclick="switchView('menu')">← 返回更多</button>
-            <span style="color: hsl(0 0% 60%)">|</span>
-            <a href="index.html">返回计算器</a>
-        </div>
-        
-        <div id="menu-back-btn">
-            <a href="index.html" class="back-btn">← 返回计算器</a>
-        </div>
-
         <div class="header">
             <h1 id="page-title" data-shadow='更多功能'>更多功能</h1>
-            <p id="page-subtitle" class="subtitle">矩阵运算、优化算法等高级数学工具</p>
+            <p id="page-subtitle" class="subtitle">矩阵运算、优化算法、日期计算等高级工具</p>
         </div>
 
         <div class="container">
@@ -107,6 +101,11 @@
                     <div class="feature-card" onclick="switchView('simplex')">
                         <h3>单纯形法</h3>
                         <p>线性规划问题求解（约束优化）</p>
+                    </div>
+
+                    <div class="feature-card" onclick="switchView('datecalc')">
+                        <h3>日期计算</h3>
+                        <p>历法互转、星期查询、日期推算与时区转换</p>
                     </div>
 
                     <div class="feature-card disabled">
@@ -229,6 +228,122 @@
 
                 <div id="sx-output"></div>
             </div>
+
+            <div id="view-datecalc" class="view-section">
+                <div class="matrix-panel">
+                    <div class="date-tool-grid">
+                        <div class="date-tool">
+                            <div class="date-tool-header">日期差</div>
+                            <div class="unit-row two-cols">
+                                <input id="dateDiffStart" type="date" class="input-field" />
+                                <input id="dateDiffEnd" type="date" class="input-field" />
+                            </div>
+                            <div class="converter-actions">
+                                <button id="dateDiffBtn" class="btn btn-primary">计算差值</button>
+                                <div id="dateDiffResult" class="result-text"></div>
+                            </div>
+                        </div>
+
+                        <div class="date-tool">
+                            <div class="date-tool-header">日期推算</div>
+                            <div class="unit-row two-cols">
+                                <input id="dateShiftBase" type="date" class="input-field" />
+                                <input id="dateShiftDays" type="number" step="1" placeholder="天数（可为负）" class="input-field" />
+                            </div>
+                            <div class="converter-actions">
+                                <button id="dateShiftBtn" class="btn btn-primary">推算日期</button>
+                                <div id="dateShiftResult" class="result-text"></div>
+                            </div>
+                        </div>
+
+                        <div class="date-tool">
+                            <div class="date-tool-header">星期查询</div>
+                            <div class="unit-row single-input">
+                                <input id="weekdayDate" type="date" class="input-field" />
+                            </div>
+                            <div class="converter-actions">
+                                <button id="weekdayBtn" class="btn btn-primary">查询星期</button>
+                                <div id="weekdayResult" class="result-text"></div>
+                            </div>
+                        </div>
+
+                        <div class="date-tool">
+                            <div class="date-tool-header">日期转天干地支</div>
+                            <div class="unit-row single-input">
+                                <input id="ganzhiDate" type="date" class="input-field" />
+                            </div>
+                            <div class="small-text">年柱按农历年，月柱按农历月简化，日柱按公历干支日公式推算；闰月按同月处理。</div>
+                            <div class="converter-actions">
+                                <button id="ganzhiBtn" class="btn btn-primary">转换干支</button>
+                                <div id="ganzhiResult" class="result-text"></div>
+                            </div>
+                        </div>
+
+                        <div class="date-tool">
+                            <div class="date-tool-header">历法互转</div>
+                            <div class="unit-row two-cols">
+                                <select id="calendarSource" class="input-field">
+                                    <option value="solar">公历（阳历）</option>
+                                    <option value="lunar">农历</option>
+                                    <option value="yin">阴历（近似）</option>
+                                </select>
+                                <select id="calendarTarget" class="input-field">
+                                    <option value="lunar">农历</option>
+                                    <option value="solar">公历（阳历）</option>
+                                    <option value="yin">阴历（近似）</option>
+                                </select>
+                            </div>
+
+                            <div id="calendarSolarFields" class="calendar-fields">
+                                <div class="unit-row single-input">
+                                    <input id="calendarSolarDate" type="date" class="input-field" />
+                                </div>
+                            </div>
+
+                            <div id="calendarLunarFields" class="calendar-fields" style="display:none;">
+                                <div class="unit-row three-cols">
+                                    <input id="calendarLunarYear" type="number" min="1900" max="2100" placeholder="农历年" class="input-field" />
+                                    <input id="calendarLunarMonth" type="number" min="1" max="12" placeholder="月" class="input-field" />
+                                    <input id="calendarLunarDay" type="number" min="1" max="30" placeholder="日" class="input-field" />
+                                </div>
+                                <label class="inline-check">
+                                    <input id="calendarLunarLeap" type="checkbox">
+                                    闰月
+                                </label>
+                            </div>
+
+                            <div id="calendarYinFields" class="calendar-fields" style="display:none;">
+                                <div class="unit-row three-cols">
+                                    <input id="calendarYinYear" type="number" min="1" max="9999" placeholder="阴历年" class="input-field" />
+                                    <input id="calendarYinMonth" type="number" min="1" max="12" placeholder="月" class="input-field" />
+                                    <input id="calendarYinDay" type="number" min="1" max="30" placeholder="日" class="input-field" />
+                                </div>
+                            </div>
+
+                            <div class="small-text">农历支持 1900-2100 年。阴历为近似纯朔望月历，以 2000-01-06 新月附近为历元，月长自动按 29/30 天分配。</div>
+                            <div class="converter-actions">
+                                <button id="calendarConvertBtn" class="btn btn-primary">转换</button>
+                                <div id="calendarConvertResult" class="result-text"></div>
+                            </div>
+                        </div>
+
+                        <div class="date-tool">
+                            <div class="date-tool-header">时区转换</div>
+                            <div class="unit-row single-input">
+                                <input id="timezoneDateTime" type="datetime-local" class="input-field" />
+                            </div>
+                            <div class="unit-row two-cols">
+                                <select id="timezoneFrom" class="input-field"></select>
+                                <select id="timezoneTo" class="input-field"></select>
+                            </div>
+                            <div class="converter-actions">
+                                <button id="timezoneConvertBtn" class="btn btn-primary">转换时区</button>
+                                <div id="timezoneResult" class="result-text"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -240,6 +355,7 @@
     <script src="../../assets/js/loader.js"></script>
     <script src="assets/js/translate-init.js"></script>
     <script src="assets/js/theme-toggle.js"></script>
+    <script src="assets/js/date-tools.js"></script>
 
     <script>
         window.MathJax = {
@@ -281,10 +397,11 @@
 
     <script>
         const views = {
-            'menu': { id: 'view-menu', title: '更多功能', subtitle: '矩阵运算、优化算法等高级数学工具' },
+            'menu': { id: 'view-menu', title: '更多功能', subtitle: '矩阵运算、优化算法、日期计算等高级工具' },
             'fullrank': { id: 'view-fullrank', title: '矩阵满秩分解', subtitle: '将矩阵分解为 A = F · G 的形式' },
             'pseudoinverse': { id: 'view-pseudoinverse', title: 'Moore-Penrose 伪逆', subtitle: '计算矩阵的 Moore-Penrose 伪逆 A⁺' },
-            'simplex': { id: 'view-simplex', title: '单纯形法', subtitle: '线性规划问题求解（约束优化）' }
+            'simplex': { id: 'view-simplex', title: '单纯形法', subtitle: '线性规划问题求解（约束优化）' },
+            'datecalc': { id: 'view-datecalc', title: '日期计算', subtitle: '历法互转、星期查询、日期推算与时区转换' }
         };
         const MATRIX_SAMPLE = '2 4 1 1\n1 2 -1 2\n-1 -2 -2 1';
         const viewSections = Array.from(document.querySelectorAll('.view-section'));
@@ -314,7 +431,7 @@
                 // 切换导航栏状态
                 if(viewName === 'menu') {
                     navBarEl.style.display = 'none';
-                    menuBackBtnEl.style.display = 'block';
+                    menuBackBtnEl.style.display = 'flex';
                 } else {
                     navBarEl.style.display = 'flex';
                     menuBackBtnEl.style.display = 'none';
