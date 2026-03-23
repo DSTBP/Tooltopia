@@ -1,0 +1,210 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <title>DPF &amp; DCF Visualizer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/translate.css">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <link rel="stylesheet" href="../../assets/css/loader.css">
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('tooltopia-theme') === 'day') {
+                    document.documentElement.classList.add('day-init');
+                }
+            } catch (error) {}
+            document.documentElement.classList.add('is-loading');
+        })();
+    </script>
+</head>
+<body>
+    <div id="page-loader" class="page-loader" aria-live="polite" aria-busy="true">
+        <div class="spinner-box" aria-hidden="true">
+            <div class="blue-orbit leo"></div>
+            <div class="green-orbit leo"></div>
+            <div class="red-orbit leo"></div>
+            <div class="white-orbit w1 leo"></div>
+            <div class="white-orbit w2 leo"></div>
+            <div class="white-orbit w3 leo"></div>
+        </div>
+        <div class="loader-text">Loading...</div>
+    </div>
+
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="Logo" class="logo-icon">
+                <span class="logo-text-desktop">DPF-DCF Visual</span>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div id="translate" class="nav-btn language-selector" data-translate-host></div>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换主题">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="background-wrapper"></div>
+
+    <div class="page-container">
+        <div class="container">
+            <header>
+                <h1 data-shadow="DPF / DCF 可视化演示">DPF / DCF 可视化演示</h1>
+                <p class="description">
+                    基于 GGM 树的 DPF / DCF 可视化。支持输入 DPF{alpha, beta}，Offline 阶段生成标准 DPF key，Online 阶段对查询点 x 求值，并用加法份额 y0(x) + y1(x) 重构输出。
+                </p>
+            </header>
+
+
+            <div class="main-container">
+                <div class="input-section">
+                    <div class="input-card">
+                        <h2>控制面板</h2>
+
+                        <div class="format-options">
+                            <div class="control-group">
+                                <label for="depthInput" class="control-label">树深度 n (1-6)</label>
+                                <input type="number" id="depthInput" min="1" max="6" value="3" class="control-input">
+                                <p id="depthHint" class="upload-hint">叶子节点数量将根据 n 自动计算。</p>
+                            </div>
+
+                            <div class="control-group">
+                                <label for="alphaInput" class="control-label">Offline 目标 alpha</label>
+                                <input type="number" id="alphaInput" min="0" max="7" value="3" class="control-input">
+                                <p id="alphaHint" class="upload-hint">Offline 阶段沿目标叶子 alpha 展开。</p>
+                            </div>
+
+                            <div class="control-group">
+                                <label for="betaInput" class="control-label">输出值 beta</label>
+                                <input type="number" id="betaInput" value="1" step="1" class="control-input">
+                                <p id="betaHint" class="upload-hint">当 x = alpha 时输出 beta，否则输出 0。</p>
+                            </div>
+
+                            <div class="control-group">
+                                <label for="xInput" class="control-label">Online 输入 x</label>
+                                <input type="number" id="xInput" min="0" max="7" value="3" class="control-input">
+                                <p id="xHint" class="upload-hint">Online 阶段对查询点 x 求值。</p>
+                            </div>
+                        </div>
+
+                        <div class="output-buttons" style="display: flex; flex-direction: row; gap: 10px; flex-wrap: wrap;">
+                            <button id="btnOffline" class="btn btn-primary">1. 运行 Offline</button>
+                            <button id="btnOnline0" class="btn btn-secondary" disabled>2. 运行 Online (Party 0)</button>
+                            <button id="btnOnline1" class="btn btn-secondary" disabled>3. 运行 Online (Party 1)</button>
+                            <button id="btnClear" class="btn btn-secondary">重置</button>
+                        </div>
+
+                        <div class="explanation-item" style="margin-top: 20px;">
+                            <h3>运行日志</h3>
+                            <div
+                                id="statusLog"
+                                class="status-log"
+                                style="height: 150px; overflow-y: auto; font-family: monospace; font-size: 0.85rem; padding: 10px; border-radius: 8px;"
+                            >
+                                等待开始...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="output-section" style="flex: 2;">
+                    <div class="output-card output-card--visualizer" style="min-height: 600px; display: flex; flex-direction: column;">
+                        <div class="output-header">
+                            <h2 id="canvasTitle">Offline 阶段：GGM 树生成</h2>
+                        </div>
+
+                        <div id="offlineView" class="tree-stage-view" style="display: block; width: 100%;">
+                            <div id="treeCanvasOffline" class="tree-canvas" style="min-height: 550px;"></div>
+                        </div>
+
+                        <div id="onlineView" class="online-stage tree-stage-grid" style="display: none; width: 100%; gap: 10px; flex-wrap: wrap;">
+                            <div class="party-stage">
+                                <h3 style="text-align: center; color: #3b82f6; font-size: 1rem; margin-bottom: 5px;">Party 0 评估树</h3>
+                                <div class="tree-stage-view party-stage__viewport">
+                                    <div id="treeCanvasOnline0" class="tree-canvas" style="min-height: 450px;"></div>
+                                </div>
+                            </div>
+                            <div class="party-stage">
+                                <h3 style="text-align: center; color: #ef4444; font-size: 1rem; margin-bottom: 5px;">Party 1 评估树</h3>
+                                <div class="tree-stage-view party-stage__viewport">
+                                    <div id="treeCanvasOnline1" class="tree-canvas" style="min-height: 450px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="output-card output-card--formula">
+                        <div class="output-header output-header--panel">
+                            <h2 id="calcWindowTitle">公式追踪</h2>
+                        </div>
+                        <p id="calcWindowSubtitle" class="panel-intro">
+                            逐步展示 PRG、CW 和控制位的计算过程。
+                        </p>
+                        <div id="calcWindow" class="formula-window__body"></div>
+                    </div>
+
+                    <div id="reconstructionPanel" class="output-card output-card--formula" hidden>
+                        <div class="output-header output-header--panel">
+                            <h2>重构结果</h2>
+                        </div>
+                        <p id="reconstructionSummary" class="panel-intro">
+                            当两个参与方都完成 Online 阶段后，这里会展示针对所选 x 的重构输出，即 DPF{alpha, beta} 的 y0(x) + y1(x)。
+                        </p>
+                        <div id="reconstructionBody" class="result-window__body"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="explanation">
+                <h2>DPF 逻辑说明</h2>
+                <div class="explanation-content" data-latex-scope>
+                    <div class="explanation-item">
+                        <h3>Offline 阶段</h3>
+                        <p>
+                            1. 输入点值函数参数 $\alpha,\beta$，初始化两方根种子与控制位。<br>
+                            2. 沿着目标点 $\alpha$ 的路径逐层进行 $\mathrm{PRG}$ 扩展，并构造标准校正词 $\mathrm{CW}$。<br>
+                            3. 末层再计算输出校正词 $\mathrm{OCW}$，使得目标点输出 $\beta$，其余点输出 0。<br>
+                            4. 最终将初始种子、全部 $\mathrm{CW}$ 与 $\mathrm{OCW}$ 一起分发给两方。
+                        </p>
+                    </div>
+                    <div class="explanation-item">
+                        <h3>Online 阶段</h3>
+                        <p>
+                            1. 输入查询点 $x$，两方沿着同一路径独立求值。<br>
+                            2. 当当前节点控制位 $t=1$ 时，对该层 $\mathrm{PRG}$ 输出应用对应的 $\mathrm{CW}$。<br>
+                            3. 两方计算加法份额 $y_0(x), y_1(x)$，最后重构得到 $f(x)=y_0(x)+y_1(x)$。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>Copyright © 2024 Tooltopia. All Rights Reserved.</p>
+        <p>Designed by DSTBP</p>
+    </footer>
+
+    <script src="../../assets/js/loader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/contrib/auto-render.min.js" crossorigin="anonymous"></script>
+    <script src="assets/js/latex-render.js"></script>
+    <script src="assets/js/translate-init.js"></script>
+    <script src="assets/js/theme-toggle.js"></script>
+    <script src="assets/js/script.js"></script>
+</body>
+</html>
