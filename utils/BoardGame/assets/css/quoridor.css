@@ -1,0 +1,205 @@
+.board.quoridor {
+    --quoridor-cell: clamp(32px, 7vw, 54px);
+    --quoridor-gap: clamp(8px, 1.8vw, 13px);
+    --quoridor-board: #4b4034;
+    --quoridor-grid: #6f5b43;
+    --quoridor-cell-bg: #d8c29d;
+    --quoridor-cell-border: #8b7355;
+    --quoridor-wall-preview: #9a7a51;
+    --quoridor-wall-dark: #2563eb;
+    --quoridor-wall-warm: #b75a45;
+    width: fit-content;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+    justify-items: center;
+    padding: clamp(0.65rem, 2vw, 1rem);
+    background: var(--quoridor-board);
+    border-color: rgba(216, 194, 157, 0.34);
+}
+
+.quoridor-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.quoridor-wall-info {
+    color: #f1e6d2;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.quoridor-grid {
+    display: grid;
+    position: relative;
+    padding: 0.25rem;
+    border-radius: 18px;
+    background: var(--quoridor-grid);
+    box-shadow: inset 0 0 0 1px rgba(47, 48, 44, 0.32);
+}
+
+.board.quoridor .cell {
+    width: var(--quoridor-cell);
+    height: var(--quoridor-cell);
+    border-radius: 10px;
+    border: 1px solid var(--quoridor-cell-border);
+    background: var(--quoridor-cell-bg);
+    z-index: 1;
+}
+
+.board.quoridor .cell.legal:not(.occupied)::after {
+    content: '';
+    width: 34%;
+    height: 34%;
+    border-radius: 50%;
+    background: rgba(75, 64, 52, 0.58);
+    box-shadow: 0 0 10px rgba(47, 48, 44, 0.25);
+}
+
+.board.quoridor .cell.hint::after {
+    content: '';
+    width: 52%;
+    height: 52%;
+    border-radius: 50%;
+    border: 2px solid var(--warn);
+    background: rgba(251, 191, 36, 0.14);
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.72);
+}
+
+.board.quoridor .piece {
+    width: 72%;
+    height: 72%;
+    color: #ffffff;
+    font-size: clamp(1rem, 3vw, 1.55rem);
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+
+.piece.blue {
+    background: var(--quoridor-wall-dark);
+    box-shadow: 0 8px 16px rgba(47, 48, 44, 0.34);
+}
+
+.piece.red {
+    background: var(--quoridor-wall-warm);
+    box-shadow: 0 8px 16px rgba(139, 63, 47, 0.3);
+}
+
+.quoridor-wall-slot {
+    position: relative;
+    padding: 0;
+    align-self: center;
+    justify-self: center;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+    z-index: 3;
+}
+
+.quoridor-wall-slot.horizontal {
+    width: 100%;
+    height: var(--quoridor-gap);
+}
+
+.quoridor-wall-slot.vertical {
+    width: var(--quoridor-gap);
+    height: 100%;
+}
+
+.quoridor-wall-slot::before {
+    content: '';
+    position: absolute;
+    border-radius: 999px;
+    background: var(--quoridor-wall-preview);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.quoridor-wall-slot.horizontal::before {
+    left: 2px;
+    right: 2px;
+    top: 50%;
+    height: min(9px, var(--quoridor-gap));
+    transform: translateY(-50%);
+}
+
+.quoridor-wall-slot.vertical::before {
+    top: 2px;
+    bottom: 2px;
+    left: 50%;
+    width: min(9px, var(--quoridor-gap));
+    transform: translateX(-50%);
+}
+
+.quoridor-wall-slot.legal::before {
+    opacity: 0.26;
+}
+
+.quoridor-wall-slot.hint::before,
+.quoridor-wall-slot.is-placed::before {
+    opacity: 1;
+}
+
+.quoridor-wall-slot.legal:hover::before,
+.quoridor-wall-slot.hint::before {
+    background: #2dd4bf;
+    box-shadow:
+        0 0 0 2px rgba(204, 251, 241, 0.72),
+        0 0 22px rgba(45, 212, 191, 0.86),
+        0 0 34px rgba(20, 83, 78, 0.46);
+}
+
+.quoridor-wall-slot.is-placed.blue::before {
+    background: var(--quoridor-wall-dark);
+    box-shadow: 0 0 10px rgba(47, 48, 44, 0.28);
+}
+
+.quoridor-wall-slot.is-placed.red::before {
+    background: var(--quoridor-wall-warm);
+    box-shadow: 0 0 10px rgba(139, 63, 47, 0.26);
+}
+
+.quoridor-wall-slot:disabled {
+    cursor: default;
+}
+
+body.day-mode .board.quoridor,
+html.day-init .board.quoridor {
+    --quoridor-board: #c9b28d;
+    --quoridor-grid: #a88d65;
+    --quoridor-cell-bg: #f1e2c2;
+    --quoridor-cell-border: #9f835c;
+    background: var(--quoridor-board);
+}
+
+body.day-mode .quoridor-wall-info,
+html.day-init .quoridor-wall-info {
+    color: #3f3428;
+}
+
+body.day-mode .quoridor-grid,
+html.day-init .quoridor-grid {
+    background: var(--quoridor-grid);
+}
+
+body.day-mode .board.quoridor .cell,
+html.day-init .board.quoridor .cell {
+    background: var(--quoridor-cell-bg);
+}
+
+@media (max-width: 720px) {
+    .board.quoridor {
+        --quoridor-cell: clamp(27px, 8.4vw, 40px);
+        --quoridor-gap: clamp(7px, 1.9vw, 10px);
+    }
+
+    .quoridor-info {
+        width: 100%;
+    }
+}

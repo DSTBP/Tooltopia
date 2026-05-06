@@ -1,5 +1,5 @@
 (() => {
-    const BOOTSTRAP_KEY = '__weiqiTranslateBootstrap__';
+    const BOOTSTRAP_KEY = '__boardGameTranslateBootstrap__';
     if (window[BOOTSTRAP_KEY]) return;
     window[BOOTSTRAP_KEY] = true;
 
@@ -139,7 +139,7 @@
                 setTimeout(syncTitleShadow, 1000);
             })
             .catch(error => {
-                console.warn('[WeiQi] Translation bootstrap failed:', error);
+                console.warn('[BoardGame] Translation bootstrap failed:', error);
             });
     };
 
@@ -149,11 +149,6 @@
         init();
     }
 
-    window.addEventListener('resize', () => {
-        syncSelectorSize();
-    });
-
-    window.addEventListener('load', () => {
-        syncSelectorSize();
-    }, { once: true });
+    window.addEventListener('resize', syncSelectorSize);
+    window.addEventListener('load', syncSelectorSize, { once: true });
 })();

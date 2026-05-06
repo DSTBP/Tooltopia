@@ -1,0 +1,121 @@
+.mode-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding: 0.3rem;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.mode-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem;
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.16);
+}
+
+.mode-option {
+    border: 0;
+    border-radius: calc(var(--radius-md) - 4px);
+    padding: 0.55rem 0.75rem;
+    color: var(--text-secondary);
+    background: transparent;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: background 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+
+.mode-option.is-active {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+}
+
+.ai-player-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.ai-player-control select {
+    min-width: 5.6rem;
+    border: 1px solid var(--glass-border);
+    border-radius: calc(var(--radius-md) - 4px);
+    background: #2f343b;
+    color: #f8fafc;
+    padding: 0.55rem 0.7rem;
+    font: inherit;
+}
+
+.ai-player-control select option {
+    background: #2f343b;
+    color: #f8fafc;
+}
+
+.ai-player-control select:disabled,
+#aiDifficultySelect:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.ai-status {
+    min-width: 5rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+body.day-mode .mode-controls,
+html.day-init .mode-controls {
+    background: rgba(255, 255, 255, 0.62);
+}
+
+body.day-mode .mode-switch,
+html.day-init .mode-switch {
+    background: rgba(226, 232, 240, 0.8);
+}
+
+body.day-mode .mode-option.is-active,
+html.day-init .mode-option.is-active {
+    background: #ffffff;
+}
+
+body.day-mode .ai-player-control select,
+html.day-init .ai-player-control select,
+body.day-mode .ai-player-control select option,
+html.day-init .ai-player-control select option {
+    background: #ffffff;
+    color: #1a202c;
+}
+
+.board.is-ai-turn .cell.legal {
+    cursor: wait;
+}
+
+.board.is-ai-turn .cell.legal:hover {
+    box-shadow: none;
+}
+
+@media (max-width: 720px) {
+    .mode-controls,
+    .mode-switch,
+    .ai-player-control,
+    .ai-player-control select,
+    #aiDifficultySelect,
+    .ai-status {
+        width: 100%;
+    }
+
+    .mode-option {
+        flex: 1;
+    }
+}

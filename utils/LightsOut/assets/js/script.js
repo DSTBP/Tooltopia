@@ -284,7 +284,7 @@
         }
         // 显示“完成”按钮
         if (customDoneBtn) customDoneBtn.classList.remove('is-hidden');
-        // 自定义开始时，重置步数与撤销
+        // 自定义开始时，重置步数与悔棋
         moveCount = 0;
         undoStack = [];
         renderBoard();

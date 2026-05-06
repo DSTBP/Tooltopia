@@ -8317,7 +8317,7 @@ var translate = {
 			    document.documentElement.classList.add('translatejs-text-hidden');
 			},
 			/**
-			 * 撤销隐藏状态，将原本的文本正常显示出来 
+			 * 悔棋隐藏状态，将原本的文本正常显示出来 
 			 * 
 			 */
 			show:function(){

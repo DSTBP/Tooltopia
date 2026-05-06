@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <meta name="color-scheme" content="dark light">
+    <title>Board Game - 桌游棋类大全</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <link rel="stylesheet" href="./assets/css/style.css">
+    <link rel="stylesheet" href="./assets/css/mode-controls.css">
+    <link rel="stylesheet" href="./assets/css/quoridor.css">
+    <link rel="stylesheet" href="./assets/css/translate.css">
+    <link rel="stylesheet" href="../../assets/css/loader.css">
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('tooltopia-theme') === 'day') {
+                    document.documentElement.classList.add('day-init');
+                }
+            } catch (error) {}
+            document.documentElement.classList.add('is-loading');
+        })();
+    </script>
+</head>
+<body>
+    <script>
+        try {
+            if (window.localStorage && localStorage.getItem('tooltopia-theme') === 'day') {
+                document.body.classList.add('day-mode');
+            }
+        } catch (error) {}
+    </script>
+
+    <div id="page-loader" class="page-loader" aria-live="polite" aria-busy="true">
+        <div class="spinner-box" aria-hidden="true">
+            <div class="blue-orbit leo"></div>
+            <div class="green-orbit leo"></div>
+            <div class="red-orbit leo"></div>
+            <div class="white-orbit w1 leo"></div>
+            <div class="white-orbit w2 leo"></div>
+            <div class="white-orbit w3 leo"></div>
+        </div>
+        <div class="loader-text">Loading...</div>
+    </div>
+
+    <nav class="navbar">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="Logo" class="logo-icon">
+                <span class="logo-text-desktop">BoardGame</span>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div id="translate" class="nav-btn language-selector" data-translate-host></div>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="page-container">
+        <header class="header">
+            <h1 data-shadow="Board Game">Board Game</h1>
+            <p class="subtitle">收录常见双人棋类玩法，适合本地对弈、回合记录和局势提示。</p>
+        </header>
+
+        <section class="container game-shell">
+            <aside class="section game-library">
+                <div class="panel-head compact">
+                    <div>
+                        <span class="eyebrow">Games</span>
+                        <h2>游戏库</h2>
+                    </div>
+                </div>
+                <div id="gameList" class="game-list"></div>
+            </aside>
+
+            <section class="section board-panel">
+                <div class="panel-head board-head">
+                    <div>
+                        <h2 id="gameTitle">棋盘</h2>
+                        <p id="gameSummary" class="panel-subtitle"></p>
+                    </div>
+                    <div class="board-toolbar">
+                        <div class="mode-controls" aria-label="对局模式">
+                            <div class="mode-switch" role="group" aria-label="对局模式">
+                                <button type="button" class="mode-option is-active" data-mode="multi" aria-pressed="true">多人模式</button>
+                                <button type="button" class="mode-option" data-mode="single" aria-pressed="false">单人模式</button>
+                            </div>
+                            <label class="ai-player-control" for="aiPlayerSelect">
+                                <span>AI 执子</span>
+                                <select id="aiPlayerSelect" disabled></select>
+                            </label>
+                            <label class="ai-player-control" for="aiDifficultySelect">
+                                <span>难度</span>
+                                <select id="aiDifficultySelect" disabled>
+                                    <option value="beginner">入门</option>
+                                    <option value="easy">简单</option>
+                                    <option value="medium" selected>中等</option>
+                                    <option value="hard">困难</option>
+                                </select>
+                            </label>
+                            <span id="aiStatus" class="ai-status">本地多人</span>
+                        </div>
+                        <div class="size-control">
+                            <label for="boardSizeInput">棋盘大小</label>
+                            <input id="boardSizeInput" type="number" min="3" max="25" step="1" value="15">
+                            <button id="applySizeBtn" class="btn btn-secondary">应用</button>
+                        </div>
+                        <button id="resetBtn" class="btn btn-secondary">重开</button>
+                        <button id="undoBtn" class="btn btn-secondary">悔棋</button>
+                        <button id="hintBtn" class="btn btn-primary">提示</button>
+                    </div>
+                </div>
+
+                <div class="status-grid" aria-live="polite">
+                    <div class="status-card">
+                        <span>当前玩家</span>
+                        <strong id="currentPlayer">-</strong>
+                    </div>
+                    <div class="status-card">
+                        <span>合法落点</span>
+                        <strong id="legalCount">0</strong>
+                    </div>
+                    <div class="status-card">
+                        <span>回合数</span>
+                        <strong id="moveCount">0</strong>
+                    </div>
+                    <div class="status-card">
+                        <span>局面状态</span>
+                        <strong id="gameStatus">准备中</strong>
+                    </div>
+                </div>
+
+                <div id="boardWrap" class="board-wrap">
+                    <div id="board" class="board" role="grid" aria-label="board-game-grid"></div>
+                </div>
+
+                <div id="hintBox" class="hint-box">选择游戏后即可开始。</div>
+            </section>
+
+            <aside class="section control-panel">
+                <div class="panel-head compact">
+                    <div>
+                        <span class="eyebrow">Rules</span>
+                        <h2>规则与记录</h2>
+                    </div>
+                </div>
+                <div id="gameMeta" class="meta-list"></div>
+                <div id="analysisPanel" class="analysis-panel"></div>
+                <div class="move-section">
+                    <div class="section-title-row">
+                        <h3>落子记录</h3>
+                        <span id="logCount" class="mini-badge">0</span>
+                    </div>
+                    <ol id="moveLog" class="move-log"></ol>
+                </div>
+            </aside>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>Copyright © 2024 Tooltopia. All Rights Reserved.</p>
+        <p>Designed by DSTBP</p>
+    </footer>
+
+    <script src="../../assets/js/loader.js"></script>
+    <script src="./assets/js/translate-init.js"></script>
+    <script src="./assets/js/theme-toggle.js"></script>
+    <script src="./assets/js/quoridor-ai-game.js"></script>
+    <script src="./assets/js/quoridor-ai.js"></script>
+    <script src="./assets/js/ai-player.js"></script>
+    <script src="./assets/js/script.js"></script>
+</body>
+</html>
