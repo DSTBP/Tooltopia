@@ -1333,8 +1333,6 @@
                 const info = playerInfo(game, value);
                 const piece = document.createElement('span');
                 piece.className = `piece ${info.className}`;
-                const flip = reversiFlipMap.get(index);
-                if (flip) piece.classList.add('reversi-flip', `from-${flip.from}`, `to-${flip.to}`);
                 piece.textContent = info.symbol || '';
                 cell.appendChild(piece);
             }
@@ -1559,7 +1557,7 @@
         clearAiTimer();
         if (!isAiTurn() || app.aiThinking) return;
 
-        const delay = app.aiDifficulty === 'hard' ? 0 : app.game && app.game.id === 'reversi' && app.reversiFlipAnimation ? 760 : 420;
+        const delay = app.game && app.game.id === 'reversi' && app.reversiFlipAnimation ? 760 : app.aiDifficulty === 'hard' ? 500 : 420;
         app.aiThinking = true;
         refresh();
         app.aiTimer = window.setTimeout(() => {

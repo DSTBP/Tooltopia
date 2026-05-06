@@ -103,42 +103,9 @@
         return score;
     }
 
-    function evaluateReversi(game, state, aiPlayer, profile) {
-        const opponent = otherPlayer(game, aiPlayer);
-        const scores = state.scores || state.board.reduce((acc, value) => {
-            if (value === aiPlayer) acc.ai += 1;
-            if (value === opponent) acc.opponent += 1;
-            return acc;
-        }, { ai: 0, opponent: 0 });
-        const aiCount = scores[aiPlayer] || scores.ai || 0;
-        const opponentCount = scores[opponent] || scores.opponent || 0;
-        const corners = [0, game.columns - 1, game.columns * (game.rows - 1), game.rows * game.columns - 1];
-        const cornerScore = corners.reduce((total, index) => {
-            if (state.board[index] === aiPlayer) return total + 1;
-            if (state.board[index] === opponent) return total - 1;
-            return total;
-        }, 0);
-        const danger = [game.columns + 1, game.columns * 2 - 2, game.columns * (game.rows - 2) + 1, game.columns * (game.rows - 1) - 2];
-        const dangerScore = danger.reduce((total, index) => {
-            if (state.board[index] === aiPlayer) return total - 1;
-            if (state.board[index] === opponent) return total + 1;
-            return total;
-        }, 0);
-        const currentMoves = state.current === aiPlayer ? legalMoves(game, state).length : 0;
-        const opponentState = cloneState(state);
-        opponentState.current = opponent;
-        const opponentMoves = legalMoves(game, opponentState).length;
-
-        return (aiCount - opponentCount) * profile.materialWeight
-            + cornerScore * profile.cornerWeight
-            + dangerScore * profile.dangerWeight
-            + (currentMoves - opponentMoves) * profile.mobilityWeight;
-    }
-
     function evaluateState(game, state, aiPlayer, profile) {
         const result = terminalScore(state, aiPlayer);
         if (result) return result;
-        if (game.id === 'reversi') return evaluateReversi(game, state, aiPlayer, profile);
         return evaluateLineGame(game, state, aiPlayer, profile);
     }
 
@@ -340,11 +307,9 @@
         const next = applyMove(game, state, move);
         const index = moveIndex(move);
         const hintBonus = hint && hint.index === index ? profile.hintWeight : 0;
-        const flipBonus = game.id === 'reversi' && move.flips ? move.flips.length * profile.flipWeight : 0;
         return evaluateState(game, next, aiPlayer, profile)
             + centerScore(game, index) * profile.centerWeight
-            + hintBonus
-            + flipBonus;
+            + hintBonus;
     }
 
     function candidateMoves(game, state, aiPlayer, profile) {
@@ -449,6 +414,7 @@
         if (!moves.length) return null;
         if (game.id === 'quoridor') return chooseQuoridorAiMainMove(state, moves, options.difficulty);
         if (game.id === 'gomoku') return window.WuziAI.chooseMove(game, state, options);
+        if (game.id === 'reversi') return window.ReversiAI.chooseMove(game, state, options);
 
         const aiPlayer = options.player || state.current;
         const profile = difficultyProfile(options.difficulty);
