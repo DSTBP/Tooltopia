@@ -34,7 +34,8 @@
         aiPlayer: null,
         aiDifficulty: 'medium',
         aiTimer: null,
-        aiThinking: false
+        aiThinking: false,
+        qawaleDraft: null
     };
 
     const GOMOKU_DIRECTIONS = [
@@ -45,6 +46,10 @@
         [-1, -1], [-1, 0], [-1, 1],
         [0, -1], [0, 1],
         [1, -1], [1, 0], [1, 1]
+    ];
+
+    const QAWALE_DIRECTIONS = [
+        [-1, 0], [1, 0], [0, -1], [0, 1]
     ];
 
     function cloneState(state) {
@@ -62,7 +67,9 @@
                 ? Object.fromEntries(Object.entries(state.players).map(([id, player]) => [id, { ...player }]))
                 : undefined,
             hWalls: state.hWalls ? state.hWalls.slice() : undefined,
-            vWalls: state.vWalls ? state.vWalls.slice() : undefined
+            vWalls: state.vWalls ? state.vWalls.slice() : undefined,
+            qawaleStacks: state.qawaleStacks ? state.qawaleStacks.map(stack => stack.slice()) : undefined,
+            piecesLeft: state.piecesLeft ? { ...state.piecesLeft } : undefined
         };
     }
 
@@ -154,6 +161,7 @@
         app.hintIndex = null;
         app.hintText = '';
         app.aiThinking = false;
+        app.qawaleDraft = null;
         clearAiTimer();
         refresh();
         scheduleAiMove();
@@ -428,6 +436,171 @@
                 ? `可以翻转 ${best.flips.length} 子并压缩对手选择。`
                 : `对手后续合法点约 ${best.opponentMobility} 个，局面较稳。`;
         return { index: best.index, text: `建议落在 ${formatPosition(best.index, size)}，${reason}` };
+    }
+
+    function qawaleTop(stack) {
+        return stack.length ? stack[stack.length - 1] : null;
+    }
+
+    function qawaleSyncBoard(state) {
+        state.board = state.qawaleStacks.map(qawaleTop);
+        return state;
+    }
+
+    function qawaleInitialStacks() {
+        return Array.from({ length: 16 }, (_, index) => [0, 3, 12, 15].includes(index) ? ['neutral', 'neutral'] : []);
+    }
+
+    function qawaleMoveKey(placeIndex, path) {
+        return `qawale:${placeIndex}:${path.join('-')}`;
+    }
+
+    function qawaleMoveText(game, move) {
+        return `${formatPosition(move.placeIndex, game.columns)} → ${move.path.map(index => formatPosition(index, game.columns)).join(' → ')}`;
+    }
+
+    function getQawalePlacements(state) {
+        if (state.ended || !state.piecesLeft[state.current]) return [];
+        return state.qawaleStacks.reduce((moves, stack, index) => {
+            if (stack.length) moves.push({ type: 'qawale-place', index, placeIndex: index });
+            return moves;
+        }, []);
+    }
+
+    function getQawaleNextSteps(game, currentIndex, previousIndex) {
+        const row = Math.floor(currentIndex / game.columns);
+        const col = currentIndex % game.columns;
+        const moves = [];
+        for (const [dr, dc] of QAWALE_DIRECTIONS) {
+            const nextRow = row + dr;
+            const nextCol = col + dc;
+            if (nextRow < 0 || nextRow >= game.rows || nextCol < 0 || nextCol >= game.columns) continue;
+            const index = nextRow * game.columns + nextCol;
+            if (previousIndex !== null && index === previousIndex) continue;
+            moves.push(index);
+        }
+        return moves;
+    }
+
+    function buildQawaleMove(placeIndex, path) {
+        return { type: 'qawale', index: qawaleMoveKey(placeIndex, path), placeIndex, path: path.slice() };
+    }
+
+    function enumerateQawalePaths(game, length, currentIndex, previousIndex, path, output, limit) {
+        if (output.length >= limit) return;
+        if (path.length === length) {
+            output.push(path.slice());
+            return;
+        }
+        getQawaleNextSteps(game, currentIndex, previousIndex).forEach(index => {
+            path.push(index);
+            enumerateQawalePaths(game, length, index, currentIndex, path, output, limit);
+            path.pop();
+        });
+    }
+
+    function getQawaleAiMoves(game, state, options = {}) {
+        const limit = options.limit || 5000;
+        const moves = [];
+        for (const placement of getQawalePlacements(state)) {
+            const length = state.qawaleStacks[placement.placeIndex].length + 1;
+            const paths = [];
+            enumerateQawalePaths(game, length, placement.placeIndex, null, [], paths, Math.max(1, limit - moves.length));
+            paths.forEach(path => moves.push(buildQawaleMove(placement.placeIndex, path)));
+            if (moves.length >= limit) break;
+        }
+        return moves;
+    }
+
+    function isLegalQawaleMove(game, state, move) {
+        if (!move || move.type !== 'qawale' || state.ended || !state.piecesLeft[state.current]) return false;
+        const stack = state.qawaleStacks[move.placeIndex];
+        if (!stack || !stack.length) return false;
+        if (!Array.isArray(move.path) || move.path.length !== stack.length + 1) return false;
+        let currentIndex = move.placeIndex;
+        let previousIndex = null;
+        for (const index of move.path) {
+            if (!getQawaleNextSteps(game, currentIndex, previousIndex).includes(index)) return false;
+            previousIndex = currentIndex;
+            currentIndex = index;
+        }
+        return true;
+    }
+
+    function findQawaleWinLine(board, player, size) {
+        for (const [dr, dc] of GOMOKU_DIRECTIONS) {
+            for (let row = 0; row < size; row += 1) {
+                for (let col = 0; col < size; col += 1) {
+                    const endRow = row + dr * 3;
+                    const endCol = col + dc * 3;
+                    if (endRow < 0 || endRow >= size || endCol < 0 || endCol >= size) continue;
+                    const line = [];
+                    for (let step = 0; step < 4; step += 1) {
+                        line.push((row + dr * step) * size + col + dc * step);
+                    }
+                    if (line.every(index => board[index] === player)) return line;
+                }
+            }
+        }
+        return [];
+    }
+
+    function applyQawaleMove(game, state, move) {
+        const player = state.current;
+        const next = cloneState(state);
+        const movingStack = next.qawaleStacks[move.placeIndex].slice();
+        movingStack.push(player);
+        next.qawaleStacks[move.placeIndex] = [];
+        move.path.forEach(index => {
+            const stone = movingStack.shift();
+            next.qawaleStacks[index].push(stone);
+        });
+        next.piecesLeft[player] -= 1;
+        next.moveCount += 1;
+        next.passMessage = '';
+        qawaleSyncBoard(next);
+        const opponent = otherPlayer(game, player);
+        const line = findQawaleWinLine(next.board, player, game.rows);
+        const opponentLine = line.length ? [] : findQawaleWinLine(next.board, opponent, game.rows);
+        next.moves.push({ player, index: move.index, text: `${playerInfo(game, player).label} ${qawaleMoveText(game, move)}` });
+        if (line.length) {
+            next.ended = true;
+            next.winner = player;
+            next.winLine = line;
+        } else if (opponentLine.length) {
+            next.ended = true;
+            next.winner = opponent;
+            next.winLine = opponentLine;
+        } else if (!next.piecesLeft.red && !next.piecesLeft.blue) {
+            next.ended = true;
+            next.winner = 'draw';
+            next.winLine = [];
+        } else {
+            next.current = otherPlayer(game, player);
+            next.winLine = [];
+        }
+        return next;
+    }
+
+    function getQawaleHint(game, state) {
+        const immediate = getQawaleAiMoves(game, state, { limit: 3000 }).find(move => {
+            const next = applyQawaleMove(game, state, move);
+            return next.ended && next.winner === state.current;
+        });
+        if (immediate) {
+            return { index: immediate.placeIndex, text: `建议选择 ${formatPosition(immediate.placeIndex, game.columns)}，沿 ${immediate.path.map(index => formatPosition(index, game.columns)).join(' → ')} 移动可形成顶层四连。` };
+        }
+        const placements = getQawalePlacements(state)
+            .map(move => {
+                const stack = state.qawaleStacks[move.placeIndex];
+                return {
+                    ...move,
+                    score: stack.filter(stone => stone === state.current).length * 2 + stack.length
+                };
+            })
+            .sort((a, b) => b.score - a.score || a.index - b.index);
+        const best = placements[0];
+        return best ? { index: best.index, text: `建议选择 ${formatPosition(best.index, game.columns)}，该堆叠更有利于调度己方石子。` } : null;
     }
 
     function quoridorWallKey(size, row, col) {
@@ -815,6 +988,56 @@
             }
         },
         {
+            id: 'qawale',
+            name: '石连一线',
+            tag: '4 x 4',
+            color: '#f97316',
+            rows: 4,
+            columns: 4,
+            minSize: 4,
+            maxSize: 4,
+            sizeStep: 1,
+            goal: '顶层率先四石连线',
+            hintLabel: '堆叠调度与顶层连线',
+            summary: 'Qawale 石连一线：在已有堆上加石，拿起整堆逐格播撒底部石，争夺顶层四连。',
+            rules: ['棋盘为 4 × 4，四角各有 2 枚中立石。', '每方各 8 枚石子，每回合必须选择一个非空堆叠加己方石。', '拿起该堆后沿正交相邻格逐步移动，每步落下底部石，不能立即回到上一步位置。', '只按每格顶层石判断横、竖或斜向四连；双方石子用完且无人四连时平局。'],
+            players: [
+                { id: 'red', label: '红石', className: 'qawale-red' },
+                { id: 'blue', label: '蓝石', className: 'qawale-blue' }
+            ],
+            initialState() {
+                const state = createBaseState(boardTotal(this), 'red');
+                state.qawaleStacks = qawaleInitialStacks();
+                state.piecesLeft = { red: 8, blue: 8 };
+                return qawaleSyncBoard(state);
+            },
+            getLegalMoves(state) {
+                return getQawalePlacements(state);
+            },
+            getAiMoves(state, options) {
+                return getQawaleAiMoves(this, state, options);
+            },
+            isLegalMove(state, move) {
+                return isLegalQawaleMove(this, state, move);
+            },
+            applyMove(state, move) {
+                return applyQawaleMove(this, state, move);
+            },
+            getHint(state) {
+                return getQawaleHint(this, state);
+            },
+            analyze(state) {
+                const occupied = state.qawaleStacks.filter(stack => stack.length).length;
+                const maxHeight = state.qawaleStacks.reduce((max, stack) => Math.max(max, stack.length), 0);
+                return [
+                    { label: '红石剩余', value: state.piecesLeft.red, total: 8 },
+                    { label: '蓝石剩余', value: state.piecesLeft.blue, total: 8 },
+                    { label: '非空堆', value: occupied, total: boardTotal(this) },
+                    { label: '最高堆', value: maxHeight, total: 24 }
+                ];
+            }
+        },
+        {
             id: 'quoridor',
             name: '步步为营',
             tag: '9 x 9',
@@ -905,6 +1128,140 @@
             button.addEventListener('click', () => switchGame(game.id));
             refs.gameList.appendChild(button);
         });
+    }
+
+    function qawaleDraftBoard() {
+        return app.qawaleDraft ? app.qawaleDraft.board : app.state.qawaleStacks;
+    }
+
+    function qawaleDraftNextSteps(game) {
+        if (!app.qawaleDraft) return [];
+        return getQawaleNextSteps(game, app.qawaleDraft.currentIndex, app.qawaleDraft.previousIndex);
+    }
+
+    function startQawaleDraft(index) {
+        if (app.state.ended || isAiTurn() || app.aiThinking) return;
+        const stack = app.state.qawaleStacks[index];
+        if (!stack || !stack.length || !app.state.piecesLeft[app.state.current]) return;
+        const movingStack = stack.slice();
+        movingStack.push(app.state.current);
+        const board = app.state.qawaleStacks.map(item => item.slice());
+        board[index] = [];
+        app.qawaleDraft = {
+            player: app.state.current,
+            placeIndex: index,
+            board,
+            stack: movingStack,
+            currentIndex: index,
+            previousIndex: null,
+            path: []
+        };
+        app.hintIndex = null;
+        app.hintText = `已选择 ${formatPosition(index, app.game.columns)}，继续点击相邻格移动堆叠。`;
+        refresh();
+    }
+
+    function stepQawaleDraft(index) {
+        if (!app.qawaleDraft) return;
+        const nextSteps = qawaleDraftNextSteps(app.game);
+        if (!nextSteps.includes(index)) {
+            app.hintText = '只能移动到正交相邻格，且不能立即回到上一步位置。';
+            renderHint();
+            return;
+        }
+        const stone = app.qawaleDraft.stack.shift();
+        app.qawaleDraft.board[index].push(stone);
+        app.qawaleDraft.path.push(index);
+        app.qawaleDraft.previousIndex = app.qawaleDraft.currentIndex;
+        app.qawaleDraft.currentIndex = index;
+        if (!app.qawaleDraft.stack.length) {
+            const move = buildQawaleMove(app.qawaleDraft.placeIndex, app.qawaleDraft.path);
+            app.qawaleDraft = null;
+            playMove(move);
+            return;
+        }
+        app.hintText = `继续移动，还需落下 ${app.qawaleDraft.stack.length} 枚石子。`;
+        refresh();
+    }
+
+    function cancelQawaleDraft() {
+        if (!app.qawaleDraft) return;
+        app.qawaleDraft = null;
+        app.hintText = '';
+        refresh();
+    }
+
+    function renderQawaleBoard(game, state) {
+        const placements = new Map(game.getLegalMoves(state).map(move => [move.index, move]));
+        const draftBoard = qawaleDraftBoard();
+        const draftSteps = new Set(qawaleDraftNextSteps(game));
+        refs.board.className = `board qawale${app.qawaleDraft ? ' is-drafting' : ''}`;
+        refs.board.classList.toggle('is-ai-turn', isAiTurn() || app.aiThinking);
+        refs.board.style.setProperty('--cols', game.columns);
+        refs.board.style.setProperty('--rows', game.rows);
+        refs.board.innerHTML = '';
+
+        const tools = document.createElement('div');
+        tools.className = 'qawale-info';
+        const info = document.createElement('span');
+        info.textContent = app.qawaleDraft
+            ? `${playerInfo(game, app.qawaleDraft.player).label} 移动中 · 手中 ${app.qawaleDraft.stack.length} 枚 · 点击高亮相邻格`
+            : `${playerInfo(game, state.current).label} 行动中 · 红石 ${state.piecesLeft.red} / 蓝石 ${state.piecesLeft.blue} · 先选非空堆`;
+        tools.appendChild(info);
+        if (app.qawaleDraft) {
+            const cancel = document.createElement('button');
+            cancel.type = 'button';
+            cancel.className = 'btn btn-secondary qawale-cancel';
+            cancel.textContent = '取消选择';
+            cancel.addEventListener('click', cancelQawaleDraft);
+            tools.appendChild(cancel);
+        }
+        refs.board.appendChild(tools);
+
+        const grid = document.createElement('div');
+        grid.className = 'qawale-grid';
+
+        draftBoard.forEach((stack, index) => {
+            const placement = placements.get(index);
+            const canPlace = !app.qawaleDraft && placement;
+            const canStep = app.qawaleDraft && draftSteps.has(index);
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.className = 'cell qawale-cell';
+            cell.setAttribute('role', 'gridcell');
+            cell.setAttribute('aria-label', `${formatPosition(index, game.columns)} 堆高 ${stack.length}`);
+            if (stack.length) cell.classList.add('occupied');
+            if (canPlace || canStep) cell.classList.add('legal');
+            if (app.qawaleDraft && app.qawaleDraft.currentIndex === index) cell.classList.add('current-stack');
+            if (app.hintIndex === index) cell.classList.add('hint');
+            if (state.winLine && state.winLine.includes(index)) cell.classList.add('win');
+
+            const stackView = document.createElement('span');
+            stackView.className = 'qawale-stack';
+            stack.slice(-5).forEach(stone => {
+                const stoneEl = document.createElement('span');
+                stoneEl.className = `qawale-stone ${stone}`;
+                stackView.appendChild(stoneEl);
+            });
+            cell.appendChild(stackView);
+
+            const top = qawaleTop(stack);
+            if (top) {
+                const topLabel = document.createElement('span');
+                topLabel.className = `qawale-top ${top}`;
+                topLabel.textContent = stack.length;
+                cell.appendChild(topLabel);
+            }
+
+            cell.disabled = state.ended || isAiTurn() || app.aiThinking || (!canPlace && !canStep);
+            cell.addEventListener('click', () => {
+                if (app.qawaleDraft) stepQawaleDraft(index);
+                else startQawaleDraft(index);
+            });
+            grid.appendChild(cell);
+        });
+
+        refs.board.appendChild(grid);
     }
 
     function renderQuoridorBoard(game, state) {
@@ -998,6 +1355,10 @@
     function renderBoard() {
         const game = app.game;
         const state = app.state;
+        if (game.id === 'qawale') {
+            renderQawaleBoard(game, state);
+            return;
+        }
         if (game.id === 'quoridor') {
             renderQuoridorBoard(game, state);
             return;
@@ -1052,8 +1413,8 @@
         } else {
             refs.gameStatus.textContent = state.passMessage || '进行中';
         }
-        refs.undoBtn.disabled = app.history.length === 0 || app.aiThinking;
-        refs.hintBtn.disabled = state.ended || legalMoves.length === 0 || isAiTurn() || app.aiThinking;
+        refs.undoBtn.disabled = app.history.length === 0 || app.aiThinking || Boolean(app.qawaleDraft);
+        refs.hintBtn.disabled = state.ended || legalMoves.length === 0 || isAiTurn() || app.aiThinking || Boolean(app.qawaleDraft);
         refs.aiStatus.textContent = app.aiThinking ? 'AI 思考中' : isSinglePlayer() ? `AI：${aiLabel()} · ${aiDifficultyLabel()}` : '本地多人';
     }
 
@@ -1184,6 +1545,7 @@
         app.hintIndex = null;
         app.hintText = '';
         app.aiThinking = false;
+        app.qawaleDraft = null;
         clearAiTimer();
         refresh();
         scheduleAiMove();
@@ -1192,6 +1554,23 @@
     function playMove(move, options = {}) {
         if (move === null || move === undefined || app.state.ended || app.aiThinking) return;
         if (!options.ai && isAiTurn()) return;
+        if (app.game.id === 'qawale' && move.type === 'qawale') {
+            if (!app.game.isLegalMove(app.state, move)) {
+                app.hintIndex = null;
+                app.hintText = '该移动路径不符合石连一线规则。';
+                renderHint();
+                return;
+            }
+            app.history.push(cloneState(app.state));
+            if (app.history.length > 120) app.history.shift();
+            app.state = app.game.applyMove(app.state, move);
+            app.qawaleDraft = null;
+            app.hintIndex = null;
+            app.hintText = '';
+            refresh();
+            scheduleAiMove();
+            return;
+        }
         const legalMap = getLegalMap();
         const index = moveIndex(move);
         const legalMove = legalMap.get(index);
@@ -1217,6 +1596,7 @@
         app.history = [];
         app.hintIndex = null;
         app.hintText = '';
+        app.qawaleDraft = null;
         refresh();
         scheduleAiMove();
     }
@@ -1238,12 +1618,13 @@
         }
         app.hintIndex = null;
         app.hintText = '';
+        app.qawaleDraft = null;
         refresh();
         scheduleAiMove();
     }
 
     function showHint() {
-        if (app.state.ended || isAiTurn() || app.aiThinking) return;
+        if (app.state.ended || isAiTurn() || app.aiThinking || app.qawaleDraft) return;
         const hint = app.game.getHint(app.state);
         if (!hint) {
             app.hintIndex = null;

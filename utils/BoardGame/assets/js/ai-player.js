@@ -22,7 +22,9 @@
                 ? Object.fromEntries(Object.entries(state.players).map(([id, player]) => [id, { ...player }]))
                 : undefined,
             hWalls: state.hWalls ? state.hWalls.slice() : undefined,
-            vWalls: state.vWalls ? state.vWalls.slice() : undefined
+            vWalls: state.vWalls ? state.vWalls.slice() : undefined,
+            qawaleStacks: state.qawaleStacks ? state.qawaleStacks.map(stack => stack.slice()) : undefined,
+            piecesLeft: state.piecesLeft ? { ...state.piecesLeft } : undefined
         };
     }
 
@@ -54,8 +56,15 @@
         return game.rows + game.columns - Math.abs(row - rowCenter) - Math.abs(col - colCenter);
     }
 
+    function compareMoveOrder(a, b) {
+        const left = moveIndex(a);
+        const right = moveIndex(b);
+        if (typeof left === 'number' && typeof right === 'number') return left - right;
+        return String(left).localeCompare(String(right));
+    }
+
     function sortedByScore(items) {
-        return items.sort((a, b) => b.score - a.score || moveIndex(a.move) - moveIndex(b.move));
+        return items.sort((a, b) => b.score - a.score || compareMoveOrder(a.move, b.move));
     }
 
     function scoreLineWindow(own, opponent, empty, profile) {
@@ -275,6 +284,58 @@
         }
     }
 
+    function qawaleTopLineScore(game, state, player) {
+        const opponent = otherPlayer(game, player);
+        const lines = [
+            [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15],
+            [0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15],
+            [0, 5, 10, 15], [3, 6, 9, 12]
+        ];
+        return lines.reduce((score, line) => {
+            const own = line.filter(index => state.board[index] === player).length;
+            const opp = line.filter(index => state.board[index] === opponent).length;
+            if (own === 4) return score + 1000000;
+            if (opp === 4) return score - 1000000;
+            if (own && opp) return score;
+            if (own) return score + Math.pow(8, own);
+            if (opp) return score - Math.pow(8, opp) * 1.15;
+            return score;
+        }, 0);
+    }
+
+    function qawaleMoveScore(game, state, move, aiPlayer) {
+        const next = applyMove(game, state, move);
+        if (next.ended) {
+            if (next.winner === aiPlayer) return 10000000;
+            if (next.winner === 'draw') return 0;
+            return -10000000;
+        }
+        const stackScore = next.qawaleStacks.reduce((score, stack) => {
+            return score + stack.reduce((total, stone, depth) => {
+                if (stone === aiPlayer) return total + depth + 1;
+                if (stone && stone !== 'neutral') return total - (depth + 1) * 0.85;
+                return total;
+            }, 0);
+        }, 0);
+        return qawaleTopLineScore(game, next, aiPlayer) + stackScore * 0.35;
+    }
+
+    function chooseQawaleMove(game, state, options) {
+        const limits = {
+            beginner: 800,
+            easy: 1800,
+            medium: 3500,
+            hard: 5000
+        };
+        const aiPlayer = options.player || state.current;
+        const moves = game.getAiMoves ? game.getAiMoves(state, { limit: limits[options.difficulty] || limits.medium }) : legalMoves(game, state);
+        if (!moves.length) return null;
+        return sortedByScore(moves.map(move => ({
+            move,
+            score: qawaleMoveScore(game, state, move, aiPlayer)
+        })))[0].move;
+    }
+
     function moveScore(game, state, move, aiPlayer, profile, hint) {
         const next = applyMove(game, state, move);
         const index = moveIndex(move);
@@ -383,6 +444,7 @@
     }
 
     function chooseMove(game, state, options = {}) {
+        if (game.id === 'qawale') return chooseQawaleMove(game, state, options);
         const moves = legalMoves(game, state);
         if (!moves.length) return null;
         if (game.id === 'quoridor') return chooseQuoridorAiMainMove(state, moves, options.difficulty);
