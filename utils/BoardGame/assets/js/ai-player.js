@@ -448,6 +448,7 @@
         const moves = legalMoves(game, state);
         if (!moves.length) return null;
         if (game.id === 'quoridor') return chooseQuoridorAiMainMove(state, moves, options.difficulty);
+        if (game.id === 'gomoku') return window.WuziAI.chooseMove(game, state, options);
 
         const aiPlayer = options.player || state.current;
         const profile = difficultyProfile(options.difficulty);

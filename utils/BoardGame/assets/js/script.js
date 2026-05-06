@@ -35,7 +35,9 @@
         aiDifficulty: 'medium',
         aiTimer: null,
         aiThinking: false,
-        qawaleDraft: null
+        qawaleDraft: null,
+        reversiFlipAnimation: null,
+        reversiFlipTimer: null
     };
 
     const GOMOKU_DIRECTIONS = [
@@ -149,6 +151,28 @@
         }
     }
 
+    function clearReversiFlipAnimation() {
+        if (app.reversiFlipTimer) {
+            window.clearTimeout(app.reversiFlipTimer);
+            app.reversiFlipTimer = null;
+        }
+        app.reversiFlipAnimation = null;
+    }
+
+    function setReversiFlipAnimation(flips) {
+        clearReversiFlipAnimation();
+        if (!flips.length) return;
+        const key = Date.now();
+        app.reversiFlipAnimation = { key, flips };
+        app.reversiFlipTimer = window.setTimeout(() => {
+            if (app.reversiFlipAnimation && app.reversiFlipAnimation.key === key) {
+                app.reversiFlipAnimation = null;
+                app.reversiFlipTimer = null;
+                if (app.game && app.game.id === 'reversi') renderBoard();
+            }
+        }, 680);
+    }
+
     function setMode(mode) {
         app.mode = mode === 'single' ? 'single' : 'multi';
         refs.modeButtons.forEach(button => {
@@ -162,6 +186,7 @@
         app.hintText = '';
         app.aiThinking = false;
         app.qawaleDraft = null;
+        clearReversiFlipAnimation();
         clearAiTimer();
         refresh();
         scheduleAiMove();
@@ -1308,6 +1333,8 @@
                 const info = playerInfo(game, value);
                 const piece = document.createElement('span');
                 piece.className = `piece ${info.className}`;
+                const flip = reversiFlipMap.get(index);
+                if (flip) piece.classList.add('reversi-flip', `from-${flip.from}`, `to-${flip.to}`);
                 piece.textContent = info.symbol || '';
                 cell.appendChild(piece);
             }
@@ -1364,6 +1391,9 @@
             return;
         }
         const legalMap = getLegalMap();
+        const reversiFlipMap = game.id === 'reversi' && app.reversiFlipAnimation
+            ? new Map(app.reversiFlipAnimation.flips.map(item => [item.index, item]))
+            : new Map();
         refs.board.className = `board ${game.id}`;
         refs.board.classList.toggle('is-ai-turn', isAiTurn() || app.aiThinking);
         refs.board.style.setProperty('--cols', game.columns);
@@ -1389,6 +1419,8 @@
                 const info = playerInfo(game, value);
                 const piece = document.createElement('span');
                 piece.className = `piece ${info.className}`;
+                const flip = reversiFlipMap.get(index);
+                if (flip) piece.classList.add('reversi-flip', `from-${flip.from}`, `to-${flip.to}`);
                 piece.textContent = info.symbol || '';
                 cell.appendChild(piece);
             }
@@ -1527,12 +1559,13 @@
         clearAiTimer();
         if (!isAiTurn() || app.aiThinking) return;
 
+        const delay = app.aiDifficulty === 'hard' ? 0 : app.game && app.game.id === 'reversi' && app.reversiFlipAnimation ? 760 : 420;
         app.aiThinking = true;
         refresh();
         app.aiTimer = window.setTimeout(() => {
             app.aiTimer = null;
             performAiMove();
-        }, 420);
+        }, delay);
     }
 
     function switchGame(id) {
@@ -1546,6 +1579,7 @@
         app.hintText = '';
         app.aiThinking = false;
         app.qawaleDraft = null;
+        clearReversiFlipAnimation();
         clearAiTimer();
         refresh();
         scheduleAiMove();
@@ -1565,6 +1599,7 @@
             if (app.history.length > 120) app.history.shift();
             app.state = app.game.applyMove(app.state, move);
             app.qawaleDraft = null;
+            clearReversiFlipAnimation();
             app.hintIndex = null;
             app.hintText = '';
             refresh();
@@ -1580,9 +1615,14 @@
             renderHint();
             return;
         }
+        const reversiFlips = app.game.id === 'reversi'
+            ? (legalMove.flips || []).map(item => ({ index: item, from: app.state.board[item], to: app.state.current })).filter(item => item.from && item.from !== item.to)
+            : [];
         app.history.push(cloneState(app.state));
         if (app.history.length > 120) app.history.shift();
         app.state = app.game.applyMove(app.state, legalMove || move);
+        if (app.game.id === 'reversi') setReversiFlipAnimation(reversiFlips);
+        else clearReversiFlipAnimation();
         app.hintIndex = null;
         app.hintText = '';
         refresh();
@@ -1597,6 +1637,7 @@
         app.hintIndex = null;
         app.hintText = '';
         app.qawaleDraft = null;
+        clearReversiFlipAnimation();
         refresh();
         scheduleAiMove();
     }
@@ -1619,6 +1660,7 @@
         app.hintIndex = null;
         app.hintText = '';
         app.qawaleDraft = null;
+        clearReversiFlipAnimation();
         refresh();
         scheduleAiMove();
     }
