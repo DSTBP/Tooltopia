@@ -415,6 +415,9 @@
         if (game.id === 'quoridor') return chooseQuoridorAiMainMove(state, moves, options.difficulty);
         if (game.id === 'gomoku') return window.WuziAI.chooseMove(game, state, options);
         if (game.id === 'reversi') return window.ReversiAI.chooseMove(game, state, options);
+        if (game.id === 'draughts') return window.DraughtsAI.chooseMove(game, state, options);
+        if (game.id === 'animalchess') return window.AnimalChessAI.chooseMove(game, state, options);
+        if (game.id === 'chinese-checkers') return window.ChineseCheckersAI.chooseMove(game, state, options);
 
         const aiPlayer = options.player || state.current;
         const profile = difficultyProfile(options.difficulty);

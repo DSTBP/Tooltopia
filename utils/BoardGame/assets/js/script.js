@@ -36,6 +36,11 @@
         aiTimer: null,
         aiThinking: false,
         qawaleDraft: null,
+        draughtsSelection: null,
+        animalChessSelection: null,
+        chineseCheckersSelection: null,
+        chineseCheckersAnimation: null,
+        chineseCheckersAnimationTimer: null,
         reversiFlipAnimation: null,
         reversiFlipTimer: null
     };
@@ -53,6 +58,48 @@
     const QAWALE_DIRECTIONS = [
         [-1, 0], [1, 0], [0, -1], [0, 1]
     ];
+
+    const DRAUGHTS_DIRECTIONS = [
+        [-1, -1], [-1, 1], [1, -1], [1, 1]
+    ];
+
+    const ANIMAL_CHESS_DIRECTIONS = [
+        [-1, 0], [1, 0], [0, -1], [0, 1]
+    ];
+
+    const ANIMAL_CHESS_RANKS = { R: 1, C: 2, D: 3, W: 4, P: 5, T: 6, L: 7, E: 8 };
+    const ANIMAL_CHESS_VALUES = { R: 100, C: 50, D: 70, W: 60, P: 80, T: 110, L: 120, E: 120 };
+    const ANIMAL_CHESS_NAMES = { R: '鼠', C: '猫', D: '狗', W: '狼', P: '豹', T: '虎', L: '狮', E: '象' };
+    const ANIMAL_CHESS_DENS = { black: 3, red: 59 };
+    const ANIMAL_CHESS_TRAPS = {
+        black: new Set([2, 4, 10]),
+        red: new Set([52, 58, 60])
+    };
+    const ANIMAL_CHESS_RIVERS = new Set([22, 23, 25, 26, 29, 30, 32, 33, 36, 37, 39, 40]);
+
+    const CHINESE_CHECKERS_ROW_COUNTS = [1, 2, 3, 4, 13, 12, 11, 10, 9, 10, 11, 12, 13, 4, 3, 2, 1];
+
+    const CHINESE_CHECKERS_DIRECTIONS = [
+        [0, -2], [0, 2], [-1, -1], [-1, 1], [1, -1], [1, 1]
+    ];
+
+    const CHINESE_CHECKERS_OFFSETS = CHINESE_CHECKERS_ROW_COUNTS.reduce((offsets, count, row) => {
+        offsets.push(row === 0 ? 0 : offsets[row - 1] + CHINESE_CHECKERS_ROW_COUNTS[row - 1]);
+        return offsets;
+    }, []);
+
+    const CHINESE_CHECKERS_POSITIONS = CHINESE_CHECKERS_ROW_COUNTS.flatMap((count, row) => {
+        return Array.from({ length: count }, (_, col) => ({ row, col, index: CHINESE_CHECKERS_OFFSETS[row] + col }));
+    });
+
+    const CHINESE_CHECKERS_CAMPS = {
+        red: [
+            { row: 16, col: 0 }, { row: 15, col: 0 }, { row: 15, col: 1 }, { row: 14, col: 0 }, { row: 14, col: 1 }, { row: 14, col: 2 }, { row: 13, col: 0 }, { row: 13, col: 1 }, { row: 13, col: 2 }, { row: 13, col: 3 }
+        ],
+        blue: [
+            { row: 0, col: 0 }, { row: 1, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 3, col: 0 }, { row: 3, col: 1 }, { row: 3, col: 2 }, { row: 3, col: 3 }
+        ]
+    };
 
     function cloneState(state) {
         return {
@@ -108,10 +155,23 @@
     }
 
     function boardTotal(game) {
+        if (game.totalCells) return game.totalCells;
         return game.rows * game.columns;
     }
 
     function setGameSize(game, size) {
+        if (game.id === 'chinese-checkers') {
+            game.rows = 17;
+            game.columns = 13;
+            game.tag = '17 行星形棋盘';
+            return;
+        }
+        if (game.id === 'animalchess') {
+            game.rows = 9;
+            game.columns = 7;
+            game.tag = '9 x 7';
+            return;
+        }
         game.rows = size;
         game.columns = size;
         game.tag = `${size} x ${size}`;
@@ -159,6 +219,30 @@
         app.reversiFlipAnimation = null;
     }
 
+    function clearChineseCheckersAnimation() {
+        if (app.chineseCheckersAnimationTimer) {
+            window.clearTimeout(app.chineseCheckersAnimationTimer);
+            app.chineseCheckersAnimationTimer = null;
+        }
+        app.chineseCheckersAnimation = null;
+    }
+
+    function setChineseCheckersAnimation(move, player) {
+        clearChineseCheckersAnimation();
+        const path = (move.path && move.path.length > 1 ? move.path : [move.from, move.to]).filter(index => index !== null && index !== undefined);
+        if (path.length < 2) return;
+        const key = Date.now();
+        const duration = Math.max(360, (path.length - 1) * 360);
+        app.chineseCheckersAnimation = { key, path, player, to: move.to, duration };
+        app.chineseCheckersAnimationTimer = window.setTimeout(() => {
+            if (app.chineseCheckersAnimation && app.chineseCheckersAnimation.key === key) {
+                app.chineseCheckersAnimation = null;
+                app.chineseCheckersAnimationTimer = null;
+                if (app.game && app.game.id === 'chinese-checkers') renderBoard();
+            }
+        }, duration + 90);
+    }
+
     function setReversiFlipAnimation(flips) {
         clearReversiFlipAnimation();
         if (!flips.length) return;
@@ -186,6 +270,10 @@
         app.hintText = '';
         app.aiThinking = false;
         app.qawaleDraft = null;
+        app.draughtsSelection = null;
+        app.animalChessSelection = null;
+        app.chineseCheckersSelection = null;
+        clearChineseCheckersAnimation();
         clearReversiFlipAnimation();
         clearAiTimer();
         refresh();
@@ -463,6 +551,489 @@
         return { index: best.index, text: `建议落在 ${formatPosition(best.index, size)}，${reason}` };
     }
 
+    function draughtsOwner(piece) {
+        if (!piece) return null;
+        return piece.startsWith('white') ? 'white' : 'black';
+    }
+
+    function draughtsIsKing(piece) {
+        return piece === 'whiteKing' || piece === 'blackKing';
+    }
+
+    function draughtsPiece(player, king = false) {
+        return king ? `${player}King` : player;
+    }
+
+    function draughtsIndex(row, col) {
+        return row * 10 + col;
+    }
+
+    function draughtsPosition(index) {
+        return { row: Math.floor(index / 10), col: index % 10 };
+    }
+
+    function draughtsInBounds(row, col) {
+        return row >= 0 && row < 10 && col >= 0 && col < 10;
+    }
+
+    function draughtsIsPlayable(row, col) {
+        return (row + col) % 2 === 1;
+    }
+
+    function draughtsLabel(index) {
+        const pos = draughtsPosition(index);
+        return `R${pos.row + 1} C${pos.col + 1}`;
+    }
+
+    function draughtsMoveKey(from, path, captures) {
+        return `draughts:${from}:${path.join('-')}:${captures.join('-')}`;
+    }
+
+    function draughtsMoveText(move) {
+        const route = move.path.map(draughtsLabel).join(' → ');
+        return move.captures.length ? `${route}，吃 ${move.captures.length} 子` : route;
+    }
+
+    function draughtsInitialState(game) {
+        const state = createBaseState(boardTotal(game), 'white');
+        for (let row = 0; row < 10; row += 1) {
+            for (let col = 0; col < 10; col += 1) {
+                if (!draughtsIsPlayable(row, col)) continue;
+                const index = draughtsIndex(row, col);
+                if (row < 4) state.board[index] = 'black';
+                if (row > 5) state.board[index] = 'white';
+            }
+        }
+        return state;
+    }
+
+    function draughtsPromote(piece, index) {
+        const owner = draughtsOwner(piece);
+        const row = draughtsPosition(index).row;
+        if (piece === 'white' && row === 0) return 'whiteKing';
+        if (piece === 'black' && row === 9) return 'blackKing';
+        return draughtsPiece(owner, draughtsIsKing(piece));
+    }
+
+    function draughtsMoveObject(from, path, captures) {
+        const to = path[path.length - 1];
+        return {
+            type: 'draughts',
+            index: draughtsMoveKey(from, path, captures),
+            from,
+            to,
+            path: path.slice(),
+            captures: captures.slice()
+        };
+    }
+
+    function collectDraughtsManCaptures(board, player, from, path, captures, output) {
+        let found = false;
+        const piece = board[from];
+        const pos = draughtsPosition(from);
+        for (const [dr, dc] of DRAUGHTS_DIRECTIONS) {
+            const midRow = pos.row + dr;
+            const midCol = pos.col + dc;
+            const landRow = pos.row + dr * 2;
+            const landCol = pos.col + dc * 2;
+            if (!draughtsInBounds(landRow, landCol)) continue;
+            const middle = draughtsIndex(midRow, midCol);
+            const landing = draughtsIndex(landRow, landCol);
+            if (draughtsOwner(board[middle]) !== (player === 'white' ? 'black' : 'white') || board[landing]) continue;
+            found = true;
+            const nextBoard = board.slice();
+            nextBoard[from] = null;
+            nextBoard[middle] = null;
+            nextBoard[landing] = piece;
+            collectDraughtsManCaptures(nextBoard, player, landing, path.concat(landing), captures.concat(middle), output);
+        }
+        if (!found && captures.length) output.push(draughtsMoveObject(path[0], path, captures));
+    }
+
+    function collectDraughtsKingCaptures(board, player, from, path, captures, output) {
+        let found = false;
+        const piece = board[from];
+        const pos = draughtsPosition(from);
+        const opponent = player === 'white' ? 'black' : 'white';
+        for (const [dr, dc] of DRAUGHTS_DIRECTIONS) {
+            let row = pos.row + dr;
+            let col = pos.col + dc;
+            while (draughtsInBounds(row, col) && !board[draughtsIndex(row, col)]) {
+                row += dr;
+                col += dc;
+            }
+            if (!draughtsInBounds(row, col)) continue;
+            const captured = draughtsIndex(row, col);
+            if (draughtsOwner(board[captured]) !== opponent) continue;
+            row += dr;
+            col += dc;
+            while (draughtsInBounds(row, col) && !board[draughtsIndex(row, col)]) {
+                found = true;
+                const landing = draughtsIndex(row, col);
+                const nextBoard = board.slice();
+                nextBoard[from] = null;
+                nextBoard[captured] = null;
+                nextBoard[landing] = piece;
+                collectDraughtsKingCaptures(nextBoard, player, landing, path.concat(landing), captures.concat(captured), output);
+                row += dr;
+                col += dc;
+            }
+        }
+        if (!found && captures.length) output.push(draughtsMoveObject(path[0], path, captures));
+    }
+
+    function draughtsCapturesFrom(board, player, from) {
+        const piece = board[from];
+        if (draughtsOwner(piece) !== player) return [];
+        const output = [];
+        if (draughtsIsKing(piece)) collectDraughtsKingCaptures(board, player, from, [from], [], output);
+        else collectDraughtsManCaptures(board, player, from, [from], [], output);
+        return output;
+    }
+
+    function draughtsSimpleMovesFrom(board, player, from) {
+        const piece = board[from];
+        if (draughtsOwner(piece) !== player) return [];
+        const pos = draughtsPosition(from);
+        const moves = [];
+        if (draughtsIsKing(piece)) {
+            for (const [dr, dc] of DRAUGHTS_DIRECTIONS) {
+                let row = pos.row + dr;
+                let col = pos.col + dc;
+                while (draughtsInBounds(row, col) && !board[draughtsIndex(row, col)]) {
+                    const to = draughtsIndex(row, col);
+                    moves.push(draughtsMoveObject(from, [from, to], []));
+                    row += dr;
+                    col += dc;
+                }
+            }
+            return moves;
+        }
+        const forward = player === 'white' ? -1 : 1;
+        for (const dc of [-1, 1]) {
+            const row = pos.row + forward;
+            const col = pos.col + dc;
+            if (!draughtsInBounds(row, col)) continue;
+            const to = draughtsIndex(row, col);
+            if (!board[to]) moves.push(draughtsMoveObject(from, [from, to], []));
+        }
+        return moves;
+    }
+
+    function getDraughtsMoves(game, state) {
+        if (state.ended) return [];
+        const captures = [];
+        const quietMoves = [];
+        state.board.forEach((piece, index) => {
+            if (draughtsOwner(piece) !== state.current) return;
+            captures.push(...draughtsCapturesFrom(state.board, state.current, index));
+            quietMoves.push(...draughtsSimpleMovesFrom(state.board, state.current, index));
+        });
+        if (captures.length) {
+            const maxCaptures = captures.reduce((max, move) => Math.max(max, move.captures.length), 0);
+            return captures.filter(move => move.captures.length === maxCaptures);
+        }
+        return quietMoves;
+    }
+
+    function applyDraughtsMove(game, state, move) {
+        const player = state.current;
+        const opponent = otherPlayer(game, player);
+        const next = cloneState(state);
+        const piece = next.board[move.from];
+        next.board[move.from] = null;
+        move.captures.forEach(index => { next.board[index] = null; });
+        next.board[move.to] = draughtsPromote(piece, move.to);
+        next.moveCount += 1;
+        next.moves.push({ player, index: move.index, text: `${playerInfo(game, player).label} ${draughtsMoveText(move)}` });
+        next.passMessage = '';
+        next.winLine = move.path.slice();
+        const opponentPieces = next.board.filter(item => draughtsOwner(item) === opponent).length;
+        if (opponentPieces === 0) {
+            next.ended = true;
+            next.winner = player;
+            return next;
+        }
+        next.current = opponent;
+        if (!getDraughtsMoves(game, next).length) {
+            next.ended = true;
+            next.winner = player;
+            next.current = opponent;
+        }
+        return next;
+    }
+
+    function getDraughtsHint(game, state) {
+        const moves = getDraughtsMoves(game, state);
+        if (!moves.length) return null;
+        const player = state.current;
+        const best = moves.slice().sort((a, b) => {
+            const captureDelta = b.captures.length - a.captures.length;
+            if (captureDelta) return captureDelta;
+            const pieceA = state.board[a.from];
+            const pieceB = state.board[b.from];
+            const promoteA = !draughtsIsKing(pieceA) && draughtsIsKing(draughtsPromote(pieceA, a.to)) ? 1 : 0;
+            const promoteB = !draughtsIsKing(pieceB) && draughtsIsKing(draughtsPromote(pieceB, b.to)) ? 1 : 0;
+            if (promoteA !== promoteB) return promoteB - promoteA;
+            const rowA = draughtsPosition(a.to).row;
+            const rowB = draughtsPosition(b.to).row;
+            const progressA = player === 'white' ? 9 - rowA : rowA;
+            const progressB = player === 'white' ? 9 - rowB : rowB;
+            return progressB - progressA;
+        })[0];
+        const reason = best.captures.length
+            ? `符合最长吃子规则，可连续吃 ${best.captures.length} 子。`
+            : draughtsIsKing(draughtsPromote(state.board[best.from], best.to)) && !draughtsIsKing(state.board[best.from])
+                ? '可以升为王棋。'
+                : '有利于向升王线推进并保持中心活动力。';
+        return { index: best.to, text: `建议 ${draughtsMoveText(best)}，${reason}` };
+    }
+
+    function countDraughtsPieces(board) {
+        return board.reduce((counts, piece) => {
+            if (piece === 'white') counts.white += 1;
+            if (piece === 'black') counts.black += 1;
+            if (piece === 'whiteKing') counts.whiteKing += 1;
+            if (piece === 'blackKing') counts.blackKing += 1;
+            return counts;
+        }, { white: 0, black: 0, whiteKing: 0, blackKing: 0 });
+    }
+
+    function animalChessIndex(row, col) {
+        return row * 7 + col;
+    }
+
+    function animalChessPosition(index) {
+        return { row: Math.floor(index / 7), col: index % 7 };
+    }
+
+    function animalChessInBounds(row, col) {
+        return row >= 0 && row < 9 && col >= 0 && col < 7;
+    }
+
+    function animalChessOwner(piece) {
+        if (!piece) return null;
+        return piece[0] === 'r' ? 'red' : 'black';
+    }
+
+    function animalChessKind(piece) {
+        return piece ? piece[1] : null;
+    }
+
+    function animalChessPiece(player, kind) {
+        return `${player === 'red' ? 'r' : 'b'}${kind}`;
+    }
+
+    function animalChessLabel(index) {
+        const pos = animalChessPosition(index);
+        return `R${pos.row + 1} C${pos.col + 1}`;
+    }
+
+    function animalChessPieceLabel(piece) {
+        return piece ? `${animalChessOwner(piece) === 'red' ? '红' : '黑'}${ANIMAL_CHESS_NAMES[animalChessKind(piece)]}` : '空位';
+    }
+
+    function animalChessImage(piece) {
+        return `./assets/img/animalchess-${piece.toLowerCase()}.png`;
+    }
+
+    function animalChessTrapOwner(index) {
+        if (ANIMAL_CHESS_TRAPS.black.has(index)) return 'black';
+        if (ANIMAL_CHESS_TRAPS.red.has(index)) return 'red';
+        return null;
+    }
+
+    function animalChessDenOwner(index) {
+        if (index === ANIMAL_CHESS_DENS.black) return 'black';
+        if (index === ANIMAL_CHESS_DENS.red) return 'red';
+        return null;
+    }
+
+    function animalChessTerrainName(index) {
+        const den = animalChessDenOwner(index);
+        const trap = animalChessTrapOwner(index);
+        if (den) return `${den === 'red' ? '红方' : '黑方'}兽穴`;
+        if (trap) return `${trap === 'red' ? '红方' : '黑方'}陷阱`;
+        if (ANIMAL_CHESS_RIVERS.has(index)) return '河流';
+        return '陆地';
+    }
+
+    function animalChessInitialState(game) {
+        const state = createBaseState(boardTotal(game), 'red');
+        const placements = {
+            0: 'bL', 6: 'bT', 8: 'bD', 12: 'bC', 14: 'bR', 16: 'bP', 18: 'bW', 20: 'bE',
+            42: 'rE', 44: 'rW', 46: 'rP', 48: 'rR', 50: 'rC', 54: 'rD', 56: 'rT', 62: 'rL'
+        };
+        Object.entries(placements).forEach(([index, piece]) => {
+            state.board[Number(index)] = piece;
+        });
+        return state;
+    }
+
+    function canAnimalChessCapture(board, from, to) {
+        const attacker = board[from];
+        const target = board[to];
+        if (!attacker || !target || animalChessOwner(attacker) === animalChessOwner(target)) return false;
+        const attackerOwner = animalChessOwner(attacker);
+        const attackerKind = animalChessKind(attacker);
+        const targetKind = animalChessKind(target);
+        if (animalChessTrapOwner(to) === attackerOwner) return true;
+        const fromRiver = ANIMAL_CHESS_RIVERS.has(from);
+        const toRiver = ANIMAL_CHESS_RIVERS.has(to);
+        if (attackerKind === 'E' && targetKind === 'R') return false;
+        if (attackerKind === 'R') {
+            if (fromRiver || toRiver) return targetKind === 'R' && fromRiver && toRiver;
+            if (targetKind === 'E') return true;
+        }
+        if (fromRiver || toRiver) return false;
+        return ANIMAL_CHESS_RANKS[attackerKind] >= ANIMAL_CHESS_RANKS[targetKind];
+    }
+
+    function canAnimalChessLand(board, player, from, to) {
+        if (ANIMAL_CHESS_DENS[player] === to) return false;
+        const piece = board[from];
+        if (!piece) return false;
+        if (ANIMAL_CHESS_RIVERS.has(to) && animalChessKind(piece) !== 'R') return false;
+        const target = board[to];
+        if (!target) return true;
+        return canAnimalChessCapture(board, from, to);
+    }
+
+    function animalChessMoveObject(board, from, to) {
+        return {
+            type: 'animalchess',
+            index: `animalchess:${from}-${to}`,
+            from,
+            to,
+            piece: board[from],
+            capture: board[to] || null
+        };
+    }
+
+    function animalChessJumpTarget(board, player, from, dr, dc) {
+        let pos = animalChessPosition(from);
+        let row = pos.row + dr;
+        let col = pos.col + dc;
+        if (!animalChessInBounds(row, col) || !ANIMAL_CHESS_RIVERS.has(animalChessIndex(row, col))) return null;
+        while (animalChessInBounds(row, col) && ANIMAL_CHESS_RIVERS.has(animalChessIndex(row, col))) {
+            const riverIndex = animalChessIndex(row, col);
+            if (animalChessKind(board[riverIndex]) === 'R') return null;
+            row += dr;
+            col += dc;
+        }
+        if (!animalChessInBounds(row, col)) return null;
+        const to = animalChessIndex(row, col);
+        return canAnimalChessLand(board, player, from, to) ? to : null;
+    }
+
+    function animalChessMovesFrom(board, player, from) {
+        const piece = board[from];
+        if (animalChessOwner(piece) !== player) return [];
+        const kind = animalChessKind(piece);
+        const pos = animalChessPosition(from);
+        const moves = [];
+        for (const [dr, dc] of ANIMAL_CHESS_DIRECTIONS) {
+            const row = pos.row + dr;
+            const col = pos.col + dc;
+            if (!animalChessInBounds(row, col)) continue;
+            const to = animalChessIndex(row, col);
+            if ((kind === 'L' || kind === 'T') && ANIMAL_CHESS_RIVERS.has(to)) {
+                const jump = animalChessJumpTarget(board, player, from, dr, dc);
+                if (jump !== null) moves.push(animalChessMoveObject(board, from, jump));
+                continue;
+            }
+            if (canAnimalChessLand(board, player, from, to)) moves.push(animalChessMoveObject(board, from, to));
+        }
+        return moves;
+    }
+
+    function getAnimalChessMoves(game, state) {
+        if (state.ended) return [];
+        return state.board.reduce((moves, piece, index) => {
+            if (animalChessOwner(piece) === state.current) moves.push(...animalChessMovesFrom(state.board, state.current, index));
+            return moves;
+        }, []);
+    }
+
+    function animalChessMoveText(move) {
+        const capture = move.capture ? `，吃 ${animalChessPieceLabel(move.capture)}` : '';
+        return `${animalChessPieceLabel(move.piece)} ${animalChessLabel(move.from)} → ${animalChessLabel(move.to)}${capture}`;
+    }
+
+    function applyAnimalChessMove(game, state, move) {
+        const player = state.current;
+        const opponent = otherPlayer(game, player);
+        const next = cloneState(state);
+        const piece = next.board[move.from];
+        const captured = next.board[move.to];
+        next.board[move.from] = null;
+        next.board[move.to] = piece;
+        next.moveCount += 1;
+        next.moves.push({ player, index: move.index, text: `${playerInfo(game, player).label} ${animalChessMoveText({ ...move, piece, capture: captured })}` });
+        next.passMessage = '';
+        next.winLine = [move.from, move.to];
+        if (move.to === ANIMAL_CHESS_DENS[opponent]) {
+            next.ended = true;
+            next.winner = player;
+            next.winLine = [move.to];
+            return next;
+        }
+        if (!next.board.some(item => animalChessOwner(item) === opponent)) {
+            next.ended = true;
+            next.winner = player;
+            return next;
+        }
+        next.current = opponent;
+        if (!getAnimalChessMoves(game, next).length) {
+            next.ended = true;
+            next.winner = player;
+        }
+        return next;
+    }
+
+    function animalChessDistanceToDen(player, index) {
+        const target = animalChessPosition(ANIMAL_CHESS_DENS[player === 'red' ? 'black' : 'red']);
+        const pos = animalChessPosition(index);
+        return Math.abs(pos.row - target.row) + Math.abs(pos.col - target.col);
+    }
+
+    function animalChessMoveScore(board, move, player) {
+        const opponent = player === 'red' ? 'black' : 'red';
+        if (move.to === ANIMAL_CHESS_DENS[opponent]) return 1000000;
+        const piece = board[move.from];
+        const captureScore = board[move.to] ? ANIMAL_CHESS_VALUES[animalChessKind(board[move.to])] * 12 : 0;
+        const progress = (animalChessDistanceToDen(player, move.from) - animalChessDistanceToDen(player, move.to)) * 24;
+        const trap = animalChessTrapOwner(move.to) === opponent ? 38 : 0;
+        const strength = ANIMAL_CHESS_VALUES[animalChessKind(piece)] * 0.12;
+        return captureScore + progress + trap + strength;
+    }
+
+    function getAnimalChessHint(game, state) {
+        const moves = getAnimalChessMoves(game, state);
+        if (!moves.length) return null;
+        const best = moves.slice().sort((a, b) => animalChessMoveScore(state.board, b, state.current) - animalChessMoveScore(state.board, a, state.current) || String(a.index).localeCompare(String(b.index)))[0];
+        const opponent = otherPlayer(game, state.current);
+        const reason = best.to === ANIMAL_CHESS_DENS[opponent]
+            ? '可直接进入对方兽穴获胜。'
+            : best.capture
+                ? `可以吃掉 ${animalChessPieceLabel(best.capture)}。`
+                : animalChessTrapOwner(best.to) === opponent
+                    ? '靠近对方兽穴，准备借助陷阱突破。'
+                    : '能向对方兽穴推进并保持行动力。';
+        return { index: best.index, text: `建议 ${animalChessMoveText(best)}，${reason}` };
+    }
+
+    function countAnimalChessPieces(board) {
+        return board.reduce((counts, piece) => {
+            const owner = animalChessOwner(piece);
+            if (owner) {
+                counts[owner] += 1;
+                counts.total += 1;
+            }
+            return counts;
+        }, { red: 0, black: 0, total: 0 });
+    }
+
     function qawaleTop(stack) {
         return stack.length ? stack[stack.length - 1] : null;
     }
@@ -626,6 +1197,189 @@
             .sort((a, b) => b.score - a.score || a.index - b.index);
         const best = placements[0];
         return best ? { index: best.index, text: `建议选择 ${formatPosition(best.index, game.columns)}，该堆叠更有利于调度己方石子。` } : null;
+    }
+
+    function chineseCheckersIndex(row, col) {
+        if (row < 0 || row >= CHINESE_CHECKERS_ROW_COUNTS.length || col < 0 || col >= CHINESE_CHECKERS_ROW_COUNTS[row]) return -1;
+        return CHINESE_CHECKERS_OFFSETS[row] + col;
+    }
+
+    function chineseCheckersPosition(index) {
+        return CHINESE_CHECKERS_POSITIONS[index] || null;
+    }
+
+    function chineseCheckersCoordX(row, col) {
+        return col * 2 - CHINESE_CHECKERS_ROW_COUNTS[row] + 1;
+    }
+
+    function chineseCheckersIndexByCoord(row, x) {
+        if (row < 0 || row >= CHINESE_CHECKERS_ROW_COUNTS.length) return -1;
+        const count = CHINESE_CHECKERS_ROW_COUNTS[row];
+        const col = (x + count - 1) / 2;
+        if (!Number.isInteger(col)) return -1;
+        return chineseCheckersIndex(row, col);
+    }
+
+    function chineseCheckersLabel(index) {
+        const pos = chineseCheckersPosition(index);
+        return pos ? `R${pos.row + 1} C${pos.col + 1}` : '-';
+    }
+
+    function chineseCheckersBoardPoint(index) {
+        const pos = chineseCheckersPosition(index);
+        if (!pos) return { x: 50, y: 50 };
+        const x = chineseCheckersCoordX(pos.row, pos.col);
+        return {
+            x: 50 + (x / 24) * 88,
+            y: 12 + (pos.row / 16) * 80
+        };
+    }
+
+    function chineseCheckersAnimationCss(animation) {
+        const points = animation.path.map(chineseCheckersBoardPoint);
+        const segments = Math.max(1, points.length - 1);
+        const frames = [];
+        for (let index = 0; index < segments; index += 1) {
+            const from = points[index];
+            const to = points[index + 1];
+            const start = (index / segments) * 100;
+            const mid = ((index + 0.5) / segments) * 100;
+            const end = ((index + 1) / segments) * 100;
+            frames.push(`${start}%{left:${from.x}%;top:${from.y}%;transform:translate(-50%,-50%) scale(1);}`);
+            frames.push(`${mid}%{left:${(from.x + to.x) / 2}%;top:${Math.min(from.y, to.y) - 3.8}%;transform:translate(-50%,-50%) scale(1.18);}`);
+            frames.push(`${end}%{left:${to.x}%;top:${to.y}%;transform:translate(-50%,-50%) scale(1);}`);
+        }
+        return `@keyframes cc-jump-${animation.key}{${frames.join('')}}`;
+    }
+
+    function chineseCheckersCampIndexes(player) {
+        return CHINESE_CHECKERS_CAMPS[player].map(pos => chineseCheckersIndex(pos.row, pos.col));
+    }
+
+    function chineseCheckersTarget(player) {
+        return player === 'red' ? chineseCheckersCampIndexes('blue') : chineseCheckersCampIndexes('red');
+    }
+
+    function chineseCheckersDistance(index, player) {
+        const pos = chineseCheckersPosition(index);
+        if (!pos) return 0;
+        return player === 'red' ? CHINESE_CHECKERS_ROW_COUNTS.length - 1 - pos.row : pos.row;
+    }
+
+    function chineseCheckersMoveKey(from, to) {
+        return `cc:${from}:${to}`;
+    }
+
+    function chineseCheckersMoveText(move) {
+        return `${chineseCheckersLabel(move.from)} → ${chineseCheckersLabel(move.to)}${move.jump ? `，跳跃 ${move.jumpCount || 1} 次` : ''}`;
+    }
+
+    function chineseCheckersInitialState(game) {
+        const state = createBaseState(boardTotal(game), 'red');
+        chineseCheckersCampIndexes('red').forEach(index => { state.board[index] = 'red'; });
+        chineseCheckersCampIndexes('blue').forEach(index => { state.board[index] = 'blue'; });
+        return state;
+    }
+
+    function chineseCheckersStepTargets(index) {
+        const pos = chineseCheckersPosition(index);
+        if (!pos) return [];
+        const x = chineseCheckersCoordX(pos.row, pos.col);
+        return CHINESE_CHECKERS_DIRECTIONS
+            .map(([dr, dx]) => chineseCheckersIndexByCoord(pos.row + dr, x + dx))
+            .filter(item => item >= 0);
+    }
+
+    function chineseCheckersJumpMoves(board, from, player) {
+        const output = [];
+        const visited = new Set([from]);
+        const queue = [{ index: from, path: [from] }];
+        let cursor = 0;
+        while (cursor < queue.length) {
+            const current = queue[cursor];
+            cursor += 1;
+            const pos = chineseCheckersPosition(current.index);
+            const x = chineseCheckersCoordX(pos.row, pos.col);
+            for (const [dr, dx] of CHINESE_CHECKERS_DIRECTIONS) {
+                const middle = chineseCheckersIndexByCoord(pos.row + dr, x + dx);
+                const landing = chineseCheckersIndexByCoord(pos.row + dr * 2, x + dx * 2);
+                if (middle < 0 || landing < 0 || !board[middle] || board[landing] || visited.has(landing)) continue;
+                visited.add(landing);
+                const path = current.path.concat(landing);
+                output.push({
+                    type: 'chinese-checkers',
+                    index: chineseCheckersMoveKey(from, landing),
+                    from,
+                    to: landing,
+                    player,
+                    jump: true,
+                    jumpCount: path.length - 1,
+                    path
+                });
+                queue.push({ index: landing, path });
+            }
+        }
+        return output;
+    }
+
+    function getChineseCheckersMovesFrom(game, state, from) {
+        if (state.board[from] !== state.current) return [];
+        const stepMoves = chineseCheckersStepTargets(from)
+            .filter(index => !state.board[index])
+            .map(to => ({
+                type: 'chinese-checkers',
+                index: chineseCheckersMoveKey(from, to),
+                from,
+                to,
+                player: state.current,
+                jump: false,
+                jumpCount: 0,
+                path: [from, to]
+            }));
+        return stepMoves.concat(chineseCheckersJumpMoves(state.board, from, state.current));
+    }
+
+    function getChineseCheckersMoves(game, state) {
+        if (state.ended) return [];
+        return state.board.reduce((moves, value, index) => {
+            if (value === state.current) moves.push(...getChineseCheckersMovesFrom(game, state, index));
+            return moves;
+        }, []);
+    }
+
+    function chineseCheckersHasWon(state, player) {
+        const target = chineseCheckersTarget(player);
+        return target.every(index => state.board[index] === player);
+    }
+
+    function applyChineseCheckersMove(game, state, move) {
+        const player = state.current;
+        const next = cloneState(state);
+        next.board[move.from] = null;
+        next.board[move.to] = player;
+        next.moveCount += 1;
+        next.passMessage = '';
+        next.moves.push({ player, index: move.index, text: `${playerInfo(game, player).label} ${chineseCheckersMoveText(move)}` });
+        if (chineseCheckersHasWon(next, player)) {
+            next.ended = true;
+            next.winner = player;
+            next.winLine = chineseCheckersTarget(player);
+        } else {
+            next.current = otherPlayer(game, player);
+            next.winLine = [];
+        }
+        return next;
+    }
+
+    function getChineseCheckersHint(game, state) {
+        const moves = getChineseCheckersMoves(game, state);
+        if (!moves.length) return null;
+        const scored = moves.map(move => {
+            const gain = chineseCheckersDistance(move.to, state.current) - chineseCheckersDistance(move.from, state.current);
+            return { move, score: gain * 10 + (move.jumpCount || 0) * 4 - Math.abs((chineseCheckersPosition(move.to)?.col || 0) - 4) };
+        }).sort((a, b) => b.score - a.score || String(a.move.index).localeCompare(String(b.move.index)));
+        const best = scored[0].move;
+        return { index: best.to, text: `建议 ${chineseCheckersMoveText(best)}，优先向目标营地推进。` };
     }
 
     function quoridorWallKey(size, row, col) {
@@ -1063,6 +1817,129 @@
             }
         },
         {
+            id: 'draughts',
+            name: '国际跳棋',
+            tag: '10 x 10',
+            color: '#92400e',
+            rows: 10,
+            columns: 10,
+            minSize: 10,
+            maxSize: 10,
+            sizeStep: 1,
+            goal: '吃光或困住对方棋子',
+            hintLabel: '最长吃子与升王推进',
+            summary: '10 × 10 国际跳棋：只在暗格行棋，强制吃子且必须选择最长连吃路线，王棋可沿斜线长距离飞行。',
+            rules: ['白棋先手。', '兵普通移动只能向前斜走一格，吃子时可向四个斜向跳吃并继续连吃。', '王棋可沿任意斜线移动任意距离，吃子后可落在被吃棋后方任意空格并继续连吃。', '存在吃子时必须吃子；多条吃子路线中必须选择吃子数量最多的路线。', '兵到达对方底线后升为王棋；对手无棋或无合法行动时获胜。'],
+            players: [
+                { id: 'white', label: '白棋', className: 'draughts-white', symbol: '●' },
+                { id: 'black', label: '黑棋', className: 'draughts-black', symbol: '●' }
+            ],
+            initialState() {
+                return draughtsInitialState(this);
+            },
+            getLegalMoves(state) {
+                return getDraughtsMoves(this, state);
+            },
+            applyMove(state, move) {
+                return applyDraughtsMove(this, state, move);
+            },
+            getHint(state) {
+                return getDraughtsHint(this, state);
+            },
+            analyze(state) {
+                const counts = countDraughtsPieces(state.board);
+                return [
+                    { label: '白兵', value: counts.white, total: 20 },
+                    { label: '白王', value: counts.whiteKing, total: 20 },
+                    { label: '黑兵', value: counts.black, total: 20 },
+                    { label: '黑王', value: counts.blackKing, total: 20 }
+                ];
+            }
+        },
+        {
+            id: 'animalchess',
+            name: '斗兽棋',
+            tag: '9 x 7',
+            color: '#16a34a',
+            rows: 9,
+            columns: 7,
+            minSize: 9,
+            maxSize: 9,
+            sizeStep: 1,
+            goal: '率先进入对方兽穴',
+            hintLabel: '兽阶克制、陷阱与跳河',
+            summary: '经典斗兽棋：红黑双方以八种动物争夺兽穴，利用河流、陷阱和鼠克象等特殊规则突破防线。',
+            rules: ['红方先手。', '棋子每回合沿上下左右移动一格，不能进入己方兽穴；任意棋子进入对方兽穴即胜。', '除鼠外不能进入河流；狮、虎可沿直线跳过无鼠阻挡的河流。', '高阶动物可吃同阶或低阶动物，鼠可在陆地吃象，象不能吃鼠。', '进入对方陷阱的棋子失去兽阶保护，可被任意敌方棋子吃掉。'],
+            players: [
+                { id: 'red', label: '红方', className: 'animal-red' },
+                { id: 'black', label: '黑方', className: 'animal-black' }
+            ],
+            initialState() {
+                return animalChessInitialState(this);
+            },
+            getLegalMoves(state) {
+                return getAnimalChessMoves(this, state);
+            },
+            applyMove(state, move) {
+                return applyAnimalChessMove(this, state, move);
+            },
+            getHint(state) {
+                return getAnimalChessHint(this, state);
+            },
+            analyze(state) {
+                const counts = countAnimalChessPieces(state.board);
+                const legal = this.getLegalMoves(state).length;
+                return [
+                    { label: '红方棋子', value: counts.red, total: 8 },
+                    { label: '黑方棋子', value: counts.black, total: 8 },
+                    { label: '已占格', value: counts.total, total: 16 },
+                    { label: '合法行动', value: legal, total: 32 }
+                ];
+            }
+        },
+        {
+            id: 'chinese-checkers',
+            name: '中国跳棋',
+            tag: '17 行星形棋盘',
+            color: '#ec4899',
+            rows: 17,
+            columns: 13,
+            totalCells: 121,
+            minSize: 17,
+            maxSize: 17,
+            sizeStep: 1,
+            goal: '率先占满对侧营地',
+            hintLabel: '推进距离与连续跳跃',
+            summary: '二人中国跳棋：红蓝从对角营地出发，通过相邻一步或连续跳跃抢占对侧三角营地。',
+            rules: ['红方先手。', '每回合选择己方棋子后，可移动到相邻空洞，或连续跳过任意相邻棋子到后方空洞。', '先让己方 10 枚棋子全部进入对侧营地即胜。'],
+            players: [
+                { id: 'red', label: '红方', className: 'cc-red', symbol: '●' },
+                { id: 'blue', label: '蓝方', className: 'cc-blue', symbol: '●' }
+            ],
+            initialState() {
+                return chineseCheckersInitialState(this);
+            },
+            getLegalMoves(state) {
+                return getChineseCheckersMoves(this, state);
+            },
+            applyMove(state, move) {
+                return applyChineseCheckersMove(this, state, move);
+            },
+            getHint(state) {
+                return getChineseCheckersHint(this, state);
+            },
+            analyze(state) {
+                const redTarget = chineseCheckersTarget('red').filter(index => state.board[index] === 'red').length;
+                const blueTarget = chineseCheckersTarget('blue').filter(index => state.board[index] === 'blue').length;
+                return [
+                    { label: '红方入营', value: redTarget, total: 10 },
+                    { label: '蓝方入营', value: blueTarget, total: 10 },
+                    { label: '红方棋子', value: state.board.filter(value => value === 'red').length, total: 10 },
+                    { label: '蓝方棋子', value: state.board.filter(value => value === 'blue').length, total: 10 }
+                ];
+            }
+        },
+        {
             id: 'quoridor',
             name: '步步为营',
             tag: '9 x 9',
@@ -1289,6 +2166,242 @@
         refs.board.appendChild(grid);
     }
 
+    function selectChineseCheckersPiece(index) {
+        if (app.state.ended || isAiTurn() || app.aiThinking || app.state.board[index] !== app.state.current) return;
+        const moves = getChineseCheckersMovesFrom(app.game, app.state, index);
+        app.chineseCheckersSelection = { index, moves };
+        app.hintIndex = null;
+        app.hintText = moves.length
+            ? `已选择 ${chineseCheckersLabel(index)}，可移动到 ${moves.length} 个位置。`
+            : '该棋子当前没有可移动位置。';
+        renderBoard();
+        renderHint();
+    }
+
+    function selectDraughtsPiece(index) {
+        if (app.state.ended || isAiTurn() || app.aiThinking || draughtsOwner(app.state.board[index]) !== app.state.current) return;
+        const moves = app.game.getLegalMoves(app.state).filter(move => move.from === index);
+        app.draughtsSelection = { index, moves };
+        app.hintIndex = null;
+        app.hintText = moves.length
+            ? `已选择 ${draughtsLabel(index)}，可移动到 ${moves.length} 个位置。`
+            : '该棋子当前没有符合最长吃子规则的移动。';
+        renderBoard();
+        renderHint();
+    }
+
+    function selectAnimalChessPiece(index) {
+        if (app.state.ended || isAiTurn() || app.aiThinking || animalChessOwner(app.state.board[index]) !== app.state.current) return;
+        const moves = animalChessMovesFrom(app.state.board, app.state.current, index);
+        app.animalChessSelection = { index, moves };
+        app.hintIndex = null;
+        app.hintText = moves.length
+            ? `已选择 ${animalChessPieceLabel(app.state.board[index])} ${animalChessLabel(index)}，可移动到 ${moves.length} 个位置。`
+            : '该棋子当前没有可移动位置。';
+        renderBoard();
+        renderHint();
+    }
+
+    function renderDraughtsBoard(game, state) {
+        const selected = app.draughtsSelection && draughtsOwner(state.board[app.draughtsSelection.index]) === state.current
+            ? app.draughtsSelection
+            : null;
+        const selectedMoves = selected ? new Map(selected.moves.map(move => [move.to, move])) : new Map();
+        const movable = new Set(game.getLegalMoves(state).map(move => move.from));
+        const locked = state.ended || isAiTurn() || app.aiThinking;
+
+        refs.board.className = `board ${game.id}`;
+        refs.board.classList.toggle('is-ai-turn', isAiTurn() || app.aiThinking);
+        refs.board.style.setProperty('--cols', game.columns);
+        refs.board.style.setProperty('--rows', game.rows);
+        refs.board.innerHTML = '';
+
+        state.board.forEach((pieceValue, index) => {
+            const pos = draughtsPosition(index);
+            const playable = draughtsIsPlayable(pos.row, pos.col);
+            const move = selectedMoves.get(index);
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.className = `draughts-cell ${playable ? 'dark' : 'light'}`;
+            cell.setAttribute('role', 'gridcell');
+            cell.setAttribute('aria-label', `${draughtsLabel(index)} ${pieceValue ? playerInfo(game, draughtsOwner(pieceValue)).label : playable ? '空暗格' : '浅格'}`);
+            if (pieceValue) cell.classList.add('occupied');
+            if (selected && selected.index === index) cell.classList.add('selected');
+            if (movable.has(index)) cell.classList.add('movable');
+            if (move) cell.classList.add('legal', move.captures.length ? 'capture' : 'quiet');
+            if (app.hintIndex === index) cell.classList.add('hint');
+            if (state.winLine && state.winLine.includes(index)) cell.classList.add('win');
+
+            if (pieceValue) {
+                const owner = draughtsOwner(pieceValue);
+                const piece = document.createElement('span');
+                piece.className = `draughts-piece ${playerInfo(game, owner).className}${draughtsIsKing(pieceValue) ? ' king' : ''}`;
+                piece.textContent = draughtsIsKing(pieceValue) ? '♛' : '';
+                cell.appendChild(piece);
+            }
+
+            cell.disabled = locked || !playable || (!move && !movable.has(index));
+            cell.addEventListener('click', () => {
+                if (move) {
+                    playMove(move);
+                    return;
+                }
+                selectDraughtsPiece(index);
+            });
+            refs.board.appendChild(cell);
+        });
+    }
+
+    function renderAnimalChessBoard(game, state) {
+        const selected = app.animalChessSelection && animalChessOwner(state.board[app.animalChessSelection.index]) === state.current
+            ? app.animalChessSelection
+            : null;
+        const legalMoves = game.getLegalMoves(state);
+        const selectedMoves = selected ? new Map(selected.moves.map(move => [move.to, move])) : new Map();
+        const movable = new Set(legalMoves.map(move => move.from));
+        const hintMove = legalMoves.find(move => move.index === app.hintIndex);
+        const locked = state.ended || isAiTurn() || app.aiThinking;
+
+        refs.board.className = `board ${game.id}`;
+        refs.board.classList.toggle('is-ai-turn', isAiTurn() || app.aiThinking);
+        refs.board.style.setProperty('--cols', game.columns);
+        refs.board.style.setProperty('--rows', game.rows);
+        refs.board.innerHTML = '';
+
+        const info = document.createElement('div');
+        info.className = 'animalchess-info';
+        info.textContent = selected
+            ? `${playerInfo(game, state.current).label} 已选择 ${animalChessPieceLabel(state.board[selected.index])} · 点击高亮格完成移动`
+            : `${playerInfo(game, state.current).label} 行动中 · 先选择己方可移动动物`;
+        refs.board.appendChild(info);
+
+        const grid = document.createElement('div');
+        grid.className = 'animalchess-grid';
+
+        state.board.forEach((pieceValue, index) => {
+            const move = selectedMoves.get(index);
+            const owner = animalChessOwner(pieceValue);
+            const canSelect = !locked && owner === state.current && movable.has(index);
+            const cell = document.createElement('button');
+            const den = animalChessDenOwner(index);
+            const trap = animalChessTrapOwner(index);
+            cell.type = 'button';
+            cell.className = 'cell animalchess-cell';
+            if (ANIMAL_CHESS_RIVERS.has(index)) cell.classList.add('river');
+            if (den) cell.classList.add('den', `${den}-den`);
+            if (trap) cell.classList.add('trap', `${trap}-trap`);
+            cell.setAttribute('role', 'gridcell');
+            cell.setAttribute('aria-label', `${animalChessLabel(index)} ${animalChessTerrainName(index)} ${pieceValue ? animalChessPieceLabel(pieceValue) : '空位'}`);
+            if (pieceValue) cell.classList.add('occupied', owner);
+            if (selected && selected.index === index) cell.classList.add('selected');
+            if (canSelect) cell.classList.add('movable');
+            if (move) cell.classList.add('legal', move.capture ? 'capture' : 'quiet');
+            if (hintMove && hintMove.to === index) cell.classList.add('hint');
+            if (state.winLine && state.winLine.includes(index)) cell.classList.add('win');
+
+            if (pieceValue) {
+                const piece = document.createElement('img');
+                piece.className = `animalchess-piece ${owner}`;
+                piece.src = animalChessImage(pieceValue);
+                piece.alt = animalChessPieceLabel(pieceValue);
+                piece.draggable = false;
+                cell.appendChild(piece);
+            }
+
+            cell.disabled = locked || (!move && !canSelect);
+            cell.addEventListener('click', () => {
+                if (move) {
+                    playMove(move);
+                    return;
+                }
+                selectAnimalChessPiece(index);
+            });
+            grid.appendChild(cell);
+        });
+
+        refs.board.appendChild(grid);
+    }
+
+    function renderChineseCheckersBoard(game, state) {
+        const selected = app.chineseCheckersSelection && state.board[app.chineseCheckersSelection.index] === state.current
+            ? app.chineseCheckersSelection
+            : null;
+        const selectedMoves = selected ? new Map(selected.moves.map(move => [move.to, move])) : new Map();
+        const animation = app.chineseCheckersAnimation;
+        const locked = state.ended || isAiTurn() || app.aiThinking || Boolean(animation);
+
+        refs.board.className = `board ${game.id}`;
+        refs.board.classList.toggle('is-ai-turn', isAiTurn() || app.aiThinking);
+        refs.board.innerHTML = '';
+
+        const info = document.createElement('div');
+        info.className = 'chinese-checkers-info';
+        info.textContent = animation
+            ? `${playerInfo(game, animation.player).label} 正在移动 · 逐段跳跃中`
+            : selected
+                ? `${playerInfo(game, state.current).label} 已选择 ${chineseCheckersLabel(selected.index)} · 点击高亮洞位完成移动`
+                : `${playerInfo(game, state.current).label} 行动中 · 先选择己方棋子`;
+        refs.board.appendChild(info);
+
+        const grid = document.createElement('div');
+        grid.className = 'chinese-checkers-grid';
+
+        CHINESE_CHECKERS_POSITIONS.forEach(pos => {
+            const index = pos.index;
+            const value = state.board[index];
+            const move = selectedMoves.get(index);
+            const point = chineseCheckersBoardPoint(index);
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.className = 'chinese-checkers-hole';
+            cell.style.left = `${point.x}%`;
+            cell.style.top = `${point.y}%`;
+            cell.setAttribute('role', 'gridcell');
+            cell.setAttribute('aria-label', `${chineseCheckersLabel(index)} ${value ? playerInfo(game, value).label : '空洞'}`);
+            if (value) cell.classList.add('occupied', value);
+            if (selected && selected.index === index) cell.classList.add('selected');
+            if (move) cell.classList.add('legal', move.jump ? 'jump-move' : 'step-move');
+            if (animation && animation.path.includes(index)) cell.classList.add('move-path');
+            if (animation && animation.to === index) cell.classList.add('animating-target');
+            if (app.hintIndex === index) cell.classList.add('hint');
+            if (state.winLine && state.winLine.includes(index)) cell.classList.add('win');
+
+            if (value && (!animation || animation.to !== index)) {
+                const piece = document.createElement('span');
+                piece.className = `chinese-checkers-piece ${playerInfo(game, value).className}`;
+                piece.textContent = playerInfo(game, value).symbol || '';
+                cell.appendChild(piece);
+            }
+
+            cell.disabled = locked || (!value && !move) || (value && value !== state.current && !move);
+            cell.addEventListener('click', () => {
+                if (move) {
+                    playMove(move);
+                    return;
+                }
+                selectChineseCheckersPiece(index);
+            });
+            grid.appendChild(cell);
+        });
+
+        if (animation) {
+            const style = document.createElement('style');
+            style.textContent = chineseCheckersAnimationCss(animation);
+            const start = chineseCheckersBoardPoint(animation.path[0]);
+            const movingPiece = document.createElement('span');
+            movingPiece.className = `chinese-checkers-jump-piece ${playerInfo(game, animation.player).className}`;
+            movingPiece.textContent = playerInfo(game, animation.player).symbol || '';
+            movingPiece.style.left = `${start.x}%`;
+            movingPiece.style.top = `${start.y}%`;
+            movingPiece.style.transform = 'translate(-50%, -50%)';
+            movingPiece.style.animation = `cc-jump-${animation.key} ${animation.duration}ms ease-in-out forwards`;
+            grid.appendChild(style);
+            grid.appendChild(movingPiece);
+        }
+
+        refs.board.appendChild(grid);
+    }
+
     function renderQuoridorBoard(game, state) {
         const legalMoves = game.getLegalMoves(state);
         const pawnMap = new Map(legalMoves.filter(move => move.type === 'move').map(move => [move.index, move]));
@@ -1384,6 +2497,18 @@
             renderQawaleBoard(game, state);
             return;
         }
+        if (game.id === 'chinese-checkers') {
+            renderChineseCheckersBoard(game, state);
+            return;
+        }
+        if (game.id === 'draughts') {
+            renderDraughtsBoard(game, state);
+            return;
+        }
+        if (game.id === 'animalchess') {
+            renderAnimalChessBoard(game, state);
+            return;
+        }
         if (game.id === 'quoridor') {
             renderQuoridorBoard(game, state);
             return;
@@ -1443,8 +2568,8 @@
         } else {
             refs.gameStatus.textContent = state.passMessage || '进行中';
         }
-        refs.undoBtn.disabled = app.history.length === 0 || app.aiThinking || Boolean(app.qawaleDraft);
-        refs.hintBtn.disabled = state.ended || legalMoves.length === 0 || isAiTurn() || app.aiThinking || Boolean(app.qawaleDraft);
+        refs.undoBtn.disabled = app.history.length === 0 || app.aiThinking || Boolean(app.qawaleDraft) || Boolean(app.chineseCheckersAnimation);
+        refs.hintBtn.disabled = state.ended || legalMoves.length === 0 || isAiTurn() || app.aiThinking || Boolean(app.qawaleDraft) || Boolean(app.chineseCheckersAnimation);
         refs.aiStatus.textContent = app.aiThinking ? 'AI 思考中' : isSinglePlayer() ? `AI：${aiLabel()} · ${aiDifficultyLabel()}` : '本地多人';
     }
 
@@ -1557,7 +2682,9 @@
         clearAiTimer();
         if (!isAiTurn() || app.aiThinking) return;
 
-        const delay = app.game && app.game.id === 'reversi' && app.reversiFlipAnimation ? 760 : app.aiDifficulty === 'hard' ? 500 : 420;
+        const delay = app.game && app.game.id === 'chinese-checkers' && app.chineseCheckersAnimation
+            ? app.chineseCheckersAnimation.duration + 160
+            : app.game && app.game.id === 'reversi' && app.reversiFlipAnimation ? 760 : app.aiDifficulty === 'hard' ? 500 : 420;
         app.aiThinking = true;
         refresh();
         app.aiTimer = window.setTimeout(() => {
@@ -1577,6 +2704,10 @@
         app.hintText = '';
         app.aiThinking = false;
         app.qawaleDraft = null;
+        app.draughtsSelection = null;
+        app.animalChessSelection = null;
+        app.chineseCheckersSelection = null;
+        clearChineseCheckersAnimation();
         clearReversiFlipAnimation();
         clearAiTimer();
         refresh();
@@ -1584,7 +2715,7 @@
     }
 
     function playMove(move, options = {}) {
-        if (move === null || move === undefined || app.state.ended || app.aiThinking) return;
+        if (move === null || move === undefined || app.state.ended || app.aiThinking || app.chineseCheckersAnimation) return;
         if (!options.ai && isAiTurn()) return;
         if (app.game.id === 'qawale' && move.type === 'qawale') {
             if (!app.game.isLegalMove(app.state, move)) {
@@ -1613,14 +2744,24 @@
             renderHint();
             return;
         }
+        const appliedMove = legalMove || move;
+        const movingPlayer = app.state.current;
         const reversiFlips = app.game.id === 'reversi'
             ? (legalMove.flips || []).map(item => ({ index: item, from: app.state.board[item], to: app.state.current })).filter(item => item.from && item.from !== item.to)
             : [];
         app.history.push(cloneState(app.state));
         if (app.history.length > 120) app.history.shift();
-        app.state = app.game.applyMove(app.state, legalMove || move);
+        app.state = app.game.applyMove(app.state, appliedMove);
         if (app.game.id === 'reversi') setReversiFlipAnimation(reversiFlips);
         else clearReversiFlipAnimation();
+        if (app.game.id === 'chinese-checkers') {
+            app.chineseCheckersSelection = null;
+            setChineseCheckersAnimation(appliedMove, movingPlayer);
+        } else {
+            clearChineseCheckersAnimation();
+        }
+        if (app.game.id === 'draughts') app.draughtsSelection = null;
+        if (app.game.id === 'animalchess') app.animalChessSelection = null;
         app.hintIndex = null;
         app.hintText = '';
         refresh();
@@ -1635,6 +2776,10 @@
         app.hintIndex = null;
         app.hintText = '';
         app.qawaleDraft = null;
+        app.draughtsSelection = null;
+        app.animalChessSelection = null;
+        app.chineseCheckersSelection = null;
+        clearChineseCheckersAnimation();
         clearReversiFlipAnimation();
         refresh();
         scheduleAiMove();
@@ -1658,13 +2803,17 @@
         app.hintIndex = null;
         app.hintText = '';
         app.qawaleDraft = null;
+        app.draughtsSelection = null;
+        app.animalChessSelection = null;
+        app.chineseCheckersSelection = null;
+        clearChineseCheckersAnimation();
         clearReversiFlipAnimation();
         refresh();
         scheduleAiMove();
     }
 
     function showHint() {
-        if (app.state.ended || isAiTurn() || app.aiThinking || app.qawaleDraft) return;
+        if (app.state.ended || isAiTurn() || app.aiThinking || app.qawaleDraft || app.chineseCheckersAnimation) return;
         const hint = app.game.getHint(app.state);
         if (!hint) {
             app.hintIndex = null;

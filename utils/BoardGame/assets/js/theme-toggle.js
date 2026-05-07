@@ -39,7 +39,8 @@
         }
 
         if (themeToggle) {
-            themeToggle.checked = isDayMode;
+            themeToggle.classList.toggle('is-day', isDayMode);
+            themeToggle.setAttribute('aria-pressed', String(isDayMode));
         }
     }
 
@@ -53,7 +54,7 @@
             return;
         }
 
-        const theme = themeToggle.checked ? 'day' : 'night';
+        const theme = themeToggle.classList.contains('is-day') ? 'night' : 'day';
         applyTheme(theme);
         saveThemePreference(theme);
     }
@@ -61,6 +62,6 @@
     loadThemePreference();
 
     if (themeToggle) {
-        themeToggle.addEventListener('change', toggleTheme);
+        themeToggle.addEventListener('click', toggleTheme);
     }
 })();

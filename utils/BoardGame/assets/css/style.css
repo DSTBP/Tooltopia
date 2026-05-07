@@ -1423,6 +1423,338 @@ html.day-init .qawale-info {
     color: #451a03;
 }
 
+.board.draughts {
+    --gap: 0;
+    --cell-size: clamp(30px, 7vw, 58px);
+    width: fit-content;
+    grid-template-columns: repeat(10, var(--cell-size));
+    background: #6b4423;
+    border-color: rgba(180, 120, 55, 0.5);
+    gap: 0;
+    padding: clamp(0.5rem, 1.6vw, 0.9rem);
+    box-shadow:
+        inset 0 0 0 4px rgba(255, 232, 190, 0.12),
+        0 18px 42px rgba(0, 0, 0, 0.28);
+}
+
+.draughts-cell {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    display: grid;
+    place-items: center;
+    border: 0;
+    padding: 0;
+    position: relative;
+}
+
+.draughts-cell.light {
+    background: #e8cfa3;
+    cursor: default;
+}
+
+.draughts-cell.dark {
+    background: #8b5a2b;
+    cursor: pointer;
+}
+
+.draughts-cell:disabled {
+    cursor: default;
+}
+
+.draughts-cell.movable::after,
+.draughts-cell.legal::after {
+    content: '';
+    position: absolute;
+    inset: 18%;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.draughts-cell.movable::after {
+    border: 3px solid rgba(251, 191, 36, 0.72);
+}
+
+.draughts-cell.legal.quiet::after {
+    background: rgba(14, 165, 233, 0.34);
+    border: 2px solid rgba(125, 211, 252, 0.9);
+}
+
+.draughts-cell.legal.capture::after {
+    background: rgba(239, 68, 68, 0.36);
+    border: 2px solid rgba(252, 165, 165, 0.95);
+}
+
+.draughts-cell.selected {
+    box-shadow: inset 0 0 0 4px rgba(250, 204, 21, 0.85);
+}
+
+.draughts-cell.win {
+    box-shadow: inset 0 0 0 4px rgba(34, 197, 94, 0.85);
+}
+
+.draughts-piece {
+    width: 76%;
+    height: 76%;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    position: relative;
+    font-size: clamp(0.78rem, 2.2vw, 1.2rem);
+    font-weight: 900;
+    line-height: 1;
+    box-shadow:
+        inset 0 3px 4px rgba(255, 255, 255, 0.34),
+        inset 0 -5px 7px rgba(0, 0, 0, 0.28),
+        0 6px 10px rgba(0, 0, 0, 0.28);
+    z-index: 2;
+}
+
+.draughts-piece.draughts-white {
+    color: #7c2d12;
+    background: #f8fafc;
+    border: 2px solid #cbd5e1;
+}
+
+.draughts-piece.draughts-black {
+    color: #fde68a;
+    background: #1f2937;
+    border: 2px solid #111827;
+}
+
+.draughts-piece.king::before {
+    content: '';
+    position: absolute;
+    width: 42%;
+    height: 42%;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    opacity: 0.72;
+}
+
+.board.animalchess {
+    --gap: 0;
+    --cell-size: clamp(50px, 9.6vw, 82px);
+    width: fit-content;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, #31572c, #132a13);
+    border-color: rgba(132, 204, 22, 0.3);
+    padding: clamp(0.65rem, 2vw, 1rem);
+}
+
+.animalchess-info {
+    color: rgba(240, 253, 244, 0.9);
+    font-size: 0.86rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.animalchess-grid {
+    display: grid;
+    grid-template-columns: repeat(7, var(--cell-size));
+    grid-template-rows: repeat(9, var(--cell-size));
+    gap: 0;
+    padding: clamp(0.35rem, 1.2vw, 0.55rem);
+    border-radius: 18px;
+    background:
+        linear-gradient(rgba(255, 248, 220, 0.1), rgba(255, 248, 220, 0.1)),
+        url('../img/animalchess-board.png') center / 100% 100% no-repeat,
+        #c69b58;
+    border: 2px solid rgba(82, 49, 16, 0.62);
+    box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.12), 0 18px 34px rgba(0, 0, 0, 0.28);
+}
+
+.animalchess-cell {
+    width: var(--cell-size);
+    height: var(--cell-size);
+    border-radius: 0;
+    border: 1px solid rgba(89, 55, 20, 0.32);
+    background: rgba(244, 214, 153, 0.46);
+    overflow: visible;
+}
+
+.animalchess-cell.river {
+    background: rgba(56, 189, 248, 0.54);
+}
+
+.animalchess-cell.den {
+    background: rgba(120, 53, 15, 0.5);
+}
+
+.animalchess-cell.trap {
+    background: rgba(248, 113, 113, 0.42);
+}
+
+.animalchess-cell.movable::after,
+.animalchess-cell.legal::after {
+    content: '';
+    position: absolute;
+    inset: 14%;
+    border-radius: 14px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.animalchess-cell.movable::after {
+    border: 3px solid rgba(250, 204, 21, 0.76);
+}
+
+.animalchess-cell.legal.quiet::after {
+    background: rgba(34, 197, 94, 0.24);
+    border: 2px solid rgba(134, 239, 172, 0.92);
+}
+
+.animalchess-cell.legal.capture::after {
+    background: rgba(239, 68, 68, 0.3);
+    border: 2px solid rgba(252, 165, 165, 0.96);
+}
+
+.animalchess-cell.selected {
+    box-shadow: inset 0 0 0 4px rgba(250, 204, 21, 0.9);
+}
+
+.animalchess-cell.win {
+    box-shadow: inset 0 0 0 4px rgba(34, 197, 94, 0.9), 0 0 18px rgba(34, 197, 94, 0.36);
+}
+
+.animalchess-piece {
+    width: 86%;
+    height: 86%;
+    object-fit: contain;
+    position: relative;
+    z-index: 2;
+    filter: drop-shadow(0 8px 8px rgba(0, 0, 0, 0.28));
+    user-select: none;
+}
+
+body.day-mode .board.animalchess,
+html.day-init .board.animalchess {
+    background: linear-gradient(135deg, #ecfccb, #bbf7d0);
+    border-color: rgba(22, 101, 52, 0.22);
+    box-shadow: inset 0 0 0 1px rgba(22, 101, 52, 0.1), 0 18px 34px rgba(15, 23, 42, 0.14);
+}
+
+body.day-mode .animalchess-info,
+html.day-init .animalchess-info {
+    color: #14532d;
+}
+
+.board.chinese-checkers {
+    --cc-board-size: min(74vw, 640px);
+    --cc-hole: clamp(16px, 3.4vw, 30px);
+    width: min(100%, calc(var(--cc-board-size) + 1.75rem));
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    background: #ead2a0;
+    border-color: #8a5a2e;
+    box-shadow: inset 0 0 0 2px rgba(96, 57, 19, 0.18), 0 18px 34px rgba(0, 0, 0, 0.24);
+}
+
+.chinese-checkers-info {
+    color: #3f2b17;
+    font-size: 0.86rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.chinese-checkers-grid {
+    position: relative;
+    width: var(--cc-board-size);
+    max-width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 20px;
+    background: #d6b676;
+    border: 2px solid #78451f;
+    box-shadow: inset 0 0 0 4px rgba(255, 244, 214, 0.3), inset 0 0 24px rgba(64, 39, 14, 0.18);
+    overflow: visible;
+}
+
+.chinese-checkers-hole {
+    position: absolute;
+    width: var(--cc-hole);
+    height: var(--cc-hole);
+    transform: translate(-50%, -50%);
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 1px solid #80522a;
+    border-radius: 50%;
+    background: #b98a4f;
+    box-shadow: inset 0 2px 5px rgba(50, 29, 12, 0.35), 0 2px 4px rgba(255, 246, 218, 0.22);
+    cursor: pointer;
+    transition: box-shadow 0.14s ease, background 0.14s ease;
+}
+
+.chinese-checkers-hole:disabled {
+    cursor: default;
+}
+
+.chinese-checkers-hole.legal {
+    background: #8fc6dd;
+    box-shadow: inset 0 0 0 2px #1d7192, 0 0 0 4px rgba(29, 113, 146, 0.18);
+}
+
+.chinese-checkers-hole.jump-move {
+    background: #e8c15d;
+    box-shadow: inset 0 0 0 2px #9a6a10, 0 0 0 4px rgba(154, 106, 16, 0.18);
+}
+
+.chinese-checkers-hole.selected {
+    box-shadow: inset 0 0 0 2px #fff4d6, 0 0 0 5px rgba(97, 55, 20, 0.28);
+}
+
+.chinese-checkers-hole.win {
+    box-shadow: inset 0 0 0 2px #f6d267, 0 0 0 5px rgba(120, 79, 14, 0.3);
+}
+
+.chinese-checkers-hole.move-path {
+    background: #cda163;
+}
+
+.chinese-checkers-piece,
+.chinese-checkers-jump-piece {
+    width: 82%;
+    height: 82%;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: transparent;
+    font-size: 0.56rem;
+    line-height: 1;
+    text-indent: -999px;
+    overflow: hidden;
+    border: 1px solid rgba(36, 23, 11, 0.34);
+    box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.38), inset 0 -4px 6px rgba(0, 0, 0, 0.24), 0 6px 10px rgba(0, 0, 0, 0.25);
+}
+
+.chinese-checkers-jump-piece {
+    position: absolute;
+    width: calc(var(--cc-hole) * 0.82);
+    height: calc(var(--cc-hole) * 0.82);
+    z-index: 8;
+    pointer-events: none;
+}
+
+.chinese-checkers-piece.cc-red,
+.chinese-checkers-jump-piece.cc-red {
+    background: #d92d2d;
+}
+
+.chinese-checkers-piece.cc-blue,
+.chinese-checkers-jump-piece.cc-blue {
+    background: #2c63c7;
+}
+
+body.day-mode .chinese-checkers-info,
+html.day-init .chinese-checkers-info {
+    color: #3f2b17;
+}
+
 .theme-toggle__btn {
   display: block;
   position: relative;
@@ -1435,12 +1767,12 @@ html.day-init .qawale-info {
   transition: all 350ms ease-in;
 }
 
-.theme-toggle__checkbox:focus-visible + .theme-toggle__btn {
+.theme-toggle__btn:focus-visible {
   outline: 3px solid rgba(255, 255, 255, 0.8);
   outline-offset: 4px;
 }
 
-body.day-mode .theme-toggle__checkbox:focus-visible + .theme-toggle__btn {
+body.day-mode .theme-toggle__btn:focus-visible {
   outline-color: rgba(0, 0, 0, 0.55);
 }
 
@@ -1560,18 +1892,18 @@ body.day-mode .theme-toggle__checkbox:focus-visible + .theme-toggle__btn {
   }
 }
 
-.theme-toggle__checkbox:checked + .theme-toggle__btn {
+.theme-toggle__btn.is-day {
   background-color: #9ee3fb;
   border: 5px solid #86c3d7;
 }
 
-.theme-toggle__checkbox:checked + .theme-toggle__btn::before {
+.theme-toggle__btn.is-day::before {
   left: 57px;
   background-color: #ffdf6d;
   border: 5px solid #e1c348;
 }
 
-.theme-toggle__checkbox:checked + .theme-toggle__btn::after {
+.theme-toggle__btn.is-day::after {
   opacity: 1;
   animation-name: bounceIn;
   animation-duration: 0.60s;
@@ -1580,7 +1912,7 @@ body.day-mode .theme-toggle__checkbox:focus-visible + .theme-toggle__btn {
   animation-timing-function: ease-in-out;
 }
 
-.theme-toggle__checkbox:checked + .theme-toggle__btn .theme-toggle__feature {
+.theme-toggle__btn.is-day .theme-toggle__feature {
   opacity: 0;
   box-shadow:
     rgba(255,255,255,0.1) 30px -3px 0 -4px,
@@ -1592,7 +1924,7 @@ body.day-mode .theme-toggle__checkbox:focus-visible + .theme-toggle__btn {
   animation: none;
 }
 
-.theme-toggle__checkbox:checked + .theme-toggle__btn .theme-toggle__feature::before {
+.theme-toggle__btn.is-day .theme-toggle__feature::before {
   left: 25px;
   transform: rotate(70deg);
 }
