@@ -1768,9 +1768,9 @@ html.day-init .ninechess-info {
     flex-direction: column;
     align-items: center;
     gap: 0.75rem;
-    background: #ead2a0;
-    border-color: #8a5a2e;
-    box-shadow: inset 0 0 0 2px rgba(96, 57, 19, 0.18), 0 18px 34px rgba(0, 0, 0, 0.24);
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
 }
 
 .chinese-checkers-info {
@@ -1784,12 +1784,32 @@ html.day-init .ninechess-info {
     position: relative;
     width: var(--cc-board-size);
     max-width: 100%;
-    aspect-ratio: 1 / 1;
-    border-radius: 20px;
-    background: #d6b676;
-    border: 2px solid #78451f;
-    box-shadow: inset 0 0 0 4px rgba(255, 244, 214, 0.3), inset 0 0 24px rgba(64, 39, 14, 0.18);
+    aspect-ratio: 1 / 1.16;
+    background: transparent;
+    filter: drop-shadow(0 12px 24px rgba(63, 43, 23, 0.25));
     overflow: visible;
+}
+
+.chinese-checkers-grid::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #4b2a14;
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    pointer-events: none;
+}
+
+.chinese-checkers-grid::after {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    background:
+        linear-gradient(rgba(218, 178, 123, 0.18), rgba(218, 178, 123, 0.18)),
+        url('../img/bg.jpg');
+    background-size: cover;
+    background-position: center;
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    pointer-events: none;
 }
 
 .chinese-checkers-hole {
@@ -1806,6 +1826,7 @@ html.day-init .ninechess-info {
     box-shadow: inset 0 2px 5px rgba(50, 29, 12, 0.35), 0 2px 4px rgba(255, 246, 218, 0.22);
     cursor: pointer;
     transition: box-shadow 0.14s ease, background 0.14s ease;
+    z-index: 1;
 }
 
 .chinese-checkers-hole:disabled {
@@ -2235,6 +2256,16 @@ html.day-init .footer p {
 
 .board-toolbar {
     align-items: center;
+}
+
+@media (min-width: 821px) {
+    .board-head {
+        align-items: flex-start;
+    }
+}
+
+.board-head #gameTitle {
+    margin-top: 0;
 }
 
 .size-control {
