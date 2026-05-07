@@ -131,10 +131,6 @@
         return Array.from({ length: rows }, () => Array(columns).fill(value));
     }
 
-    function quoridorAiWallKey(row, col) {
-        return row * 8 + col;
-    }
-
     function resetQuoridorAiBoard(aiGame) {
         aiGame.board.walls = {
             horizontal: createMatrix(8, 8, false),
@@ -355,12 +351,7 @@
                 useHint: false,
                 centerWeight: 1.8,
                 lineWeight: 0.45,
-                defenseWeight: 0.55,
-                materialWeight: 0.5,
-                mobilityWeight: 0.25,
-                cornerWeight: 18,
-                dangerWeight: 8,
-                flipWeight: 2
+                defenseWeight: 0.55
             },
             easy: {
                 depth: 0,
@@ -369,12 +360,7 @@
                 hintWeight: 120,
                 centerWeight: 2.4,
                 lineWeight: 0.75,
-                defenseWeight: 0.9,
-                materialWeight: 0.8,
-                mobilityWeight: 0.8,
-                cornerWeight: 36,
-                dangerWeight: 16,
-                flipWeight: 5
+                defenseWeight: 0.9
             },
             medium: {
                 depth: 1,
@@ -383,12 +369,7 @@
                 hintWeight: 420,
                 centerWeight: 2.8,
                 lineWeight: 1.15,
-                defenseWeight: 1.25,
-                materialWeight: 1.1,
-                mobilityWeight: 1.6,
-                cornerWeight: 72,
-                dangerWeight: 36,
-                flipWeight: 8
+                defenseWeight: 1.25
             },
             hard: {
                 depth: 2,
@@ -397,15 +378,21 @@
                 hintWeight: 760,
                 centerWeight: 3.2,
                 lineWeight: 1.55,
-                defenseWeight: 1.8,
-                materialWeight: 1.3,
-                mobilityWeight: 2.4,
-                cornerWeight: 120,
-                dangerWeight: 72,
-                flipWeight: 10
+                defenseWeight: 1.8
             }
         };
         return profiles[difficulty] || profiles.medium;
+    }
+
+    function chooseExternalAiMove(moduleName, game, state, options, moves) {
+        const aiModule = window[moduleName];
+        if (!aiModule || typeof aiModule.chooseMove !== 'function') return moves[0];
+        try {
+            return aiModule.chooseMove(game, state, options) || moves[0];
+        } catch (error) {
+            console.error(`${moduleName} failed:`, error);
+            return moves[0];
+        }
     }
 
     function chooseMove(game, state, options = {}) {
@@ -413,12 +400,15 @@
         const moves = legalMoves(game, state);
         if (!moves.length) return null;
         if (game.id === 'quoridor') return chooseQuoridorAiMainMove(state, moves, options.difficulty);
-        if (game.id === 'gomoku') return window.WuziAI.chooseMove(game, state, options);
-        if (game.id === 'reversi') return window.ReversiAI.chooseMove(game, state, options);
-        if (game.id === 'draughts') return window.DraughtsAI.chooseMove(game, state, options);
-        if (game.id === 'animalchess') return window.AnimalChessAI.chooseMove(game, state, options);
-        if (game.id === 'ninechess') return window.NineChessAI.chooseMove(game, state, options);
-        if (game.id === 'chinese-checkers') return window.ChineseCheckersAI.chooseMove(game, state, options);
+        const externalModules = {
+            gomoku: 'WuziAI',
+            reversi: 'ReversiAI',
+            draughts: 'DraughtsAI',
+            animalchess: 'AnimalChessAI',
+            ninechess: 'NineChessAI',
+            'chinese-checkers': 'ChineseCheckersAI'
+        };
+        if (externalModules[game.id]) return chooseExternalAiMove(externalModules[game.id], game, state, options, moves);
 
         const aiPlayer = options.player || state.current;
         const profile = difficultyProfile(options.difficulty);

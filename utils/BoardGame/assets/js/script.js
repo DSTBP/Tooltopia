@@ -272,6 +272,36 @@
         app.chineseCheckersAnimation = null;
     }
 
+    function clearHintState() {
+        app.hintIndex = null;
+        app.hintText = '';
+    }
+
+    function setHintText(text) {
+        app.hintIndex = null;
+        app.hintText = text;
+    }
+
+    function clearSelectionState() {
+        app.qawaleDraft = null;
+        app.draughtsSelection = null;
+        app.animalChessSelection = null;
+        app.nineChessSelection = null;
+        app.chineseCheckersSelection = null;
+    }
+
+    function clearTransientState() {
+        clearHintState();
+        clearSelectionState();
+        clearChineseCheckersAnimation();
+        clearReversiFlipAnimation();
+    }
+
+    function saveHistory() {
+        app.history.push(cloneState(app.state));
+        if (app.history.length > 120) app.history.shift();
+    }
+
     function setChineseCheckersAnimation(move, player) {
         clearChineseCheckersAnimation();
         const path = (move.path && move.path.length > 1 ? move.path : [move.from, move.to]).filter(index => index !== null && index !== undefined);
@@ -311,16 +341,8 @@
         });
         refs.aiPlayerSelect.disabled = !isSinglePlayer();
         refs.aiDifficultySelect.disabled = !isSinglePlayer();
-        app.hintIndex = null;
-        app.hintText = '';
         app.aiThinking = false;
-        app.qawaleDraft = null;
-        app.draughtsSelection = null;
-        app.animalChessSelection = null;
-        app.nineChessSelection = null;
-        app.chineseCheckersSelection = null;
-        clearChineseCheckersAnimation();
-        clearReversiFlipAnimation();
+        clearTransientState();
         clearAiTimer();
         refresh();
         scheduleAiMove();
@@ -2406,8 +2428,7 @@
             previousIndex: null,
             path: []
         };
-        app.hintIndex = null;
-        app.hintText = `已选择 ${formatPosition(index, app.game.columns)}，继续点击相邻格移动堆叠。`;
+        setHintText(`已选择 ${formatPosition(index, app.game.columns)}，继续点击相邻格移动堆叠。`);
         refresh();
     }
 
@@ -2415,7 +2436,7 @@
         if (!app.qawaleDraft) return;
         const nextSteps = qawaleDraftNextSteps(app.game);
         if (!nextSteps.includes(index)) {
-            app.hintText = '只能移动到正交相邻格，且不能立即回到上一步位置。';
+            setHintText('只能移动到正交相邻格，且不能立即回到上一步位置。');
             renderHint();
             return;
         }
@@ -2437,7 +2458,7 @@
     function cancelQawaleDraft() {
         if (!app.qawaleDraft) return;
         app.qawaleDraft = null;
-        app.hintText = '';
+        clearHintState();
         refresh();
     }
 
@@ -2518,10 +2539,9 @@
         if (app.state.ended || isAiTurn() || app.aiThinking || app.state.board[index] !== app.state.current) return;
         const moves = getChineseCheckersMovesFrom(app.game, app.state, index);
         app.chineseCheckersSelection = { index, moves };
-        app.hintIndex = null;
-        app.hintText = moves.length
+        setHintText(moves.length
             ? `已选择 ${chineseCheckersLabel(index)}，可移动到 ${moves.length} 个位置。`
-            : '该棋子当前没有可移动位置。';
+            : '该棋子当前没有可移动位置。');
         renderBoard();
         renderHint();
     }
@@ -2530,10 +2550,9 @@
         if (app.state.ended || isAiTurn() || app.aiThinking || draughtsOwner(app.state.board[index]) !== app.state.current) return;
         const moves = app.game.getLegalMoves(app.state).filter(move => move.from === index);
         app.draughtsSelection = { index, moves };
-        app.hintIndex = null;
-        app.hintText = moves.length
+        setHintText(moves.length
             ? `已选择 ${draughtsLabel(index)}，可移动到 ${moves.length} 个位置。`
-            : '该棋子当前没有符合最长吃子规则的移动。';
+            : '该棋子当前没有符合最长吃子规则的移动。');
         renderBoard();
         renderHint();
     }
@@ -2542,10 +2561,9 @@
         if (app.state.ended || isAiTurn() || app.aiThinking || animalChessOwner(app.state.board[index]) !== app.state.current) return;
         const moves = animalChessMovesFrom(app.state.board, app.state.current, index);
         app.animalChessSelection = { index, moves };
-        app.hintIndex = null;
-        app.hintText = moves.length
+        setHintText(moves.length
             ? `已选择 ${animalChessPieceLabel(app.state.board[index])} ${animalChessLabel(index)}，可移动到 ${moves.length} 个位置。`
-            : '该棋子当前没有可移动位置。';
+            : '该棋子当前没有可移动位置。');
         renderBoard();
         renderHint();
     }
@@ -2554,10 +2572,9 @@
         if (app.state.ended || isAiTurn() || app.aiThinking || app.state.action !== 'move' || app.state.board[index] !== app.state.current) return;
         const moves = getNineChessMoves(app.game, app.state).filter(move => move.from === index);
         app.nineChessSelection = { index, moves };
-        app.hintIndex = null;
-        app.hintText = moves.length
+        setHintText(moves.length
             ? `已选择 ${nineChessLabel(index)}，可移动到 ${moves.length} 个位置。`
-            : '该棋子当前没有可移动位置。';
+            : '该棋子当前没有可移动位置。');
         renderBoard();
         renderHint();
     }
@@ -3113,14 +3130,34 @@
         renderHint();
     }
 
+    function fallbackAiMove() {
+        try {
+            const moves = app.game.getAiMoves
+                ? app.game.getAiMoves(app.state, { limit: 1 })
+                : app.game.getLegalMoves(app.state);
+            return moves[0] || null;
+        } catch (error) {
+            console.error('BoardGame fallback AI failed:', error);
+            return null;
+        }
+    }
+
     function performAiMove() {
-        if (!isAiTurn() || !window.BoardGameAI) {
+        if (!isAiTurn()) {
             app.aiThinking = false;
             refresh();
             return;
         }
 
-        const move = window.BoardGameAI.chooseMove(app.game, app.state, { player: app.aiPlayer, difficulty: app.aiDifficulty });
+        let move = null;
+        try {
+            move = window.BoardGameAI
+                ? window.BoardGameAI.chooseMove(app.game, app.state, { player: app.aiPlayer, difficulty: app.aiDifficulty })
+                : fallbackAiMove();
+        } catch (error) {
+            console.error('BoardGame AI failed:', error);
+            move = fallbackAiMove();
+        }
         app.aiThinking = false;
 
         if (move !== null && move !== undefined) {
@@ -3152,16 +3189,8 @@
         syncAiPlayerOptions();
         app.state = game.initialState();
         app.history = [];
-        app.hintIndex = null;
-        app.hintText = '';
         app.aiThinking = false;
-        app.qawaleDraft = null;
-        app.draughtsSelection = null;
-        app.animalChessSelection = null;
-        app.nineChessSelection = null;
-        app.chineseCheckersSelection = null;
-        clearChineseCheckersAnimation();
-        clearReversiFlipAnimation();
+        clearTransientState();
         clearAiTimer();
         refresh();
         scheduleAiMove();
@@ -3172,18 +3201,15 @@
         if (!options.ai && isAiTurn()) return;
         if (app.game.id === 'qawale' && move.type === 'qawale') {
             if (!app.game.isLegalMove(app.state, move)) {
-                app.hintIndex = null;
-                app.hintText = '该移动路径不符合石连一线规则。';
+                setHintText('该移动路径不符合石连一线规则。');
                 renderHint();
                 return;
             }
-            app.history.push(cloneState(app.state));
-            if (app.history.length > 120) app.history.shift();
+            saveHistory();
             app.state = app.game.applyMove(app.state, move);
             app.qawaleDraft = null;
             clearReversiFlipAnimation();
-            app.hintIndex = null;
-            app.hintText = '';
+            clearHintState();
             refresh();
             scheduleAiMove();
             return;
@@ -3192,8 +3218,7 @@
         const index = moveIndex(move);
         const legalMove = legalMap.get(index);
         if (!legalMove && !legalMap.has(index)) {
-            app.hintIndex = null;
-            app.hintText = '该位置不是当前规则下的合法落点。';
+            setHintText('该位置不是当前规则下的合法落点。');
             renderHint();
             return;
         }
@@ -3202,8 +3227,7 @@
         const reversiFlips = app.game.id === 'reversi'
             ? (legalMove.flips || []).map(item => ({ index: item, from: app.state.board[item], to: app.state.current })).filter(item => item.from && item.from !== item.to)
             : [];
-        app.history.push(cloneState(app.state));
-        if (app.history.length > 120) app.history.shift();
+        saveHistory();
         app.state = app.game.applyMove(app.state, appliedMove);
         if (app.game.id === 'reversi') setReversiFlipAnimation(reversiFlips);
         else clearReversiFlipAnimation();
@@ -3216,8 +3240,7 @@
         if (app.game.id === 'draughts') app.draughtsSelection = null;
         if (app.game.id === 'animalchess') app.animalChessSelection = null;
         if (app.game.id === 'ninechess') app.nineChessSelection = null;
-        app.hintIndex = null;
-        app.hintText = '';
+        clearHintState();
         refresh();
         scheduleAiMove();
     }
@@ -3227,15 +3250,7 @@
         app.aiThinking = false;
         app.state = app.game.initialState();
         app.history = [];
-        app.hintIndex = null;
-        app.hintText = '';
-        app.qawaleDraft = null;
-        app.draughtsSelection = null;
-        app.animalChessSelection = null;
-        app.nineChessSelection = null;
-        app.chineseCheckersSelection = null;
-        clearChineseCheckersAnimation();
-        clearReversiFlipAnimation();
+        clearTransientState();
         refresh();
         scheduleAiMove();
     }
@@ -3255,15 +3270,7 @@
         for (let count = 0; count < steps; count += 1) {
             app.state = app.history.pop();
         }
-        app.hintIndex = null;
-        app.hintText = '';
-        app.qawaleDraft = null;
-        app.draughtsSelection = null;
-        app.animalChessSelection = null;
-        app.nineChessSelection = null;
-        app.chineseCheckersSelection = null;
-        clearChineseCheckersAnimation();
-        clearReversiFlipAnimation();
+        clearTransientState();
         refresh();
         scheduleAiMove();
     }
@@ -3272,8 +3279,7 @@
         if (app.state.ended || isAiTurn() || app.aiThinking || app.qawaleDraft || app.chineseCheckersAnimation) return;
         const hint = app.game.getHint(app.state);
         if (!hint) {
-            app.hintIndex = null;
-            app.hintText = '当前没有可推荐的合法落点。';
+            setHintText('当前没有可推荐的合法落点。');
         } else {
             app.hintIndex = hint.index;
             app.hintText = hint.text;

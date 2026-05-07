@@ -219,12 +219,6 @@ class MNode {
     addChild(childNode) {
         this.children.push(childNode);
     }
-
-    printChildren() {
-        for (let i = 0; i < this.children.length; i++) {
-            console.log(`children[${i}].move: ${this.children[i].move}`);
-        }
-    }
 }
 
 /*
@@ -415,7 +409,6 @@ class MonteCarloTreeSearch {
                 const currentPosition = pawnOfTurn.position;
                 let nextPosition = next[currentPosition.row][currentPosition.col];
                 if (nextPosition === null) {
-                    console.log("really?? already in goal position");
                     throw "already in goal Position...."
                 }             
                 if (AI.arePawnsAdjacent(simulationGame)) {
@@ -451,7 +444,6 @@ class MonteCarloTreeSearch {
                     cacheForPawns[0].updated = false;
                     cacheForPawns[1].updated = false;
                 } else {
-                    console.log("No probable walls possible")
                     pawnMoveFlag = true;
                 }
             } else {
@@ -498,8 +490,6 @@ class AI {
     }
 
     chooseNextMove(game) {
-        const d0 = new Date();
-        
         // heuristic:
         // for first move of each pawn
         // go forward if possible
@@ -547,7 +537,6 @@ class AI {
                 }
             }
             if (!rightMove) {
-                console.log("original move:", bestMove);
                 const nextPosition = randomChoice(nextPositions);
                 bestMove = [[nextPosition.row, nextPosition.col], null, null];
             }
@@ -560,7 +549,6 @@ class AI {
                 [null, null, [4, 3]],
                 [null, null, [4, 4]]
             ];
-            console.log("original move:", bestMove);
             bestMove = randomChoice(bestMoves); 
         }
         if (game.turn < 5 && game.pawnOfNotTurn.position.col === 4 && game.pawnOfNotTurn.position.row === 2 && Math.random() < 0.5) {
@@ -570,36 +558,7 @@ class AI {
                 [null, null, [3, 3]],
                 [null, null, [3, 4]]
             ];
-            console.log("original move:", bestMove);
             bestMove = randomChoice(bestMoves); 
-        }
-
-        const d1 = new Date();
-        const uctConst = mcts.root.children[0].uctConst;
-        console.log(`time taken by AI for ${(this.numOfMCTSSimulations)} rollouts, c=${(uctConst)}: ${(d1.getTime() - d0.getTime())/1000} sec`);
-
-        if (this.aiDevelopMode) {
-            console.log("descend maxWinRateChild")
-            let node = mcts.root
-            let i = 1;
-            while(node.children.length > 0) {
-                node = node.maxWinRateChild;
-                console.log(i, node.move, node.winRate, node.numWins, node.numSims);
-                i++;
-            }
-            console.log("descend maxSimsChild")
-            node = mcts.root
-            i = 1;
-            while(node.children.length > 0) {
-                node = node.maxSimsChild;
-                console.log(i, node.move, node.winRate, node.numWins, node.numSims);
-                i++;
-            }
-            console.log(`maxDepth: ${MonteCarloTreeSearch.maxDepth(mcts.root)}`);
-            console.log(`estimated maxWinRateChild win rate: ${mcts.root.maxWinRateChild.winRate}`);
-            console.log(`estimated maxSimsChild win rate: ${winRate}`);
-        } else {
-            console.log(`estimated AI win rate: ${winRate}`);
         }
         return bestMove;
     }
@@ -661,12 +620,6 @@ class AI {
             const next = AI.get2DArrayPrevAndNextAndDistanceToGoalFor(game.pawnOfTurn, game)[1];
             const currentPosition = game.pawnOfTurn.position
             nextPosition = next[currentPosition.row][currentPosition.col]; 
-
-            // if already in goal position.
-            if (nextPosition === null) {
-                console.log("really?? already in goal position");
-                //throw "already in goal Position...."
-            }
         }
         return nextPosition;
     }
