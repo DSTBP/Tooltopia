@@ -1,0 +1,54 @@
+<RCC>
+    <qresource prefix="/image">
+        <file>resources/image/black_piece.png</file>
+        <file>resources/image/board.png</file>
+        <file>resources/image/white_piece.png</file>
+        <file>resources/image/background.png</file>
+    </qresource>
+    <qresource prefix="/icon">
+        <file>resources/icon/Black.png</file>
+        <file>resources/icon/White.png</file>
+        <file>resources/icon/ActualSizeHS.png</file>
+        <file>resources/icon/BreakpointHS.png</file>
+        <file>resources/icon/DocumentHS.png</file>
+        <file>resources/icon/EditInformationHS.png</file>
+        <file>resources/icon/EditTableHS.png</file>
+        <file>resources/icon/Error.png</file>
+        <file>resources/icon/First.png</file>
+        <file>resources/icon/FlipHorizontalHS.png</file>
+        <file>resources/icon/FlipVerticalHS.png</file>
+        <file>resources/icon/FullScreenHS.png</file>
+        <file>resources/icon/Help.png</file>
+        <file>resources/icon/HomeHS.png</file>
+        <file>resources/icon/Last.png</file>
+        <file>resources/icon/LeftHS.png</file>
+        <file>resources/icon/LegendHS.png</file>
+        <file>resources/icon/NewDocumentHS.png</file>
+        <file>resources/icon/Next.png</file>
+        <file>resources/icon/OpenHS.png</file>
+        <file>resources/icon/Pause.png</file>
+        <file>resources/icon/Play.png</file>
+        <file>resources/icon/Previous.png</file>
+        <file>resources/icon/PrimaryKeyHS.png</file>
+        <file>resources/icon/Refresh.png</file>
+        <file>resources/icon/Request.png</file>
+        <file>resources/icon/OptionsHS.png</file>
+        <file>resources/icon/Web.png</file>
+        <file>resources/icon/RestartHS.png</file>
+        <file>resources/icon/Invert.png</file>
+        <file>resources/icon/RightHS.png</file>
+        <file>resources/icon/SaveHS.png</file>
+    </qresource>
+    <qresource prefix="/sound">
+        <file>resources/sound/choose.wav</file>
+        <file>resources/sound/drog.wav</file>
+        <file>resources/sound/forbidden.wav</file>
+        <file>resources/sound/loss.wav</file>
+        <file>resources/sound/move.wav</file>
+        <file>resources/sound/newgame.wav</file>
+        <file>resources/sound/remove.wav</file>
+        <file>resources/sound/win.wav</file>
+        <file>resources/sound/warning.wav</file>
+        <file>resources/sound/capture.wav</file>
+    </qresource>
+</RCC>

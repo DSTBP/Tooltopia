@@ -38,6 +38,7 @@
         qawaleDraft: null,
         draughtsSelection: null,
         animalChessSelection: null,
+        nineChessSelection: null,
         chineseCheckersSelection: null,
         chineseCheckersAnimation: null,
         chineseCheckersAnimationTimer: null,
@@ -76,6 +77,40 @@
         red: new Set([52, 58, 60])
     };
     const ANIMAL_CHESS_RIVERS = new Set([22, 23, 25, 26, 29, 30, 32, 33, 36, 37, 39, 40]);
+
+    const NINE_CHESS_POINTS = [
+        { x: 50, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 50 }, { x: 100, y: 100 }, { x: 50, y: 100 }, { x: 0, y: 100 }, { x: 0, y: 50 }, { x: 0, y: 0 },
+        { x: 50, y: 16.67 }, { x: 83.33, y: 16.67 }, { x: 83.33, y: 50 }, { x: 83.33, y: 83.33 }, { x: 50, y: 83.33 }, { x: 16.67, y: 83.33 }, { x: 16.67, y: 50 }, { x: 16.67, y: 16.67 },
+        { x: 50, y: 33.33 }, { x: 66.67, y: 33.33 }, { x: 66.67, y: 50 }, { x: 66.67, y: 66.67 }, { x: 50, y: 66.67 }, { x: 33.33, y: 66.67 }, { x: 33.33, y: 50 }, { x: 33.33, y: 33.33 }
+    ];
+
+    const NINE_CHESS_MILLS = [
+        [7, 0, 1], [1, 2, 3], [3, 4, 5], [5, 6, 7],
+        [15, 8, 9], [9, 10, 11], [11, 12, 13], [13, 14, 15],
+        [23, 16, 17], [17, 18, 19], [19, 20, 21], [21, 22, 23],
+        [0, 8, 16], [2, 10, 18], [4, 12, 20], [6, 14, 22]
+    ];
+
+    const NINE_CHESS_ADJACENT = Array.from({ length: 24 }, (_, index) => {
+        const ring = Math.floor(index / 8);
+        const seat = index % 8;
+        const neighbors = [
+            ring * 8 + ((seat + 7) % 8),
+            ring * 8 + ((seat + 1) % 8)
+        ];
+        if (seat % 2 === 0) {
+            if (ring > 0) neighbors.push((ring - 1) * 8 + seat);
+            if (ring < 2) neighbors.push((ring + 1) * 8 + seat);
+        }
+        return neighbors;
+    });
+
+    const NINE_CHESS_EDGES = NINE_CHESS_ADJACENT.reduce((edges, neighbors, from) => {
+        neighbors.forEach(to => {
+            if (from < to) edges.push([from, to]);
+        });
+        return edges;
+    }, []);
 
     const CHINESE_CHECKERS_ROW_COUNTS = [1, 2, 3, 4, 13, 12, 11, 10, 9, 10, 11, 12, 13, 4, 3, 2, 1];
 
@@ -118,7 +153,11 @@
             hWalls: state.hWalls ? state.hWalls.slice() : undefined,
             vWalls: state.vWalls ? state.vWalls.slice() : undefined,
             qawaleStacks: state.qawaleStacks ? state.qawaleStacks.map(stack => stack.slice()) : undefined,
-            piecesLeft: state.piecesLeft ? { ...state.piecesLeft } : undefined
+            piecesLeft: state.piecesLeft ? { ...state.piecesLeft } : undefined,
+            phase: state.phase,
+            action: state.action,
+            pendingCapture: state.pendingCapture,
+            selectedIndex: state.selectedIndex
         };
     }
 
@@ -170,6 +209,12 @@
             game.rows = 9;
             game.columns = 7;
             game.tag = '9 x 7';
+            return;
+        }
+        if (game.id === 'ninechess') {
+            game.rows = 7;
+            game.columns = 7;
+            game.tag = '24 点';
             return;
         }
         game.rows = size;
@@ -272,6 +317,7 @@
         app.qawaleDraft = null;
         app.draughtsSelection = null;
         app.animalChessSelection = null;
+        app.nineChessSelection = null;
         app.chineseCheckersSelection = null;
         clearChineseCheckersAnimation();
         clearReversiFlipAnimation();
@@ -1032,6 +1078,265 @@
             }
             return counts;
         }, { red: 0, black: 0, total: 0 });
+    }
+
+    function nineChessLabel(index) {
+        const rings = ['外圈', '中圈', '内圈'];
+        const seats = ['上中', '右上', '右中', '右下', '下中', '左下', '左中', '左上'];
+        return `${rings[Math.floor(index / 8)]}${seats[index % 8]}`;
+    }
+
+    function nineChessBoardPoint(index) {
+        const point = NINE_CHESS_POINTS[index];
+        return { x: 8 + point.x * 0.84, y: 8 + point.y * 0.84 };
+    }
+
+    function nineChessInitialState(game) {
+        const state = createBaseState(boardTotal(game), 'white');
+        state.piecesLeft = { white: 9, black: 9 };
+        state.phase = 'placing';
+        state.action = 'place';
+        state.pendingCapture = false;
+        state.selectedIndex = null;
+        return state;
+    }
+
+    function nineChessCounts(board) {
+        return board.reduce((counts, piece) => {
+            if (piece === 'white') counts.white += 1;
+            if (piece === 'black') counts.black += 1;
+            return counts;
+        }, { white: 0, black: 0 });
+    }
+
+    function nineChessPlayerCount(board, player) {
+        return board.filter(piece => piece === player).length;
+    }
+
+    function nineChessTotalAvailable(state, player) {
+        return nineChessPlayerCount(state.board, player) + (state.piecesLeft && state.piecesLeft[player] ? state.piecesLeft[player] : 0);
+    }
+
+    function nineChessMillsAt(index) {
+        return NINE_CHESS_MILLS.filter(line => line.includes(index));
+    }
+
+    function nineChessIsMill(board, player, line) {
+        return line.every(index => board[index] === player);
+    }
+
+    function nineChessMillAt(board, player, index) {
+        return nineChessMillsAt(index).find(line => nineChessIsMill(board, player, line)) || null;
+    }
+
+    function nineChessIsPieceInMill(board, index) {
+        const player = board[index];
+        return Boolean(player && nineChessMillAt(board, player, index));
+    }
+
+    function nineChessAllPiecesInMills(board, player) {
+        const pieces = board.map((piece, index) => piece === player ? index : -1).filter(index => index >= 0);
+        return pieces.length > 0 && pieces.every(index => nineChessIsPieceInMill(board, index));
+    }
+
+    function nineChessCanFly(state, player) {
+        return state.phase === 'moving' && nineChessPlayerCount(state.board, player) <= 3;
+    }
+
+    function nineChessEmptyIndexes(board) {
+        return board.map((piece, index) => piece ? -1 : index).filter(index => index >= 0);
+    }
+
+    function nineChessCaptureTargets(game, state) {
+        const opponent = otherPlayer(game, state.current);
+        const occupied = state.board.map((piece, index) => piece === opponent ? index : -1).filter(index => index >= 0);
+        if (nineChessAllPiecesInMills(state.board, opponent)) return occupied;
+        return occupied.filter(index => !nineChessIsPieceInMill(state.board, index));
+    }
+
+    function nineChessShiftTargets(state, from) {
+        if (nineChessCanFly(state, state.current)) return nineChessEmptyIndexes(state.board);
+        return NINE_CHESS_ADJACENT[from].filter(index => !state.board[index]);
+    }
+
+    function nineChessMoveObject(type, values) {
+        if (type === 'place') return { type: 'ninechess-place', index: `ninechess:place:${values.to}`, to: values.to };
+        if (type === 'shift') return { type: 'ninechess-shift', index: `ninechess:shift:${values.from}-${values.to}`, from: values.from, to: values.to };
+        return { type: 'ninechess-capture', index: `ninechess:capture:${values.capture}`, capture: values.capture };
+    }
+
+    function getNineChessMovesForPlayer(state, player) {
+        if (state.phase !== 'moving') return [];
+        return state.board.reduce((moves, piece, from) => {
+            if (piece !== player) return moves;
+            const targets = nineChessCanFly({ ...state, current: player }, player)
+                ? nineChessEmptyIndexes(state.board)
+                : NINE_CHESS_ADJACENT[from].filter(index => !state.board[index]);
+            targets.forEach(to => moves.push(nineChessMoveObject('shift', { from, to })));
+            return moves;
+        }, []);
+    }
+
+    function getNineChessMoves(game, state) {
+        if (state.ended) return [];
+        if (state.action === 'capture') {
+            return nineChessCaptureTargets(game, state).map(capture => nineChessMoveObject('capture', { capture }));
+        }
+        if (state.phase === 'placing') {
+            if (!state.piecesLeft || state.piecesLeft[state.current] <= 0) return [];
+            return nineChessEmptyIndexes(state.board).map(to => nineChessMoveObject('place', { to }));
+        }
+        return state.board.reduce((moves, piece, from) => {
+            if (piece === state.current) {
+                nineChessShiftTargets(state, from).forEach(to => moves.push(nineChessMoveObject('shift', { from, to })));
+            }
+            return moves;
+        }, []);
+    }
+
+    function nineChessCheckMaterialWinner(game, state) {
+        for (const player of game.players.map(item => item.id)) {
+            if (nineChessTotalAvailable(state, player) < 3) {
+                state.ended = true;
+                state.winner = otherPlayer(game, player);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function nineChessCheckBlockedWinner(game, state) {
+        if (state.phase === 'moving' && state.action !== 'capture' && !getNineChessMovesForPlayer(state, state.current).length) {
+            state.ended = true;
+            state.winner = otherPlayer(game, state.current);
+            return true;
+        }
+        return false;
+    }
+
+    function nineChessCheckWinner(game, state) {
+        return nineChessCheckMaterialWinner(game, state) || nineChessCheckBlockedWinner(game, state);
+    }
+
+    function nineChessEnterNextTurn(game, state) {
+        state.pendingCapture = false;
+        state.selectedIndex = null;
+        if (state.phase === 'placing' && state.piecesLeft.white === 0 && state.piecesLeft.black === 0) {
+            state.phase = 'moving';
+            state.current = game.players[0].id;
+            state.action = 'move';
+            nineChessCheckWinner(game, state);
+            return state;
+        }
+        state.current = otherPlayer(game, state.current);
+        state.action = state.phase === 'placing' ? 'place' : 'move';
+        nineChessCheckWinner(game, state);
+        return state;
+    }
+
+    function nineChessLineAfterMove(board, player, index) {
+        return nineChessMillAt(board, player, index);
+    }
+
+    function nineChessMoveText(game, state, move, player) {
+        if (move.type === 'ninechess-place') return `${playerInfo(game, player).label} 落于 ${nineChessLabel(move.to)}`;
+        if (move.type === 'ninechess-shift') return `${playerInfo(game, player).label} ${nineChessLabel(move.from)} → ${nineChessLabel(move.to)}`;
+        return `${playerInfo(game, player).label} 提掉 ${playerInfo(game, otherPlayer(game, player)).label} ${nineChessLabel(move.capture)}`;
+    }
+
+    function applyNineChessMove(game, state, move) {
+        const player = state.current;
+        const next = cloneState(state);
+        next.passMessage = '';
+        next.winLine = [];
+        next.selectedIndex = null;
+        if (move.type === 'ninechess-capture') {
+            next.board[move.capture] = null;
+            next.moveCount += 1;
+            next.moves.push({ player, index: move.index, text: nineChessMoveText(game, state, move, player) });
+            next.action = state.phase === 'placing' ? 'place' : 'move';
+            next.pendingCapture = false;
+            if (!nineChessCheckMaterialWinner(game, next)) nineChessEnterNextTurn(game, next);
+            return next;
+        }
+        if (move.type === 'ninechess-place') {
+            next.board[move.to] = player;
+            next.piecesLeft[player] -= 1;
+            next.moveCount += 1;
+            next.moves.push({ player, index: move.index, text: nineChessMoveText(game, state, move, player) });
+            const line = nineChessLineAfterMove(next.board, player, move.to);
+            if (line) {
+                next.action = 'capture';
+                next.pendingCapture = true;
+                next.winLine = line.slice();
+                return next;
+            }
+            return nineChessEnterNextTurn(game, next);
+        }
+        next.board[move.from] = null;
+        next.board[move.to] = player;
+        next.moveCount += 1;
+        next.moves.push({ player, index: move.index, text: nineChessMoveText(game, state, move, player) });
+        const line = nineChessLineAfterMove(next.board, player, move.to);
+        if (line) {
+            next.action = 'capture';
+            next.pendingCapture = true;
+            next.winLine = line.slice();
+            return next;
+        }
+        return nineChessEnterNextTurn(game, next);
+    }
+
+    function nineChessPreviewBoard(state, move) {
+        const board = state.board.slice();
+        if (move.type === 'ninechess-place') board[move.to] = state.current;
+        if (move.type === 'ninechess-shift') {
+            board[move.from] = null;
+            board[move.to] = state.current;
+        }
+        if (move.type === 'ninechess-capture') board[move.capture] = null;
+        return board;
+    }
+
+    function nineChessOpenMillCount(board, player) {
+        return NINE_CHESS_MILLS.reduce((count, line) => {
+            const own = line.filter(index => board[index] === player).length;
+            const empty = line.filter(index => !board[index]).length;
+            return count + (own === 2 && empty === 1 ? 1 : 0);
+        }, 0);
+    }
+
+    function nineChessMoveScore(game, state, move) {
+        if (move.type === 'ninechess-capture') {
+            const opponent = otherPlayer(game, state.current);
+            return 3000 + nineChessMillsAt(move.capture).length * 120 + (nineChessIsPieceInMill(state.board, move.capture) ? 30 : 0) + NINE_CHESS_ADJACENT[move.capture].filter(index => state.board[index] === opponent).length * 35;
+        }
+        const board = nineChessPreviewBoard(state, move);
+        const to = move.to;
+        const mill = nineChessLineAfterMove(board, state.current, to);
+        const opponent = otherPlayer(game, state.current);
+        const openOwn = nineChessOpenMillCount(board, state.current);
+        const openOpponentBefore = nineChessOpenMillCount(state.board, opponent);
+        const openOpponentAfter = nineChessOpenMillCount(board, opponent);
+        return (mill ? 5000 : 0)
+            + openOwn * 220
+            + (openOpponentBefore - openOpponentAfter) * 180
+            + NINE_CHESS_ADJACENT[to].length * 18
+            + (move.type === 'ninechess-shift' && nineChessCanFly(state, state.current) ? 40 : 0);
+    }
+
+    function getNineChessHint(game, state) {
+        const moves = getNineChessMoves(game, state);
+        if (!moves.length) return null;
+        const best = moves.slice().sort((a, b) => nineChessMoveScore(game, state, b) - nineChessMoveScore(game, state, a) || String(a.index).localeCompare(String(b.index)))[0];
+        if (best.type === 'ninechess-capture') {
+            return { index: best.index, text: `建议提掉 ${playerInfo(game, otherPlayer(game, state.current)).label} ${nineChessLabel(best.capture)}，削弱对手成三潜力。` };
+        }
+        const board = nineChessPreviewBoard(state, best);
+        const reason = nineChessLineAfterMove(board, state.current, best.to)
+            ? '这一步可以立即形成三连并获得提子机会。'
+            : '这一步能增加活二或阻断对手威胁。';
+        return { index: best.index, text: `建议 ${nineChessMoveText(game, state, best, state.current)}，${reason}` };
     }
 
     function qawaleTop(stack) {
@@ -1898,6 +2203,49 @@
             }
         },
         {
+            id: 'ninechess',
+            name: '九子棋',
+            tag: '24 点',
+            color: '#a16207',
+            rows: 7,
+            columns: 7,
+            totalCells: 24,
+            minSize: 7,
+            maxSize: 7,
+            sizeStep: 1,
+            goal: '成三提子并困住对手',
+            hintLabel: '成三、活二与飞子',
+            summary: '莫里斯九子棋：双方各 9 子，先摆子再沿线走子，成三即可提子；只剩 3 子时可飞到任意空点。',
+            rules: ['白棋先手，双方轮流把手中 9 枚棋子摆到 24 个交叉点。', '任意一方在一条合法线段上形成三子相连后，立即提掉对手一子。', '提子时不能提对手已在三连中的棋，除非对手所有棋子都在三连中。', '摆子完成后进入走子阶段，通常只能沿线移动到相邻空点。', '当一方仅剩 3 枚棋子时，可以飞到任意空点；少于 3 子或无合法移动时判负。'],
+            players: [
+                { id: 'white', label: '白棋', className: 'nine-white', symbol: '●' },
+                { id: 'black', label: '黑棋', className: 'nine-black', symbol: '●' }
+            ],
+            initialState() {
+                return nineChessInitialState(this);
+            },
+            getLegalMoves(state) {
+                return getNineChessMoves(this, state);
+            },
+            applyMove(state, move) {
+                return applyNineChessMove(this, state, move);
+            },
+            getHint(state) {
+                return getNineChessHint(this, state);
+            },
+            analyze(state) {
+                const counts = nineChessCounts(state.board);
+                const legal = this.getLegalMoves(state).length;
+                return [
+                    { label: '白棋在盘', value: counts.white, total: 9 },
+                    { label: '黑棋在盘', value: counts.black, total: 9 },
+                    { label: '白棋手中', value: state.piecesLeft.white, total: 9 },
+                    { label: '黑棋手中', value: state.piecesLeft.black, total: 9 },
+                    { label: '合法行动', value: legal, total: 24 }
+                ];
+            }
+        },
+        {
             id: 'chinese-checkers',
             name: '中国跳棋',
             tag: '17 行星形棋盘',
@@ -2202,6 +2550,18 @@
         renderHint();
     }
 
+    function selectNineChessPiece(index) {
+        if (app.state.ended || isAiTurn() || app.aiThinking || app.state.action !== 'move' || app.state.board[index] !== app.state.current) return;
+        const moves = getNineChessMoves(app.game, app.state).filter(move => move.from === index);
+        app.nineChessSelection = { index, moves };
+        app.hintIndex = null;
+        app.hintText = moves.length
+            ? `已选择 ${nineChessLabel(index)}，可移动到 ${moves.length} 个位置。`
+            : '该棋子当前没有可移动位置。';
+        renderBoard();
+        renderHint();
+    }
+
     function renderDraughtsBoard(game, state) {
         const selected = app.draughtsSelection && draughtsOwner(state.board[app.draughtsSelection.index]) === state.current
             ? app.draughtsSelection
@@ -2320,6 +2680,94 @@
         });
 
         refs.board.appendChild(grid);
+    }
+
+    function renderNineChessBoard(game, state) {
+        const selected = app.nineChessSelection && state.board[app.nineChessSelection.index] === state.current
+            ? app.nineChessSelection
+            : null;
+        const legalMoves = game.getLegalMoves(state);
+        const selectedMoves = selected ? new Map(selected.moves.map(move => [move.to, move])) : new Map();
+        const legalByIndex = new Map(legalMoves.filter(move => move.type !== 'ninechess-shift').map(move => [move.type === 'ninechess-capture' ? move.capture : move.to, move]));
+        const hintMove = legalMoves.find(move => move.index === app.hintIndex);
+        const movable = new Set(legalMoves.filter(move => move.type === 'ninechess-shift').map(move => move.from));
+        const locked = state.ended || isAiTurn() || app.aiThinking;
+
+        refs.board.className = `board ${game.id}`;
+        refs.board.classList.toggle('is-ai-turn', isAiTurn() || app.aiThinking);
+        refs.board.innerHTML = '';
+
+        const info = document.createElement('div');
+        info.className = 'ninechess-info';
+        if (state.action === 'capture') {
+            info.textContent = `${playerInfo(game, state.current).label} 已成三 · 请选择一枚对方棋子提掉`;
+        } else if (state.phase === 'placing') {
+            info.textContent = `${playerInfo(game, state.current).label} 摆子中 · 手中剩余 ${state.piecesLeft[state.current]} 枚`;
+        } else if (selected) {
+            info.textContent = `${playerInfo(game, state.current).label} 已选择 ${nineChessLabel(selected.index)} · 点击高亮点移动`;
+        } else {
+            info.textContent = `${playerInfo(game, state.current).label} 走子中${nineChessCanFly(state, state.current) ? ' · 剩三子可飞任意空点' : ' · 先选择己方可移动棋子'}`;
+        }
+        refs.board.appendChild(info);
+
+        const board = document.createElement('div');
+        board.className = 'ninechess-board';
+
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.classList.add('ninechess-lines');
+        svg.setAttribute('viewBox', '0 0 100 100');
+        svg.setAttribute('aria-hidden', 'true');
+        NINE_CHESS_EDGES.forEach(([from, to]) => {
+            const a = nineChessBoardPoint(from);
+            const b = nineChessBoardPoint(to);
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', a.x);
+            line.setAttribute('y1', a.y);
+            line.setAttribute('x2', b.x);
+            line.setAttribute('y2', b.y);
+            svg.appendChild(line);
+        });
+        board.appendChild(svg);
+
+        NINE_CHESS_POINTS.forEach((_, index) => {
+            const value = state.board[index];
+            const selectedMove = selectedMoves.get(index);
+            const legalMove = selectedMove || legalByIndex.get(index);
+            const point = nineChessBoardPoint(index);
+            const canSelect = !locked && state.action === 'move' && value === state.current && movable.has(index);
+            const cell = document.createElement('button');
+            cell.type = 'button';
+            cell.className = 'ninechess-point';
+            cell.style.left = `${point.x}%`;
+            cell.style.top = `${point.y}%`;
+            cell.setAttribute('role', 'gridcell');
+            cell.setAttribute('aria-label', `${nineChessLabel(index)} ${value ? playerInfo(game, value).label : '空点'}`);
+            if (value) cell.classList.add('occupied', value);
+            if (selected && selected.index === index) cell.classList.add('selected');
+            if (canSelect) cell.classList.add('movable');
+            if (legalMove) cell.classList.add('legal', legalMove.type === 'ninechess-capture' ? 'capture' : 'quiet');
+            if ((hintMove && (hintMove.to === index || hintMove.capture === index)) || app.hintIndex === index) cell.classList.add('hint');
+            if (state.winLine && state.winLine.includes(index)) cell.classList.add('win');
+            if (value) {
+                const piece = document.createElement('span');
+                piece.className = `ninechess-piece ${playerInfo(game, value).className}`;
+                piece.textContent = playerInfo(game, value).symbol || '';
+                cell.appendChild(piece);
+            }
+            cell.disabled = locked || (!legalMove && !canSelect);
+            cell.addEventListener('click', () => {
+                if (selectedMove || legalMove) {
+                    playMove(selectedMove || legalMove);
+                    return;
+                }
+                if (state.action === 'move') {
+                    selectNineChessPiece(index);
+                }
+            });
+            board.appendChild(cell);
+        });
+
+        refs.board.appendChild(board);
     }
 
     function renderChineseCheckersBoard(game, state) {
@@ -2507,6 +2955,10 @@
         }
         if (game.id === 'animalchess') {
             renderAnimalChessBoard(game, state);
+            return;
+        }
+        if (game.id === 'ninechess') {
+            renderNineChessBoard(game, state);
             return;
         }
         if (game.id === 'quoridor') {
@@ -2706,6 +3158,7 @@
         app.qawaleDraft = null;
         app.draughtsSelection = null;
         app.animalChessSelection = null;
+        app.nineChessSelection = null;
         app.chineseCheckersSelection = null;
         clearChineseCheckersAnimation();
         clearReversiFlipAnimation();
@@ -2762,6 +3215,7 @@
         }
         if (app.game.id === 'draughts') app.draughtsSelection = null;
         if (app.game.id === 'animalchess') app.animalChessSelection = null;
+        if (app.game.id === 'ninechess') app.nineChessSelection = null;
         app.hintIndex = null;
         app.hintText = '';
         refresh();
@@ -2778,6 +3232,7 @@
         app.qawaleDraft = null;
         app.draughtsSelection = null;
         app.animalChessSelection = null;
+        app.nineChessSelection = null;
         app.chineseCheckersSelection = null;
         clearChineseCheckersAnimation();
         clearReversiFlipAnimation();
@@ -2805,6 +3260,7 @@
         app.qawaleDraft = null;
         app.draughtsSelection = null;
         app.animalChessSelection = null;
+        app.nineChessSelection = null;
         app.chineseCheckersSelection = null;
         clearChineseCheckersAnimation();
         clearReversiFlipAnimation();

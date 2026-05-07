@@ -417,6 +417,7 @@
         if (game.id === 'reversi') return window.ReversiAI.chooseMove(game, state, options);
         if (game.id === 'draughts') return window.DraughtsAI.chooseMove(game, state, options);
         if (game.id === 'animalchess') return window.AnimalChessAI.chooseMove(game, state, options);
+        if (game.id === 'ninechess') return window.NineChessAI.chooseMove(game, state, options);
         if (game.id === 'chinese-checkers') return window.ChineseCheckersAI.chooseMove(game, state, options);
 
         const aiPlayer = options.player || state.current;

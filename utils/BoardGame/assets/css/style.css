@@ -1641,6 +1641,124 @@ html.day-init .animalchess-info {
     color: #14532d;
 }
 
+.board.ninechess {
+    --nine-board-size: min(78vw, 620px);
+    --nine-point-size: clamp(36px, 7vw, 56px);
+    width: min(100%, calc(var(--nine-board-size) + 1.5rem));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, #4a2c12, #1f1309);
+    border-color: rgba(245, 158, 11, 0.32);
+    padding: clamp(0.7rem, 2vw, 1rem);
+}
+
+.ninechess-info {
+    color: rgba(254, 243, 199, 0.92);
+    font-size: 0.86rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.ninechess-board {
+    position: relative;
+    width: var(--nine-board-size);
+    max-width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at center, rgba(251, 191, 36, 0.18), transparent 18rem),
+        linear-gradient(135deg, #d9a65f, #9a6530);
+    border: 2px solid rgba(74, 38, 12, 0.72);
+    box-shadow: inset 0 0 0 5px rgba(255, 237, 213, 0.18), 0 18px 34px rgba(0, 0, 0, 0.26);
+    overflow: visible;
+}
+
+.ninechess-lines {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.ninechess-lines line {
+    stroke: rgba(69, 26, 3, 0.72);
+    stroke-width: 1.25;
+    stroke-linecap: round;
+}
+
+.ninechess-point {
+    position: absolute;
+    width: var(--nine-point-size);
+    height: var(--nine-point-size);
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    z-index: 2;
+}
+
+.ninechess-point.legal.quiet {
+    border-color: rgba(34, 197, 94, 0.92);
+    box-shadow: inset 0 0 0 5px rgba(34, 197, 94, 0.22), 0 0 16px rgba(34, 197, 94, 0.32);
+}
+
+.ninechess-point.legal.capture {
+    border-color: rgba(239, 68, 68, 0.96);
+    box-shadow: inset 0 0 0 5px rgba(239, 68, 68, 0.22), 0 0 16px rgba(239, 68, 68, 0.36);
+}
+
+.ninechess-point.movable {
+    border-color: rgba(250, 204, 21, 0.95);
+}
+
+.ninechess-point.selected {
+    outline: 4px solid rgba(250, 204, 21, 0.78);
+    outline-offset: 3px;
+}
+
+.ninechess-point.win {
+    box-shadow: inset 0 0 0 5px rgba(34, 197, 94, 0.28), 0 0 18px rgba(34, 197, 94, 0.5);
+}
+
+.ninechess-piece {
+    width: 92%;
+    height: 92%;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    font-size: 0;
+    box-shadow:
+        inset 0 4px 6px rgba(255, 255, 255, 0.36),
+        inset 0 -6px 9px rgba(0, 0, 0, 0.26),
+        0 7px 12px rgba(0, 0, 0, 0.28);
+}
+
+.ninechess-piece.nine-white {
+    background: #f8fafc;
+    border: 2px solid #cbd5e1;
+}
+
+.ninechess-piece.nine-black {
+    background: #111827;
+    border: 2px solid #020617;
+}
+
+body.day-mode .board.ninechess,
+html.day-init .board.ninechess {
+    background: linear-gradient(135deg, #fff7ed, #fed7aa);
+    border-color: rgba(154, 52, 18, 0.24);
+    box-shadow: inset 0 0 0 1px rgba(154, 52, 18, 0.1), 0 18px 34px rgba(15, 23, 42, 0.14);
+}
+
+body.day-mode .ninechess-info,
+html.day-init .ninechess-info {
+    color: #7c2d12;
+}
+
 .board.chinese-checkers {
     --cc-board-size: min(74vw, 640px);
     --cc-hole: clamp(16px, 3.4vw, 30px);
