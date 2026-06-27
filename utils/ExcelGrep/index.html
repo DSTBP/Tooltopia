@@ -70,7 +70,7 @@
             <div class="upload-area">
                 <div class="file-upload">
                     <div class="file-upload-area" id="fileUploadArea">
-                        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display: none;">
+                        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" multiple style="display: none;">
                         <div class="upload-icon">📁</div>
                         <p class="upload-text">点击选择 Excel 或 CSV 文件，或拖拽文件到此处</p>
                         <p class="upload-hint">支持 .xlsx, .xls, .csv 格式文件</p>
@@ -104,9 +104,16 @@
             <button id="continueBtn" class="btn btn-primary">继续设置搜索条件</button>
         </div>
 
-        <!-- 步骤3: 配置搜索条件 -->
+        <!-- 步骤3: 合并表格预览 -->
+        <div class="section" id="step3Merged" style="display: none;">
+            <h2>步骤 3: 合并表格预览</h2>
+            <div id="mergedTablePreview" class="table-preview"></div>
+            <button id="continueMergedBtn" class="btn btn-primary">继续设置搜索条件</button>
+        </div>
+
+        <!-- 步骤4: 配置搜索条件 -->
         <div class="section" id="step3" style="display: none;">
-            <h2>步骤 3: 配置搜索条件</h2>
+            <h2>步骤 4: 配置搜索条件</h2>
             <div class="search-config">
                 <div class="logic-type">
                     <label>匹配逻辑：</label>
@@ -125,9 +132,9 @@
             <button id="searchBtn" class="btn btn-success">开始搜索</button>
         </div>
 
-        <!-- 步骤4: 搜索结果 -->
+        <!-- 步骤5: 搜索结果 -->
         <div class="section" id="step4" style="display: none;">
-            <h2>步骤 4: 搜索结果</h2>
+            <h2>步骤 5: 搜索结果</h2>
             <div id="searchResults" class="search-results"></div>
             <div class="export-area" style="display: none;">
                 <h3>导出结果</h3>

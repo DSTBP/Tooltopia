@@ -6,9 +6,10 @@ const AppState = {
     tableData: [],
     headers: [],
     rows: [],
+    fileTables: [],
     searchResults: [],
     conditionCounter: 0,
-    selectedFile: null
+    selectedFiles: []
 };
 
 const UI = {};
@@ -30,15 +31,18 @@ function cacheDom() {
         encodingSelect: document.getElementById('encodingSelect'),
         loadTableBtn: document.getElementById('loadTableBtn'),
         continueBtn: document.getElementById('continueBtn'),
+        continueMergedBtn: document.getElementById('continueMergedBtn'),
         addConditionBtn: document.getElementById('addConditionBtn'),
         searchBtn: document.getElementById('searchBtn'),
         exportExcelBtn: document.getElementById('exportExcelBtn'),
         exportCsvBtn: document.getElementById('exportCsvBtn'),
         tablePreview: document.getElementById('tablePreview'),
+        mergedTablePreview: document.getElementById('mergedTablePreview'),
         searchConditions: document.getElementById('searchConditions'),
         searchResults: document.getElementById('searchResults'),
         exportArea: document.querySelector('.export-area'),
         step2: document.getElementById('step2'),
+        step3Merged: document.getElementById('step3Merged'),
         step3: document.getElementById('step3'),
         step4: document.getElementById('step4')
     });
@@ -65,9 +69,9 @@ function initEventListeners() {
     UI.fileUploadArea.addEventListener('click', () => UI.fileInput.click());
 
     UI.fileInput.addEventListener('change', (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            setSelectedFile(file);
+        const files = Array.from(event.target.files || []);
+        if (files.length > 0) {
+            setSelectedFiles(files);
         }
     });
 
@@ -84,21 +88,23 @@ function initEventListeners() {
         event.preventDefault();
         UI.fileUploadArea.classList.remove('drag-over');
 
-        const file = event.dataTransfer?.files?.[0];
-        if (!file) {
+        const files = Array.from(event.dataTransfer?.files || []);
+        if (files.length === 0) {
             return;
         }
 
-        if (!isSupportedFile(file.name)) {
-            alert('请选择 Excel（.xlsx、.xls）或 CSV 文件。');
+        const unsupportedFiles = files.filter((file) => !isSupportedFile(file.name));
+        if (unsupportedFiles.length > 0) {
+            alert(`请选择 Excel（.xlsx、.xls）或 CSV 文件。\n不支持的文件: ${unsupportedFiles.map((file) => file.name).join(', ')}`);
             return;
         }
 
-        setSelectedFile(file);
+        setSelectedFiles(files);
     });
 
     UI.loadTableBtn.addEventListener('click', loadTable);
-    UI.continueBtn.addEventListener('click', showStep3);
+    UI.continueBtn.addEventListener('click', continueToSearchConfig);
+    UI.continueMergedBtn.addEventListener('click', showStep3);
     UI.addConditionBtn.addEventListener('click', addSearchCondition);
     UI.searchBtn.addEventListener('click', performSearch);
     UI.exportExcelBtn.addEventListener('click', () => exportResults('excel'));
@@ -110,37 +116,52 @@ function isSupportedFile(fileName) {
     return SUPPORTED_FILE_EXTENSIONS.some((extension) => lowerName.endsWith(extension));
 }
 
-function setSelectedFile(file) {
-    AppState.selectedFile = file;
-    UI.fileName.textContent = `已选择: ${file.name}`;
+function setSelectedFiles(files) {
+    const supportedFiles = Array.from(files).filter((file) => isSupportedFile(file.name));
+    AppState.selectedFiles = supportedFiles;
+
+    if (supportedFiles.length === 0) {
+        UI.fileName.textContent = '';
+        return;
+    }
+
+    UI.fileName.textContent = supportedFiles.length === 1
+        ? `已选择: ${supportedFiles[0].name}`
+        : `已选择 ${supportedFiles.length} 个文件: ${supportedFiles.map((file) => file.name).join(', ')}`;
 
     try {
         const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
+        supportedFiles.forEach((file) => dataTransfer.items.add(file));
         UI.fileInput.files = dataTransfer.files;
     } catch (error) {
         // Some browsers restrict programmatic FileList assignment.
     }
 }
 
-function getSelectedFile() {
-    return AppState.selectedFile || UI.fileInput.files[0] || null;
+function getSelectedFiles() {
+    if (AppState.selectedFiles.length > 0) {
+        return AppState.selectedFiles;
+    }
+
+    return Array.from(UI.fileInput.files || []).filter((file) => isSupportedFile(file.name));
 }
 
 function resetSearchState() {
     AppState.searchResults = [];
     AppState.conditionCounter = 0;
+    UI.mergedTablePreview.innerHTML = '';
     UI.searchConditions.innerHTML = '';
     UI.searchResults.innerHTML = '';
     UI.exportArea.style.display = 'none';
+    UI.step3Merged.style.display = 'none';
     UI.step3.style.display = 'none';
     UI.step4.style.display = 'none';
 }
 
 async function loadTable() {
-    const file = getSelectedFile();
+    const files = getSelectedFiles();
     const text = UI.textInput.value.trim();
-    const hasFile = Boolean(file);
+    const hasFile = files.length > 0;
     const hasText = text.length > 0;
 
     if (!hasFile && !hasText) {
@@ -152,20 +173,18 @@ async function loadTable() {
     UI.loadTableBtn.textContent = '正在加载...';
 
     try {
-        AppState.tableData = hasFile ? await loadFromFile(file) : loadFromText(text);
+        AppState.fileTables = hasFile
+            ? await loadFileTables(files)
+            : [createTableModel('粘贴数据', loadFromText(text))];
 
-        if (AppState.tableData.length === 0) {
-            throw new Error('未能解析到有效的表格数据');
+        if (AppState.fileTables.length === 1) {
+            setActiveTable(AppState.fileTables[0]);
+        } else {
+            AppState.tableData = [];
+            AppState.headers = [];
+            AppState.rows = [];
         }
 
-        AppState.headers = AppState.tableData[0];
-        AppState.rows = AppState.tableData.slice(1);
-
-        if (AppState.rows.length === 0) {
-            throw new Error('表格中没有数据行');
-        }
-
-        filterEmptyColumns();
         resetSearchState();
         showStep2();
     } catch (error) {
@@ -175,6 +194,41 @@ async function loadTable() {
         UI.loadTableBtn.disabled = false;
         UI.loadTableBtn.textContent = '载入表格';
     }
+}
+
+async function loadFileTables(files) {
+    return Promise.all(files.map(async (file) => {
+        try {
+            return createTableModel(file.name, await loadFromFile(file));
+        } catch (error) {
+            throw new Error(`${file.name}: ${error.message}`);
+        }
+    }));
+}
+
+function createTableModel(sourceName, tableData) {
+    if (tableData.length === 0) {
+        throw new Error('未能解析到有效的表格数据');
+    }
+
+    const table = {
+        sourceName,
+        headers: tableData[0],
+        rows: tableData.slice(1),
+        tableData
+    };
+
+    if (table.rows.length === 0) {
+        throw new Error('表格中没有数据行');
+    }
+
+    return filterEmptyColumnsInTable(table);
+}
+
+function setActiveTable(table) {
+    AppState.headers = table.headers;
+    AppState.rows = table.rows;
+    AppState.tableData = table.tableData;
 }
 
 async function loadFromFile(file) {
@@ -409,48 +463,264 @@ function loadFromMarkdown(text) {
     return normalizeTableData(rows);
 }
 
-function filterEmptyColumns() {
-    const validColumnIndices = AppState.headers.reduce((indices, header, index) => {
+function filterEmptyColumnsInTable(table) {
+    const validColumnIndices = table.headers.reduce((indices, header, index) => {
         if (header && header.trim() !== '') {
             indices.push(index);
         }
         return indices;
     }, []);
 
-    if (validColumnIndices.length === AppState.headers.length) {
-        AppState.rows = AppState.rows.map((row) => normalizeRowLength(row, AppState.headers.length));
-        AppState.tableData = [AppState.headers, ...AppState.rows];
-        return;
+    if (validColumnIndices.length === table.headers.length) {
+        const rows = table.rows.map((row) => normalizeRowLength(row, table.headers.length));
+        return {
+            ...table,
+            rows,
+            tableData: [table.headers, ...rows]
+        };
     }
 
-    AppState.headers = validColumnIndices.map((index) => AppState.headers[index]);
-    AppState.rows = AppState.rows.map((row) => validColumnIndices.map((index) => row[index] ?? ''));
-    AppState.tableData = [AppState.headers, ...AppState.rows];
+    const headers = validColumnIndices.map((index) => table.headers[index]);
+    const rows = table.rows.map((row) => validColumnIndices.map((index) => row[index] ?? ''));
+    return {
+        ...table,
+        headers,
+        rows,
+        tableData: [headers, ...rows]
+    };
+}
+
+function filterEmptyColumns() {
+    setActiveTable(filterEmptyColumnsInTable({
+        sourceName: '当前表格',
+        headers: AppState.headers,
+        rows: AppState.rows,
+        tableData: AppState.tableData
+    }));
 }
 
 function showStep2() {
-    UI.tablePreview.innerHTML = `
+    UI.tablePreview.innerHTML = AppState.fileTables.length > 1
+        ? renderMultiFilePreview()
+        : renderSingleTablePreview(AppState.fileTables[0]);
+    UI.continueBtn.textContent = AppState.fileTables.length > 1 ? '生成合并表格预览' : '继续设置搜索条件';
+
+    UI.step2.style.display = 'block';
+    UI.step2.scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderSingleTablePreview(table) {
+    return `
         <div class="table-info">
-            <p>表格信息：共 <strong>${AppState.headers.length}</strong> 列，<strong>${AppState.rows.length}</strong> 行数据</p>
-            <p>列名：${AppState.headers.map((header) => `<span class="column-tag">${escapeHtml(header)}</span>`).join(' ')}</p>
+            <p>表格信息：共 <strong>${table.headers.length}</strong> 列，<strong>${table.rows.length}</strong> 行数据</p>
+            <p>列名：${renderColumnTags(table.headers)}</p>
         </div>
+        ${renderPreviewTable(table.headers, table.rows)}
+    `;
+}
+
+function renderMultiFilePreview() {
+    const commonHeaders = getCommonMergeHeaders(AppState.fileTables);
+    const mergeOptions = commonHeaders
+        .map((header) => `<option value="${escapeHtml(header)}">${escapeHtml(header)}</option>`)
+        .join('');
+
+    return `
+        <div class="table-info">
+            <p>已加载 <strong>${AppState.fileTables.length}</strong> 个文件，请选择合并基准列后继续</p>
+            ${commonHeaders.length > 0
+                ? `<p>合并基准列：<select id="mergeKeySelect" class="column-select">${mergeOptions}</select></p>`
+                : '<p>未找到所有文件共有的列名，无法自动合并。请确认每个文件都有同名的合并基准列。</p>'}
+        </div>
+        ${AppState.fileTables.map((table, index) => `
+            <div class="table-info">
+                <p>文件 ${index + 1}: ${escapeHtml(table.sourceName)}</p>
+                <p>表格信息：共 <strong>${table.headers.length}</strong> 列，<strong>${table.rows.length}</strong> 行数据</p>
+                <p>列名：${renderColumnTags(table.headers)}</p>
+            </div>
+            ${renderPreviewTable(table.headers, table.rows)}
+        `).join('')}
+    `;
+}
+
+function renderColumnTags(headers) {
+    return headers.map((header) => `<span class="column-tag">${escapeHtml(header)}</span>`).join(' ');
+}
+
+function renderPreviewTable(headers, rows) {
+    return `
         <div class="table-wrapper">
             <table class="data-table">
                 <thead>
-                    <tr>${AppState.headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr>
+                    <tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr>
                 </thead>
                 <tbody>
-                    ${AppState.rows.slice(0, DEFAULT_PREVIEW_ROW_COUNT).map((row) => `
+                    ${rows.slice(0, DEFAULT_PREVIEW_ROW_COUNT).map((row) => `
                         <tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>
                     `).join('')}
                 </tbody>
             </table>
         </div>
-        ${AppState.rows.length > DEFAULT_PREVIEW_ROW_COUNT ? `<p class="preview-note">仅显示前 ${DEFAULT_PREVIEW_ROW_COUNT} 行数据，共 ${AppState.rows.length} 行</p>` : ''}
+        ${rows.length > DEFAULT_PREVIEW_ROW_COUNT ? `<p class="preview-note">仅显示前 ${DEFAULT_PREVIEW_ROW_COUNT} 行数据，共 ${rows.length} 行</p>` : ''}
     `;
+}
 
-    UI.step2.style.display = 'block';
-    UI.step2.scrollIntoView({ behavior: 'smooth' });
+function continueToSearchConfig() {
+    if (AppState.fileTables.length > 1) {
+        const mergeKeySelect = document.getElementById('mergeKeySelect');
+        const mergeColumnName = mergeKeySelect?.value || '';
+
+        if (!mergeColumnName) {
+            alert('请选择合并基准列！');
+            return;
+        }
+
+        try {
+            setActiveTable(mergeTablesByColumn(AppState.fileTables, mergeColumnName));
+        } catch (error) {
+            alert(`合并失败: ${error.message}`);
+            return;
+        }
+
+        showMergedTablePreview(mergeColumnName);
+        return;
+    }
+
+    showStep3();
+}
+
+function showMergedTablePreview(mergeColumnName) {
+    AppState.searchResults = [];
+    AppState.conditionCounter = 0;
+    UI.searchConditions.innerHTML = '';
+    UI.searchResults.innerHTML = '';
+    UI.exportArea.style.display = 'none';
+    UI.step3.style.display = 'none';
+    UI.step4.style.display = 'none';
+    UI.mergedTablePreview.innerHTML = `
+        <div class="table-info">
+            <p>合并基准列：<strong>${escapeHtml(mergeColumnName)}</strong></p>
+            <p>合并表格信息：共 <strong>${AppState.headers.length}</strong> 列，<strong>${AppState.rows.length}</strong> 行数据</p>
+            <p>列名：${renderColumnTags(AppState.headers)}</p>
+        </div>
+        ${renderPreviewTable(AppState.headers, AppState.rows)}
+    `;
+    UI.step3Merged.style.display = 'block';
+    UI.step3Merged.scrollIntoView({ behavior: 'smooth' });
+}
+
+function normalizeHeaderName(header) {
+    return getCellText(header).trim();
+}
+
+function findHeaderIndex(headers, columnName) {
+    const normalizedColumnName = normalizeHeaderName(columnName);
+    return headers.findIndex((header) => normalizeHeaderName(header) === normalizedColumnName);
+}
+
+function getCommonMergeHeaders(tables) {
+    if (tables.length === 0) {
+        return [];
+    }
+
+    const firstTableHeaders = tables[0].headers
+        .map(normalizeHeaderName)
+        .filter(Boolean);
+    const uniqueHeaders = [...new Set(firstTableHeaders)];
+
+    return uniqueHeaders.filter((header) => tables.every((table) => findHeaderIndex(table.headers, header) !== -1));
+}
+
+function mergeTablesByColumn(tables, mergeColumnName) {
+    const normalizedMergeColumnName = normalizeHeaderName(mergeColumnName);
+    const mergedHeaders = [mergeColumnName];
+    const headerIndexMap = new Map([[normalizedMergeColumnName, 0]]);
+    const tableMappings = tables.map((table) => {
+        const keyIndex = findHeaderIndex(table.headers, mergeColumnName);
+
+        if (keyIndex === -1) {
+            throw new Error(`${table.sourceName} 中不存在列 "${mergeColumnName}"`);
+        }
+
+        const columns = table.headers.reduce((result, header, columnIndex) => {
+            if (columnIndex === keyIndex) {
+                return result;
+            }
+
+            const normalizedHeader = normalizeHeaderName(header);
+            if (!normalizedHeader) {
+                return result;
+            }
+
+            if (!headerIndexMap.has(normalizedHeader)) {
+                headerIndexMap.set(normalizedHeader, mergedHeaders.push(normalizedHeader) - 1);
+            }
+
+            const mergedIndex = headerIndexMap.get(normalizedHeader);
+            result.push({ columnIndex, mergedIndex });
+            return result;
+        }, []);
+
+        return { table, keyIndex, columns };
+    });
+
+    const rowMap = new Map();
+    const rowOrder = [];
+
+    tableMappings.forEach(({ table, keyIndex, columns }, tableIndex) => {
+        table.rows.forEach((row, rowIndex) => {
+            const rawKey = getCellText(row[keyIndex]).trim();
+            const mergeKey = rawKey || `__blank_key_${tableIndex}_${rowIndex}`;
+
+            if (!rowMap.has(mergeKey)) {
+                const mergedRow = Array(mergedHeaders.length).fill('');
+                mergedRow[0] = rawKey;
+                rowMap.set(mergeKey, mergedRow);
+                rowOrder.push(mergeKey);
+            }
+
+            const mergedRow = rowMap.get(mergeKey);
+            columns.forEach(({ columnIndex, mergedIndex }) => {
+                mergedRow[mergedIndex] = mergeCellValues(mergedRow[mergedIndex], row[columnIndex]);
+            });
+        });
+    });
+
+    const rows = rowOrder.map((mergeKey) => rowMap.get(mergeKey));
+    return {
+        sourceName: `合并结果（按 ${mergeColumnName}）`,
+        headers: mergedHeaders,
+        rows,
+        tableData: [mergedHeaders, ...rows]
+    };
+}
+
+function getUniqueHeader(header, existingHeaders) {
+    let uniqueHeader = header;
+    let counter = 2;
+
+    while (existingHeaders.includes(uniqueHeader)) {
+        uniqueHeader = `${header} (${counter})`;
+        counter += 1;
+    }
+
+    return uniqueHeader;
+}
+
+function mergeCellValues(currentValue, nextValue) {
+    const currentText = getCellText(currentValue).trim();
+    const nextText = getCellText(nextValue).trim();
+
+    if (!nextText) {
+        return currentText;
+    }
+
+    if (!currentText) {
+        return nextText;
+    }
+
+    const existingParts = currentText.split(' / ');
+    return existingParts.includes(nextText) ? currentText : `${currentText} / ${nextText}`;
 }
 
 function showStep3() {
@@ -471,6 +741,7 @@ function addSearchCondition() {
                     ${AppState.headers.map((header, index) => `<option value="${index}">${escapeHtml(header)}</option>`).join('')}
                 </select>
                 <input type="text" class="keyword-input" placeholder="输入关键字...">
+                <input type="text" class="keyword-input delimiter-input" value="," placeholder="分隔符">
                 <button class="btn-remove" type="button" onclick="removeCondition(${conditionId})">✕</button>
             </div>
         </div>
@@ -489,18 +760,46 @@ function collectSearchConditions() {
         .map((item) => {
             const columnIndex = item.querySelector('.column-select').value;
             const keyword = item.querySelector('.keyword-input').value.trim();
+            const delimiter = item.querySelector('.delimiter-input')?.value || ',';
+            const keywords = splitKeywords(keyword, delimiter);
 
-            if (columnIndex === '' || keyword === '') {
+            if (columnIndex === '' || keywords.length === 0) {
                 return null;
             }
 
             return {
                 columnIndex: Number(columnIndex),
                 columnName: AppState.headers[columnIndex],
-                keyword
+                keyword,
+                keywords,
+                delimiter
             };
         })
         .filter(Boolean);
+}
+
+function splitKeywords(keywordText, delimiter) {
+    const normalizedDelimiter = normalizeDelimiter(delimiter);
+    const text = keywordText.trim();
+
+    if (!text) {
+        return [];
+    }
+
+    if (!normalizedDelimiter) {
+        return [text];
+    }
+
+    return text
+        .split(normalizedDelimiter)
+        .map((keyword) => keyword.trim())
+        .filter(Boolean);
+}
+
+function normalizeDelimiter(delimiter) {
+    return getCellText(delimiter)
+        .replace(/\\n/g, '\n')
+        .replace(/\\t/g, '\t');
 }
 
 function performSearch() {
@@ -513,8 +812,8 @@ function performSearch() {
     const logic = document.querySelector('input[name="logic"]:checked')?.value || 'and';
     AppState.searchResults = AppState.rows.reduce((results, row, rowIndex) => {
         const isMatch = logic === 'and'
-            ? conditions.every((condition) => getCellText(row[condition.columnIndex]).includes(condition.keyword))
-            : conditions.some((condition) => getCellText(row[condition.columnIndex]).includes(condition.keyword));
+            ? conditions.every((condition) => doesRowMatchCondition(row, condition))
+            : conditions.some((condition) => doesRowMatchCondition(row, condition));
 
         if (isMatch) {
             results.push({
@@ -529,12 +828,17 @@ function performSearch() {
     displayResults(conditions, logic);
 }
 
+function doesRowMatchCondition(row, condition) {
+    const cellText = getCellText(row[condition.columnIndex]);
+    return condition.keywords.some((keyword) => cellText.includes(keyword));
+}
+
 function buildHighlightMap(conditions) {
     return conditions.reduce((map, condition) => {
         if (!map.has(condition.columnIndex)) {
             map.set(condition.columnIndex, []);
         }
-        map.get(condition.columnIndex).push(condition.keyword);
+        map.get(condition.columnIndex).push(...condition.keywords);
         return map;
     }, new Map());
 }
@@ -554,7 +858,7 @@ function displayResults(conditions, logic) {
 
     const previewResults = AppState.searchResults.slice(0, DEFAULT_PREVIEW_ROW_COUNT);
     const conditionsText = conditions
-        .map((condition) => `"${escapeHtml(condition.columnName)}" 包含 "${escapeHtml(condition.keyword)}"`)
+        .map((condition) => `"${escapeHtml(condition.columnName)}" 包含 ${condition.keywords.map((keyword) => `"${escapeHtml(keyword)}"`).join(' 或 ')}`)
         .join(logic === 'and' ? ' 且 ' : ' 或 ');
     const highlightMap = buildHighlightMap(conditions);
 
