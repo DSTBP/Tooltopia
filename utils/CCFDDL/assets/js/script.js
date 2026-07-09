@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '交叉/综合/新兴': 'MX'
     };
     const STORAGE_KEYS = {
-        deadlines: 'ccfddl.deadlines.cache.v2',
+        deadlines: 'ccfddl.deadlines.cache.v3',
         acceptanceRates: 'ccfddl.acceptance.cache.v1'
     };
     const CACHE_TTL_MS = {
@@ -1297,6 +1297,53 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${tzDate.getUTCFullYear()}-${pad(tzDate.getUTCMonth()+1)}-${pad(tzDate.getUTCDate())} ${pad(tzDate.getUTCHours())}:${pad(tzDate.getUTCMinutes())}:${pad(tzDate.getUTCSeconds())} (${tzLabel})`;
     }
 
+    function getTimelineDeadlineMs(item, fallbackTimezone) {
+        if (Number.isFinite(item.deadlineMs)) return item.deadlineMs;
+        return getAbsoluteMs(item.deadline, item.timezone || fallbackTimezone);
+    }
+
+    function formatDeadlineLabel(comment) {
+        const raw = String(comment || '截稿').trim() || '截稿';
+        return raw
+            .replace(/^摘要截止(?:日期)?/, '摘要截稿')
+            .replace(/^摘要截稿日期/, '摘要截稿')
+            .replace(/^Abstract\s+(?:Submission\s+)?Deadline/i, '摘要截稿')
+            .replace(/^(?:截稿日期|全文截稿|正文截稿日期|论文截稿|Paper\s+(?:Submission\s+)?Deadline|Submission\s+Deadline)/i, '正文截稿');
+    }
+
+    function getTimelineDeadlineEntries(latestConf, fallbackStatus) {
+        const fallbackTimezone = latestConf.timezone || 'UTC';
+        const timeline = Array.isArray(latestConf.timeline) && latestConf.timeline.length > 0
+            ? latestConf.timeline
+            : [{
+                deadlineMs: fallbackStatus.ms,
+                timezone: fallbackTimezone,
+                comment: fallbackStatus.comment || '截稿'
+            }];
+
+        return timeline.map(item => {
+            const timezone = item.timezone || fallbackTimezone;
+            const ms = getTimelineDeadlineMs(item, timezone);
+            return {
+                label: formatDeadlineLabel(item.comment || fallbackStatus.comment),
+                formatted: formatToSelectedTz(ms, selectedTimezone, timezone)
+            };
+        });
+    }
+
+    function buildTimelineDeadlineHTML(entries) {
+        return entries.map(item => `
+            <div class="deadline-main">
+                ${escapeDisplayText(item.formatted, 'TBD')}<br>
+                <span class="deadline-badge">${escapeDisplayText(item.label)}</span>
+            </div>
+        `).join('');
+    }
+
+    function buildTimelineDeadlineTitle(entries) {
+        return escapeHTML(entries.map(item => `${item.label}: ${item.formatted}`).join('\n'));
+    }
+
     function getConfStatus(conf) {
         if (!conf.confs || conf.confs.length === 0) return { ms: null, isUrgent: false, comment: '', state: 'tbd' };
         const latestConf = conf.confs[0];
@@ -1407,9 +1454,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const categoryAbbr = conf.sub || 'MIX';
             const categoryFullName = subMap[conf.sub] || conf.sub || 'MIX';
 
-            const originalTz = latestConf.timezone || 'UTC';
-            const formattedDeadline = escapeDisplayText(formatToSelectedTz(timeStatus.ms, selectedTimezone, originalTz), 'TBD');
-            const deadlineBadge = timeStatus.comment ? `<span class="deadline-badge">${escapeDisplayText(timeStatus.comment)}</span>` : '';
+            const deadlineEntries = getTimelineDeadlineEntries(latestConf, timeStatus);
+            const deadlineHTML = buildTimelineDeadlineHTML(deadlineEntries);
+            const deadlineTitle = buildTimelineDeadlineTitle(deadlineEntries);
 
             const place = escapeDisplayText(latestConf.place, 'TBA');
             const confName = escapeDisplayText(conf.description, 'TBA');
@@ -1430,9 +1477,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td style="white-space: normal; min-width: 150px; max-width: 180px; line-height: 1.4;">${confName}</td>
                     <td><span class="${ccfClass}">CCF-${ccfRank}</span></td>
-                    <td class="deadline-cell" title="${formattedDeadline}">
-                        <div class="deadline-main">${formattedDeadline}</div>
-                        ${deadlineBadge}
+                    <td class="deadline-cell" title="${deadlineTitle}">
+                        ${deadlineHTML}
                     </td>
                     <td class="countdown-timer-container" data-ts="${timeStatus.ms || ''}">
                         <span class="countdown-text">计算中..</span>
