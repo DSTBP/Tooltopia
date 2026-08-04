@@ -318,6 +318,19 @@ body {
     word-break: break-all;
 }
 
+.encoding-setting {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.encoding-label {
+    font-size: 0.875rem;
+}
+
 #encodingSelect {
     padding: 8px 12px;
     border: 1px solid rgba(255, 255, 255, 0.15);
@@ -326,6 +339,13 @@ body {
     color: hsl(0 0% 90%);
     font-size: 0.9rem;
     cursor: pointer;
+    max-width: 100%;
+    min-width: 11rem;
+}
+
+#encodingSelect:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.75);
+    outline-offset: 2px;
 }
 
 #encodingSelect option {
@@ -504,6 +524,14 @@ body {
 }
 
 /* 表格预览 */
+.table-preview,
+.search-results {
+    position: relative;
+    isolation: isolate;
+    display: flow-root;
+    overflow: visible;
+}
+
 .table-preview {
     margin-top: 20px;
 }
@@ -542,7 +570,11 @@ body {
 }
 
 .table-wrapper {
+    position: relative;
+    z-index: 1;
+    width: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
     margin: 15px 0;
     border-radius: 12px;
     background: rgba(0, 0, 0, 0.3);
@@ -583,10 +615,21 @@ body {
 }
 
 .preview-note {
+    position: relative;
+    z-index: 2;
+    display: block;
+    clear: both;
+    width: 100%;
     color: hsl(0 0% 70%);
     font-size: 0.85rem;
+    line-height: 1.6;
     text-align: center;
-    margin-top: 10px;
+    margin: 12px 0 22px;
+    padding: 0 10px;
+}
+
+.preview-note + .table-info {
+    margin-top: 22px;
 }
 
 /* 搜索条件 */
@@ -810,6 +853,7 @@ body {
         font-size: 0.75rem;
         padding: 3px 8px;
     }
+
 }
 
 @media screen and (max-width: 480px) {
@@ -837,6 +881,21 @@ body {
     .data-table td {
         padding: 6px;
     }
+
+    .encoding-setting {
+        align-items: stretch;
+        gap: 6px;
+    }
+
+    .encoding-label {
+        flex-basis: 100%;
+    }
+
+    #encodingSelect {
+        width: 100%;
+        min-width: 0;
+    }
+
 }
 
 /* 滚动条样式 */
@@ -945,6 +1004,26 @@ body.day-mode select {
     font-weight: 500;
 }
 
+body.day-mode #encodingSelect {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #1a202c;
+    -webkit-text-fill-color: #1a202c;
+    color-scheme: light;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+body.day-mode #encodingSelect option {
+    background: #ffffff;
+    color: #1a202c;
+}
+
+body.day-mode #encodingSelect:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+    border-color: #3b82f6;
+}
+
 /* 1. 修改基础按钮样式 */
 body.day-mode .btn {
     background: #ffffff; /* 改为纯白色 */
@@ -985,32 +1064,63 @@ body.day-mode .divider::after {
     background: rgba(0, 0, 0, 0.3);
 }
 
+body.day-mode .logic-type > label:first-child {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+body.day-mode .radio-option,
 body.day-mode .radio-option span {
-    color: #2d3748;
+    color: #1e293b;
 }
 
 body.day-mode .table-preview,
 body.day-mode .search-results {
-    background: rgba(255, 255, 255, 0.5);
-    border-color: rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    background: #f3f6f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
 }
 
+body.day-mode .table-wrapper,
 body.day-mode .data-table {
-    background: rgba(255, 255, 255, 0.7);
+    background: #ffffff;
+}
+
+body.day-mode .table-wrapper {
+    border: 1px solid #e2e8f0;
 }
 
 body.day-mode .data-table th {
     background: rgba(59, 130, 246, 0.2);
     color: #1e40af;
+    border-bottom: 1px solid #e2e8f0;
 }
 
 body.day-mode .data-table td {
     color: #2d3748;
-    border-color: rgba(0, 0, 0, 0.1);
+    border-bottom-color: #e2e8f0;
 }
 
-body.day-mode .data-table tr:hover {
-    background: rgba(59, 130, 246, 0.1);
+body.day-mode .data-table th:not(:last-child),
+body.day-mode .data-table td:not(:last-child) {
+    border-right: 1px solid #e2e8f0;
+}
+
+body.day-mode .data-table tbody tr:nth-child(odd) {
+    background: #ffffff;
+}
+
+body.day-mode .data-table tbody tr:nth-child(even) {
+    background: #f8fafc;
+}
+
+body.day-mode .data-table tbody tr:hover {
+    background: #f1f5f9;
+}
+
+body.day-mode .preview-note {
+    color: #475569;
 }
 
 body.day-mode .search-condition {
@@ -1031,8 +1141,8 @@ body.day-mode .export-area {
 }
 
 body.day-mode .table-info {
-    background: rgba(255, 255, 255, 0.6);
-    border-color: rgba(0, 0, 0, 0.15);
+    background: #ffffff;
+    border-color: #e2e8f0;
 }
 
 body.day-mode .table-info p {
@@ -1397,4 +1507,18 @@ body.day-mode .footer {
   user-select: none;
   transform: scale(0.45);
   transform-origin: center;
+}
+
+@media screen and (max-width: 768px) {
+  body.day-mode .table-preview,
+  body.day-mode .search-results {
+    padding: 12px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  body.day-mode .table-preview,
+  body.day-mode .search-results {
+    padding: 10px;
+  }
 }
