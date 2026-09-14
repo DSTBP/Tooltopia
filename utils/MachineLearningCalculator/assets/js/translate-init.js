@@ -25,7 +25,7 @@
     const configureTranslate = translateApi => {
         if (!isTranslateLibrary(translateApi)) return false;
 
-        translateApi.service.use('client.edge');
+        translateApi.service.use('translate.service');
         translateApi.language.setDefaultTo('chinese_simplified');
         translateApi.language.setLocal('chinese_simplified');
         translateApi.listener.start();
