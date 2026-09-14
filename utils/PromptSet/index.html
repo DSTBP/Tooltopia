@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="PromptSet 自用科研提示词库：集中浏览、搜索、分类与复制科研提示词。">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <title>自用科研提示词库 - PromptSet</title>
+    <link rel="stylesheet" href="./assets/css/style.css">
+    <link rel="stylesheet" href="./assets/css/translate.css">
+    <link rel="stylesheet" href="../../assets/css/loader.css">
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('tooltopia-theme') === 'day') {
+                    document.documentElement.classList.add('day-init');
+                }
+            } catch (error) {}
+            document.documentElement.classList.add('is-loading');
+        })();
+    </script>
+</head>
+<body>
+    <div id="page-loader" class="page-loader" aria-live="polite" aria-busy="true">
+        <div class="spinner-box" aria-hidden="true">
+            <div class="blue-orbit leo"></div>
+            <div class="green-orbit leo"></div>
+            <div class="red-orbit leo"></div>
+            <div class="white-orbit w1 leo"></div>
+            <div class="white-orbit w2 leo"></div>
+            <div class="white-orbit w3 leo"></div>
+        </div>
+        <div class="loader-text">Loading...</div>
+    </div>
+
+    <nav class="navbar" aria-label="主导航">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="PromptSet Logo" class="logo-icon">
+                <span class="logo-text-desktop">PromptSet</span>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div id="translate" class="nav-btn language-selector" data-translate-host></div>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="background-wrapper"></div>
+
+    <main class="page-container">
+        <header class="header">
+            <h1 data-shadow="自用科研提示词库">自用科研提示词库</h1>
+            <p class="subtitle">快速查找、查看并复制需要的提示词</p>
+        </header>
+
+        <section class="container prompt-library" aria-labelledby="libraryHeading">
+            <h2 id="libraryHeading" class="sr-only">提示词浏览</h2>
+
+            <div class="filter-panel">
+                <div class="search-group">
+                    <label class="control-label" for="searchInput">搜索提示词</label>
+                    <div class="search-box">
+                        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"></path>
+                        </svg>
+                        <input
+                            id="searchInput"
+                            type="search"
+                            autocomplete="off"
+                            placeholder="搜索标题或提示词正文…"
+                            aria-describedby="searchHint"
+                            disabled
+                        >
+                        <button id="clearSearchBtn" class="clear-search" type="button" aria-label="清空搜索" hidden>×</button>
+                    </div>
+                    <p id="searchHint" class="sr-only">搜索会同时匹配提示词标题与完整正文</p>
+                </div>
+
+                <div class="category-group">
+                    <span class="control-label">分类</span>
+                    <div id="categoryFilters" class="category-filters" aria-label="提示词分类"></div>
+                </div>
+
+                <div class="result-toolbar">
+                    <p id="resultSummary" class="result-summary" aria-live="polite">正在读取提示词…</p>
+                    <div class="view-controls">
+                        <label class="select-control" for="sortSelect">
+                            <span>排序</span>
+                            <select id="sortSelect" disabled>
+                                <option value="source">文件原序</option>
+                                <option value="title-asc">标题 A–Z</option>
+                                <option value="title-desc">标题 Z–A</option>
+                                <option value="length-asc">字数从少到多</option>
+                                <option value="length-desc">字数从多到少</option>
+                            </select>
+                        </label>
+                        <label class="select-control" for="pageSizeSelect">
+                            <span>每页</span>
+                            <select id="pageSizeSelect" disabled>
+                                <option value="6">6 条</option>
+                                <option value="9" selected>9 条</option>
+                                <option value="12">12 条</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loadingState" class="state-panel" role="status">
+                <span class="state-spinner" aria-hidden="true"></span>
+                <p>正在读取提示词…</p>
+            </div>
+
+            <div id="errorState" class="state-panel" role="alert" hidden>
+                <span class="state-icon" aria-hidden="true">!</span>
+                <h3>提示词加载失败</h3>
+                <p id="errorMessage">请检查提示词文件后重试。</p>
+                <button id="retryButton" class="btn btn-compact" type="button">重新加载</button>
+            </div>
+
+            <div id="emptyState" class="state-panel" role="status" hidden>
+                <span class="state-icon" aria-hidden="true">⌕</span>
+                <h3>没有找到匹配的提示词</h3>
+                <p>换一个关键词或分类试试。</p>
+                <button id="resetFiltersButton" class="btn btn-compact" type="button">清除筛选</button>
+            </div>
+
+            <div id="promptGrid" class="prompt-grid" aria-busy="true"></div>
+
+            <nav id="pagination" class="pagination" aria-label="提示词分页" hidden></nav>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>Copyright © 2024 Tooltopia. All Rights Reserved.</p>
+        <p>Designed by DSTBP</p>
+    </footer>
+
+    <div id="promptModal" class="prompt-modal" aria-hidden="true" hidden>
+        <div class="modal-backdrop" data-close-modal></div>
+        <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
+            <header class="modal-header">
+                <div class="modal-heading">
+                    <span id="modalCategory" class="category-badge no-translate"></span>
+                    <h2 id="modalTitle" class="no-translate"></h2>
+                    <span id="modalMeta" class="modal-meta no-translate"></span>
+                </div>
+                <button id="modalCloseButton" class="modal-close" type="button" aria-label="关闭提示词详情">×</button>
+            </header>
+            <div class="modal-content">
+                <pre id="modalBody" class="prompt-full-text no-translate" tabindex="0"></pre>
+            </div>
+            <footer class="modal-footer">
+                <button id="modalCopyButton" class="btn modal-copy-button" type="button">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="9" y="9" width="11" height="11" rx="2"></rect>
+                        <path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"></path>
+                    </svg>
+                    复制提示词
+                </button>
+            </footer>
+        </section>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+    <script src="../../assets/js/loader.js"></script>
+    <script src="./assets/js/translate-init.js"></script>
+    <script src="./assets/js/theme-toggle.js"></script>
+    <script src="./assets/js/script.js"></script>
+</body>
+</html>
