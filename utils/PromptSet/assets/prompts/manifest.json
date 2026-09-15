@@ -5,8 +5,8 @@
     "./literature-research/03-standard-literature-record.md",
     "./academic-support/04-translation.md",
     "./literature-research/05-survey-literature-reading-template.md",
-    "./literature-research/06-role-and-objectives.md",
-    "./literature-research/07-evidence-and-wording.md",
+    "./literature-research/06-conference-acceptance-status.md",
+    "./literature-research/07-PPML-search.md",
     "./academic-support/08-quick-understanding.md",
     "./academic-support/09-gpt-prompt-guidelines.md",
     "./engineering/10-project-structure.md",
@@ -20,6 +20,7 @@
     "./reporting/18-report-presentation.md",
     "./reporting/19-report-content.md",
     "./reporting/20-feishu-sheet.md",
-    "./reporting/21-survey-report.md"
+    "./reporting/21-survey-report.md",
+    "./research-innovation/22-draw-diagrams.md"
   ]
 }
