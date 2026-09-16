@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="Tooltopia 公益站集合：动态聚合、检测并展示可访问的公益 AI 站点。">
+    <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+    <title>公益站集合 - Tooltopia</title>
+    <link rel="stylesheet" href="./assets/css/style.css">
+    <link rel="stylesheet" href="./assets/css/translate.css">
+    <link rel="stylesheet" href="../../assets/css/loader.css">
+    <script>
+        (function () {
+            try {
+                if (localStorage.getItem('tooltopia-theme') === 'day') {
+                    document.documentElement.classList.add('day-init');
+                }
+            } catch (error) {}
+            document.documentElement.classList.add('is-loading');
+        })();
+    </script>
+</head>
+<body>
+    <div id="page-loader" class="page-loader" aria-live="polite" aria-busy="true">
+        <div class="spinner-box" aria-hidden="true">
+            <div class="blue-orbit leo"></div>
+            <div class="green-orbit leo"></div>
+            <div class="red-orbit leo"></div>
+            <div class="white-orbit w1 leo"></div>
+            <div class="white-orbit w2 leo"></div>
+            <div class="white-orbit w3 leo"></div>
+        </div>
+        <div class="loader-text">Loading...</div>
+    </div>
+
+    <nav class="navbar" aria-label="主导航">
+        <div class="nav-content">
+            <div class="logo-wrapper">
+                <img src="favicon.png" alt="公益站导航 Logo" class="logo-icon">
+                <span class="logo-text-desktop">公益站导航</span>
+            </div>
+            <div class="nav-actions">
+                <a href="../../index.html" class="nav-btn">返回主页</a>
+                <div id="translate" class="nav-btn language-selector" data-translate-host></div>
+                <div class="theme-toggle-container">
+                    <div class="theme-toggle">
+                        <input type="checkbox" id="themeToggle" class="theme-toggle__checkbox" aria-label="切换日夜主题">
+                        <label for="themeToggle" class="theme-toggle__btn">
+                            <span class="theme-toggle__feature"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="background-wrapper"></div>
+
+    <main class="page-container">
+        <header class="header">
+            <h1 data-shadow="公益站集合">公益站集合</h1>
+            <p class="subtitle">聚合公开公益站信息，并定时检测站点是否可以访问</p>
+        </header>
+
+        <section class="container prompt-library station-library" aria-labelledby="libraryHeading">
+            <h2 id="libraryHeading" class="sr-only">公益站浏览</h2>
+
+            <div class="filter-panel">
+                <div class="search-group">
+                    <label class="control-label" for="searchInput">搜索公益站</label>
+                    <div class="search-box">
+                        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"></path>
+                        </svg>
+                        <input
+                            id="searchInput"
+                            type="search"
+                            autocomplete="off"
+                            placeholder="搜索站名、域名、模型或权益…"
+                            aria-describedby="searchHint"
+                            disabled
+                        >
+                        <button id="clearSearchBtn" class="clear-search" type="button" aria-label="清空搜索" hidden>×</button>
+                    </div>
+                    <p id="searchHint" class="sr-only">搜索会匹配站名、域名、简介、标签、模型、权益和使用要求</p>
+                </div>
+
+                <div class="category-group">
+                    <span class="control-label">功能筛选</span>
+                    <div id="categoryFilters" class="category-filters" aria-label="公益站功能筛选"></div>
+                </div>
+
+                <div class="result-toolbar">
+                    <div>
+                        <p id="resultSummary" class="result-summary" aria-live="polite">正在读取公益站数据…</p>
+                        <p id="updateSummary" class="update-summary" aria-live="polite"></p>
+                    </div>
+                    <div class="view-controls">
+                        <label class="select-control" for="sortSelect">
+                            <span>排序</span>
+                            <select id="sortSelect" disabled>
+                                <option value="recommended">综合排序</option>
+                                <option value="name-asc">名称 A–Z</option>
+                                <option value="name-desc">名称 Z–A</option>
+                                <option value="checked-desc">最近核验</option>
+                                <option value="complete-desc">信息最完整</option>
+                            </select>
+                        </label>
+                        <label class="select-control" for="pageSizeSelect">
+                            <span>每页</span>
+                            <select id="pageSizeSelect" disabled>
+                                <option value="6">6 条</option>
+                                <option value="9" selected>9 条</option>
+                                <option value="12">12 条</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loadingState" class="state-panel" role="status">
+                <span class="state-spinner" aria-hidden="true"></span>
+                <p>正在读取公益站数据…</p>
+            </div>
+
+            <div id="errorState" class="state-panel" role="alert" hidden>
+                <span class="state-icon" aria-hidden="true">!</span>
+                <h3>公益站数据加载失败</h3>
+                <p id="errorMessage">请稍后重试。</p>
+                <button id="retryButton" class="btn btn-compact" type="button">重新加载</button>
+            </div>
+
+            <div id="emptyState" class="state-panel" role="status" hidden>
+                <span class="state-icon" aria-hidden="true">⌕</span>
+                <h3>没有找到匹配的公益站</h3>
+                <p>换一个关键词或功能筛选试试。</p>
+                <button id="resetFiltersButton" class="btn btn-compact" type="button">清除筛选</button>
+            </div>
+
+            <div id="stationGrid" class="prompt-grid station-grid" aria-busy="true"></div>
+
+            <nav id="pagination" class="pagination" aria-label="公益站分页" hidden></nav>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>公益站信息与权益可能随时变化，请以站点公告为准。</p>
+        <p>Copyright © 2024 Tooltopia. Designed by DSTBP</p>
+    </footer>
+
+    <div id="stationModal" class="prompt-modal" aria-hidden="true" hidden>
+        <div class="modal-backdrop" data-close-modal></div>
+        <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
+            <header class="modal-header">
+                <div class="modal-heading">
+                    <span id="modalCategory" class="category-badge"></span>
+                    <h2 id="modalTitle" class="no-translate"></h2>
+                    <span id="modalMeta" class="modal-meta no-translate"></span>
+                </div>
+                <button id="modalCloseButton" class="modal-close" type="button" aria-label="关闭公益站详情">×</button>
+            </header>
+            <div class="modal-content station-modal-content">
+                <p id="modalSummary" class="station-modal-summary"></p>
+                <div id="modalSections" class="station-detail-sections"></div>
+            </div>
+            <footer class="modal-footer">
+                <a id="modalVisitButton" class="btn modal-visit-button" href="#" target="_blank" rel="noopener noreferrer nofollow">
+                    访问站点
+                    <span aria-hidden="true">↗</span>
+                </a>
+            </footer>
+        </section>
+    </div>
+
+    <script src="../../assets/js/loader.js"></script>
+    <script src="./assets/js/translate-init.js"></script>
+    <script src="./assets/js/theme-toggle.js"></script>
+    <script src="./assets/js/script.js"></script>
+</body>
+</html>
