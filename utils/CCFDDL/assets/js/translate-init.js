@@ -3,7 +3,7 @@
     if (window[BOOTSTRAP_KEY]) return;
     window[BOOTSTRAP_KEY] = true;
 
-    const TRANSLATE_SRC = '../LightsOut/assets/js/translate.js';
+    const TRANSLATE_SRC = '../../assets/js/translate.js';
     const HOST_SELECTOR = '[data-translate-host]';
 
     const getHost = () => {
@@ -33,13 +33,7 @@
             translateApi.setAutoDiscriminateLocalLanguage();
         }
 
-        if (!translateApi.ignore) translateApi.ignore = {};
-        if (!Array.isArray(translateApi.ignore.class)) {
-            translateApi.ignore.class = [];
-        }
-        if (!translateApi.ignore.class.includes('no-translate')) {
-            translateApi.ignore.class.push('no-translate');
-        }
+        translateApi.ignore.class.push('no-translate');
         return true;
     };
 
