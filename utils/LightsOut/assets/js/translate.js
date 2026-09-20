@@ -5754,7 +5754,7 @@ var translate = {
 					}
 					if(serviceName.toLowerCase() == 'siliconflow'){
 						//设定翻译接口为硅基流动的
-						translate.request.api.host=['https://siliconflow.zvo.cn/','https://america.api.translate.zvo.cn:1414/','https://deutsch.enterprise.api.translate.zvo.cn:1414/'];
+						translate.request.api.host=['https://siliconflow.zvo.cn/','https://america-enterprise-api-translate.zvo.cn:1414/','https://deutsch.enterprise.api.translate.zvo.cn:1414/'];
 						return;
 					}
 				}
@@ -5915,7 +5915,7 @@ var translate = {
 			 * v2.8.2 增加数组形态，如 ['https://api.translate.zvo.cn/','xxxxx'] 
 			 */
 			//host:'https://api.translate.zvo.cn/',
-			host:['https://api.translate.zvo.cn/','https://america.api.translate.zvo.cn/'],
+			host:['https://api.translate.zvo.cn/','https://america-enterprise-api-translate.zvo.cn/'],
 			//host的备用接口，格式同host，可以填写多个，只不过这里是数组格式。只有当主 host 无法连通时，才会采用备host来提供访问。如果为空也就是 [] 则是不采用备方案。
 			//backupHost:['',''],
 			language:'language.json', //获取支持的语种列表接口
@@ -7136,7 +7136,7 @@ var translate = {
 
 			//主节点额外权重降低，更追求响应速度
 			translate.request.speedDetectionControl.hostMasterNodeCutTime = 300; 
-			translate.request.api.host=['https://america-enterprise-api-translate.zvo.cn/','https://beijing.enterprise.api.translate.zvo.cn/','https://deutsch.enterprise.api.translate.zvo.cn/', 'https://america.api.translate.zvo.cn:666/', 'https://api.translate.zvo.cn:666/', 'https://api.translate.zvo.cn:888/'];
+			translate.request.api.host=['https://america-enterprise-api-translate.zvo.cn/','https://beijing.enterprise.api.translate.zvo.cn/','https://deutsch.enterprise.api.translate.zvo.cn/', 'https://america-enterprise-api-translate.zvo.cn:666/', 'https://api.translate.zvo.cn:666/', 'https://api.translate.zvo.cn:888/'];
 			
 			if(translate.service.name == 'client.edge'){
 				translate.service.name = 'translate.service';
