@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-09-16T09:12:58Z",
-  "total": 83,
+  "generatedAt": "2026-09-19T20:40:11Z",
+  "total": 84,
   "stations": [
     {
       "id": "agentrouter.org",
@@ -10,7 +10,7 @@
       "summary": "AgentRouter 是一条速度很快的公益 API 线路，目前可用 Claude Opus 4.8 和 GPT-5.6 Sol。首次注册可领 175 美元新人额度",
       "category": "API 中转",
       "registrationStatus": "open",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-18",
       "sourceIds": [
         "baipiao",
         "dengdeng",
@@ -59,7 +59,7 @@
         "拉取模型列表可能失败。取不到就直接手填模型名：gpt-5.6-sol、claude-opus-5。",
         "每日签到需要重新登录一次，可领 25 额度。"
       ],
-      "checkedAt": "2026-09-16T09:12:23Z",
+      "checkedAt": "2026-09-19T20:39:43Z",
       "healthStatus": "available"
     },
     {
@@ -110,8 +110,8 @@
       "notes": [
         "用 GitHub 账号注册通过。"
       ],
-      "checkedAt": "2026-09-16T09:12:28Z",
-      "healthStatus": "available"
+      "checkedAt": "2026-09-19T20:39:46Z",
+      "healthStatus": "responding"
     },
     {
       "id": "kktoken.cc",
@@ -156,7 +156,7 @@
         "实测可用。",
         "正常使用有机会获得平台赠送 $500 额度。"
       ],
-      "checkedAt": "2026-09-16T09:12:28Z",
+      "checkedAt": "2026-09-19T20:39:46Z",
       "healthStatus": "available"
     },
     {
@@ -167,7 +167,7 @@
       "summary": "JustWoker 是一个签到送额度的公益 API，每日签到可随机获得额度。注册需要 GitHub 账号且账号年限满一年。",
       "category": "API 中转",
       "registrationStatus": "open",
-      "updatedAt": "2026-09-14",
+      "updatedAt": "2026-09-19",
       "sourceIds": [
         "baipiao",
         "ai-relay",
@@ -199,7 +199,7 @@
       "notes": [
         "用注册满一年以上的 GitHub 账号注册通过。"
       ],
-      "checkedAt": "2026-09-16T09:12:22Z",
+      "checkedAt": "2026-09-19T20:39:47Z",
       "healthStatus": "available"
     },
     {
@@ -245,7 +245,7 @@
       "notes": [
         "登录送35硬币，大概可以用150次，有 DeepSeek。"
       ],
-      "checkedAt": "2026-09-16T09:12:26Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "available"
     },
     {
@@ -256,7 +256,7 @@
       "summary": "DoCode 是一条 new-api 网关的公益免费站，注册到账 300 刀、邀请再给 60 刀。要先知道一件事：免费的体验套餐里只有 GPT，Claude、国产模型、Grok 这些得付费分组才碰得到。倍率按 VIP 等级分层、还随上游行情来回调，光看余额数字算不出能跑多少，所以拿它蹬一蹬就好，别屯额度。OpenAI 兼容直连，多条 Base URL 可选。",
       "category": "API 中转",
       "registrationStatus": "open",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-18",
       "sourceIds": [
         "baipiao",
         "gongyijihe"
@@ -288,7 +288,7 @@
       "notes": [
         "来源页面标记为暂停或失效，仍以本次连通性检测为准"
       ],
-      "checkedAt": "2026-09-16T09:12:24Z",
+      "checkedAt": "2026-09-19T20:39:44Z",
       "healthStatus": "available"
     },
     {
@@ -328,47 +328,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:24Z",
-      "healthStatus": "available"
-    },
-    {
-      "id": "modeloc.com",
-      "name": "MODELOC 算力平台（注册填码互得 10 万算力 · Claude Opus 4.8 / GPT 5.5 旗舰闭源全开）",
-      "domain": "modeloc.com",
-      "url": "https://modeloc.com/",
-      "summary": "一个「模型可信度 + 算力」平台，注册就白送算力去调一水儿的旗舰大模型，最馋的是别家公益线路多半只给国产，它这儿 Claude Opus 4.8 / 4.7 / 4.6、GPT 5.5 / 5.4、Gemini 3.5 Flash 这些闭源顶配全给你开着。注册时在邀请码栏填 3WPJEY7W，你和邀请人各进 10 万算力。OpenAI 兼容网关走 https://modeloc.com/pool/v1，站内自建 key 就能薅。",
-      "category": "API 中转",
-      "registrationStatus": "open",
-      "updatedAt": "2026-07-02",
-      "sourceIds": [
-        "baipiao",
-        "lujin"
-      ],
-      "recommended": true,
-      "tags": [
-        "免费算力",
-        "白嫖api",
-        "claudeopus",
-        "gpt",
-        "gemini",
-        "openai兼容",
-        "邀请送额度",
-        "by MODELOC",
-        "推荐"
-      ],
-      "models": [
-        "Claude",
-        "GPT",
-        "Gemini"
-      ],
-      "benefits": [
-        "注册送100K算力"
-      ],
-      "requirements": [
-        "不算纯公益站，倍率看算力价格，目前最高0.1倍"
-      ],
-      "notes": [],
-      "checkedAt": "2026-09-16T09:12:28Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "available"
     },
     {
@@ -404,8 +364,8 @@
         "群主人很好，周一和周五固定时段Codex放肆蹬，一般是四小时左右。首字速度2-5秒左右。有问题也会迅速修复。",
         "提供 Claude、GPT、生图分组和签到额度，周一和周五有固定时段 Codex 可用；openAI【限定】已降价至0.08。"
       ],
-      "checkedAt": "2026-09-16T09:12:32Z",
-      "healthStatus": "available"
+      "checkedAt": "2026-09-19T20:39:48Z",
+      "healthStatus": "responding"
     },
     {
       "id": "supxh.xin",
@@ -415,7 +375,7 @@
       "summary": "新人注册立得 5000 点免费额度，每日签到再领 1000~3000 点，免费用 Claude Opus 4.5 / Sonnet 4.5、Gemini 3.1 Pro 等大模型，按「额度/次」扣的公益免费线路。",
       "category": "API 中转",
       "registrationStatus": "open",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-16",
       "sourceIds": [
         "baipiao",
         "gongyijihe"
@@ -440,7 +400,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:29Z",
+      "checkedAt": "2026-09-19T20:39:43Z",
       "healthStatus": "available"
     },
     {
@@ -478,7 +438,7 @@
         "爽到爆，不过不支持并发"
       ],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:26Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "responding"
     },
     {
@@ -514,7 +474,7 @@
       "notes": [
         "注册送10刀，邀请1个人送10刀，每天签到送2刀；可用 Claude、GPT、OpenAI、Anthropic 和 gpt-image-2 生图，QQ讨论群：1040758372。"
       ],
-      "checkedAt": "2026-09-16T09:12:35Z",
+      "checkedAt": "2026-09-19T20:39:49Z",
       "healthStatus": "available"
     },
     {
@@ -546,7 +506,7 @@
       "notes": [
         "BlazeAPI 免费计划每天1000次请求，每分钟20次，支持 SSE 流式；模型包含 Kimi K2.5、MiniMax、DeepSeek R1、Gemma4、Grok、Qwen3.5/Qwen3.6 等，部分模型支持 vision、image gen、tools。"
       ],
-      "checkedAt": "2026-09-16T09:12:33Z",
+      "checkedAt": "2026-09-19T20:39:48Z",
       "healthStatus": "available"
     },
     {
@@ -578,7 +538,7 @@
       "notes": [
         "【0526新增】每周送70刀额度，有 Claude，签到奖励比较多，注意需要绑定手机。"
       ],
-      "checkedAt": "2026-09-16T09:12:32Z",
+      "checkedAt": "2026-09-19T20:39:48Z",
       "healthStatus": "available"
     },
     {
@@ -609,7 +569,7 @@
       "notes": [
         "送7元，倍率0.06，相当于110刀。"
       ],
-      "checkedAt": "2026-09-16T09:12:35Z",
+      "checkedAt": "2026-09-19T20:39:49Z",
       "healthStatus": "available"
     },
     {
@@ -641,7 +601,7 @@
       "notes": [
         "ModelScope 官方模型社区，支持筛选 API-Inference 模型，可用于开源模型体验和免费推理调用。"
       ],
-      "checkedAt": "2026-09-16T09:12:33Z",
+      "checkedAt": "2026-09-19T20:39:49Z",
       "healthStatus": "available"
     },
     {
@@ -671,7 +631,7 @@
         "不算纯公益站，有充值入口介意勿入"
       ],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:36Z",
+      "checkedAt": "2026-09-19T20:39:49Z",
       "healthStatus": "available"
     },
     {
@@ -700,7 +660,7 @@
       "notes": [
         "NVIDIA 官方 API Catalog / NIM 入口，开发者可用于模型体验、原型测试和 API 调用。"
       ],
-      "checkedAt": "2026-09-16T09:12:31Z",
+      "checkedAt": "2026-09-19T20:39:47Z",
       "healthStatus": "available"
     },
     {
@@ -730,7 +690,7 @@
       "notes": [
         "OpenRouter 免费模型集合，支持模型 ID 的 :free 变体，也可以使用 openrouter/free 路由。"
       ],
-      "checkedAt": "2026-09-16T09:12:31Z",
+      "checkedAt": "2026-09-19T20:39:47Z",
       "healthStatus": "available"
     },
     {
@@ -759,7 +719,7 @@
       "notes": [
         "OpenCode 的 Zen 免费模型通道，可通过 Zen API 查看可用模型，适合编码代理临时测试。"
       ],
-      "checkedAt": "2026-09-16T09:12:31Z",
+      "checkedAt": "2026-09-19T20:39:47Z",
       "healthStatus": "available"
     },
     {
@@ -784,7 +744,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:37Z",
+      "checkedAt": "2026-09-19T20:39:50Z",
       "healthStatus": "available"
     },
     {
@@ -809,7 +769,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:36Z",
+      "checkedAt": "2026-09-19T20:39:50Z",
       "healthStatus": "available"
     },
     {
@@ -834,7 +794,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:37Z",
+      "checkedAt": "2026-09-19T20:39:50Z",
       "healthStatus": "available"
     },
     {
@@ -845,7 +805,7 @@
       "summary": "带免费分组的中转站：Free 组倍率 0，目前开着 34 个模型，kimi-k3、glm-5.3、qwen3.8 系列、deepseek-v4-flash、gpt-oss-20b、gemini-2.0-flash、grok-4.6-fast 这些都能直接白嫖。没有签到、注册也不送额度——免费就是免费分组本身，注册完过一道 Telegram 机器人验证就能用。官方对 Free 组只承诺「100% 免费」，稳定性明说不保证，模型清单还经常变。",
       "category": "API 中转",
       "registrationStatus": "unknown",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-18",
       "sourceIds": [
         "baipiao"
       ],
@@ -884,7 +844,7 @@
         "模型清单经常变，以定价页为准"
       ],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:23Z",
+      "checkedAt": "2026-09-19T20:39:43Z",
       "healthStatus": "available"
     },
     {
@@ -895,7 +855,7 @@
       "summary": "注册一上来就送 2000 美元、之后每天签到还随机再加一笔的公益免费 API 站，模型从 DeepSeek、GLM、Kimi、Qwen 到 Step 语音全家桶一条龙，OpenAI 兼容直连，自己建 key 就能薅。",
       "category": "API 中转",
       "registrationStatus": "open",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-19",
       "sourceIds": [
         "baipiao",
         "dengdeng"
@@ -926,8 +886,8 @@
       "notes": [
         "无限额度，有很多国模。"
       ],
-      "checkedAt": "2026-09-16T09:12:26Z",
-      "healthStatus": "responding"
+      "checkedAt": "2026-09-19T20:39:46Z",
+      "healthStatus": "available"
     },
     {
       "id": "gemai.cc",
@@ -937,7 +897,7 @@
       "summary": "不堆国产凑数、专挂一线旗舰的公益免费 API 站，Claude Opus 4.8、Gemini 3.1 Pro、GPT-5.5、Grok 4.3 全在，模型多到要自己拉列表。注册送 100 元、每天签到再随机加，OpenAI 兼容直连。就是免费余额够不着最贵那几个，得挑便宜款薅。",
       "category": "API 中转",
       "registrationStatus": "open",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-18",
       "sourceIds": [
         "baipiao"
       ],
@@ -964,7 +924,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:22Z",
+      "checkedAt": "2026-09-19T20:39:42Z",
       "healthStatus": "available"
     },
     {
@@ -1002,8 +962,8 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:22Z",
-      "healthStatus": "available"
+      "checkedAt": "2026-09-19T20:39:42Z",
+      "healthStatus": "responding"
     },
     {
       "id": "api520.pro",
@@ -1042,7 +1002,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:25Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "available"
     },
     {
@@ -1078,7 +1038,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:25Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "available"
     },
     {
@@ -1114,7 +1074,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:29Z",
+      "checkedAt": "2026-09-19T20:39:47Z",
       "healthStatus": "available"
     },
     {
@@ -1125,7 +1085,7 @@
       "summary": "ChatAnywhere公益站脱胎自 GitHub 上 38.7k star 的老牌仓库 GPT_API_free——不用在站上注册账号密码，拿自己的 GitHub 账号做一次 OAuth 授权，就能领到一份长期有效的免费 Key，跑 GPT、Claude、DeepSeek、Gemini 等一众主流模型。免费档按模型分了次数，够日常写代码、跑脚本用。",
       "category": "API 中转",
       "registrationStatus": "unknown",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-19",
       "sourceIds": [
         "baipiao"
       ],
@@ -1150,7 +1110,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:23Z",
+      "checkedAt": "2026-09-19T20:39:44Z",
       "healthStatus": "available"
     },
     {
@@ -1190,7 +1150,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:29Z",
+      "checkedAt": "2026-09-19T20:39:47Z",
       "healthStatus": "available"
     },
     {
@@ -1230,7 +1190,7 @@
       "notes": [
         "注册80刀，签到40刀，目前只有 image2、GLM5.1、gork4.2。"
       ],
-      "checkedAt": "2026-09-16T09:12:26Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "available"
     },
     {
@@ -1271,7 +1231,7 @@
       "notes": [
         "来源页面状态：expired"
       ],
-      "checkedAt": "2026-09-16T09:12:30Z",
+      "checkedAt": "2026-09-19T20:39:47Z",
       "healthStatus": "available"
     },
     {
@@ -1309,7 +1269,7 @@
         "我没注册成功，具体的不太清楚"
       ],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:22Z",
+      "checkedAt": "2026-09-19T20:39:44Z",
       "healthStatus": "available"
     },
     {
@@ -1348,7 +1308,7 @@
       "notes": [
         "注册100刀，签到60刀，不稳定。"
       ],
-      "checkedAt": "2026-09-16T09:12:23Z",
+      "checkedAt": "2026-09-19T20:39:43Z",
       "healthStatus": "available"
     },
     {
@@ -1384,7 +1344,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:26Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "available"
     },
     {
@@ -1395,7 +1355,7 @@
       "summary": "Gemini 和 Grok 免费、Claude 走收费的公益站，受邀注册送 10 刀、每天签到再补 2–5 刀，综合倍率 0.5。站子风格比较「猛男」、口味重，介意的绕道；冲着免费 Gemini / Grok 来的可以薅。OpenAI 兼容直连。",
       "category": "API 中转",
       "registrationStatus": "open",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-19",
       "sourceIds": [
         "baipiao"
       ],
@@ -1418,7 +1378,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:23Z",
+      "checkedAt": "2026-09-19T20:39:43Z",
       "healthStatus": "available"
     },
     {
@@ -1456,7 +1416,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:30Z",
+      "checkedAt": "2026-09-19T20:39:47Z",
       "healthStatus": "responding"
     },
     {
@@ -1492,43 +1452,8 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:23Z",
+      "checkedAt": "2026-09-19T20:39:47Z",
       "healthStatus": "responding"
-    },
-    {
-      "id": "gancaopu.com",
-      "name": "干草铺服务站",
-      "domain": "gancaopu.com",
-      "url": "https://gancaopu.com/",
-      "summary": "干草铺服务站是\"干草铺公益站\"改名后的新招牌——2026-06-10 那条公告说清楚了：往后所有服务不再涉及 LDC，也不碰任何法币或与法币挂钩的虚拟币，专心做免费的 Claude 与 GPT 系列调用。注册得走 LinuxDo OAuth 加邀请码，分组按 rpm 限速，VIP 新订阅已经关闭。",
-      "category": "API 中转",
-      "registrationStatus": "unknown",
-      "updatedAt": "2026-08-22",
-      "sourceIds": [
-        "baipiao"
-      ],
-      "recommended": false,
-      "tags": [
-        "免费api",
-        "claude",
-        "codex",
-        "linuxdo登录",
-        "邀请码注册",
-        "by 站长（LinuxDo 用户名 omg_lol，误封可私信找回）"
-      ],
-      "models": [
-        "Claude Code",
-        "Claude",
-        "GPT",
-        "Codex"
-      ],
-      "benefits": [
-        "干草铺服务站是\"干草铺公益站\"改名后的新招牌——2026-06-10 那条公告说清楚了：往后所有服务不再涉及 LDC，也不碰任何法币或与法币挂钩的虚拟币，专心做免费的 Claude 与 GPT 系列调用"
-      ],
-      "requirements": [],
-      "notes": [],
-      "checkedAt": "2026-09-16T09:12:26Z",
-      "healthStatus": "available"
     },
     {
       "id": "cpolar.io",
@@ -1538,7 +1463,7 @@
       "summary": "莱斯超级API通过注册赠送和每日签到提供公益额度，支持 Mistral、GPT 5.4、Gemini 3.1、Gemini 2.5、DeepSeek 和千问系列模型。",
       "category": "API 中转",
       "registrationStatus": "open",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-19",
       "sourceIds": [
         "baipiao"
       ],
@@ -1566,7 +1491,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:23Z",
+      "checkedAt": "2026-09-19T20:39:43Z",
       "healthStatus": "available"
     },
     {
@@ -1599,7 +1524,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:26Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "available"
     },
     {
@@ -1632,8 +1557,42 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:25Z",
+      "checkedAt": "2026-09-19T20:39:47Z",
       "healthStatus": "available"
+    },
+    {
+      "id": "chybenzun.top",
+      "name": "CHY 公益站",
+      "domain": "chybenzun.top",
+      "url": "https://chybenzun.top/",
+      "summary": "CHY公益站是个从2026年初就挂着、自己在footer写\"不太稳定\"却一直没关张的免费AI接口站，靠LinuxDo信任等级或邮箱注册码才让进门，2026-07-02起把额度玩法从吃到饱换成了Coding Plan分档限额制；想蹭Claude、GPT、Qwen这些大牌，先过门槛再去钱包页对自己落在哪一档。",
+      "category": "API 中转",
+      "registrationStatus": "unknown",
+      "updatedAt": "2026-07-05",
+      "sourceIds": [
+        "baipiao"
+      ],
+      "recommended": false,
+      "tags": [
+        "免费api",
+        "codingplan",
+        "linuxdo登录",
+        "claude",
+        "gpt",
+        "qwen"
+      ],
+      "models": [
+        "Claude",
+        "GPT",
+        "Qwen"
+      ],
+      "benefits": [
+        "CHY公益站是个从2026年初就挂着、自己在footer写\"不太稳定\"却一直没关张的免费AI接口站，靠LinuxDo信任等级或邮箱注册码才让进门，2026-07-02起把额度玩法从吃到饱换成了Coding Plan分档限额制"
+      ],
+      "requirements": [],
+      "notes": [],
+      "checkedAt": "2026-09-19T20:39:45Z",
+      "healthStatus": "responding"
     },
     {
       "id": "qaq.al",
@@ -1666,7 +1625,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:27Z",
+      "checkedAt": "2026-09-19T20:39:46Z",
       "healthStatus": "available"
     },
     {
@@ -1703,8 +1662,8 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:30Z",
-      "healthStatus": "available"
+      "checkedAt": "2026-09-19T20:39:47Z",
+      "healthStatus": "responding"
     },
     {
       "id": "chuyel.top",
@@ -1740,7 +1699,7 @@
       "notes": [
         "站点不算传统公益站，小叶币只可通过注册、签到、不定时群内兑换码或找群主获取；部分模型可能有速率限制或不可用，模型列表建议用 OpenAI 协议接口自行获取。"
       ],
-      "checkedAt": "2026-09-16T09:12:31Z",
+      "checkedAt": "2026-09-19T20:39:48Z",
       "healthStatus": "available"
     },
     {
@@ -1751,7 +1710,7 @@
       "summary": "小欢公益站是博主\"小欢\"挂在自己个人博客 cups.moe 后院的免费大模型 API 服务，登录即送 200 次使用额度，额度快见底就去那篇 14.4 万阅读的博文底下留言喊话加量——没有邀请码、没有充值入口，全靠一篇博文加一条评论区撑着。",
       "category": "API 中转",
       "registrationStatus": "unknown",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-16",
       "sourceIds": [
         "baipiao"
       ],
@@ -1775,7 +1734,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:24Z",
+      "checkedAt": "2026-09-19T20:39:44Z",
       "healthStatus": "available"
     },
     {
@@ -1812,7 +1771,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:28Z",
+      "checkedAt": "2026-09-19T20:39:46Z",
       "healthStatus": "available"
     },
     {
@@ -1846,7 +1805,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:24Z",
+      "checkedAt": "2026-09-19T20:39:44Z",
       "healthStatus": "available"
     },
     {
@@ -1880,7 +1839,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:28Z",
+      "checkedAt": "2026-09-19T20:39:46Z",
       "healthStatus": "available"
     },
     {
@@ -1915,7 +1874,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:30Z",
+      "checkedAt": "2026-09-19T20:39:44Z",
       "healthStatus": "responding"
     },
     {
@@ -1947,8 +1906,42 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:27Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "responding"
+    },
+    {
+      "id": "modeloc.com",
+      "name": "MODELOC 算力平台（注册填码互得 10 万算力 · Claude Opus 4.8 / GPT 5.5 旗舰闭源全开）",
+      "domain": "modeloc.com",
+      "url": "https://modeloc.com/",
+      "summary": "一个「模型可信度 + 算力」平台，注册就白送算力去调一水儿的旗舰大模型，最馋的是别家公益线路多半只给国产，它这儿 Claude Opus 4.8 / 4.7 / 4.6、GPT 5.5 / 5.4、Gemini 3.5 Flash 这些闭源顶配全给你开着。注册时在邀请码栏填 3WPJEY7W，你和邀请人各进 10 万算力。OpenAI 兼容网关走 https://modeloc.com/pool/v1，站内自建 key 就能薅。",
+      "category": "API 中转",
+      "registrationStatus": "unknown",
+      "updatedAt": "2026-07-02",
+      "sourceIds": [
+        "baipiao"
+      ],
+      "recommended": false,
+      "tags": [
+        "免费算力",
+        "白嫖api",
+        "claudeopus",
+        "gpt",
+        "gemini",
+        "openai兼容",
+        "邀请送额度",
+        "by MODELOC"
+      ],
+      "models": [
+        "Claude",
+        "GPT",
+        "Gemini"
+      ],
+      "benefits": [],
+      "requirements": [],
+      "notes": [],
+      "checkedAt": "2026-09-19T20:39:46Z",
+      "healthStatus": "available"
     },
     {
       "id": "furry.vg",
@@ -1980,7 +1973,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:23Z",
+      "checkedAt": "2026-09-19T20:39:43Z",
       "healthStatus": "available"
     },
     {
@@ -2012,7 +2005,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:23Z",
+      "checkedAt": "2026-09-19T20:39:43Z",
       "healthStatus": "available"
     },
     {
@@ -2045,7 +2038,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:23Z",
+      "checkedAt": "2026-09-19T20:39:44Z",
       "healthStatus": "available"
     },
     {
@@ -2056,7 +2049,7 @@
       "summary": "免费区直接挂着 claude-opus-4-8-free、glm-5.2-free 还有一票国产开源的公益大站，每天领一份保底套餐、还能多次抽奖攒小额额度。模型杂、站子稳，OpenAI 兼容，拿来当长期备用很顶。",
       "category": "生图",
       "registrationStatus": "unknown",
-      "updatedAt": "2026-09-14",
+      "updatedAt": "2026-09-19",
       "sourceIds": [
         "baipiao"
       ],
@@ -2078,7 +2071,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:28Z",
+      "checkedAt": "2026-09-19T20:39:42Z",
       "healthStatus": "available"
     },
     {
@@ -2109,8 +2102,39 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:27Z",
+      "checkedAt": "2026-09-19T20:39:46Z",
       "healthStatus": "available"
+    },
+    {
+      "id": "gorouter.app",
+      "name": "GoRouter 公益站",
+      "domain": "gorouter.app",
+      "url": "https://gorouter.app/",
+      "summary": "GoRouter 是一套 New API 风格的模型控制台：当前可用 GitHub 登录，注册开关与签到功能都处于开启状态，控制台提供令牌、用量记录、模型和兑换入口。公开状态没有列出固定赠送额度或可用模型，先登录核对再接客户端。",
+      "category": "API 中转",
+      "registrationStatus": "unknown",
+      "updatedAt": "2026-09-03",
+      "sourceIds": [
+        "baipiao"
+      ],
+      "recommended": false,
+      "tags": [
+        "公益api",
+        "github登录",
+        "每日签到",
+        "apikey",
+        "newapi",
+        "by GoRouter"
+      ],
+      "models": [],
+      "benefits": [
+        "GoRouter 是一套 New API 风格的模型控制台：当前可用 GitHub 登录，注册开关与签到功能都处于开启状态，控制台提供令牌、用量记录、模型和兑换入口",
+        "公开状态没有列出固定赠送额度或可用模型，先登录核对再接客户端"
+      ],
+      "requirements": [],
+      "notes": [],
+      "checkedAt": "2026-09-19T20:39:46Z",
+      "healthStatus": "responding"
     },
     {
       "id": "motomoto.lol",
@@ -2142,7 +2166,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:30Z",
+      "checkedAt": "2026-09-19T20:39:47Z",
       "healthStatus": "available"
     },
     {
@@ -2173,7 +2197,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:23Z",
+      "checkedAt": "2026-09-19T20:39:48Z",
       "healthStatus": "available"
     },
     {
@@ -2184,7 +2208,7 @@
       "summary": "一个稳、能生图、还白送 deepseek-v4-flash 的公益免费 API 站——tokeness/free 分组直接免费调，每天签到再补 0.5 刀，综合倍率 0.1 很低。OpenAI 兼容直连，拿来当备用很省心。",
       "category": "生图",
       "registrationStatus": "unknown",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-16",
       "sourceIds": [
         "baipiao"
       ],
@@ -2205,7 +2229,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:25Z",
+      "checkedAt": "2026-09-19T20:39:46Z",
       "healthStatus": "available"
     },
     {
@@ -2236,7 +2260,7 @@
       "benefits": [],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:25Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "available"
     },
     {
@@ -2247,7 +2271,7 @@
       "summary": "基元律动的好友邀请活动已延长；好友完成注册并下载使用 OpenSquilla 后，可获得价值 68 元的 token 额度，同时还能用统一 API Key 接入多模型。",
       "category": "API 中转",
       "registrationStatus": "unknown",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-18",
       "sourceIds": [
         "baipiao"
       ],
@@ -2268,7 +2292,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:25Z",
+      "checkedAt": "2026-09-19T20:39:43Z",
       "healthStatus": "available"
     },
     {
@@ -2302,7 +2326,7 @@
         "已经领取到了50刀。",
         "试用额度找群主领50刀；GPT 当前倍率0.065，截图中包含 plus 满血号池、GPT Image 2、CC-Kiro、CC-反重力 opus4.6，以及暂不可用的 CC-Google Vertex 渠道。"
       ],
-      "checkedAt": "2026-09-16T09:12:33Z",
+      "checkedAt": "2026-09-19T20:39:48Z",
       "healthStatus": "available"
     },
     {
@@ -2332,7 +2356,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:25Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "available"
     },
     {
@@ -2362,7 +2386,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:31Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "available"
     },
     {
@@ -2391,7 +2415,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:29Z",
+      "checkedAt": "2026-09-19T20:39:47Z",
       "healthStatus": "available"
     },
     {
@@ -2402,7 +2426,7 @@
       "summary": "Grox 是一家提供免费 API 额度的公益站，通过邀请链接注册可获得 100$ 日卡额度，需要加入 Telegram 群组并绑定账号后自动发放。支持主流 AI 模型调用，OpenAI 兼容接口。",
       "category": "API 中转",
       "registrationStatus": "unknown",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-17",
       "sourceIds": [
         "baipiao"
       ],
@@ -2420,7 +2444,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:24Z",
+      "checkedAt": "2026-09-19T20:39:44Z",
       "healthStatus": "available"
     },
     {
@@ -2449,7 +2473,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:26Z",
+      "checkedAt": "2026-09-19T20:39:46Z",
       "healthStatus": "available"
     },
     {
@@ -2479,7 +2503,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:27Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "available"
     },
     {
@@ -2490,7 +2514,7 @@
       "summary": "跑得久、稳得住、还能生图的公益中转站，综合倍率 0.05–1 区间友好，每天签到补 2 刀。没什么噱头，就是那种闷声当主力备用、关键时刻不掉链子的站。OpenAI 兼容直连。",
       "category": "生图",
       "registrationStatus": "unknown",
-      "updatedAt": "2026-09-15",
+      "updatedAt": "2026-09-16",
       "sourceIds": [
         "baipiao"
       ],
@@ -2508,7 +2532,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:25Z",
+      "checkedAt": "2026-09-19T20:39:45Z",
       "healthStatus": "available"
     },
     {
@@ -2540,7 +2564,7 @@
         "并发5，如果不够可以找管理员加；限时三天活动目前已暂停。",
         "纯公益站，有签到和试用额度，倍率0.2；此前的限时三天活动已暂停，当前领取规则以站内为准。"
       ],
-      "checkedAt": "2026-09-16T09:12:34Z",
+      "checkedAt": "2026-09-19T20:39:49Z",
       "healthStatus": "available"
     },
     {
@@ -2571,7 +2595,7 @@
       "notes": [
         "NexaHub AI 免费订阅额度为每日30刀、总计120刀；充值比例1:15，Codex 余额计费分组0.8倍，免费订阅分组1倍。"
       ],
-      "checkedAt": "2026-09-16T09:12:34Z",
+      "checkedAt": "2026-09-19T20:39:48Z",
       "healthStatus": "available"
     },
     {
@@ -2600,7 +2624,7 @@
       "notes": [
         "注册送2刀，找群主再拿2刀，特价分组0.06；综合相当于60刀。"
       ],
-      "checkedAt": "2026-09-16T09:12:35Z",
+      "checkedAt": "2026-09-19T20:39:50Z",
       "healthStatus": "available"
     },
     {
@@ -2628,7 +2652,7 @@
       "notes": [
         "【0526新增】纯公益站，每天签到10刀左右，有 DeepSeek。"
       ],
-      "checkedAt": "2026-09-16T09:12:32Z",
+      "checkedAt": "2026-09-19T20:39:48Z",
       "healthStatus": "available"
     },
     {
@@ -2657,7 +2681,7 @@
       "notes": [
         "登录送50刀，有 Claude。"
       ],
-      "checkedAt": "2026-09-16T09:12:36Z",
+      "checkedAt": "2026-09-19T20:39:50Z",
       "healthStatus": "available"
     },
     {
@@ -2684,7 +2708,7 @@
       "notes": [
         "来源页面标记为暂停或失效，仍以本次连通性检测为准"
       ],
-      "checkedAt": "2026-09-16T09:12:37Z",
+      "checkedAt": "2026-09-19T20:39:50Z",
       "healthStatus": "available"
     },
     {
@@ -2712,7 +2736,7 @@
       "notes": [
         "这个登录送4刀，但是倍率是0.001，等于4000刀。"
       ],
-      "checkedAt": "2026-09-16T09:12:36Z",
+      "checkedAt": "2026-09-19T20:39:49Z",
       "healthStatus": "available"
     },
     {
@@ -2740,7 +2764,7 @@
       "notes": [
         "【0526新增】注册送50刀，模型5.4、5.5，倍率2x左右，新站。"
       ],
-      "checkedAt": "2026-09-16T09:12:33Z",
+      "checkedAt": "2026-09-19T20:39:48Z",
       "healthStatus": "available"
     },
     {
@@ -2767,7 +2791,7 @@
       "notes": [
         "注册250刀，模型质量可能比较低。"
       ],
-      "checkedAt": "2026-09-16T09:12:33Z",
+      "checkedAt": "2026-09-19T20:39:49Z",
       "healthStatus": "available"
     },
     {
@@ -2792,7 +2816,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:37Z",
+      "checkedAt": "2026-09-19T20:39:49Z",
       "healthStatus": "available"
     },
     {
@@ -2819,7 +2843,7 @@
         "服务器爆炸"
       ],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:38Z",
+      "checkedAt": "2026-09-19T20:39:50Z",
       "healthStatus": "available"
     },
     {
@@ -2846,7 +2870,7 @@
         "服务器爆炸"
       ],
       "notes": [],
-      "checkedAt": "2026-09-16T09:12:38Z",
+      "checkedAt": "2026-09-19T20:39:50Z",
       "healthStatus": "available"
     }
   ]
