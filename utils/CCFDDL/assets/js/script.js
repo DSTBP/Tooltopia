@@ -12,7 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 全局数据变量
     let confData = [];
     let ccfData = [];
-    let sjrData = [];
+    let eiData = [];
+    let sciData = [];
+    let ssciData = [];
     let jcrData = [];
     let accRatesMap = new Map();
 
@@ -34,7 +36,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const STORAGE_KEYS = {
         deadlines: 'ccfddl.deadlines.cache.v3',
-        acceptanceRates: 'ccfddl.acceptance.cache.v1'
+        acceptanceRates: 'ccfddl.acceptance.cache.v1',
+        pageSize: 'ccfddl.page-size.v1'
     };
     const CACHE_TTL_MS = {
         deadlines: 30 * 60 * 1000,
@@ -45,11 +48,15 @@ document.addEventListener('DOMContentLoaded', () => {
         deadlineLoadPromise: null,
         acceptanceLoadPromise: null,
         ccfLoadPromise: null,
-        sjrLoadPromise: null,
+        eiLoadPromise: null,
+        sciLoadPromise: null,
+        ssciLoadPromise: null,
         jcrLoadPromise: null,
         deadlinesLoaded: false,
         ccfLoaded: false,
-        sjrLoaded: false,
+        eiLoaded: false,
+        sciLoaded: false,
+        ssciLoaded: false,
         jcrLoaded: false,
         acceptanceLoaded: false,
         warningMessage: ''
@@ -58,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeDropdownToggle = null;
     let scheduledRenderFrame = null;
     let scheduledRenderTimer = null;
+    let scheduledTranslationTimer = null;
 
     const safeStorage = {
         get(key) {
@@ -150,10 +158,33 @@ document.addEventListener('DOMContentLoaded', () => {
         run();
     }
 
+    function scheduleDynamicTranslation() {
+        if (scheduledTranslationTimer) clearTimeout(scheduledTranslationTimer);
+        scheduledTranslationTimer = setTimeout(() => {
+            scheduledTranslationTimer = null;
+            if (window.translate && typeof window.translate.execute === 'function') {
+                try {
+                    window.translate.execute();
+                } catch (error) {
+                    console.warn('[CCFDDL] Dynamic translation failed:', error);
+                }
+            }
+        }, 80);
+    }
+
     function setContainerMessage(message, isError = false) {
         if (!conferencesContainer) return;
         const className = isError ? 'empty-text error-text' : 'empty-text';
-        conferencesContainer.innerHTML = `<p class="${className}" style="grid-column: 1/-1; text-align: center;${isError ? ' color:#f87171;' : ''}">${escapeHTML(message)}</p>`;
+        const retryButton = isError
+            ? `<button type="button" class="retry-btn" data-retry-mode="${escapeHTML(currentMode)}">重试加载</button>`
+            : '';
+        conferencesContainer.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center;">
+                <p class="${className}" style="${isError ? 'color:#f87171;' : ''}">${escapeHTML(message)}</p>
+                ${retryButton}
+            </div>
+        `;
+        if (paginationContainer) paginationContainer.innerHTML = '';
     }
 
     function setWarningMessage(message = '') {
@@ -175,20 +206,60 @@ document.addEventListener('DOMContentLoaded', () => {
         return collator.compare(String(a ?? ''), String(b ?? ''));
     }
 
-    function parseNum(val, isFloat = false) {
-        if (val === undefined || val === null || val === '' || val === '-' || val === '.') return 0;
-        const normalized = String(val).replace(/,/g, isFloat ? '.' : '');
-        const parsed = isFloat ? parseFloat(normalized) : parseInt(normalized, 10);
-        return Number.isFinite(parsed) ? parsed : 0;
+    function parseOptionalNumber(value) {
+        const text = String(value ?? '').trim();
+        if (!text || text === '-' || text === '.' || /^n\/?a$/i.test(text)) return null;
+        const parsed = Number(text.replace(/,/g, ''));
+        return Number.isFinite(parsed) ? parsed : null;
     }
 
     function getFactorBand(value) {
-        if (!value || Number.isNaN(value)) return '未知';
+        if (!Number.isFinite(value)) return '未知';
         if (value >= 20) return '>=20';
         if (value >= 10) return '10-20';
         if (value >= 5) return '5-10';
         if (value >= 1) return '1-5';
         return '<1';
+    }
+
+    function compareNullableNumbers(a, b, asc = true) {
+        const aValid = Number.isFinite(a);
+        const bValid = Number.isFinite(b);
+        if (!aValid && !bValid) return 0;
+        if (!aValid) return 1;
+        if (!bValid) return -1;
+        return asc ? a - b : b - a;
+    }
+
+    function compareNullableText(a, b, asc = true) {
+        const aText = String(a ?? '').trim();
+        const bText = String(b ?? '').trim();
+        const aMissing = !aText || aText === '-';
+        const bMissing = !bText || bText === '-';
+        if (aMissing && bMissing) return 0;
+        if (aMissing) return 1;
+        if (bMissing) return -1;
+        const comparison = compareText(aText, bText);
+        return asc ? comparison : -comparison;
+    }
+
+    function compareQuartiles(a, b, asc = true) {
+        const ranks = { Q1: 1, Q2: 2, Q3: 3, Q4: 4 };
+        const aRank = ranks[String(a ?? '').trim()] || null;
+        const bRank = ranks[String(b ?? '').trim()] || null;
+        if (aRank === null && bRank === null) return 0;
+        if (aRank === null) return 1;
+        if (bRank === null) return -1;
+        const comparison = aRank - bRank;
+        return asc ? comparison : -comparison;
+    }
+
+    function compareRankFractions(a, b, asc = true) {
+        const toNumber = value => {
+            const match = String(value ?? '').match(/^\s*(\d+)/);
+            return match ? Number.parseInt(match[1], 10) : null;
+        };
+        return compareNullableNumbers(toNumber(a), toNumber(b), asc);
     }
 
     function normalizeTimezoneLabel(rawLabel) {
@@ -347,49 +418,261 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function normalizeSJRData(rawData) {
-        return (rawData || []).map(row => ({
-            title: row[0] || '',
-            type: row[1] || '',
-            issn: row[2] || '',
-            publisher: row[3] || '',
-            sjr: parseNum(row[4], true),
-            quartile: row[5] || '-',
-            hIndex: parseNum(row[6]),
-            totalDocsYear: parseNum(row[7]),
-            totalDocs3Years: parseNum(row[8]),
-            totalRefs: parseNum(row[9]),
-            totalCites3Years: parseNum(row[10]),
-            citableDocs3Years: parseNum(row[11]),
-            citesDoc2Years: parseNum(row[12], true),
-            refDoc: parseNum(row[13], true),
-            country: row[14] || '',
-            region: row[15] || '',
-            areas: row[16] || row[15] || '',
-            searchText: normalizeSearchText(row[0], row[3], row[14], row[15], row[16])
-        }));
+    function cleanCsvValue(value) {
+        return String(value ?? '').replace(/\r\n?/g, '\n').trim();
     }
 
-    function normalizeJCRData(rawData) {
-        return (rawData || []).map(row => {
-            const num = parseFloat(String(row[1] ?? '').replace(/,/g, ''));
-            const factorValue = Number.isFinite(num) ? num : 0;
-            const jcr = row[2] || '-';
-            const zky = row[7] || '-';
+    function csvCell(row, headerIndex, name) {
+        const index = headerIndex.get(name);
+        return index === undefined ? '' : cleanCsvValue(row[index]);
+    }
 
-            return {
-                nlmId: row[0] || '',
-                factor: factorValue,
-                factorBand: getFactorBand(factorValue),
-                jcr: jcr === '.' ? '-' : jcr,
-                journal: row[3] || '',
-                abbr: row[4] || '',
-                issn: row[5] || '',
-                eissn: row[6] || '',
-                zky: zky === '.' ? '-' : zky,
-                searchText: normalizeSearchText(row[3], row[4], row[5], row[6], zky, jcr)
-            };
+    function parseCsvText(text, requiredHeaders, mapRow) {
+        const records = [];
+        let headers = null;
+        let headerIndex = null;
+        let row = [];
+        let field = '';
+        let quoted = false;
+        let sourceIndex = 0;
+        let physicalLine = 1;
+
+        const commitRow = () => {
+            const currentRow = row;
+            row = [];
+
+            if (!headers) {
+                headers = currentRow.map((value, index) => {
+                    const cleaned = cleanCsvValue(value);
+                    return index === 0 ? cleaned.replace(/^\uFEFF/, '') : cleaned;
+                });
+                headerIndex = new Map(headers.map((name, index) => [name, index]));
+                const missingHeaders = requiredHeaders.filter(name => !headerIndex.has(name));
+                if (missingHeaders.length > 0) {
+                    throw new Error(`CSV 缺少必要字段：${missingHeaders.join('、')}`);
+                }
+                return;
+            }
+
+            if (currentRow.every(value => cleanCsvValue(value) === '')) return;
+            if (currentRow.length !== headers.length) {
+                throw new Error(`CSV 第 ${physicalLine} 行字段数量异常（${currentRow.length}/${headers.length}）`);
+            }
+
+            const mapped = mapRow(currentRow, headerIndex, sourceIndex);
+            sourceIndex += 1;
+            if (mapped) records.push(mapped);
+        };
+
+        for (let index = 0; index < text.length; index += 1) {
+            const char = text[index];
+
+            if (quoted) {
+                if (char === '"') {
+                    if (text[index + 1] === '"') {
+                        field += '"';
+                        index += 1;
+                    } else {
+                        quoted = false;
+                    }
+                } else {
+                    field += char;
+                    if (char === '\n') physicalLine += 1;
+                }
+                continue;
+            }
+
+            if (char === '"' && field.length === 0) {
+                quoted = true;
+            } else if (char === ',') {
+                row.push(field);
+                field = '';
+            } else if (char === '\n') {
+                row.push(field);
+                field = '';
+                commitRow();
+                physicalLine += 1;
+            } else if (char !== '\r') {
+                field += char;
+            }
+        }
+
+        if (quoted) throw new Error('CSV 存在未闭合的引号字段');
+        if (field.length > 0 || row.length > 0) {
+            row.push(field);
+            commitRow();
+        }
+        if (!headers) throw new Error('CSV 文件为空');
+        return records;
+    }
+
+    async function loadCsvDataset(filePath, options = {}) {
+        const {
+            encoding = 'utf-8',
+            requiredHeaders = [],
+            mapRow,
+            forceRefresh = false
+        } = options;
+
+        const response = await fetch(filePath, {
+            cache: forceRefresh ? 'no-store' : 'force-cache'
         });
+        if (!response.ok) {
+            throw new Error(`数据文件加载失败（HTTP ${response.status}）`);
+        }
+
+        const buffer = await response.arrayBuffer();
+        let text;
+        try {
+            text = new TextDecoder(encoding, { fatal: true }).decode(buffer);
+        } catch (error) {
+            throw new Error(`数据文件解码失败（${encoding}）`);
+        }
+
+        return parseCsvText(text, requiredHeaders, mapRow);
+    }
+
+    const eiSectionLabels = {
+        SERIALS: '连续出版物',
+        'NON-SERIALS': '非连续出版物',
+        DISCONTINUED: '停止收录'
+    };
+
+    function normalizeEIRow(row, headerIndex, sourceIndex) {
+        const title = csvCell(row, headerIndex, 'source_title');
+        if (!title) return null;
+
+        const alternateTitles = [
+            csvCell(row, headerIndex, 'chinese_title'),
+            csvCell(row, headerIndex, 'transliterated_title'),
+            csvCell(row, headerIndex, 'english_translated_title')
+        ].filter((value, index, values) => value && value !== title && values.indexOf(value) === index);
+        const subjects = Array.from({ length: 8 }, (_, index) => csvCell(row, headerIndex, `subject_${index + 1}`))
+            .filter(Boolean);
+        const section = csvCell(row, headerIndex, 'source_list_section') || 'UNKNOWN';
+        const coverageParts = [
+            ['年份', csvCell(row, headerIndex, 'final_coverage_year')],
+            ['卷', csvCell(row, headerIndex, 'final_coverage_volume')],
+            ['期', csvCell(row, headerIndex, 'final_coverage_issue')],
+            ['页码', csvCell(row, headerIndex, 'final_coverage_pagination')]
+        ].filter(([, value]) => value).map(([label, value]) => `${label} ${value}`);
+        const item = {
+            title,
+            alternateTitle: alternateTitles.join(' / '),
+            type: csvCell(row, headerIndex, 'source_type') || '未标注',
+            section,
+            sectionLabel: eiSectionLabels[section] || section,
+            subjects,
+            subjectsText: subjects.join(' | '),
+            publisher: csvCell(row, headerIndex, 'publisher'),
+            country: csvCell(row, headerIndex, 'country_region'),
+            language: csvCell(row, headerIndex, 'language'),
+            issn: csvCell(row, headerIndex, 'ISSN'),
+            eissn: csvCell(row, headerIndex, 'EISSN'),
+            isbn13: csvCell(row, headerIndex, 'ISBN13'),
+            indexingStatus: csvCell(row, headerIndex, 'ei_2026_indexing_status'),
+            openAccess: csvCell(row, headerIndex, 'open_access'),
+            coverage: coverageParts.join(' · '),
+            sourceIndex
+        };
+        item.searchText = normalizeSearchText(
+            item.title,
+            item.alternateTitle,
+            item.type,
+            item.section,
+            item.sectionLabel,
+            item.subjectsText,
+            item.publisher,
+            item.country,
+            item.language,
+            item.issn,
+            item.eissn,
+            item.isbn13,
+            item.indexingStatus,
+            item.openAccess,
+            item.coverage
+        );
+        return item;
+    }
+
+    function normalizeWosRow(row, headerIndex, sourceIndex) {
+        const title = csvCell(row, headerIndex, 'Journal title');
+        if (!title) return null;
+        const categories = csvCell(row, headerIndex, 'Web of Science Categories')
+            .split(/\s*\|\s*/)
+            .map(value => value.trim())
+            .filter(Boolean);
+        const item = {
+            title,
+            issn: csvCell(row, headerIndex, 'ISSN'),
+            eissn: csvCell(row, headerIndex, 'eISSN'),
+            publisher: csvCell(row, headerIndex, 'Publisher name'),
+            address: csvCell(row, headerIndex, 'Publisher address'),
+            language: csvCell(row, headerIndex, 'Languages'),
+            categories,
+            categoriesText: categories.join(' | '),
+            sourceIndex
+        };
+        item.searchText = normalizeSearchText(
+            item.title,
+            item.issn,
+            item.eissn,
+            item.publisher,
+            item.address,
+            item.language,
+            item.categoriesText
+        );
+        return item;
+    }
+
+    function normalizeJCRRow(row, headerIndex, sourceIndex) {
+        const title = csvCell(row, headerIndex, '期刊名称');
+        if (!title) return null;
+        const jif = parseOptionalNumber(csvCell(row, headerIndex, '影响因子JIF'));
+        const item = {
+            rank: parseOptionalNumber(csvCell(row, headerIndex, '总排名(按JIF)')),
+            title,
+            abbr: csvCell(row, headerIndex, '期刊缩写'),
+            issn: csvCell(row, headerIndex, 'ISSN'),
+            eissn: csvCell(row, headerIndex, 'eISSN'),
+            publisher: csvCell(row, headerIndex, '出版商'),
+            category: csvCell(row, headerIndex, '学科类别') || '未分类',
+            jif,
+            jifBand: getFactorBand(jif),
+            jifQuartile: csvCell(row, headerIndex, 'JIF分区') || '-',
+            jifPercentile: parseOptionalNumber(csvCell(row, headerIndex, 'JIF百分位')),
+            jifRank: csvCell(row, headerIndex, 'JIF排名'),
+            jci: parseOptionalNumber(csvCell(row, headerIndex, 'JCI')),
+            jciQuartile: csvCell(row, headerIndex, 'JCI分区') || '-',
+            jciPercentile: parseOptionalNumber(csvCell(row, headerIndex, 'JCI百分位')),
+            jciRank: csvCell(row, headerIndex, 'JCI排名'),
+            fiveYearJif: parseOptionalNumber(csvCell(row, headerIndex, '5年影响因子')),
+            totalCitations: parseOptionalNumber(csvCell(row, headerIndex, '总被引频次')),
+            subjectDetails: csvCell(row, headerIndex, '各学科分区详情'),
+            dataYear: csvCell(row, headerIndex, '数据年份'),
+            sourceIndex
+        };
+        item.searchText = normalizeSearchText(
+            item.title,
+            item.abbr,
+            item.issn,
+            item.eissn,
+            item.publisher,
+            item.category,
+            item.jifQuartile,
+            item.jifRank,
+            item.jciQuartile,
+            item.jciRank,
+            item.jif,
+            item.jifPercentile,
+            item.jci,
+            item.jciPercentile,
+            item.fiveYearJif,
+            item.totalCitations,
+            item.subjectDetails,
+            item.dataYear
+        );
+        return item;
     }
 
     async function loadJavaScriptDataset(filePath, exportName) {
@@ -552,49 +835,148 @@ document.addEventListener('DOMContentLoaded', () => {
         return runtimeState.ccfLoadPromise;
     }
 
-    async function ensureSJRDataLoaded() {
-        if (runtimeState.sjrLoaded) return sjrData;
-        if (runtimeState.sjrLoadPromise) return runtimeState.sjrLoadPromise;
+    async function ensureEIDataLoaded(forceRefresh = false) {
+        if (runtimeState.eiLoaded && !forceRefresh) return eiData;
+        if (runtimeState.eiLoadPromise) return runtimeState.eiLoadPromise;
 
-        runtimeState.sjrLoadPromise = loadJavaScriptDataset('assets/js/scimago.js', 'SCImago')
-            .then(rawData => {
-                sjrData = normalizeSJRData(rawData && rawData.data ? rawData.data : []);
-                runtimeState.sjrLoaded = true;
-                return sjrData;
-            })
-            .finally(() => {
-                runtimeState.sjrLoadPromise = null;
-            });
+        const previousData = eiData;
+        runtimeState.eiLoadPromise = loadCsvDataset('assets/data/EI_202607.csv', {
+            forceRefresh,
+            requiredHeaders: [
+                'source_list_section', 'source_title', 'source_type', 'ISSN', 'EISSN', 'ISBN13',
+                'publisher', 'country_region', 'language', 'subject_1', 'ei_2026_indexing_status'
+            ],
+            mapRow: normalizeEIRow
+        }).then(data => {
+            eiData = data;
+            runtimeState.eiLoaded = true;
+            return eiData;
+        }).catch(error => {
+            if (previousData.length > 0) {
+                eiData = previousData;
+                runtimeState.eiLoaded = true;
+                setWarningMessage('EI 数据刷新失败，已显示已加载版本');
+                return eiData;
+            }
+            throw error;
+        }).finally(() => {
+            runtimeState.eiLoadPromise = null;
+        });
 
-        return runtimeState.sjrLoadPromise;
+        return runtimeState.eiLoadPromise;
     }
 
-    async function ensureJCRDataLoaded() {
-        if (runtimeState.jcrLoaded) return jcrData;
+    async function ensureSCIDataLoaded(forceRefresh = false) {
+        if (runtimeState.sciLoaded && !forceRefresh) return sciData;
+        if (runtimeState.sciLoadPromise) return runtimeState.sciLoadPromise;
+
+        const previousData = sciData;
+        runtimeState.sciLoadPromise = loadCsvDataset('assets/data/SCI-20260817.csv', {
+            forceRefresh,
+            requiredHeaders: ['Journal title', 'ISSN', 'eISSN', 'Publisher name', 'Publisher address', 'Languages', 'Web of Science Categories'],
+            mapRow: normalizeWosRow
+        }).then(data => {
+            sciData = data;
+            runtimeState.sciLoaded = true;
+            return sciData;
+        }).catch(error => {
+            if (previousData.length > 0) {
+                sciData = previousData;
+                runtimeState.sciLoaded = true;
+                setWarningMessage('SCI 数据刷新失败，已显示已加载版本');
+                return sciData;
+            }
+            throw error;
+        }).finally(() => {
+            runtimeState.sciLoadPromise = null;
+        });
+
+        return runtimeState.sciLoadPromise;
+    }
+
+    async function ensureSSCIDataLoaded(forceRefresh = false) {
+        if (runtimeState.ssciLoaded && !forceRefresh) return ssciData;
+        if (runtimeState.ssciLoadPromise) return runtimeState.ssciLoadPromise;
+
+        const previousData = ssciData;
+        runtimeState.ssciLoadPromise = loadCsvDataset('assets/data/SSCI-20260817.csv', {
+            forceRefresh,
+            requiredHeaders: ['Journal title', 'ISSN', 'eISSN', 'Publisher name', 'Publisher address', 'Languages', 'Web of Science Categories'],
+            mapRow: normalizeWosRow
+        }).then(data => {
+            ssciData = data;
+            runtimeState.ssciLoaded = true;
+            return ssciData;
+        }).catch(error => {
+            if (previousData.length > 0) {
+                ssciData = previousData;
+                runtimeState.ssciLoaded = true;
+                setWarningMessage('SSCI 数据刷新失败，已显示已加载版本');
+                return ssciData;
+            }
+            throw error;
+        }).finally(() => {
+            runtimeState.ssciLoadPromise = null;
+        });
+
+        return runtimeState.ssciLoadPromise;
+    }
+
+    async function ensureJCRDataLoaded(forceRefresh = false) {
+        if (runtimeState.jcrLoaded && !forceRefresh) return jcrData;
         if (runtimeState.jcrLoadPromise) return runtimeState.jcrLoadPromise;
 
-        runtimeState.jcrLoadPromise = loadJavaScriptDataset('assets/js/if.js', 'factor')
-            .then(rawData => {
-                jcrData = normalizeJCRData(rawData && rawData.data ? rawData.data : []);
+        const previousData = jcrData;
+        runtimeState.jcrLoadPromise = loadCsvDataset('assets/data/2026-JCR.csv', {
+            encoding: 'gb18030',
+            forceRefresh,
+            requiredHeaders: [
+                '总排名(按JIF)', '期刊名称', '期刊缩写', 'ISSN', 'eISSN', '出版商', '学科类别',
+                '影响因子JIF', 'JIF分区', 'JIF百分位', 'JIF排名', 'JCI', 'JCI分区',
+                'JCI百分位', 'JCI排名', '5年影响因子', '总被引频次', '各学科分区详情', '数据年份'
+            ],
+            mapRow: normalizeJCRRow
+        }).then(data => {
+            jcrData = data;
+            runtimeState.jcrLoaded = true;
+            return jcrData;
+        }).catch(error => {
+            if (previousData.length > 0) {
+                jcrData = previousData;
                 runtimeState.jcrLoaded = true;
+                setWarningMessage('JCR 数据刷新失败，已显示已加载版本');
                 return jcrData;
-            })
-            .finally(() => {
-                runtimeState.jcrLoadPromise = null;
-            });
+            }
+            throw error;
+        }).finally(() => {
+            runtimeState.jcrLoadPromise = null;
+        });
 
         return runtimeState.jcrLoadPromise;
     }
-    
-    let sjrSortConfig = {
-        key: 'sjr', // 默认按 SJR 分数排序
-        asc: false  // 默认降序 (大数值在前)
+
+    let eiSortConfig = {
+        key: 'title',
+        asc: true
     };
-    
+
+    let sciSortConfig = {
+        key: 'title',
+        asc: true
+    };
+
+    let ssciSortConfig = {
+        key: 'title',
+        asc: true
+    };
+
     let jcrSortConfig = {
-        key: 'factor', // 默认按影响因子排序
-        asc: false     // 默认降序 (大数值在前)
+        key: 'rank',
+        asc: true
     };
+    const JCR_NUMERIC_SORT_KEYS = new Set([
+        'rank', 'jif', 'jifPercentile', 'jci', 'jciPercentile', 'fiveYearJif', 'totalCitations'
+    ]);
 
     let ccfSortConfig = {
         key: 'grade', // 默认按 CCF 级别排序
@@ -606,12 +988,14 @@ document.addEventListener('DOMContentLoaded', () => {
         asc: true
     };
 
-    // 当前视图模式 ('deadlines', 'ccf_list', 'sjr_list' 或 'jcr_list')
+    // 当前视图模式
     let currentMode = 'deadlines';
 
     // 分页状态控制
     let currentPage = 1;
-    const itemsPerPage = 25; 
+    const PAGE_SIZE_OPTIONS = [25, 50, 100];
+    const storedPageSize = Number.parseInt(safeStorage.get(STORAGE_KEYS.pageSize), 10);
+    let itemsPerPage = PAGE_SIZE_OPTIONS.includes(storedPageSize) ? storedPageSize : 25;
 
     const subMap = {
         'DS': '计算机体系结构/并行与分布计算/存储系统',
@@ -639,21 +1023,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     const tabDeadlines = document.getElementById('tab-deadlines');
     const tabCcfList = document.getElementById('tab-ccf-list');
-    const tabSjrList = document.getElementById('tab-sjr-list'); 
+    const tabEIList = document.getElementById('tab-ei-list');
+    const tabSCIList = document.getElementById('tab-sci-list');
+    const tabSSCIList = document.getElementById('tab-ssci-list');
     const tabJcrList = document.getElementById('tab-jcr-list');
-    const topTabs = [tabDeadlines, tabCcfList, tabSjrList, tabJcrList].filter(Boolean);
+    const topTabs = [tabDeadlines, tabCcfList, tabEIList, tabSCIList, tabSSCIList, tabJcrList].filter(Boolean);
     const filterCol4 = document.getElementById('filter-col-4');
     const labelFilter1 = document.getElementById('label-filter-1');
     const labelFilter2 = document.getElementById('label-filter-2');
     const labelFilter3 = document.getElementById('label-filter-3');
     const timezoneWrapper = document.querySelector('.timezone-wrapper');
     const ccfListNotice = document.getElementById('ccf-list-notice');
-    const sjrListNotice = document.getElementById('sjr-list-notice');
+    const eiListNotice = document.getElementById('ei-list-notice');
+    const sciListNotice = document.getElementById('sci-list-notice');
+    const ssciListNotice = document.getElementById('ssci-list-notice');
     const jcrListNotice = document.getElementById('jcr-list-notice');
+    const dataNotices = [ccfListNotice, eiListNotice, sciListNotice, ssciListNotice, jcrListNotice];
     const modeViewConfig = {
         deadlines: {
             tab: tabDeadlines,
             labels: ['领域', 'CCF 级别', '年份'],
+            searchPlaceholder: '检索会议简称或全称...',
             showDeadlineFilter: true,
             showTimezone: true,
             activeNotice: null,
@@ -662,22 +1052,43 @@ document.addEventListener('DOMContentLoaded', () => {
         ccf_list: {
             tab: tabCcfList,
             labels: ['领域', 'CCF 级别', '类型'],
+            searchPlaceholder: '检索名称、简称或出版社...',
             showDeadlineFilter: false,
             showTimezone: false,
             activeNotice: ccfListNotice,
             initFilters: () => initCCFListFilters()
         },
-        sjr_list: {
-            tab: tabSjrList,
-            labels: ['领域', 'SJR 分区', '类型'],
+        ei_list: {
+            tab: tabEIList,
+            labels: ['学科', '名单类别', '来源类型'],
+            searchPlaceholder: '检索名称、ISSN、ISBN 或出版社...',
             showDeadlineFilter: false,
             showTimezone: false,
-            activeNotice: sjrListNotice,
-            initFilters: () => initSJRFilters()
+            activeNotice: eiListNotice,
+            initFilters: () => initEIFilters()
+        },
+        sci_list: {
+            tab: tabSCIList,
+            labels: ['学科类别', '语言', '出版商'],
+            searchPlaceholder: '检索期刊、ISSN、出版商或学科...',
+            showDeadlineFilter: false,
+            showTimezone: false,
+            activeNotice: sciListNotice,
+            initFilters: () => initWosFilters(sciData)
+        },
+        ssci_list: {
+            tab: tabSSCIList,
+            labels: ['学科类别', '语言', '出版商'],
+            searchPlaceholder: '检索期刊、ISSN、出版商或学科...',
+            showDeadlineFilter: false,
+            showTimezone: false,
+            activeNotice: ssciListNotice,
+            initFilters: () => initWosFilters(ssciData)
         },
         jcr_list: {
             tab: tabJcrList,
-            labels: ['中科院分区', 'JCR 分区', '影响因子区间'],
+            labels: ['学科类别', 'JIF 分区', 'JIF 区间'],
+            searchPlaceholder: '检索期刊、ISSN、出版商或学科...',
             showDeadlineFilter: false,
             showTimezone: false,
             activeNotice: jcrListNotice,
@@ -688,7 +1099,9 @@ document.addEventListener('DOMContentLoaded', () => {
     [
         [tabDeadlines, 'deadlines'],
         [tabCcfList, 'ccf_list'],
-        [tabSjrList, 'sjr_list'],
+        [tabEIList, 'ei_list'],
+        [tabSCIList, 'sci_list'],
+        [tabSSCIList, 'ssci_list'],
         [tabJcrList, 'jcr_list']
     ].forEach(([tab, mode]) => {
         if (!tab) return;
@@ -851,18 +1264,32 @@ document.addEventListener('DOMContentLoaded', () => {
             return ccfData;
         }
 
-        if (mode === 'sjr_list') {
-            if (!runtimeState.sjrLoaded) {
-                setContainerMessage('正在加载 SJR 数据...');
+        if (mode === 'ei_list') {
+            if (!runtimeState.eiLoaded || forceRefresh) {
+                setContainerMessage('正在加载 EI 数据...');
             }
-            return ensureSJRDataLoaded();
+            return ensureEIDataLoaded(forceRefresh);
+        }
+
+        if (mode === 'sci_list') {
+            if (!runtimeState.sciLoaded || forceRefresh) {
+                setContainerMessage('正在加载 SCI 数据...');
+            }
+            return ensureSCIDataLoaded(forceRefresh);
+        }
+
+        if (mode === 'ssci_list') {
+            if (!runtimeState.ssciLoaded || forceRefresh) {
+                setContainerMessage('正在加载 SSCI 数据...');
+            }
+            return ensureSSCIDataLoaded(forceRefresh);
         }
 
         if (mode === 'jcr_list') {
-            if (!runtimeState.jcrLoaded) {
+            if (!runtimeState.jcrLoaded || forceRefresh) {
                 setContainerMessage('正在加载 JCR 数据...');
             }
-            return ensureJCRDataLoaded();
+            return ensureJCRDataLoaded(forceRefresh);
         }
 
         return [];
@@ -880,12 +1307,14 @@ document.addEventListener('DOMContentLoaded', () => {
         topTabs.forEach(tab => tab.classList.remove('active'));
 
         if (config.tab) config.tab.classList.add('active');
+        topTabs.forEach(tab => tab.setAttribute('aria-current', tab === config.tab ? 'page' : 'false'));
+        if (searchInput && config.searchPlaceholder) searchInput.placeholder = config.searchPlaceholder;
         if (labelFilter1) labelFilter1.textContent = config.labels[0];
         if (labelFilter2) labelFilter2.textContent = config.labels[1];
         if (labelFilter3) labelFilter3.textContent = config.labels[2];
         if (filterCol4) filterCol4.style.display = config.showDeadlineFilter ? 'block' : 'none';
         if (timezoneWrapper) timezoneWrapper.style.display = config.showTimezone ? 'block' : 'none';
-        [ccfListNotice, sjrListNotice, jcrListNotice].forEach(notice => {
+        dataNotices.forEach(notice => {
             if (notice) notice.style.display = notice === config.activeNotice ? 'flex' : 'none';
         });
 
@@ -1194,38 +1623,55 @@ document.addEventListener('DOMContentLoaded', () => {
         createMultiSelect('year-filter', Array.from(types).sort(compareText).map(t => ({value: t, label: t})), '所有类型');
     }
 
-    function initSJRFilters() {
-        const areas = new Set();
-        const quartiles = new Set();
+    function initEIFilters() {
+        const subjects = new Set();
+        const sections = new Set();
         const types = new Set();
 
-        if (sjrData && sjrData.length > 0) {
-            sjrData.forEach(item => {
-                if (item.areas) {
-                    item.areas.split(';').forEach(a => areas.add(a.trim()));
-                }
-                if (item.quartile) quartiles.add(item.quartile);
+        eiData.forEach(item => {
+                item.subjects.forEach(subject => subjects.add(subject));
+                if (item.section) sections.add(item.section);
                 if (item.type) types.add(item.type);
-            });
-        }
+        });
 
-        createMultiSelect('category-filter', Array.from(areas).filter(a => a).sort(compareText).map(a => ({value: a, label: a})), '所有领域');
-        createMultiSelect('level-filter', Array.from(quartiles).sort().map(q => ({value: q, label: q === '-' ? '无分区' : q})), '所有分区');
-        createMultiSelect('year-filter', Array.from(types).sort(compareText).map(t => ({value: t, label: t})), '所有类型');
+        const sectionOrder = { SERIALS: 1, 'NON-SERIALS': 2, DISCONTINUED: 3, UNKNOWN: 4 };
+        createMultiSelect('category-filter', Array.from(subjects).sort(compareText).map(subject => ({value: subject, label: subject})), '所有学科');
+        createMultiSelect(
+            'level-filter',
+            Array.from(sections)
+                .sort((a, b) => (sectionOrder[a] || 99) - (sectionOrder[b] || 99))
+                .map(section => ({value: section, label: eiSectionLabels[section] || section})),
+            '所有名单类别'
+        );
+        createMultiSelect('year-filter', Array.from(types).sort(compareText).map(type => ({value: type, label: type})), '所有来源类型');
+    }
+
+    function initWosFilters(data) {
+        const categories = new Set();
+        const languages = new Set();
+        const publishers = new Set();
+
+        data.forEach(item => {
+            item.categories.forEach(category => categories.add(category));
+            if (item.language) languages.add(item.language);
+            if (item.publisher) publishers.add(item.publisher);
+        });
+
+        createMultiSelect('category-filter', Array.from(categories).sort(compareText).map(category => ({value: category, label: category})), '所有学科类别');
+        createMultiSelect('level-filter', Array.from(languages).sort(compareText).map(language => ({value: language, label: language})), '所有语言');
+        createMultiSelect('year-filter', Array.from(publishers).sort(compareText).map(publisher => ({value: publisher, label: publisher})), '所有出版商');
     }
 
     function initJCRFilters() {
-        const zkySet = new Set();
-        const jcrSet = new Set();
+        const categorySet = new Set();
+        const quartileSet = new Set();
         const factorBands = new Set();
 
-        if (jcrData && jcrData.length > 0) {
-            jcrData.forEach(item => {
-                if (item.zky) zkySet.add(item.zky);
-                if (item.jcr) jcrSet.add(item.jcr);
-                if (item.factorBand) factorBands.add(item.factorBand);
-            });
-        }
+        jcrData.forEach(item => {
+            if (item.category) categorySet.add(item.category);
+            if (item.jifQuartile) quartileSet.add(item.jifQuartile);
+            if (item.jifBand) factorBands.add(item.jifBand);
+        });
 
         const bandOrder = {
             '>=20': 1,
@@ -1238,13 +1684,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
         createMultiSelect(
             'category-filter',
-            Array.from(zkySet)
-                .filter(a => a && a !== '.')
+            Array.from(categorySet)
+                .filter(Boolean)
                 .sort(compareText)
-                .map(a => ({value: a, label: a === '-' ? '无分区' : a})),
-            '所有中科院分区'
+                .map(category => ({value: category, label: category})),
+            '所有学科类别'
         );
-        createMultiSelect('level-filter', Array.from(jcrSet).filter(q => q).sort().map(q => ({value: q, label: q === '-' ? '无分区' : q})), '所有 JCR 分区');
+        const quartileOrder = { Q1: 1, Q2: 2, Q3: 3, Q4: 4, 'N/A': 5, '-': 6 };
+        createMultiSelect(
+            'level-filter',
+            Array.from(quartileSet)
+                .filter(Boolean)
+                .sort((a, b) => (quartileOrder[a] || 99) - (quartileOrder[b] || 99))
+                .map(quartile => ({value: quartile, label: quartile === '-' ? '无分区' : quartile})),
+            '所有 JIF 分区'
+        );
         createMultiSelect(
             'year-filter',
             Array.from(factorBands).sort((a, b) => (bandOrder[a] || 99) - (bandOrder[b] || 99)).map(b => ({value: b, label: b})),
@@ -1570,92 +2024,143 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
+    function displayValue(value, fallback = '-') {
+        const text = String(value ?? '').trim();
+        return text && text !== '.' ? text : fallback;
+    }
+
+    function formatMetric(value, maximumFractionDigits = 2) {
+        if (!Number.isFinite(value)) return '-';
+        return value.toLocaleString('zh-CN', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits
+        });
+    }
+
     // ==========================================
-    // 界面渲染 - SJR 排名列表 (表格模式)
+    // 界面渲染 - EI 数据
     // ==========================================
-    function createSJRTableHTML(dataList) {
+    function createEITableHTML(dataList) {
         if (!dataList || dataList.length === 0) {
-            return '<p class="empty-text" style="grid-column: 1/-1; text-align: center;">未找到符合条件的 SJR 排名数据</p>';
+            return '<p class="empty-text" style="grid-column: 1/-1; text-align: center;">未找到符合条件的 EI 数据</p>';
         }
 
-        let rowsHTML = dataList.map(item => {
-            const isQ1 = item.quartile === 'Q1';
-            const quartileClass = isQ1 ? 'quartile-tag quartile-q1' : 'quartile-tag quartile-normal';
-
-            // 针对 conference and proceedings 进行针对性换行处理
-            let typeHtml = escapeDisplayText(item.type);
-            if (typeHtml.toLowerCase().includes(' and ')) {
-                typeHtml = typeHtml.replace(' and ', '<br>and ');
-            }
-
-            return `
-                <tr>
-                    <td class="title-col col-name" title="${escapeDisplayText(item.title)}">${escapeDisplayText(item.title)}</td>
-                    <td style="text-transform: capitalize; white-space: normal; min-width: 120px; line-height: 1.4;">${typeHtml}</td>
-                    <td><span class="${quartileClass}">${escapeDisplayText(item.quartile, '-')}</span></td>
-                    <td class="sjr-score">${escapeDisplayText(item.sjr || '-', '-')}</td>
-                    <td>${escapeDisplayText(item.hIndex || '-', '-')}</td>
-                    <td>${escapeDisplayText(item.citesDoc2Years || '-', '-')}</td>
-                    <td>${escapeDisplayText(item.totalDocsYear || '-', '-')}</td>
-                    <td>${escapeDisplayText(item.totalCites3Years || '-', '-')}</td>
-                    <td>${escapeDisplayText(item.country || '-', '-')}</td>
-                </tr>
-            `;
-        }).join('');
+        const rowsHTML = dataList.map(item => `
+            <tr>
+                <td class="title-col col-name no-translate" title="${escapeDisplayText(item.title)}">${escapeDisplayText(item.title)}</td>
+                <td class="title-col no-translate" title="${escapeDisplayText(item.alternateTitle)}">${escapeDisplayText(displayValue(item.alternateTitle))}</td>
+                <td>${escapeDisplayText(displayValue(item.type))}</td>
+                <td>${escapeDisplayText(displayValue(item.sectionLabel))}</td>
+                <td>${escapeDisplayText(displayValue(item.subjectsText))}</td>
+                <td>${escapeDisplayText(displayValue(item.publisher))}</td>
+                <td>${escapeDisplayText(displayValue(item.country))}</td>
+                <td>${escapeDisplayText(displayValue(item.language))}</td>
+                <td class="no-translate">${escapeDisplayText(displayValue(item.issn))}</td>
+                <td class="no-translate">${escapeDisplayText(displayValue(item.eissn))}</td>
+                <td class="no-translate">${escapeDisplayText(displayValue(item.isbn13))}</td>
+                <td>${escapeDisplayText(displayValue(item.indexingStatus))}</td>
+                <td>${escapeDisplayText(displayValue(item.openAccess))}</td>
+                <td>${escapeDisplayText(displayValue(item.coverage))}</td>
+            </tr>
+        `).join('');
 
         return `
             <div class="sjr-table-wrapper">
                 <table class="sjr-table">
-                    <thead>
-                        <tr>
-                            ${buildSortableHeader(sjrSortConfig, 'title', '名称', 'clamp(110px, 15vw, 170px)', 'col-name')}
-                            ${buildSortableHeader(sjrSortConfig, 'type', '类型', '120px')}
-                            ${buildSortableHeader(sjrSortConfig, 'quartile', '分区')}
-                            ${buildSortableHeader(sjrSortConfig, 'sjr', 'SJR')}
-                            ${buildSortableHeader(sjrSortConfig, 'hIndex', 'H-Index')}
-                            ${buildSortableHeader(sjrSortConfig, 'citesDoc2Years', '近两年篇均被引')}
-                            ${buildSortableHeader(sjrSortConfig, 'totalDocsYear', '文献数')}
-                            ${buildSortableHeader(sjrSortConfig, 'totalCites3Years', '近三年被引')}
-                            ${buildSortableHeader(sjrSortConfig, 'country', '国家')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rowsHTML}
-                    </tbody>
+                    <thead><tr>
+                        ${buildSortableHeader(eiSortConfig, 'title', '名称', 'clamp(150px, 22vw, 280px)', 'col-name')}
+                        ${buildSortableHeader(eiSortConfig, 'alternateTitle', '中文/译名', 'clamp(120px, 18vw, 220px)')}
+                        ${buildSortableHeader(eiSortConfig, 'type', '类型')}
+                        ${buildSortableHeader(eiSortConfig, 'section', '名单类别')}
+                        ${buildSortableHeader(eiSortConfig, 'subjectsText', '学科', '220px')}
+                        ${buildSortableHeader(eiSortConfig, 'publisher', '出版商', '180px')}
+                        ${buildSortableHeader(eiSortConfig, 'country', '国家/地区')}
+                        ${buildSortableHeader(eiSortConfig, 'language', '语言')}
+                        ${buildSortableHeader(eiSortConfig, 'issn', 'ISSN')}
+                        ${buildSortableHeader(eiSortConfig, 'eissn', 'eISSN')}
+                        ${buildSortableHeader(eiSortConfig, 'isbn13', 'ISBN-13')}
+                        ${buildSortableHeader(eiSortConfig, 'indexingStatus', '2026 收录状态', '150px')}
+                        ${buildSortableHeader(eiSortConfig, 'openAccess', 'OA')}
+                        ${buildSortableHeader(eiSortConfig, 'coverage', '最终收录范围', '160px')}
+                    </tr></thead>
+                    <tbody>${rowsHTML}</tbody>
                 </table>
             </div>
         `;
     }
 
+    function createWosTableHTML(dataList, sortConfig, datasetName) {
+        if (!dataList || dataList.length === 0) {
+            return `<p class="empty-text" style="grid-column: 1/-1; text-align: center;">未找到符合条件的 ${escapeHTML(datasetName)} 数据</p>`;
+        }
+
+        const rowsHTML = dataList.map(item => `
+            <tr>
+                <td class="title-col col-name no-translate" title="${escapeDisplayText(item.title)}">${escapeDisplayText(item.title)}</td>
+                <td>${escapeDisplayText(displayValue(item.categoriesText))}</td>
+                <td>${escapeDisplayText(displayValue(item.publisher))}</td>
+                <td>${escapeDisplayText(displayValue(item.address))}</td>
+                <td>${escapeDisplayText(displayValue(item.language))}</td>
+                <td class="no-translate">${escapeDisplayText(displayValue(item.issn))}</td>
+                <td class="no-translate">${escapeDisplayText(displayValue(item.eissn))}</td>
+            </tr>
+        `).join('');
+
+        return `
+            <div class="sjr-table-wrapper">
+                <table class="sjr-table">
+                    <thead><tr>
+                        ${buildSortableHeader(sortConfig, 'title', '期刊名称', 'clamp(150px, 22vw, 280px)', 'col-name')}
+                        ${buildSortableHeader(sortConfig, 'categoriesText', '学科类别', '240px')}
+                        ${buildSortableHeader(sortConfig, 'publisher', '出版商', '180px')}
+                        ${buildSortableHeader(sortConfig, 'address', '出版商地址', '240px')}
+                        ${buildSortableHeader(sortConfig, 'language', '语言')}
+                        ${buildSortableHeader(sortConfig, 'issn', 'ISSN')}
+                        ${buildSortableHeader(sortConfig, 'eissn', 'eISSN')}
+                    </tr></thead>
+                    <tbody>${rowsHTML}</tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    function createSCITableHTML(dataList) {
+        return createWosTableHTML(dataList, sciSortConfig, 'SCI');
+    }
+
+    function createSSCITableHTML(dataList) {
+        return createWosTableHTML(dataList, ssciSortConfig, 'SSCI');
+    }
+
     // ==========================================
-    // 界面渲染 - JCR 影响因子列表 (表格模式)
+    // 界面渲染 - JCR 数据
     // ==========================================
     function createJCRTableHTML(dataList) {
         if (!dataList || dataList.length === 0) {
             return '<p class="empty-text" style="grid-column: 1/-1; text-align: center;">未找到符合条件的 JCR 数据</p>';
         }
 
-        const clean = (val) => {
-            if (val === undefined || val === null) return '-';
-            const str = String(val).trim();
-            return str === '' || str === '.' ? '-' : str;
-        };
-
-        let rowsHTML = dataList.map(item => {
-            const isQ1 = item.jcr === 'Q1';
-            const quartileClass = isQ1 ? 'quartile-tag quartile-q1' : 'quartile-tag quartile-normal';
-            const factorText = item.factor && item.factor > 0 ? item.factor.toFixed(2) : '-';
-            const zkyText = clean(item.zky);
-
+        const rowsHTML = dataList.map(item => {
+            const quartileClass = item.jifQuartile === 'Q1' ? 'quartile-tag quartile-q1' : 'quartile-tag quartile-normal';
+            const jciQuartileClass = item.jciQuartile === 'Q1' ? 'quartile-tag quartile-q1' : 'quartile-tag quartile-normal';
             return `
                 <tr>
-                    <td class="title-col col-name" title="${escapeDisplayText(item.journal)}">${escapeDisplayText(clean(item.journal))}</td>
-                    <td class="title-col col-abbr" title="${escapeDisplayText(item.abbr)}">${escapeDisplayText(clean(item.abbr))}</td>
-                    <td class="sjr-score">${escapeDisplayText(factorText)}</td>
-                    <td><span class="${quartileClass}">${escapeDisplayText(clean(item.jcr))}</span></td>
-                    <td>${escapeDisplayText(zkyText === '-' ? '无分区' : zkyText)}</td>
-                    <td>${escapeDisplayText(clean(item.issn))}</td>
-                    <td>${escapeDisplayText(clean(item.eissn))}</td>
+                    <td class="sjr-score">${escapeDisplayText(formatMetric(item.rank, 0))}</td>
+                    <td class="title-col col-name no-translate" title="${escapeDisplayText(item.title)}">${escapeDisplayText(item.title)}</td>
+                    <td class="title-col col-abbr no-translate" title="${escapeDisplayText(item.abbr)}">${escapeDisplayText(displayValue(item.abbr))}</td>
+                    <td>${escapeDisplayText(displayValue(item.category))}</td>
+                    <td class="sjr-score">${escapeDisplayText(formatMetric(item.jif, 3))}</td>
+                    <td><span class="${quartileClass}">${escapeDisplayText(displayValue(item.jifQuartile))}</span></td>
+                    <td>${escapeDisplayText(formatMetric(item.jifPercentile, 2))}</td>
+                    <td class="no-translate">${escapeDisplayText(displayValue(item.jifRank))}</td>
+                    <td class="sjr-score">${escapeDisplayText(formatMetric(item.jci, 3))}</td>
+                    <td><span class="${jciQuartileClass}">${escapeDisplayText(displayValue(item.jciQuartile))}</span></td>
+                    <td>${escapeDisplayText(formatMetric(item.jciPercentile, 2))}</td>
+                    <td class="no-translate">${escapeDisplayText(displayValue(item.jciRank))}</td>
+                    <td>${escapeDisplayText(formatMetric(item.fiveYearJif, 3))}</td>
+                    <td>${escapeDisplayText(formatMetric(item.totalCitations, 0))}</td>
+                    <td class="no-translate">${escapeDisplayText(displayValue(item.issn))}</td>
+                    <td class="no-translate">${escapeDisplayText(displayValue(item.eissn))}</td>
                 </tr>
             `;
         }).join('');
@@ -1663,20 +2168,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
             <div class="sjr-table-wrapper">
                 <table class="sjr-table">
-                    <thead>
-                        <tr>
-                            ${buildSortableHeader(jcrSortConfig, 'journal', '期刊名称', 'clamp(110px, 15vw, 170px)', 'col-name')}
-                            ${buildSortableHeader(jcrSortConfig, 'abbr', '简称', 'clamp(82px, 10vw, 118px)', 'col-abbr')}
-                            ${buildSortableHeader(jcrSortConfig, 'factor', '影响因子')}
-                            ${buildSortableHeader(jcrSortConfig, 'jcr', 'JCR 分区')}
-                            ${buildSortableHeader(jcrSortConfig, 'zky', '中科院分区')}
-                            ${buildSortableHeader(jcrSortConfig, 'issn', 'ISSN')}
-                            ${buildSortableHeader(jcrSortConfig, 'eissn', 'eISSN')}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rowsHTML}
-                    </tbody>
+                    <thead><tr>
+                        ${buildSortableHeader(jcrSortConfig, 'rank', '总排名')}
+                        ${buildSortableHeader(jcrSortConfig, 'title', '期刊名称', 'clamp(150px, 22vw, 280px)', 'col-name')}
+                        ${buildSortableHeader(jcrSortConfig, 'abbr', '简称', 'clamp(100px, 14vw, 160px)', 'col-abbr')}
+                        ${buildSortableHeader(jcrSortConfig, 'category', '学科类别', '180px')}
+                        ${buildSortableHeader(jcrSortConfig, 'jif', 'JIF')}
+                        ${buildSortableHeader(jcrSortConfig, 'jifQuartile', 'JIF 分区')}
+                        ${buildSortableHeader(jcrSortConfig, 'jifPercentile', 'JIF 百分位')}
+                        ${buildSortableHeader(jcrSortConfig, 'jifRank', 'JIF 排名')}
+                        ${buildSortableHeader(jcrSortConfig, 'jci', 'JCI')}
+                        ${buildSortableHeader(jcrSortConfig, 'jciQuartile', 'JCI 分区')}
+                        ${buildSortableHeader(jcrSortConfig, 'jciPercentile', 'JCI 百分位')}
+                        ${buildSortableHeader(jcrSortConfig, 'jciRank', 'JCI 排名')}
+                        ${buildSortableHeader(jcrSortConfig, 'fiveYearJif', '5 年影响因子')}
+                        ${buildSortableHeader(jcrSortConfig, 'totalCitations', '总被引频次')}
+                        ${buildSortableHeader(jcrSortConfig, 'issn', 'ISSN')}
+                        ${buildSortableHeader(jcrSortConfig, 'eissn', 'eISSN')}
+                    </tr></thead>
+                    <tbody>${rowsHTML}</tbody>
                 </table>
             </div>
         `;
@@ -1813,54 +2323,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 return ccfSortConfig.asc ? cmp : -cmp;
             });
 
-        // --- 分支 3：SJR 排名数据逻辑 ---
-        } else if (currentMode === 'sjr_list') {
-            if (!sjrData || sjrData.length === 0) return;
+        // --- 分支 3：EI 数据逻辑 ---
+        } else if (currentMode === 'ei_list') {
+            if (!eiData || eiData.length === 0) return;
 
-            filteredData = sjrData.filter(item => {
+            filteredData = eiData.filter(item => {
                 const matchSearch = !searchQuery || (item.searchText || '').includes(searchQuery);
                 if (!matchSearch) return false;
-                
-                if (!catFilters.includes('all')) {
-                    const itemAreas = item.areas ? item.areas.split(';').map(a => a.trim()) : [];
-                    if (!itemAreas.some(a => catFilters.includes(a))) return false;
-                }
-                if (!levelFilters.includes('all') && !levelFilters.includes(item.quartile)) return false;
+
+                if (!catFilters.includes('all') && !item.subjects.some(subject => catFilters.includes(subject))) return false;
+                if (!levelFilters.includes('all') && !levelFilters.includes(item.section)) return false;
                 if (!col3Filters.includes('all') && !col3Filters.includes(item.type)) return false;
-                
                 return true;
             });
 
-            // ==========================================
-            // 新增：动态字段排序逻辑
-            // ==========================================
             filteredData.sort((a, b) => {
-                let valA = a[sjrSortConfig.key];
-                let valB = b[sjrSortConfig.key];
-
-                // 特殊处理：分区 (Quartile) 的字母序是反直觉的 (Q1比Q4好)，需要转为数字等级进行比较
-                if (sjrSortConfig.key === 'quartile') {
-                    const qMap = { 'Q1': 1, 'Q2': 2, 'Q3': 3, 'Q4': 4, '-': 5, '': 5 };
-                    let numA = qMap[valA] || 5;
-                    let numB = qMap[valB] || 5;
-                    return sjrSortConfig.asc ? numA - numB : numB - numA; 
-                }
-
-                // 常规排序 (数字与字符串区分处理)
-                if (valA === undefined || valA === null) valA = '';
-                if (valB === undefined || valB === null) valB = '';
-
-                let cmp = 0;
-                if (typeof valA === 'number' && typeof valB === 'number') {
-                    cmp = valA - valB;
+                let comparison = 0;
+                if (eiSortConfig.key === 'section') {
+                    const sectionOrder = { SERIALS: 1, 'NON-SERIALS': 2, DISCONTINUED: 3, UNKNOWN: 4 };
+                    comparison = (sectionOrder[a.section] || 99) - (sectionOrder[b.section] || 99);
+                    if (!eiSortConfig.asc) comparison = -comparison;
                 } else {
-                    cmp = compareText(valA, valB);
+                    comparison = compareNullableText(a[eiSortConfig.key], b[eiSortConfig.key], eiSortConfig.asc);
                 }
-
-                return sjrSortConfig.asc ? cmp : -cmp;
+                return comparison || a.sourceIndex - b.sourceIndex;
             });
-        
-        // --- 分支 4：JCR 影响因子数据逻辑 ---
+
+        // --- 分支 4：SCI / SSCI 数据逻辑 ---
+        } else if (currentMode === 'sci_list' || currentMode === 'ssci_list') {
+            const sourceData = currentMode === 'sci_list' ? sciData : ssciData;
+            const sortConfig = currentMode === 'sci_list' ? sciSortConfig : ssciSortConfig;
+            if (!sourceData || sourceData.length === 0) return;
+
+            filteredData = sourceData.filter(item => {
+                const matchSearch = !searchQuery || (item.searchText || '').includes(searchQuery);
+                if (!matchSearch) return false;
+
+                if (!catFilters.includes('all') && !item.categories.some(category => catFilters.includes(category))) return false;
+                if (!levelFilters.includes('all') && !levelFilters.includes(item.language)) return false;
+                if (!col3Filters.includes('all') && !col3Filters.includes(item.publisher)) return false;
+                return true;
+            });
+
+            filteredData.sort((a, b) => {
+                const comparison = compareNullableText(a[sortConfig.key], b[sortConfig.key], sortConfig.asc);
+                return comparison || a.sourceIndex - b.sourceIndex;
+            });
+
+        // --- 分支 5：JCR 数据逻辑 ---
         } else if (currentMode === 'jcr_list') {
             if (!jcrData || jcrData.length === 0) return;
 
@@ -1868,44 +2378,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 const matchSearch = !searchQuery || (item.searchText || '').includes(searchQuery);
                 if (!matchSearch) return false;
 
-                if (!catFilters.includes('all') && !catFilters.includes(item.zky)) return false;
-                if (!levelFilters.includes('all') && !levelFilters.includes(item.jcr)) return false;
-                if (!col3Filters.includes('all') && !col3Filters.includes(item.factorBand)) return false;
+                if (!catFilters.includes('all') && !catFilters.includes(item.category)) return false;
+                if (!levelFilters.includes('all') && !levelFilters.includes(item.jifQuartile)) return false;
+                if (!col3Filters.includes('all') && !col3Filters.includes(item.jifBand)) return false;
                 return true;
             });
 
             filteredData.sort((a, b) => {
-                let valA = a[jcrSortConfig.key];
-                let valB = b[jcrSortConfig.key];
-
-                if (jcrSortConfig.key === 'jcr') {
-                    const qMap = { 'Q1': 1, 'Q2': 2, 'Q3': 3, 'Q4': 4, '-': 5, '': 5 };
-                    const numA = qMap[valA] || 5;
-                    const numB = qMap[valB] || 5;
-                    return jcrSortConfig.asc ? numA - numB : numB - numA;
-                }
-
-                if (jcrSortConfig.key === 'zky') {
-                    const toNum = (v) => {
-                        const match = String(v || '').match(/\d+/);
-                        return match ? parseInt(match[0], 10) : 99;
-                    };
-                    const numA = toNum(valA);
-                    const numB = toNum(valB);
-                    return jcrSortConfig.asc ? numA - numB : numB - numA;
-                }
-
-                if (valA === undefined || valA === null) valA = '';
-                if (valB === undefined || valB === null) valB = '';
-
-                let cmp = 0;
-                if (typeof valA === 'number' && typeof valB === 'number') {
-                    cmp = valA - valB;
+                const key = jcrSortConfig.key;
+                let comparison;
+                if (JCR_NUMERIC_SORT_KEYS.has(key)) {
+                    comparison = compareNullableNumbers(a[key], b[key], jcrSortConfig.asc);
+                } else if (key === 'jifQuartile' || key === 'jciQuartile') {
+                    comparison = compareQuartiles(a[key], b[key], jcrSortConfig.asc);
+                } else if (key === 'jifRank' || key === 'jciRank') {
+                    comparison = compareRankFractions(a[key], b[key], jcrSortConfig.asc);
                 } else {
-                    cmp = compareText(valA, valB);
+                    comparison = compareNullableText(a[key], b[key], jcrSortConfig.asc);
                 }
-
-                return jcrSortConfig.asc ? cmp : -cmp;
+                return comparison || a.sourceIndex - b.sourceIndex;
             });
         }
 
@@ -1926,7 +2417,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const tableRenderers = {
                 deadlines: createDeadlineTableHTML,
                 ccf_list: createCCFTableHTML,
-                sjr_list: createSJRTableHTML,
+                ei_list: createEITableHTML,
+                sci_list: createSCITableHTML,
+                ssci_list: createSSCITableHTML,
                 jcr_list: createJCRTableHTML
             };
             const renderTable = tableRenderers[currentMode];
@@ -1934,6 +2427,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderPagination(totalPages);
+        scheduleDynamicTranslation();
         
         // 只有 Deadline 模式需要触发倒计时
         if (currentMode === 'deadlines') tickCountdowns();
@@ -2024,6 +2518,27 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const pageSizeButtons = Array.from(document.querySelectorAll('.page-size-btn'));
+    const syncPageSizeButtons = () => {
+        pageSizeButtons.forEach(button => {
+            const isActive = Number.parseInt(button.dataset.pageSize, 10) === itemsPerPage;
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+    };
+    pageSizeButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const nextSize = Number.parseInt(button.dataset.pageSize, 10);
+            if (!PAGE_SIZE_OPTIONS.includes(nextSize) || nextSize === itemsPerPage) return;
+            itemsPerPage = nextSize;
+            safeStorage.set(STORAGE_KEYS.pageSize, String(nextSize));
+            currentPage = 1;
+            syncPageSizeButtons();
+            updateView();
+        });
+    });
+    syncPageSizeButtons();
+
     // 初始化默认模式
     setMode('deadlines');
 
@@ -2035,13 +2550,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateDataBtn.disabled = true;
             
             try {
-                const refreshTasks = [fetchConferencesData(true)];
-                if (runtimeState.acceptanceLoaded || currentMode === 'ccf_list') {
-                    refreshTasks.push(fetchAcceptanceRates(true));
-                }
-
-                await Promise.allSettled(refreshTasks);
-                await setMode(currentMode);
+                await setMode(currentMode, true);
             } finally {
                 if (icon) icon.classList.remove('spin-anim');
                 updateDataBtn.disabled = false;
@@ -2052,13 +2561,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // 表格表头点击排序事件
     // ==========================================
     const sortBehaviorConfig = {
-        sjr_list: {
-            config: sjrSortConfig,
-            defaultAscKeys: ['title', 'type', 'quartile', 'country']
+        ei_list: {
+            config: eiSortConfig,
+            defaultAscKeys: ['title', 'alternateTitle', 'type', 'section', 'subjectsText', 'publisher', 'country', 'language', 'issn', 'eissn', 'isbn13', 'indexingStatus', 'openAccess', 'coverage']
+        },
+        sci_list: {
+            config: sciSortConfig,
+            defaultAscKeys: ['title', 'categoriesText', 'publisher', 'address', 'language', 'issn', 'eissn']
+        },
+        ssci_list: {
+            config: ssciSortConfig,
+            defaultAscKeys: ['title', 'categoriesText', 'publisher', 'address', 'language', 'issn', 'eissn']
         },
         jcr_list: {
             config: jcrSortConfig,
-            defaultAscKeys: ['journal', 'abbr', 'jcr', 'zky', 'issn', 'eissn']
+            defaultAscKeys: ['rank', 'title', 'abbr', 'category', 'jifQuartile', 'jifRank', 'jciQuartile', 'jciRank', 'issn', 'eissn']
         },
         deadlines: {
             config: deadlineSortConfig,
@@ -2072,6 +2589,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (conferencesContainer) {
         conferencesContainer.addEventListener('click', (e) => {
+            const retryButton = e.target.closest('.retry-btn');
+            if (retryButton) {
+                const retryMode = retryButton.dataset.retryMode || currentMode;
+                setMode(retryMode, true);
+                return;
+            }
+
             const th = e.target.closest('th.sortable-th');
             if (!th) return;
 
@@ -2088,6 +2612,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     : true;
             }
 
+            currentPage = 1;
             scheduleUpdateView();
         });
     }

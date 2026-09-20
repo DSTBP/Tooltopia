@@ -259,10 +259,24 @@ img, svg { display: block; vertical-align: middle; max-width: 100%; }
 
 /* 分页器 */
 .pagination-container { display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-top: 2.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
-.page-btn { padding: 0.4rem 0.8rem; border-radius: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: hsl(0 0% 80%); cursor: pointer; transition: all 0.2s ease; font-size: 0.9rem; }
-.page-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.15); color: #fff; border-color: rgba(255, 255, 255, 0.3); }
-.page-btn.active { background: #4ECDC4; color: #1a1a1a; border-color: #4ECDC4; font-weight: bold; box-shadow: 0 2px 8px rgba(78, 205, 196, 0.4); }
-.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.page-size-control { display: flex; align-items: center; gap: 0.5rem; color: hsl(0 0% 70%); font-size: 0.85rem; }
+.page-size-buttons { display: inline-flex; align-items: center; gap: 0.3rem; }
+.page-btn,
+.page-size-btn,
+.retry-btn { padding: 0.4rem 0.8rem; border-radius: 6px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: hsl(0 0% 80%); cursor: pointer; transition: all 0.2s ease; font-size: 0.9rem; }
+.page-btn:hover:not(:disabled),
+.page-size-btn:hover:not(:disabled),
+.retry-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.15); color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+.page-btn.active,
+.page-size-btn.active { background: #4ECDC4; color: #1a1a1a; border-color: #4ECDC4; font-weight: bold; box-shadow: 0 2px 8px rgba(78, 205, 196, 0.4); }
+.page-btn:disabled,
+.page-size-btn:disabled,
+.retry-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.page-btn:focus-visible,
+.page-size-btn:focus-visible,
+.retry-btn:focus-visible,
+.top-tab:focus-visible { outline: 2px solid #4ECDC4; outline-offset: 3px; }
+.retry-btn { margin-top: 0.8rem; }
 .page-dots { color: hsl(0 0% 60%); padding: 0 0.2rem; }
 
 /* ============================================================
@@ -362,9 +376,15 @@ body.day-mode .briefing-footer { color: #0C5D56; background: rgba(27, 79, 79, 0.
 body.day-mode .status-dot { background-color: #0C5D56; box-shadow: 0 0 8px rgba(27, 79, 79, 0.5); }
 
 /* 分页、排版与其它 */
-body.day-mode .page-btn { background: rgba(255, 255, 255, 0.8); border-color: rgba(0, 0, 0, 0.1); color: #4a5568; }
-body.day-mode .page-btn:hover:not(:disabled) { background: #fff; color: #1a202c; border-color: rgba(0, 0, 0, 0.2); }
-body.day-mode .page-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); }
+body.day-mode .page-size-control { color: #4a5568; }
+body.day-mode .page-btn,
+body.day-mode .page-size-btn,
+body.day-mode .retry-btn { background: rgba(255, 255, 255, 0.8); border-color: rgba(0, 0, 0, 0.1); color: #4a5568; }
+body.day-mode .page-btn:hover:not(:disabled),
+body.day-mode .page-size-btn:hover:not(:disabled),
+body.day-mode .retry-btn:hover:not(:disabled) { background: #fff; color: #1a202c; border-color: rgba(0, 0, 0, 0.2); }
+body.day-mode .page-btn.active,
+body.day-mode .page-size-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); }
 body.day-mode .page-dots { color: #94a3b8; }
 body.day-mode .layout-toggles { background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(0, 0, 0, 0.08); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
 body.day-mode .layout-btn { color: #94a3b8; }
