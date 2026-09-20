@@ -14,7 +14,393 @@ var translate = {
 	 * 格式：major.minor.patch.date
 	 */
 	// AUTO_VERSION_START
-	version: '3.18.66.20250930',
+	version: '4.1.0.20260526',
+	
+	/*js translate.config start*/
+	/*
+		用于当前整个 translate.js 配置参数（整形、布尔值、字符串等参数，不包括function参数） 的导出及导入。
+		v3.18.99.20251205 增加，主要用于自动注入iframe中的页面实现翻译而作。
+		主要用到里面的 get、set 方法。
+	*/
+	config:{
+		//这是一个 Bean 类，避免传统json方式再有写错某个参数
+		data: class{
+			//只翻译指定的元素 https://translate.zvo.cn/4063.html  translate.setDocuments(documents);  对应的数据 translate.documents
+			documents = [];
+			language = {
+				//设定是否自动出现 select 切换语言， https://translate.zvo.cn/4056.html
+				select:{
+					// 对应的数据 translate.selectLanguageTag.show
+					show: true,
+					// 对应的数据 translate.selectLanguageTag.languages = 'english,chinese_simplified,korean';
+					languages:'',
+					// 将切换语言的选择框显示到哪个id元素上。 对应的数据 translate.selectLanguageTag.documentId
+					documentId: 'translate'
+				},
+				//设置本地语种（当前网页的语种） https://translate.zvo.cn/4066.html translate.language.setLocal('chinese_simplified');  对应的数据 translate.language.local
+				local:'', 
+				//设置默认翻译为的语种 https://translate.zvo.cn/4071.html translate.language.setDefaultTo('english');  对应的数据 translate.language.defaultTo
+				defaultTo:'',
+				//自动切换为用户所使用的语种 https://translate.zvo.cn/4065.html  translate.setAutoDiscriminateLocalLanguage();  对应 translate.autoDiscriminateLocalLanguage 的值
+				autoDiscriminateLocalLanguage: false,
+				//设置只对指定语种进行翻译 https://translate.zvo.cn/4085.html  translate.language.translateLanguagesRange = ['chinese_simplified','english']; 对应的数据 translate.language.translateLanguagesRange
+				range:[],
+				//根据URL传参控制以何种语种显示  https://translate.zvo.cn/4075.html  
+				urlParamControl: {
+					// translate.language.setUrlParamControl(); 默认是false， 对应的数据 translate.language.setUrlParamControl_use
+					use: false,
+					// translate.language.setUrlParamControl('lang'); 默认是 language ，对应的数据 translate.language.setUrlParamControl_name
+					name: 'language'
+				},
+				//本地语种也进行强制翻译 https://translate.zvo.cn/289574.html 对应的数据 translate.language.translateLocal
+				translateLocal: false
+			};
+			//对网页中图片进行翻译 https://translate.zvo.cn/4055.html  translate.images.add(...)  对应的数据 translate.images.queues
+			images = [];
+			//自定义翻译术语 https://translate.zvo.cn/4070.html translate.nomenclature.append(from, to, properties);  对应的数据  translate.nomenclature.data
+			nomenclature = [];
+			listener = {
+				//监控页面动态渲染的文本进行自动翻译 https://translate.zvo.cn/4067.html translate.listener.start(); 如果为true，则是启用。 对应 translate.listener.use 的值
+				use:false,
+			};
+			ignore = {
+				// 翻译时忽略指定的文字不翻译 https://translate.zvo.cn/283381.html  translate.ignore.text.push('你好');  对应的数据 translate.ignore.text
+				text:[],
+				//通过正则的方式忽略某些文字不翻译 https://translate.zvo.cn/283381.html translate.ignore.setTextRegexs([/请求/g, /[u4a01-u4a05]+/g]);  对应的数据 translate.ignore.textRegex
+				textRegex:[],
+				// 翻译时忽略指定的id https://translate.zvo.cn/4062.html translate.ignore.id.push('test'); 对应的数据 translate.ignore.id
+				id:[],
+				//翻译时忽略指定的class属性 https://translate.zvo.cn/4061.html translate.ignore.class.push('test'); 
+				//class:[],
+				class:{
+					//对应的数据 translate.ignore.class.data
+					data:[],
+					//对应的数据 translate.ignore.class.conditionFunction
+					conditionFunction:{}
+				},
+				//翻译时忽略指定的tag标签 https://translate.zvo.cn/4060.html translate.ignore.tag.push('span');  对应的数据 translate.ignore.tag
+				tag:[],
+
+			};
+			//设置使用的翻译服务 translate.service.use  https://translate.zvo.cn/4081.html  translate.service.use('client.edge');   对应的数据  translate.service.name , 默认则是 translate.service
+			service = 'translate.service';
+			//元素的内容整体翻译能力配置  https://translate.zvo.cn/4078.html
+			whole = {
+				//是否开启对整个html页面的整体翻译，也就是整个页面上所有存在的能被翻译的全部会采用整体翻译的方式。默认是 false不开启		对应的数据 translate.whole.isEnableAll
+				enableAll:false,
+				/*
+					以下三个，也就是  class tag id 分别存储加入的值。
+					比如 translate.whole.tag.push('h3');
+					对应的数据 translate.whole.tag\class\id
+				*/
+				class:[],
+				tag:[],
+				id:[],
+				// whole 行内上下文分段翻译开关。默认关闭，避免旧 translate.json 接口无法处理数组分段请求。
+				context:{
+					// 对应的数据 translate.whole.context.is_use
+					use:false
+				},
+			};
+			//鼠标划词翻译 https://translate.zvo.cn/4072.html
+			selectionTranslate = {
+				//是否启用，默认是false，不启用。如果启用，则是 translate.selectionTranslate.start();   对应的数据  translate.selectionTranslate.use
+				use:false
+			};
+			request = {
+				api:{
+					// 指定翻译服务接口 https://translate.zvo.cn/4068.html   translate.request.setHost(['https://api.translate.zvo.cn/','https://api2.translate.zvo.cn/']);
+					// 这里数据同步的是 translate.request.api.host
+					host:[],
+					// 获取支持的语种列表接口， 可以设置两种形态。
+					// 可以设置为 language.json 具体请求api的文件名
+					// 另外它还可以设置为 translate.request.api.language = [{id: "chinese_simplified", name: "简体中文"},{id: "korean", name: "한국어"}]; 这种形态，不需要通过联网即可获取切换的语言。
+					language:'language.json',
+					translate:'translate.json', //翻译接口
+					ip:'ip.json', //根据用户当前ip获取其所在地的语种
+					connectTest:'connectTest.json',	//用于 translate.js 多节点翻译自动检测网络连通情况
+					init:'init.json', //获取最新版本号，跟当前版本进行比对，用于提醒版本升级等使用
+				},
+				//网页ajax请求触发自动翻译  https://translate.zvo.cn/4086.html
+				listener:{
+					// 用户的代码里是否启用了 translate.request.listener.start() ，true：启用  对应的数据 translate.request.listener.use
+					use:false,
+					// 进行翻译时，延迟翻译执行的时间 当ajax请求结束后，延迟这里设置的时间，然后自动触发 translate.execute() 执行。 对应的数据 translate.request.listener.delayExecuteTime
+					delayExecuteTime: 200,
+					//两次触发的最小间隔时间，单位是毫秒，这里默认是800毫秒。最小填写时间为 200毫秒。 对应的数据 translate.request.listener.minIntervalTime
+					minIntervalTime: 800,
+				},
+				// 网络请求自定义附加参数-追加请求参数， https://translate.zvo.cn/471711.html  对应的数据 translate.request.appendParams
+				appendParams: {},
+				// 网络请求自定义附加参数-追加 header 请求头参数， https://translate.zvo.cn/471711.html  对应的数据 translate.request.appendHeaders
+				appendHeaders: {},
+				// translate.json 的 SSE 流式响应能力，默认关闭。开启后只影响翻译接口请求，并且会在不支持时自动降级回原 JSON 请求。
+				sse:{
+					// 对应的数据 translate.request.sse.use
+					use:false
+				},
+				// 翻译排队执行  https://translate.zvo.cn/479742.html  对应的数据 translate.waitingExecute.use
+				waitingExecute: true,
+			};
+			element = {
+				//增加对指定标签的属性进行翻译  https://translate.zvo.cn/231504.html  translate.element.tagAttribute
+				//当前忽略 condition 的function 参数
+				tagAttribute: {}
+			};
+			//翻译中的遮罩层 https://translate.zvo.cn/407105.html
+			progress = {
+				api:{
+					//启用翻译中的遮罩层， 默认不使用，translate.progress.api.startUITip(); 可以设置为启用，对应的数据 translate.progress.api.use
+					use: false,
+				},
+				// 对应 translate.progress.style 的数据
+				style:'',
+			};
+			//网络请求数据拦截并翻译  https://translate.zvo.cn/479724.html
+			network = {
+				// 对应的数据 translate.network.rules
+				rules:[],
+				// 对应的数据 translate.network.isUse
+				use: false
+			};
+			visual = {
+				//网页打开时自动隐藏文字，翻译完成后显示译文 https://translate.zvo.cn/549731.html 对应的数据 translate.visual.webPageLoadTranslateBeforeHiddenText_use
+				webPageLoadTranslateBeforeHiddenText: {
+					use: false,
+				}
+			};
+		},
+
+
+		//获取当前 translate.js 所设置的数据 （排除设置的 function）
+		get: function(){
+
+			var data = new translate.config.data();
+
+			data.documents = translate.documents;
+			data.language.select.show = translate.selectLanguageTag.show;
+			data.language.select.languages = translate.selectLanguageTag.languages;
+			data.language.select.documentId = translate.selectLanguageTag.documentId;
+			data.language.local = translate.language.local;
+			data.language.defaultTo = translate.language.defaultTo;
+			data.language.autoDiscriminateLocalLanguage = translate.autoDiscriminateLocalLanguage;
+			data.language.range = translate.language.translateLanguagesRange;
+			data.language.urlParamControl.use = translate.language.setUrlParamControl_use;
+			data.language.urlParamControl.name = translate.language.setUrlParamControl_name;
+			data.language.translateLocal = translate.language.translateLocal;
+			data.images = translate.images.queues;
+			data.nomenclature = translate.nomenclature.data;
+			data.listener.use = translate.listener.use;
+			data.ignore.text = translate.ignore.text;
+			data.ignore.textRegex = translate.ignore.textRegex;
+			data.ignore.id = translate.ignore.id;
+			data.ignore.class.data = translate.ignore.class.data;
+			data.ignore.class.conditionFunction = translate.ignore.class.conditionFunction;
+			data.ignore.tag = translate.ignore.tag;
+			data.service = translate.service.name;
+			data.whole.enableAll = translate.whole.isEnableAll;
+			data.whole.class = translate.whole.class;
+			data.whole.tag = translate.whole.tag;
+			data.whole.id = translate.whole.id;
+			data.whole.context.use = translate.whole.context.isUse();
+			data.selectionTranslate.use = translate.selectionTranslate.use;
+			data.request.api.host = translate.request.api.host;
+			data.request.api.language = translate.request.api.language;
+			data.request.api.translate = translate.request.api.translate;
+			data.request.api.ip = translate.request.api.ip;
+			data.request.api.connectTest = translate.request.api.connectTest;
+			data.request.api.init = translate.request.api.init;
+			data.request.listener.use = translate.request.listener.use;
+			data.request.listener.delayExecuteTime = translate.request.listener.delayExecuteTime;
+			data.request.listener.minIntervalTime = translate.request.listener.minIntervalTime;
+			data.request.appendParams = translate.request.appendParams;
+			data.request.appendHeaders = translate.request.appendHeaders;
+			data.request.sse.use = translate.request.sse.use;
+			data.request.waitingExecute = translate.waitingExecute.use;
+			data.element.tagAttribute = translate.element.tagAttribute;
+			data.progress.api.use = translate.progress.api.use;
+			data.progress.style = translate.progress.style;
+			data.network.rules = translate.network.rules;
+			data.network.use = translate.network.isUse;
+			data.visual.webPageLoadTranslateBeforeHiddenText.use = translate.visual.webPageLoadTranslateBeforeHiddenText_use;
+			
+			return data;
+		},
+
+		/*
+			设置数据，传入 Config.data 格式的数据， 设置到当前 translate.js 中
+			不想设置的项可以不传入。
+		*/
+		set: function(data){
+			//console.log(data);
+			if(typeof(data) !== 'object' || data === null){
+				data = {};
+			}
+
+			var language = (typeof(data.language) === 'object' && data.language !== null) ? data.language : {};
+			var languageSelect = (typeof(language.select) === 'object' && language.select !== null) ? language.select : {};
+			var languageUrlParamControl = (typeof(language.urlParamControl) === 'object' && language.urlParamControl !== null) ? language.urlParamControl : {};
+			var listener = (typeof(data.listener) === 'object' && data.listener !== null) ? data.listener : {};
+			var ignore = (typeof(data.ignore) === 'object' && data.ignore !== null) ? data.ignore : {};
+			var whole = (typeof(data.whole) === 'object' && data.whole !== null) ? data.whole : {};
+			var wholeContext = (typeof(whole.context) === 'object' && whole.context !== null) ? whole.context : {};
+			var selectionTranslate = (typeof(data.selectionTranslate) === 'object' && data.selectionTranslate !== null) ? data.selectionTranslate : {};
+			var request = (typeof(data.request) === 'object' && data.request !== null) ? data.request : {};
+			var requestApi = (typeof(request.api) === 'object' && request.api !== null) ? request.api : {};
+			var requestListener = (typeof(request.listener) === 'object' && request.listener !== null) ? request.listener : {};
+			var requestSse = (typeof(request.sse) === 'object' && request.sse !== null) ? request.sse : {};
+			var element = (typeof(data.element) === 'object' && data.element !== null) ? data.element : {};
+			var progress = (typeof(data.progress) === 'object' && data.progress !== null) ? data.progress : {};
+			var progressApi = (typeof(progress.api) === 'object' && progress.api !== null) ? progress.api : {};
+			var network = (typeof(data.network) === 'object' && data.network !== null) ? data.network : {};
+			var visual = (typeof(data.visual) === 'object' && data.visual !== null) ? data.visual : {};
+			var visualWebPageLoadTranslateBeforeHiddenText = (typeof(visual.webPageLoadTranslateBeforeHiddenText) === 'object' && visual.webPageLoadTranslateBeforeHiddenText !== null) ? visual.webPageLoadTranslateBeforeHiddenText : {};
+
+			if(typeof(data.documents) === 'object'){
+				translate.setDocuments(data.documents);
+			}
+			if(typeof(languageSelect.show) === 'boolean'){
+				translate.selectLanguageTag.show = languageSelect.show;
+			}
+			if(typeof(languageSelect.languages) === 'string' && languageSelect.languages.trim().length>0){
+				translate.selectLanguageTag.languages = languageSelect.languages;
+			}
+			if(typeof(languageSelect.documentId) === 'string' && languageSelect.documentId.trim().length>0){
+				translate.selectLanguageTag.documentId = languageSelect.documentId;
+			}
+			if(typeof(language.local) === 'string' && language.local.trim().length>0){
+				translate.language.setLocal(language.local);
+			}
+			if(typeof(language.defaultTo) === 'string' && language.defaultTo.trim().length>0){
+				translate.language.setDefaultTo(language.defaultTo);
+			}
+			if(typeof(language.autoDiscriminateLocalLanguage) === 'boolean' && language.autoDiscriminateLocalLanguage === true){
+				translate.setAutoDiscriminateLocalLanguage();
+			}
+			if(language.range != null && typeof(language.range) === 'object' && language.range.length > 0){
+				translate.language.translateLanguagesRange = language.range;
+			}
+			if(typeof(languageUrlParamControl.use) === 'boolean'){
+				translate.language.setUrlParamControl_use = languageUrlParamControl.use;
+			}
+			if(typeof(languageUrlParamControl.name) === 'string' && languageUrlParamControl.name.trim().toLowerCase() !== 'language'){
+				translate.language.setUrlParamControl(languageUrlParamControl.name);
+			}
+			if(typeof(language.translateLocal) === 'boolean'){
+				translate.language.translateLocal = language.translateLocal;
+			}
+			if(data.images != null && typeof(data.images) === 'object'){
+				translate.images.queues = data.images;
+			}
+			if(data.nomenclature != null && typeof(data.nomenclature) === 'object'){
+				translate.nomenclature.data = data.nomenclature;
+			}
+			if(typeof(listener.use) === 'boolean'){
+				translate.listener.use = listener.use;
+			}
+			if(ignore.text != null && typeof(ignore.text) === 'object'){
+				translate.ignore.text = ignore.text;
+			}
+			if(ignore.textRegex != null && typeof(ignore.textRegex) === 'object'){
+				translate.ignore.textRegex = ignore.textRegex;
+			}
+			if(ignore.id != null && typeof(ignore.id) === 'object'){
+				translate.ignore.id = ignore.id;
+			}
+			if(ignore.class != null && typeof(ignore.class) === 'object'){
+				translate.ignore.class = ignore.class;
+			}
+			if(ignore.tag != null && typeof(ignore.tag) === 'object'){
+				translate.ignore.tag = ignore.tag;
+			}
+			if(typeof(data.service) === 'string' && data.service.trim().length > 0){
+				translate.service.name = data.service;
+			}
+			if(typeof(whole.enableAll) === 'boolean'){
+				translate.whole.isEnableAll = whole.enableAll;
+			}
+			if(whole.class != null && typeof(whole.class) === 'object'){
+				translate.whole.class = whole.class;
+			}
+			if(whole.tag != null && typeof(whole.tag) === 'object'){
+				translate.whole.tag = whole.tag;
+			}
+			if(whole.id != null && typeof(whole.id) === 'object'){
+				translate.whole.id = whole.id;
+			}
+			if(typeof(wholeContext.use) === 'boolean'){
+				translate.whole.context.is_use = wholeContext.use;
+			}
+			if(typeof(selectionTranslate.use) === 'boolean' && selectionTranslate.use === true){
+				if(translate.selectionTranslate.use === false){ //没有启动，才会启动
+					translate.selectionTranslate.start();
+				}
+			}
+			if(requestApi.host != null && typeof(requestApi.host) === 'object'){
+				translate.request.api.host = requestApi.host;
+			}
+			if(typeof(requestApi.language) === 'string'){
+				translate.request.api.language = requestApi.language;
+			}
+			if(typeof(requestApi.ip) === 'string'){
+				translate.request.api.ip = requestApi.ip;
+			}
+			if(typeof(requestApi.connectTest) === 'string'){
+				translate.request.api.connectTest = requestApi.connectTest;
+			}
+			if(typeof(requestApi.init) === 'string'){
+				translate.request.api.init = requestApi.init;
+			}
+			if(typeof(requestListener.use) === 'boolean'){
+				translate.request.listener.use = requestListener.use;
+			}
+			if(typeof(requestListener.delayExecuteTime) === 'number'){
+				translate.request.listener.delayExecuteTime = requestListener.delayExecuteTime;
+			}
+			if(typeof(requestListener.minIntervalTime) === 'number'){
+				translate.request.listener.minIntervalTime = requestListener.minIntervalTime;
+			}
+			if(request.appendParams != null && typeof(request.appendParams) === 'object'){
+				translate.request.appendParams = request.appendParams;
+			}
+			if(request.appendHeaders != null && typeof(request.appendHeaders) === 'object'){
+				translate.request.appendHeaders = request.appendHeaders;
+			}
+			if(typeof(requestSse.use) === 'boolean'){
+				translate.request.sse.use = requestSse.use;
+			}
+			if(typeof(request.waitingExecute) === 'boolean'){
+				translate.waitingExecute.use = request.waitingExecute;
+			}
+			if(element.tagAttribute != null && typeof(element.tagAttribute) === 'object'){
+				translate.element.tagAttribute = element.tagAttribute;
+			}
+			if(typeof(progressApi.use) === 'boolean' && progressApi.use === true){
+				if(translate.progress.api.use === false){ //没有启动，才会启动
+					translate.progress.api.startUITip();
+				}
+			}
+			if(typeof(progress.style) === 'string'){
+				translate.progress.style = progress.style;
+			}
+			if(network.rules != null && typeof(network.rules) === 'object'){
+				translate.network.rules = network.rules;
+			}
+			if(typeof(network.use) === 'boolean' && network.use === true){
+				if(translate.network.isUse === false){ //没有启动，才会启动
+					translate.network.use();
+				}
+			}
+			if(typeof(visualWebPageLoadTranslateBeforeHiddenText.use) === 'boolean' && visualWebPageLoadTranslateBeforeHiddenText.use === true){
+				if(translate.visual.webPageLoadTranslateBeforeHiddenText_use === false){ //没有启动，才会启动
+					translate.visual.webPageLoadTranslateBeforeHiddenText();
+				}
+			}
+		}
+	},
+	/*js translate.config end*/
+
+
 	// AUTO_VERSION_END
 	/*
 		当前使用的版本，默认使用v2. 可使用 setUseVersion2(); 
@@ -73,22 +459,11 @@ var translate = {
 		*/
 		languages:'',
 		alreadyRender:false, //当前是否已渲染过了 true为是 v2.2增加
-		languageLoadRetryCount:0,
-		languageLoadRetryTimer:null,
-		retryLanguageLoad:function(){
-			translate.selectLanguageTag.alreadyRender = false;
-			if(translate.selectLanguageTag.languageLoadRetryCount >= 2){
-				return;
-			}
-			translate.selectLanguageTag.languageLoadRetryCount++;
-			if(translate.request && translate.request.speedDetectionControl){
-				translate.request.speedDetectionControl.useNextHost();
-			}
-			clearTimeout(translate.selectLanguageTag.languageLoadRetryTimer);
-			translate.selectLanguageTag.languageLoadRetryTimer = setTimeout(function(){
-				translate.selectLanguageTag.render();
-			}, translate.selectLanguageTag.languageLoadRetryCount * 1000);
+
+		changeLanguageBeforeLoadOfflineFile: function(path){
+
 		},
+
 		selectOnChange:function(event){
 			var language = event.target.value;
 			translate.changeLanguage(language);
@@ -108,6 +483,61 @@ var translate = {
 
 			translate.selectLanguageTag.render();
 		},
+		/*
+			自定义语种 translate.selectLanguageTag.languages 的处理，进行按顺序筛选出来
+	
+			@param languageList 当前支持的所有语种列表，传入格式如：
+			[
+				{id: 'english', name: 'English', serviceId: 'en'}, 
+				{id: 'korean', name: '한국어', serviceId: 'ko'},
+				...
+			]
+
+			返回值是将当前翻译通道所支持的语种进行按顺序筛选完后的结果返回。
+			比如 
+			translate.selectLanguageTag.languages = 'english,chinese_simplified,korean';
+			那么这里返回的便是
+
+			[
+				{id: 'english', name: 'English', serviceId: 'en'}, 
+				{id: 'chinese_simplified', name: '简体中文', serviceId: 'zh-CHS'},
+				{id: 'korean', name: '한국어', serviceId: 'ko'}
+			]
+	
+			如果 translate.selectLanguageTag.languages 未设置，那么这里将返回当前支持的所有语种
+		*/
+		customLanguagesHandle:function(languageList){
+			if(translate.selectLanguageTag.languages.length > 0){
+				//设置了自定义显示的语言，需要重新根据自定义的语言进行过滤，同时顺序也要保持跟它一致
+
+				//都转小写判断
+				var divLanguages = translate.selectLanguageTag.languages.toLowerCase();
+				var divArray = divLanguages.split(',');
+				
+				//将支持的语种 languageList 转化为 map 形态
+				if(typeof(translate.selectLanguageTag.supportLanguageMap) == 'undefined'){
+					translate.selectLanguageTag.supportLanguageMap = new Map();
+					for(var si = 0; si<languageList.length; si++){
+						if(languageList[si] != null && typeof(languageList[si].id) === 'string'){
+							translate.selectLanguageTag.supportLanguageMap.set(languageList[si].id, languageList[si]);
+						}
+					}
+					//console.log(translate.selectLanguageTag.supportLanguageMap)
+				}
+
+
+				//重新组合要显示的语种
+				var newLangs = [];
+				for(var i = 0; i<divArray.length; i++){
+					if(divArray[i].length > 0 && translate.selectLanguageTag.supportLanguageMap.get(divArray[i]) != null){
+						newLangs.push(translate.selectLanguageTag.supportLanguageMap.get(divArray[i]));
+					}
+				}
+				return newLangs;
+			}
+
+			return languageList;
+		},
 
 		/*
 			自定义切换语言的样式渲染 v3.2.4 增加
@@ -122,24 +552,16 @@ var translate = {
 			selectLanguage.id = translate.selectLanguageTag.documentId+'SelectLanguage';
 			selectLanguage.className = translate.selectLanguageTag.documentId+'SelectLanguage';
 			var to = translate.language.getCurrent();
+
+
 			for(var i = 0; i<languageList.length; i++){
+				if(languageList[i] == null || typeof(languageList[i].id) !== 'string' || typeof(languageList[i].name) !== 'string'){
+					continue;
+				}
 				var option = document.createElement("option"); 
 			    option.setAttribute("value",languageList[i].id);
 
-			    //判断 selectLanguageTag.languages 中允许使用哪些
-
-				if(translate.selectLanguageTag.languages.length > 0){
-					//设置了自定义显示的语言
-
-					//都转小写判断
-					var langs_indexof = (','+translate.selectLanguageTag.languages+',').toLowerCase();
-					//console.log(langs_indexof)
-					if(langs_indexof.indexOf(','+languageList[i].id.toLowerCase()+',') < 0){
-						//没发现，那不显示这个语种，调出
-						continue
-					}
-				}
-
+			    
 				/*判断默认要选中哪个语言*/
 
 			    if(to != null && typeof(to) != 'undefined' && to.length > 0){
@@ -201,23 +623,18 @@ var translate = {
 			//从服务器加载支持的语言库
 			if(typeof(translate.request.api.language) == 'string' && translate.request.api.language.length > 0){
 				//从接口加载语种
-				translate.request.post(translate.request.api.language, {}, function(data){
-					if(data.result == 0){
-						translate.log('load language list error : '+data.info);
-						translate.selectLanguageTag.retryLanguageLoad();
+				translate.request.post(translate.request.api.language, {}, function(responseData, requestData){
+					if(responseData.result == 0){
+						translate.log('load language list error : '+responseData.info);
 						return;
 					}
 					//console.log(data.list);
-					translate.selectLanguageTag.languageLoadRetryCount = 0;
-					clearTimeout(translate.selectLanguageTag.languageLoadRetryTimer);
-					translate.request.api.language = data.list; //进行缓存，下一次切换语言渲染的时候直接从缓存取，就不用在通过网络加载了
-					translate.selectLanguageTag.customUI(data.list);
-				}, function(){
-					translate.selectLanguageTag.retryLanguageLoad();
-				});
-			}else if(typeof(translate.request.api.language) == 'object'){
+					translate.request.api.language = responseData.list; //进行缓存，下一次切换语言渲染的时候直接从缓存取，就不用在通过网络加载了
+					translate.selectLanguageTag.customUI(translate.selectLanguageTag.customLanguagesHandle(responseData.list));
+				}, null);
+			}else if(translate.request.api.language != null && typeof(translate.request.api.language) == 'object'){
 				//无网络环境下，自定义显示语种
-				translate.selectLanguageTag.customUI(translate.request.api.language);
+				translate.selectLanguageTag.customUI(translate.selectLanguageTag.customLanguagesHandle(translate.request.api.language));
 			}
 		}
 	},
@@ -341,7 +758,482 @@ var translate = {
 		}
 	},
 	/*js translate.currentLanguage end*/
-	
+
+	/*js translate.postMessage start*/
+	/**
+	 * postMessage 跨域通信模块
+	 * 用于实现跨域 iframe 之间的语言切换同步
+	 * v4.0 新增
+	 */
+	postMessage:{
+		/**
+		 * 消息类型常量
+		 */
+		TYPES: {
+			// 语言切换请求
+			CHANGE_LANGUAGE: 'translate-js-iframe-changeLanguage',
+			// 语言切换完成通知
+			LANGUAGE_CHANGED: 'translate-js-iframe-languageChanged',
+			// 心跳检测
+			PING: 'translate-js-iframe-ping',
+			PONG: 'translate-js-iframe-pong'
+		},
+
+		/**
+		 * 是否已初始化监听器
+		 */
+		initialized: false,
+
+		/**
+		 * message 监听函数引用，用于 reset() 时移除监听器。
+		 */
+		_messageHandler: null,
+
+		/**
+		 * 允许接收的跨域消息来源。
+		 * 默认不设置时，允许所有网站来源的消息。
+		 * 如需限制来源，可显式配置允许的 origin 数组。
+		 */
+		allowedOrigins: [],
+
+		/**
+		 * 当语言切换请求来自父页面时，重放 changeLanguage()
+		 * 的过程中不再反向通知父页面，避免形成循环。
+		 */
+		_suppressParentNotify: false,
+
+		/**
+		 * 获取当前页面的 origin。
+		 * @returns {string}
+		 */
+		getCurrentOrigin: function(){
+			if(typeof window.location.origin === 'string' && window.location.origin.length > 0){
+				return window.location.origin;
+			}
+			return this.getOriginFromUrl(window.location.href);
+		},
+
+		/**
+		 * 规范化 origin 字符串。
+		 * @param {string} origin
+		 * @returns {string}
+		 */
+		normalizeOrigin: function(origin){
+			if(typeof origin !== 'string'){
+				return '';
+			}
+			origin = origin.trim();
+			if(origin.length === 0){
+				return '';
+			}
+			if(origin === '*' || origin === 'null'){
+				return origin;
+			}
+			return this.getOriginFromUrl(origin);
+		},
+
+		/**
+		 * 从 URL 中解析 origin。
+		 * @param {string} url
+		 * @returns {string}
+		 */
+		getOriginFromUrl: function(url){
+			if(typeof url !== 'string' || url.trim().length === 0){
+				return '';
+			}
+			try{
+				var link = document.createElement('a');
+				link.href = url;
+				if(typeof link.protocol !== 'string' || link.protocol.length === 0){
+					return '';
+				}
+				if(link.protocol === 'file:'){
+					return 'null';
+				}
+				if(typeof link.host !== 'string' || link.host.length === 0){
+					return '';
+				}
+				return link.protocol + '//' + link.host;
+			}catch(e){
+				return '';
+			}
+		},
+
+		/**
+		 * 为 postMessage() 解析 targetOrigin。
+		 * @param {string} origin
+		 * @returns {string}
+		 */
+		resolveTargetOrigin: function(origin){
+			var normalizedOrigin = this.normalizeOrigin(origin);
+			if(normalizedOrigin === 'null'){
+				return '*';
+			}
+			if(normalizedOrigin.length > 0){
+				return normalizedOrigin;
+			}
+
+			if(Array.isArray(this.allowedOrigins) && this.allowedOrigins.length === 1){
+				normalizedOrigin = this.normalizeOrigin(this.allowedOrigins[0]);
+				if(normalizedOrigin.length > 0 || normalizedOrigin === '*'){
+					return normalizedOrigin;
+				}
+			}
+
+			return '*';
+		},
+
+		/**
+		 * 根据 iframe 的 src 推导其目标 origin。
+		 * @param {HTMLIFrameElement} iframe
+		 * @returns {string}
+		 */
+		getIframeOrigin: function(iframe){
+			if(!iframe){
+				return '';
+			}
+
+			var src = '';
+			if(typeof iframe.getAttribute === 'function'){
+				src = iframe.getAttribute('src');
+			}
+			if((typeof src !== 'string' || src.trim().length === 0) && typeof iframe.src === 'string'){
+				src = iframe.src;
+			}
+
+			var origin = this.getOriginFromUrl(src);
+			if(origin.length > 0){
+				return origin;
+			}
+
+			return this.getCurrentOrigin();
+		},
+
+		/**
+		 * 根据 referrer 获取父页面的 origin。
+		 * @returns {string}
+		 */
+		getParentOrigin: function(){
+			return this.getOriginFromUrl(document.referrer);
+		},
+
+		/**
+		 * 检查接收到的消息来源是否可信。
+		 * @param {string} origin
+		 * @returns {boolean}
+		 */
+		isOriginAllowed: function(origin){
+			var normalizedOrigin = this.normalizeOrigin(origin);
+			if(normalizedOrigin.length === 0){
+				return false;
+			}
+
+			if(!Array.isArray(this.allowedOrigins) || this.allowedOrigins.length === 0){
+				return true;
+			}
+
+			if(normalizedOrigin === this.getCurrentOrigin()){
+				return true;
+			}
+
+			for(var i = 0; i < this.allowedOrigins.length; i++){
+				var allowedOrigin = this.normalizeOrigin(this.allowedOrigins[i]);
+				if(allowedOrigin === '*'){
+					return true;
+				}
+				if(allowedOrigin === normalizedOrigin){
+					return true;
+				}
+			}
+
+			return false;
+		},
+
+		/**
+		 * 当前 changeLanguage 流程是否允许通知父页面。
+		 * @returns {boolean}
+		 */
+		shouldNotifyParent: function(){
+			return this._suppressParentNotify !== true;
+		},
+
+		/**
+		 * 初始化 postMessage 监听器
+		 * 在 translate.init() 中自动调用
+		 */
+		init: function(){
+			if(this.initialized){
+				return;
+			}
+			this.initialized = true;
+
+			var self = this;
+			this._messageHandler = function(event){
+				self.handleMessage(event);
+			};
+			window.addEventListener('message', this._messageHandler, false);
+		},
+
+		reset: function(){
+			if(this._messageHandler !== null){
+				window.removeEventListener('message', this._messageHandler, false);
+				this._messageHandler = null;
+			}
+			this.initialized = false;
+		},
+
+		/**
+		 * 处理接收到的消息
+		 * @param {MessageEvent} event - 消息事件对象
+		 */
+		handleMessage: function(event){
+			try{
+				// 忽略当前窗口自己发出的消息，避免自发自收。
+				if(event.source === window){
+					return;
+				}
+
+				var data = event.data;
+				if(typeof data !== 'object' || data === null){
+					return;
+				}
+				if(typeof data.type !== 'string'){
+					return;
+				}
+
+				var type = data.type;
+				if(
+					type !== translate.postMessage.TYPES.CHANGE_LANGUAGE &&
+					type !== translate.postMessage.TYPES.LANGUAGE_CHANGED &&
+					type !== translate.postMessage.TYPES.PING &&
+					type !== translate.postMessage.TYPES.PONG
+				){
+					return;
+				}
+
+				if(!translate.postMessage.isOriginAllowed(event.origin)){
+					translate.log('[postMessage] Ignore message from untrusted origin: ' + event.origin);
+					return;
+				}
+
+				if(type === translate.postMessage.TYPES.CHANGE_LANGUAGE){
+					if(typeof data.language === 'string' && data.language.trim().length > 0){
+						translate.postMessage.onReceiveChangeLanguage(data.language, data.fromParent);
+					}
+				}
+
+				if(type === translate.postMessage.TYPES.PING){
+					var source = event.source;
+					if(source){
+						translate.postMessage.send(source, translate.postMessage.TYPES.PONG, {
+							version: translate.version,
+							language: translate.to
+						}, event.origin);
+					}
+				}
+
+				if(type === translate.postMessage.TYPES.PONG){
+					translate.log('[postMessage] Received PONG from iframe, version: ' + data.version + ', language: ' + data.language);
+					if(typeof translate.postMessage._pingCallback === 'function'){
+						var callback = translate.postMessage._pingCallback;
+						translate.postMessage._pingCallback = null;
+						callback(data);
+					}
+				}
+
+				if(type === translate.postMessage.TYPES.LANGUAGE_CHANGED){
+					translate.log('[postMessage] Language changed in iframe: ' + data.language);
+				}
+			}catch(e){
+				translate.log('[postMessage] handleMessage error: ' + e.message);
+			}
+		},
+
+		/**
+		 * 发送消息到目标窗口
+		 * @param {Window} targetWindow - 目标窗口
+		 * @param {string} type - 消息类型
+		 * @param {object} payload - 消息内容
+		 */
+		send: function(targetWindow, type, payload, targetOrigin){
+			if(!targetWindow){
+				return;
+			}
+
+			var message = {
+				type: type,
+				timestamp: Date.now(),
+				version: translate.version
+			};
+
+			// 合并 payload 到 message
+			if(typeof payload === 'object' && payload !== null){
+				for(var key in payload){
+					if(payload.hasOwnProperty(key)){
+						message[key] = payload[key];
+					}
+				}
+			}
+
+			try{
+				targetWindow.postMessage(message, translate.postMessage.resolveTargetOrigin(targetOrigin));
+			}catch(e){
+				translate.log('[postMessage] Send error: ' + e.message);
+			}
+		},
+
+		/**
+		 * 接收到语言切换请求时的处理
+		 * @param {string} language - 目标语言
+		 * @param {boolean} fromParent - 是否来自父页面
+		 */
+		onReceiveChangeLanguage: function(language, fromParent){
+			// 避免重复切换 - 但需要考虑更多情况
+			// 修复：不仅要检查 translate.to，还要检查是否真正处于翻译状态
+			var currentLanguage = translate.to;
+			var hasTranslatedContent = translate.node.data && translate.node.data.size > 0;
+
+			// 如果当前语言等于目标语言，且已经有翻译内容，才跳过
+			// 这样可以处理 iframe 初始加载时 translate.to 可能已经等于目标语言但没有翻译内容的情况
+			if(currentLanguage === language && hasTranslatedContent){
+				translate.log('[postMessage] Already at target language with translated content: ' + language);
+				return;
+			}
+
+			translate.log('[postMessage] Received changeLanguage request: ' + language + ', fromParent: ' + fromParent + ', currentTo: ' + currentLanguage + ', hasTranslated: ' + hasTranslatedContent);
+
+			// 执行语言切换（使用内部方法避免消息循环）
+			translate.postMessage.executeChangeLanguage(language, fromParent);
+		},
+
+		/**
+		 * 执行语言切换（内部方法，不触发 postMessage 向父/子窗口发送）
+		 * @param {string} language - 目标语言
+		 * @param {boolean} fromParent - 是否来自父页面
+		 */
+		executeChangeLanguage: function(language, fromParent){
+			var previousSuppressParentNotify = translate.postMessage._suppressParentNotify;
+			try{
+				if(fromParent === true){
+					translate.postMessage._suppressParentNotify = true;
+				}
+
+				// 复用正常的 changeLanguage 流程，保持 reset 和传播行为一致。
+				translate.changeLanguage(language);
+				translate.log('[postMessage] Language changed to: ' + language);
+
+				if(window.self !== window.top && fromParent === true){
+					translate.postMessage.send(window.parent, translate.postMessage.TYPES.LANGUAGE_CHANGED, {
+						language: language
+					}, translate.postMessage.getParentOrigin());
+				}
+			}catch(e){
+				translate.log('[postMessage] executeChangeLanguage error: ' + e.message);
+			}finally{
+				translate.postMessage._suppressParentNotify = previousSuppressParentNotify;
+			}
+		},
+
+			/**
+			 * 向父页面发送语言切换消息
+		 * @param {string} language - 目标语言
+		 */
+		notifyParent: function(language){
+			if(window.self === window.top){
+				// 当前页面是顶层页面，无需通知父页面
+				return;
+			}
+
+			if(!translate.postMessage.shouldNotifyParent()){
+				return;
+			}
+
+			try{
+				translate.postMessage.send(window.parent, translate.postMessage.TYPES.CHANGE_LANGUAGE, {
+					language: language,
+					fromParent: false,
+					source: 'child'
+				}, translate.postMessage.getParentOrigin());
+				translate.log('[postMessage] Notified parent to change language: ' + language);
+			}catch(e){
+				translate.log('[postMessage] Failed to notify parent: ' + e.message);
+			}
+		},
+
+		/**
+		 * 向所有子 iframe 发送语言切换消息
+		 * @param {string} language - 目标语言
+		 */
+		notifyChildren: function(language){
+			var iframes = document.querySelectorAll('iframe');
+			for(var i = 0; i < iframes.length; i++){
+				var iframe = iframes[i];
+				var iframeWindow = iframe.contentWindow;
+
+				if(!iframeWindow){
+					continue;
+				}
+
+				// 先尝试同域直接访问
+				var sameOrigin = false;
+				try{
+					// 尝试访问 iframe 的 document，如果成功则同域
+					if(iframe.contentDocument){
+						sameOrigin = true;
+					}
+				}catch(e){
+					// 跨域，访问会抛出异常
+					sameOrigin = false;
+				}
+
+				if(sameOrigin){
+					// 同域，尝试直接调用
+					try{
+						if(typeof iframeWindow.translate === 'object' && typeof iframeWindow.translate.version === 'string'){
+							if(iframeWindow.translate.to !== language){
+								// 直接调用 changeLanguage，它会自己处理传播
+								iframeWindow.translate.changeLanguage(language);
+							}
+						}
+					}catch(e){
+						// 异常时使用 postMessage
+						translate.postMessage.send(iframeWindow, translate.postMessage.TYPES.CHANGE_LANGUAGE, {
+							language: language,
+							fromParent: true,
+							source: 'parent'
+						}, translate.postMessage.getIframeOrigin(iframe));
+					}
+				}else{
+					// 跨域，使用 postMessage
+					translate.postMessage.send(iframeWindow, translate.postMessage.TYPES.CHANGE_LANGUAGE, {
+						language: language,
+						fromParent: true,
+						source: 'parent'
+					}, translate.postMessage.getIframeOrigin(iframe));
+				}
+			}
+		},
+
+		/**
+		 * 向指定 iframe 发送心跳检测
+		 * @param {HTMLIFrameElement} iframe - iframe 元素
+		 * @param {function} callback - 回调函数
+		 */
+		ping: function(iframe, callback){
+			if(!iframe || !iframe.contentWindow){
+				return;
+			}
+
+			// 存储回调
+			if(typeof callback === 'function'){
+				this._pingCallback = callback;
+			}
+
+			translate.postMessage.send(iframe.contentWindow, translate.postMessage.TYPES.PING, {}, translate.postMessage.getIframeOrigin(iframe));
+		}
+	},
+	/*js translate.postMessage end*/
+
 	/**
 	 * 切换语言，比如切换为英语、法语
  	 * @param languageName 要切换的语言语种。传入如 english
@@ -373,7 +1265,9 @@ var translate = {
 			return;
 		}
 		
-		translate.lifecycle.changeLanguage_Trigger(languageName);
+		translate.lifecycle.changeLanguage.trigger_Trigger({
+			to:languageName
+		});
 
 		
 		//用的是v2.x或更高
@@ -391,27 +1285,6 @@ var translate = {
 		translate.to = languageName;
 		translate.storage.set('to',languageName);	//设置目标翻译语言
 		
-		/*
-			1. 先触发父级，免得当前刷新了，导致父级不执行翻译了
-		*/
-		//检测当前是否处于iframe中，如果当前是在iframe中，有父级页面，也要触发父级进行翻译
-		try{
-			if(window.self !== window.top){
-				if(typeof(window.parent.translate) == 'object' && typeof(window.parent.translate.version) == 'string'){
-					//iframe页面中存在 translate,那么也控制iframe中的进行翻译
-					if(window.parent.translate.language.getCurrent() != languageName){
-						//如果父页面当前的语种不是需要翻译的语种，对其进行翻译
-						window.parent.translate.changeLanguage(languageName);
-					}
-				}
-			}
-		}catch(e){
-			//增加try，避免异常导致无法用
-			translate.log(e);
-		}
-		
-		translate.time.log('iframe 完成');
-
 		//判断当前页面是否需要进行翻译，如果需要，那还要对整个页面内容文本进行隐藏处理
 		if(translate.visual.webPageLoadTranslateBeforeHiddenText_use){
 			//清除 最开始的全部文本隐藏的first记录
@@ -432,8 +1305,41 @@ var translate = {
 			selectLanguageRefreshRender:false //是否重新渲染select选择语言到原始未翻译前的状态，默认不设置则是true，进行重新渲染
 		}); 
 
+
+		/*
+			先触发父级，免得当前刷新了，导致父级不执行翻译了
+		*/
+		//检测当前是否处于iframe中，如果当前是在iframe中，有父级页面，也要触发父级进行翻译
+		try{
+			if(window.self !== window.top && translate.postMessage.shouldNotifyParent()){
+				if(typeof(window.parent.translate) == 'object' && typeof(window.parent.translate.version) == 'string'){
+					//iframe页面中存在 translate,那么也控制iframe中的进行翻译
+					if(window.parent.translate.to !== languageName){
+						//如果父页面当前的语种不是需要翻译的语种，对其进行翻译
+						window.parent.translate.changeLanguage(languageName);
+					}
+				}else{
+					// 父页面没有 translate 对象（可能跨域无法访问），使用 postMessage
+					translate.postMessage.notifyParent(languageName);
+				}
+			}
+		}catch(e){
+			//增加try，避免异常导致无法用。跨域情况下使用 postMessage
+			if(window.self !== window.top && translate.postMessage.shouldNotifyParent()){
+				translate.postMessage.notifyParent(languageName);
+			}
+			translate.log('changeLanguage parent iframe cross-origin, use postMessage: ' + e.message);
+		}
+		
+		translate.time.log('父级 iframe 触发changeLanguage完成');
+
 		translate.to = languageName;
 		translate.storage.set('to',languageName);	//设置目标翻译语言
+
+		translate.lifecycle.changeLanguage.resetAfter_Trigger({
+			to: languageName
+		});
+
 		//重新绘制 select 选择语言
 		translate.selectLanguageTag.refreshRender();
 
@@ -447,22 +1353,61 @@ var translate = {
 			translate.execute(); //翻译
 		
 			//检测是否有iframe中的子页面，如果有，也对子页面下发翻译命令。这个是针对 LayuiAdmin 框架的场景适配，它的主体区域是在 iframe 中的，不能点击切换语言后，只翻译外面的大框，而iframe中的不翻译
-			const iframes = document.querySelectorAll('iframe');
-			for (let i = 0; i < iframes.length; i++) {
-				const iframe = iframes[i];
-				// 获取 iframe 的 window 对象
-				const iframeWindow = iframe.contentWindow; 
-				try{       
-					if(typeof(iframeWindow.translate) == 'object' && typeof(iframeWindow.translate.version) == 'string'){
-						//iframe页面中存在 translate,那么也控制iframe中的进行翻译
-						if(iframeWindow.translate.to != languageName){
-							iframeWindow.translate.to = languageName;
-							iframeWindow.translate.storage.set('to',languageName);	//设置目标翻译语言
-							iframeWindow.translate.execute();
+			var iframes = document.querySelectorAll('iframe');
+			for (var i = 0; i < iframes.length; i++) {
+				var iframe = iframes[i];
+				var iframeWindow = iframe.contentWindow;
+				if(!iframeWindow){
+					continue;
+				}
+
+				// 判断是否同域
+				var sameOrigin = false;
+				try{
+					// 尝试访问 iframe.contentDocument，如果成功则同域
+					if(iframe.contentDocument){
+						sameOrigin = true;
+					}
+				}catch(e){
+					// 跨域，访问会抛出异常
+					sameOrigin = false;
+				}
+
+				try{
+					if(sameOrigin){
+						// 同域，尝试直接调用
+						if(typeof(iframeWindow.translate) == 'object' && typeof(iframeWindow.translate.version) == 'string'){
+							//iframe页面中存在 translate,那么也控制iframe中的进行翻译
+							// 修复：不仅要检查 translate.to，还要检查是否真正处于翻译状态
+							var iframeTo = iframeWindow.translate.to;
+							var iframeHasTranslated = iframeWindow.translate.node.data && iframeWindow.translate.node.data.size > 0;
+
+							// 只有当 iframe 的语言等于目标语言且已有翻译内容时才跳过
+							if(!(iframeTo === languageName && iframeHasTranslated)){
+								iframeWindow.translate.changeLanguage(languageName);
+							}
+						}
+					}else{
+						// 跨域，使用 postMessage
+						translate.postMessage.send(iframeWindow, translate.postMessage.TYPES.CHANGE_LANGUAGE, {
+							language: languageName,
+							fromParent: true,
+							source: 'parent'
+						}, translate.postMessage.getIframeOrigin(iframe));
+						if(typeof(iframe.src) === 'string'){
+							translate.log('[postMessage] Send changeLanguage to cross-origin iframe, src: ' + iframe.src);
 						}
 					}
 				}catch(e){
-					//增加try，避免异常,比如跨域，中断导致无法用
+					// 异常时，尝试使用 postMessage
+					translate.postMessage.send(iframeWindow, translate.postMessage.TYPES.CHANGE_LANGUAGE, {
+						language: languageName,
+						fromParent: true,
+						source: 'parent'
+					}, translate.postMessage.getIframeOrigin(iframe));
+					if(typeof(iframe.src) === 'string'){
+						translate.log('change sub page iframe exception (use postMessage fallback), iframe src : '+iframe.src);
+					}
 					translate.log(e);
 				}
 			}
@@ -492,6 +1437,7 @@ var translate = {
 	},
 	/*js translate.check end*/
 	
+
 	
 	/**************************** v2.0 */
 	to:'', //翻译为的目标语言，如 english 、chinese_simplified
@@ -501,52 +1447,89 @@ var translate = {
 	//使用 setAutoDiscriminateLocalLanguage 进行设置
 	autoDiscriminateLocalLanguage:false,
 	documents:[], //指定要翻译的元素的集合,可设置多个，如设置： document.getElementsByTagName('DIV')
-	/*
-		v2.11.5增加
-		正在进行翻译的节点，会记录到此处。
-		这里是最底的节点了，不会再有下级了。这也就是翻译的最终节点，也就是 translate.element.findNode() 发现的节点
-		也就是扫描到要进行翻译的节点，在翻译前，加入到这里，在这个节点翻译结束后，将这里面记录的节点删掉。
-		
-		格式如 
-			[
-				{
-					node: node节点的对象
-					number: 2 (当前正在翻译进行中的次数，比如一个节点有中英文混合的文本，那么中文、英文 会同时进行两次翻译，也就是最后要进行两次替换，会导致这个node产生两次改动。每次便是+1、-1)
-				},
-				{
-					......
-				}
-			]
-
-		生命周期：
-		
-		translate.execute() 执行后，会扫描要翻译的字符，扫描完成后首先会判断缓存中是否有，是否会命中缓存，如果缓存中有，那么在加入 task.add 之前就会将这个进行记录 ++ 
-		在浏览器缓存没有命中后，则会通过网络api请求进行翻译，此时在发起网络请求前，会进行记录 ++
-		当使用 translate.listener.start() 后，网页中动态渲染的部分会触发监听，触发监听后首先会判断这个节点是否存在于这里面正在被翻译，如果存在里面，那么忽略， 如果不存在里面，那么再进行 translate.execute(变动的节点) 进行翻译 （当然执行这个翻译后，自然也就又把它加入到此处进行记录 ++）
-		【唯一的减去操作】 在task.execute() 中，翻译完成并且渲染到页面执行完成后，会触发延迟50毫秒后将这个翻译的节点从这里减去
-	*/
-	inProgressNodes:[], 
+	
 	//翻译时忽略的一些东西，比如忽略某个tag、某个class等
 	ignore:{
 		tag:['style', 'script', 'link', 'pre', 'code'],
-		class:['ignore','translateSelectLanguage'],
+		//class:['ignore','translateSelectLanguage'],
+		class:{
+			data:['ignore','translateSelectLanguage'],
+			conditionFunction:{
+				ignore: function(element){return true;}
+			},
+			/*
+				追加一个忽略翻译的 class name
+				className 忽略翻译的 class name 的字符串值
+				conditionFunction function(element){} 方法，用于呼应 class name 的规则判定
+									其中 element 则是当前扫描到的，已经被 class name 所标记影响范围的某个html元素，针对这个元素进行进一步判定，是否真的忽略对它进行翻译。
+										如果这个方法返回true则是遵循忽略class name 的规则，不对这个传入的element元素进行翻译；
+										如果返回false，则是不遵循class name 的规则，没有达到忽略class name 的条件，对于element 这个元素，依旧正常进行翻译，所设置的 class name 对这个 element 这个元素无效。
+									如果不传入	conditionFunction 这个参数，或传入 null ，则默认相当于设置为 function(element){return true;}
+			*/
+			push:function(className, conditionFunction){
+				if(translate.ignore.class.data.indexOf(className) > -1){
+					translate.log('translate.ignore.class.push 设置异常，所设置的 className: '+className+' 已存在里面了，所以此次设置被放弃');
+					return;
+				}
+				translate.ignore.class.data.push(className);
+				if(conditionFunction === null){
+					return;
+				}
+				if(typeof(conditionFunction) !== 'function'){
+					translate.log('translate.ignore.class.push 设置异常，所设置的第二个参数类型不是function，被抛弃');
+					return;
+				}
+				translate.ignore.class.conditionFunction[className] = conditionFunction;
+			},
+		},
 		id:[],
 		/*
-			传入一个元素，判断这个元素是否是被忽略的元素。 这个会找父类，看看父类中是否包含在忽略的之中。
+			传入一个 node 节点，判断这个node是否是被忽略的。 这个会找父类，看看父类中是否包含在忽略的之中。
+			
+
+			node node节点
+			data 其他的一些属信息，这个参数在这个方法里没有任何使用，它是给 用户自定义ignore 的 function 参数进行自定义判断使用的
+					node: 	当前实际要参与翻译的节点。
+							如果是 <p>123</p> 这种元素，那上面传入的ele参数跟这里的node参数的值都是相同的，都是这个p元素
+							如果是 <input type="text" title="我是title标签的内容" placeholder="请填写你的姓名" /> 这种元素，当前翻译的是其中的 placeholder 属性的内容
+								那么传入的 element 参数是 input 这个元素
+								而 node 参数则是 placeholder 这个节点属性（打印它时  console.log(node);  会输出 #text ）
+
+					attribute : 当前实际要进行翻译的 node 节点，是否是 element 传入元素其中的某个属性。
+								如果是 '' 空字符串 ，则是当前要翻译的 node 它等于 element，是一个元素
+								如果是长度大于0的字符串 ，那么当前翻译的 node 数据是 element 参数的某个属性，而这个属性的名字，便是 attribute 的值
+								它的值如：  ''、 'title'、'alt'、'placeholder' ... 这种
+					
 			return true是在忽略的之中，false不再忽略的之中
 		*/
-		isIgnore:function(ele){
-			if(ele == null || typeof(ele) == 'undefined'){
+		isIgnore:function(node, data){
+			if(node == null || typeof(node) == 'undefined'){
 				return false;
 			}
-			if(ele.nodeType === 2){ //是属性，将其转为元素判断，因为当前忽略配置，是针对元素配置的
-				ele = ele.ownerElement;
-			}else if(ele.nodeType === 3){
-				//文本节点，转为元素
-				ele = ele.parentNode;
+			if(typeof(data) === 'undefined'){
+				data = {
+					attribute: null
+				};
+			}
+			if(typeof(data.node) === 'undefined'){
+				data.node = node;
 			}
 
-			var parentNode = ele;
+			var currentElement = node;
+			if(currentElement.nodeType === 2){ //是属性，将其转为元素判断，因为当前忽略配置，是针对元素配置的
+				currentElement = currentElement.ownerElement;
+			}else if(currentElement.nodeType === 3){
+				//文本节点，转为元素
+				currentElement = currentElement.parentNode;
+			}
+
+			var parentNode = currentElement;
+
+			//为自定义忽略 function 传入参数进行的整理
+			currentElement.element = currentElement;
+			currentElement.attribute = data.attribute;
+			currentElement.node = data.node;
+			
 			var maxnumber = 100;	//最大循环次数，避免死循环
 			while(maxnumber-- > 0){
 				if(parentNode == null || typeof(parentNode) == 'undefined'){
@@ -571,7 +1554,7 @@ var translate = {
 				
 
 				//判断class name
-				if(parentNode.className != null){
+				if(parentNode.className !== null && typeof(parentNode.className) === 'string'){
 					var classNames = parentNode.className;
 					if(classNames == null || typeof(classNames) != 'string'){
 						continue;
@@ -582,9 +1565,13 @@ var translate = {
 					for(var c_index = 0; c_index < classNames.length; c_index++){
 						if(classNames[c_index] != null && classNames[c_index].trim().length > 0){
 							//有效的class name，进行判断
-							if(translate.ignore.class.indexOf(classNames[c_index]) > -1){
-								//发现ignore.class 当前是处于被忽略的 class
-								return true;
+							if(translate.ignore.class.data.indexOf(classNames[c_index]) > -1){
+								//发现ignore.class 当前是处于被忽略的 class, 在判定它的 conditionFunction 是否正常
+								if(typeof(translate.ignore.class.conditionFunction[classNames[c_index]]) === 'function'){
+									return translate.ignore.class.conditionFunction[classNames[c_index]](currentElement, data);
+								}else{
+									return true;	
+								}
 							}
 						}
 					}					
@@ -638,21 +1625,43 @@ var translate = {
 	},
 
 	/*
-		判定当前是否使用翻译，也就是使用多语言切换能力
-		注意，它里面会触发 translate.language.getLocal() 进行判定，要保证提前设置了本地语种，或在dom加载完（网页内容已渲染完毕，以便能进行本地语种自动识别）后使用此
+		当前是否已进行了翻译处理
+		也就是已经使用多语言切换能力进行切换语种了。
+
+		1. 如果已经进行了语言切换，但是还在切换中，尚未切换完，也是返回true
+		2. 如果当前未进行过任何语言切换，那么返回true
+		3. 如果当前进行了切换语言，但是页面并未进行任何翻译时，也返回true。比如以下两种情况
+				1. 点击了切换语言的select，切换到了其他语言
+				2. 触发了 translate.changeLanguage(...)  
+		4. 如果设置了本地语种也进行强制翻译 https://translate.zvo.cn/289574.html ，且当前语种跟本地语种也是相同时，无论是否实际上页面也没有元素真正进行了翻译，都会认定为当前是进行翻译处理了，会返回true
 		
-		@param to 要以什么语种显示。 如果不传入，则默认赋予 translate.to
+
+		注意，它里面会触发 translate.language.getLocal() 进行判定，要保证以下两种满足其中一个：
+			1. 提前设置了本地语种
+			2. 在dom加载完（网页内容已渲染完毕，以便能进行本地语种自动识别）后使用此
+		
+		@param to 判断当前是否是以这种语种显示。 如果不传入，则是判断当前页面是否有使用 translate.js 进行了翻译。只要有一个元素参与了翻译，那也是进行了。
 
 		true：是
 		false：否，不需要进行任何翻译
 	*/
-	isTranslate: function(to){
-		if(typeof(to) === 'undefined'){
+	isTranslateExecute: function(to){
+		if(typeof(to) !== 'string' || to.length === 0){
+			//没有设置to参数，那么就是对整体是否进行了翻译进行判断了。
+
+			//判断 translate.to 参数，如果没有值，那肯定就是没有进行任何翻译。
+			if(typeof(translate.to) !== 'string' || translate.to.length === 0){
+				return false;
+			}
 			to = translate.to;
 		}
-		if(to.length === 0){
-			return false;
-		}
+
+		//判断  如果没有值，那肯定没有参与过翻译。
+		//这个不应该，不管是否产生了元素翻译结果，但是动作有过切换，就是true
+		//if(typeof(translate.node.data) !== 'object' || translate.node.data.size === 0){
+		//	return false;
+		//}
+		
 		if(to === translate.language.getLocal()){
 			if(translate.language.translateLocal){
 				return true;
@@ -662,6 +1671,12 @@ var translate = {
 		}else{
 			return true;
 		}
+	},
+	/*
+		废弃，请使用 translate.isTranslateExecuted(to);
+	*/
+	isTranslate: function(to){
+		return translate.isTranslateExecute(to);
 	},
 
 	//自定义翻译术语
@@ -971,7 +1986,22 @@ var translate = {
 		},
 	},
 
+	//已转为 offline ，这个是对旧版做兼容
 	office:{
+		export:function(){
+			console.log('请使用最新版本的 translate.offline.export , 而不是 translate.office.export');
+		},
+		showPanel:function(){
+			console.log('请使用最新版本的 translate.offline.showPanel , 而不是 translate.office.export');
+		},
+		append:function(to, properties){
+			translate.offline.append(to, properties);
+		},
+		fullExtract:{
+			isUse:false
+		}
+	},
+	offline:{
 		/*
 			网页上翻译之后，自动导出当前页面的术语库
 			
@@ -1005,10 +2035,16 @@ var translate = {
 							if (!translate.nodeQueue[uuid].list[lang].hasOwnProperty(hash)) {
 					    		continue;
 					    	}
-							//console.log(translate.nodeQueue[uuid].list[lang][hash].original);
-							//console.log(translate.nodeQueue[uuid].list[lang][hash].original);
-							text = text + '\n' + translate.nodeQueue[uuid].list[lang][hash].original + '='+translate.storage.get('hash_'+translate.language.getCurrent()+'_'+hash);
+					    	
+					    	var result = translate.storage.get('hash_'+translate.language.getCurrent()+'_'+hash);
+							//如果翻译结果不存在，可能是同语种本身就没有翻译，忽略就好了 （因为有个本地语种也强制翻译的能力，所以同语种也放行，在这里进行一次结果判断，免得遗漏同语种也翻译的情况）
+							if(typeof(result) === 'undefined' || result === null || result.length === 0){
+								continue;
+							}
 							
+							//将配置中出现的换行替换为 \n 这个符号
+							var lineText = translate.nodeQueue[uuid].list[lang][hash].original + '='+result;
+							text = text + '\n' + (lineText.replace(/\n/g, '{\\\\n}'));
 						}
 					//}
 				}
@@ -1017,7 +2053,7 @@ var translate = {
 
 			if(text.length > 0){
 				//有内容
-				text = 'translate.office.append(\''+translate.language.getCurrent()+'\',`'+text+'\n`);';
+				text = 'translate.offline.append(\''+translate.language.getCurrent()+'\',`'+text+'\n`);';
 				//console.log(text);
 				translate.util.loadMsgJs();
 				msg.popups({
@@ -1035,6 +2071,8 @@ var translate = {
 		},
 		//显示导出面板
 		showPanel:function(){
+			translate.recycle = function(){}; //重写垃圾回收，弃用
+
 			let panel = document.createElement('div');
 			panel.setAttribute('id', 'translate_export');
 			panel.setAttribute('class','ignore');
@@ -1042,7 +2080,7 @@ var translate = {
 			//导出按钮
 			let button = document.createElement('button');
 			button.onclick = function() {
-			  translate.office.export();
+			  translate.offline.export();
 			};
 			button.innerHTML = '导出配置信息';
 			button.setAttribute('style', 'margin-left: 72px; margin-top: 30px; margin-bottom: 20px; font-size: 25px; background-color: blue; padding: 15px; padding-top: 3px; padding-bottom: 3px; border-radius: 3px;');
@@ -1050,7 +2088,7 @@ var translate = {
 
 			//说明文字
 			let textdiv = document.createElement('div');
-			textdiv.innerHTML = '1. 首先将当前语种切换为你要翻译的语种<br/>2. 点击导出按钮，将翻译的配置信息导出<br/>3. 将导出的配置信息粘贴到代码中，即可完成<br/><a href="asd" target="_black" style="color: aliceblue;">点此进行查阅详细使用说明</a>';
+			textdiv.innerHTML = '1. 首先将当前语种切换为你要翻译的语种<br/>2. 点击导出按钮，将翻译的配置信息导出<br/>3. 将导出的配置信息粘贴到代码中，即可完成<br/><a href="http://translate.zvo.cn/4076.html" target="_black" style="color: aliceblue; text-decoration: underline;">点此进行查阅详细使用说明</a>';
 			textdiv.setAttribute('style','font-size: 14px; padding: 12px;');
 
 			panel.appendChild(textdiv);			
@@ -1077,12 +2115,52 @@ var translate = {
 			//按行拆分
 			var line = properties.split('\n');
 			//console.log(line)
+
+			//计算前10行，判定当前配置文件的行开头缩进方式
+			var lmap = new Map();
+			for(var line_index = 0; line_index < line.length && line_index < 10; line_index++){
+				const match = line[line_index].match(/^[ \t]+/);
+  				var suojin = match ? match[0] : '0'; //0便是没有空白符缩进
+  				var sum = 1; //累加次数
+				if(typeof(lmap.get(suojin)) !== 'undefined'){
+					sum = sum+lmap.get(suojin);
+				}
+				lmap.set(suojin, sum);
+			}
+
+			// 核心逻辑：遍历Map找到次数最多的key
+			let maxCount = 0; // 记录最大次数（初始为0，次数至少为1，不影响）
+			let maxKey = null; // 记录次数最多的key
+
+			// 方式1：for...of遍历Map.entries()（推荐，直观）
+			for (const [key, count] of lmap.entries()) {
+			    if (count > maxCount) {
+			        maxCount = count; // 更新最大次数
+			        maxKey = key;     // 更新对应key
+			    }
+			}
+			//console.log(lmap);
+			//console.log(maxKey+' -> '+maxCount);
+			lmap = null;
+
 			for(var line_index = 0; line_index < line.length; line_index++){
-				var item = line[line_index].trim();
+				var item = line[line_index];
+				//有缩进，那就需要把行开始的缩进去掉
+				if(maxKey !== '0'){ 
+					if(line[line_index].startsWith(maxKey)){
+						var item = line[line_index].slice(maxKey.length);
+					}else{
+						//异常提示告警
+						if(line[line_index].trim().length > 0){
+							translate.log('WAINING : translate.offline.append 异常，发现某行的配置项缩进异常，这行的缩进应该跟其他行的缩进保持一致！异常的这行配置项为：\n'+item);
+						}
+					}
+				}
 				if(item.length < 1){
 					//空行，忽略
 					continue;
 				}
+				item = item.replace(/\{\\n\}/g, '\n');
 				var kvs = item.split('=');
 				//console.log(kvs)
 				if(kvs.length != 2){
@@ -1105,7 +2183,7 @@ var translate = {
 		
 		//全部提取能力（整站的离线翻译数据提取）
 		fullExtract:{
-			/*js translate.office.fullExtract.set start*/
+			/*js translate.offline.fullExtract.set start*/
 			/*
 				将翻译的结果加入
 				hash: 翻译前的文本的hash
@@ -1119,7 +2197,7 @@ var translate = {
 					return;
 				}
 				var obj = await translate.storage.IndexedDB.get('hash_'+hash);
-				if(typeof(obj) == 'undefined' && obj == null){
+				if(typeof(obj) == 'undefined' || obj == null){
 					obj = {
 						originalText:originalText
 					};
@@ -1127,9 +2205,9 @@ var translate = {
 				obj[toLanguage] = translateText;
 				await translate.storage.IndexedDB.set('hash_'+hash, obj);
 			},
-			/*js translate.office.fullExtract.set end*/
+			/*js translate.offline.fullExtract.set end*/
 
-			/*js translate.office.fullExtract.export start*/
+			/*js translate.offline.fullExtract.export start*/
 			/*
 				将存储的数据导出为 txt 文件下载下来
 			*/
@@ -1142,27 +2220,45 @@ var translate = {
 					translate.log('error : to param not find, example: "english"');
 					return;
 				}
-				var text = 'translate.office.append(\'';
+				var text = 'translate.offline.append(\''+to+'\',`';
 				
 				var data = await translate.storage.IndexedDB.list('hash_*');
 				for(var i in data){
 					if (!data.hasOwnProperty(i)) {
 			    		continue;
 			    	}
-					var originalText = data[i].value.originalText.replace(/\n/g, "\\n").replace(/\t/g, "\\t");
-					text = text + '\n' + originalText + '='+data[i].value.english.replace(/\n/g, "\\n").replace(/\t/g, "\\t");
+					//var originalText = data[i].value.originalText.replace(/\n/g, "\\n").replace(/\t/g, "\\t");
+					//text = text + '\n' + originalText + '='+data[i].value.english.replace(/\n/g, "\\n").replace(/\t/g, "\\t");
+
+			    	//如果翻译结果不存在，可能是同语种本身就没有翻译，忽略就好了 （因为有个本地语种也强制翻译的能力，所以同语种也放行，在这里进行一次结果判断，免得遗漏同语种也翻译的情况）
+					if(data[i].value == null || typeof(data[i].value[to]) !== 'string' || data[i].value[to].trim().length === 0){
+						continue;
+					}
+
+					var lineText = data[i].value.originalText+'='+data[i].value[to];
+					text = text + '\n' + (lineText.replace(/\n/g, '{\\\\n}'));
 				}
 				text = text + '\n`);'
 
 				const blob = new Blob([text], { type: "text/plain" });
 				const url = URL.createObjectURL(blob);
 				const link = document.createElement("a");
-				link.href = url;
-				link.download = to+".txt";
-				link.click();
-				URL.revokeObjectURL(url);
+				try{
+					link.href = url;
+					link.download = to+".txt";
+					link.style.display = "none";
+					(document.body || document.documentElement).appendChild(link);
+					link.click();
+				}finally{
+					setTimeout(function(){
+						if(link.parentNode){
+							link.parentNode.removeChild(link);
+						}
+						URL.revokeObjectURL(url);
+					}, 100);
+				}
 			},
-			/*js translate.office.fullExtract.export end*/
+			/*js translate.offline.fullExtract.export end*/
 
 			/*
 				是否启用全部提取的能力
@@ -1214,7 +2310,16 @@ var translate = {
 			translate.documents[0] = documents;
 		}else{
 			//是数组，直接赋予
-			translate.documents = documents;
+			for(var i = 0; i < documents.length; i++){
+				if(typeof(documents[i]) === 'undefined' || documents[i] === null){
+					//这个元素不存在，从这里面删除掉
+					 documents.splice(i, 1);
+				}
+			}
+
+			if(documents.length > 0){
+				translate.documents = documents;
+			}
 		}
 		//清空翻译队列，下次翻译时重新检索
 		translate.nodeQueue = {};
@@ -1245,6 +2350,90 @@ var translate = {
 		//用户的代码里是否启用了 translate.listener.start() ，true：启用
 		//当用户加载页面后，但是未启用翻译时，为了降低性能，监听是不会启动的，但是用户手动点击翻译后，也要把监听启动起来，所以就加了这个参数，来表示当前是否在代码里启用了监听，以便当触发翻译时，监听也跟着触发
 		use:false, 
+
+		//针对 input 的 value 监听情况, 它无法用dom监控，针对像是 vant 框架，要用 input 的 value 进行作为内容显示的，就要采用这种方式来监听变动并翻译了
+        input:{
+			/*
+				原生value属性描述符
+                如果为null，则是还没对input的value进行监听。
+                如果已进行监听，会把原本的 value 改变的 set ... 赋予这里。
+			*/
+			originalValueDescriptor : null,
+
+			/*
+				启动对 input value 变动的监听及翻译
+			*/
+			start:function(){
+				if(translate.listener.input.originalValueDescriptor !== null){
+					console.log('已启动过了，无需在启动');
+					return;
+				}
+
+				// 1. 保存原生value属性描述符
+				translate.listener.input.originalValueDescriptor = Object.getOwnPropertyDescriptor(
+					HTMLInputElement.prototype,
+					'value'
+				);
+
+				// 2. 重写HTMLInputElement原型的value setter（影响所有input）
+				Object.defineProperty(HTMLInputElement.prototype, 'value', {
+					...translate.listener.input.originalValueDescriptor,
+					set(newValue) {
+						const oldValue = this.value; // this指向当前被修改的input
+
+						// 执行原生赋值
+						translate.listener.input.originalValueDescriptor.set.call(this, newValue);
+
+						// 值变化时触发逻辑
+						if (newValue !== oldValue) {
+							//console.log(`JS修改了input值：`);
+							//console.log(`  旧值=${oldValue} → 新值=${newValue}`);
+							//console.log(this)
+
+							//如果有 translate.node 历史，要根据历史判定一下，如果当前不是translate.js 导致的改变，那就是其他js触发的，那么将其删掉，这样才能触发它重新翻译
+							if(translate.node.find(this)){
+								var nodeData = translate.node.get(this);
+								
+								if(typeof(nodeData.lastTranslateRenderTime) === 'number' && Date.now() - nodeData.lastTranslateRenderTime < 100){
+									//小于100毫秒，这是 translate.js 引起的改动，不需要任何处理
+								}else{
+									//不是 translate.js 引起的，那么需要进行翻译
+									//删掉当前的记录，以便能正常扫描加入翻译
+									translate.node.delete(this);
+								}
+
+							}
+							translate.execute([this]);
+						}
+					}
+				});
+
+			},
+
+			/*
+				当启动对input value监听时，如果切换回源语种了且本地语种并不强制翻译，那么就不需要再翻译了，还原回来，避免性能浪费。 
+				也就是相当于对 translate.listener.input.start() 触发后的还原
+			*/
+			reset: function(){
+				if(translate.listener.input.originalValueDescriptor === null){
+					return;
+				}
+
+				// 1. 还原HTMLInputElement原型的原生value属性描述符
+			    Object.defineProperty(
+			        HTMLInputElement.prototype,
+			        'value',
+			        translate.listener.input.originalValueDescriptor
+			    );
+
+			    // 2. 重置标记为未监听状态，允许后续重新启动监听
+			    translate.listener.input.originalValueDescriptor = null;
+			}
+
+          
+        },
+
+
 		//translate.listener.start();	//开启html页面变化的监控，对变化部分会进行自动翻译。注意，这里变化区域，是指使用 translate.setDocuments(...) 设置的区域。如果未设置，那么为监控整个网页的变化
 		start:function(){
 			if(typeof(translate.temp_listenerStartInterval) != 'undefined'){
@@ -1284,56 +2473,25 @@ var translate = {
 	        */
 	        
 		},
-		/* 
-			key: nodeid node的唯一标识，格式如 HTML1_BODY1_DIV2_#text1  ，它是使用 nodeuuid.uuid(node) 获得的
-					注意，document.getElementById 获得的并不是，需要这样获得 document.getElementById('xx').childNodes[0]  因为它是要给监听dom改动那里用的，监听到的改动的是里面具体的node
-			value:13位时间戳
-		*/
-		ignoreNode:[],
 		/*
-			通过 translate.execute() 触发的翻译，来使node发生的改动，这种改动加入到 ignoreNode 的过期时间是多少。 
-			单位是毫秒
+			对 dom 动态监听进行还原操作，还原到未监听时的状态，进行还原
 		*/
-		translateExecuteNodeIgnoreExpireTime:1000,
-		/*
-		  	增加一个被listener忽略的节点
-		  	这里通常是用于被 translate.js 本身翻译更改的节点、以及像是 Layui 被翻译后触发了渲染改动了dom ， 这几种场景都是翻译本身自己触发的，是不需要再被listener触发，不然就形成死循环了
-		  	node 是哪个节点被listener扫描到改动后忽略。
-		  		可传入 node、也可以传入node的uuid字符串
-		  	expireTime 过期时间，也就是执行当前方法将 node 加入后，过多长时间失效，这里是毫秒，比如传入 500 则这个node在当前时间往后的500毫秒内，如果被listener监听到改动，是直接被忽略的，不会触发任何翻译操作
-			showResultText 实际显示出来的文本，翻译之后显示出来的文本。如果翻译过程中其他js改动了这个文本内容，导致未能翻译，则 analyse.set 的 resultText 会返回 空字符串设置到这里
-		 */
-		addIgnore:function(node, expireTime, showResultText){
-			let nodeid = '';
-			if(typeof(node) == 'string'){
-				nodeid = node;
-			}else{
-				nodeid = nodeuuid.uuid(node);
+		reset: function(){
+
+			//清除 translate.listener 
+			if(typeof(translate.listener.observer) != 'undefined' && translate.listener.observer != null){
+				translate.listener.observer.disconnect();
 			}
 
-			translate.listener.ignoreNode[nodeid] = {
-				addtime:Date.now()+expireTime,
-				text:showResultText
-			};
-
-			//translate.listener.renderTaskFinish();
-		},
-		/*
-			刷新 ignoreNode 中的元素，也就是查找其中 expireTime 过期的，删掉
-		*/
-		refreshIgnoreNode:function(){
-			//console.log('refresh ignore ,current: '+Object.keys(translate.listener.ignoreNode).length);
-			var currentTime = Date.now();
-			for (const node in translate.listener.ignoreNode) {
-				if(translate.listener.ignoreNode[node].addtime < currentTime){
-					//console.log('delete : ');
-					//console.log(node);
-					delete translate.listener.ignoreNode[node];
-				}
+			//设置为未启动	
+			if(translate.listener.isStart){
+				translate.listener.isStart = false; 
 			}
-			//console.log('refresh ignore finish: '+Object.keys(translate.listener.ignoreNode).length);
-		},
 
+			//还原 input value 监听
+			translate.listener.input.reset();
+		},
+		
 		/*
 			用于监听发生改变的这个 node 是否有正常需要翻译的内容、以及是否是非translate.js触发的需要被翻译。
 			注意，传入进行判断的node中的文本必须是 node.nodeValue ，也就是这个必须是 node.nodeType == 2(某个元素的属性，比如 input 的 placeholder) 或 3(文本节点)， 这样他们才会有正常的 node.nodeValue，而且文本也存在于 node.nodeValue 中
@@ -1344,6 +2502,10 @@ var translate = {
 			@return boolean true：需要触发 translate.execute(node) 进行翻译
 		*/
 		nodeValueChangeNeedTranslate: function(node){
+			if(typeof(node) === 'undefined' || node === null){
+				return false;
+			}
+
 			//是否是要加入翻译扫描触发执行，是则是true
 			var addTranslateExecute = true;
 
@@ -1356,18 +2518,27 @@ var translate = {
 					2. 其他的情况如果后续发现有遗漏，再加入，当前没有这种考虑
 				*/	
 			if(translate.node.get(node) != null){
-				if(typeof(translate.node.get(node).whole) !== 'undefined' && translate.node.get(node).whole == true){
-					//整体翻译
-					if(typeof(translate.node.get(node).resultText) !== 'undefined' && translate.node.get(node).resultText === node.nodeValue){
-						//当前改变后的内容，跟上次翻译后的结果一样，那说明当前node改变事件，是有translate.js 本身翻译导致的，不进行翻译
-						addTranslateExecute = false;
-					}
-				}else{
-					//不是整体翻译，可能是触发自定义术语、或直接没启用整体翻译能力
-					//这就要根据最后翻译时间这个来判定了
-					if(typeof(translate.node.get(node).lastTranslateRenderTime) == 'number' && translate.node.get(node).lastTranslateRenderTime + 500 > Date.now()){
-						//如果这个node元素，已经被翻译过了，最后一次翻译渲染时间，距离当前时间不超过500毫秒，那认为这个元素动态改变，是有translate.js 本身引起的，将不做任何动作	
-						addTranslateExecute = false;
+				//根据现实结果来判断是否是有translate.js 本身翻译导致的dom改变
+				if(typeof(translate.node.get(node).translateResults) !== 'undefined' && typeof(translate.node.get(node).translateResults[node.nodeValue]) === 'number'){
+					//是translate.js翻译导致的dom文字改变
+					addTranslateExecute = false;
+				}
+				
+				if(addTranslateExecute === true){
+					if(typeof(translate.node.get(node).whole) !== 'undefined' && translate.node.get(node).whole === true){
+						//整体翻译
+						if(typeof(translate.node.get(node).resultText) !== 'undefined' && translate.node.get(node).resultText === node.nodeValue){
+							//当前改变后的内容，跟上次翻译后的结果一样，那说明当前node改变事件，是有translate.js 本身翻译导致的，不进行翻译
+							addTranslateExecute = false;
+						}
+					}else{
+						//不是整体翻译，可能是触发自定义术语、或直接没启用整体翻译能力
+
+						//这就要根据最后翻译时间这个来判定了 -- 这个计划要剔除，因为本身在 translate.node.get(node).translateResults 已经判定了，这个属于重复判定。 这个先留一段时间
+						if(typeof(translate.node.get(node).lastTranslateRenderTime) === 'number' && translate.node.get(node).lastTranslateRenderTime + 30 > Date.now()){
+							//如果这个node元素，已经被翻译过了，最后一次翻译渲染时间，距离当前时间不超过500毫秒，那认为这个元素动态改变，是有translate.js 本身引起的，将不做任何动作	
+							addTranslateExecute = false;
+						}
 					}
 				}
 			}
@@ -1405,7 +2576,23 @@ var translate = {
 					if (mutation.type === 'childList') {
 						if(mutation.addedNodes.length > 0){
 							//多了组件
-							addNodes = mutation.addedNodes;
+							for(var ani = 0; ani < mutation.addedNodes.length; ani++){
+								var addNodeName = translate.element.getNodeName(mutation.addedNodes[ani]).toLowerCase();
+								if(addNodeName === 'iframe'){	//如果是iframe，还要进行注入进去翻译
+									//console.log(mutation.addedNodes[ani]);
+									if(typeof(translate.element.iframe) !== 'undefined'){
+										translate.element.iframe.execute(mutation.addedNodes[ani]);
+									}
+								}
+								if(addNodeName.length > 0 && translate.ignore.tag.indexOf(addNodeName) == -1){
+									// 使用现有的忽略机制检查节点
+									//var addedNode = mutation.addedNodes[ani];
+									//if(!translate.element.isIgnore(addedNode)){
+										addNodes.push(mutation.addedNodes[ani]);
+									//}
+								}
+							}
+							//addNodes = mutation.addedNodes;
 							//documents.push.apply(documents, mutation.addedNodes);
 						}
 						if(mutation.removedNodes.length > 0){
@@ -1429,12 +2616,25 @@ var translate = {
 							img 的 alt 属性
 							所有标签的 title 属性
 						*/
-						 
+
 						if(mutation.attributeName === 'placeholder' || mutation.attributeName === 'alt' || mutation.attributeName === 'title'){
 							//允许翻译
 						}else{
+							
+							var nodeNameLowerCase = mutation.target.nodeName.toLowerCase();
+							
+							//判断是否是 iframe 的，允许翻译
+							if(nodeNameLowerCase === 'iframe' && typeof(mutation.attributeName) === 'string' && mutation.attributeName.toLowerCase() === 'src'){
+								//iframe 改变了src，那么iframe会重新加载新网页，针对这个新网页，也要监听
+								if(typeof(translate.element.iframe) !== 'undefined'){
+									translate.element.iframe.execute(mutation.target);
+								}
+							}
+							
+							
 							//判断是否是 translate.element.tagAttribute 自定义翻译属性的
-							var divTagAttribute = translate.element.tagAttribute[mutation.target.nodeName.toLowerCase()];
+							var divTagAttribute = translate.element.tagAttribute[nodeNameLowerCase];
+							//console.log('divTagAttribute:'+divTagAttribute);
 							if(typeof(divTagAttribute) !== 'undefined' && divTagAttribute.attribute.indexOf(mutation.attributeName) > -1 && divTagAttribute.condition(mutation.target)){
 								//是自定义翻译这个属性的，以及判定是否达到翻译条件
 								//条件满足，允许翻译
@@ -1442,6 +2642,7 @@ var translate = {
 								//条件不满足，不在翻译的属性范围
 								continue;
 							}
+							
 						}
 
 						//这里出现的 mutation.target 是定位到了元素上面，而不是变化的这个 attributes 属性上，需要用 mutation.attributeName 获取到这个属性的node
@@ -1463,6 +2664,8 @@ var translate = {
 						if(addTranslateExecute){ //不是 translate.js 翻译引起的改变，那么
 							translate.node.delete(mutation.target); 
 							addNodes = [mutation.target]; //将重新触发 translate.execute();
+							//console.log('listener - mutation.type === \'characterData\' , node: ');
+							//console.log(mutation.target)
 						}
 						
 						//documents.push.apply(documents, [mutation.target]);
@@ -1487,55 +2690,10 @@ var translate = {
 					}
 	          	}
 			    
-				if(documents.length > 0){
+			    if(documents.length > 0){
 					//有变动，需要看看是否需要翻译，延迟10毫秒执行
 					translate.time.log('监听到元素发生变化,'+documents.length+'个元素');
-
-					//判断是否属于在正在翻译的节点，重新组合出新的要翻译的node集合
-					var translateNodes = [];
-					//console.log(translate.inProgressNodes.length);
-					for(let node of documents){
-						//console.log('---type:'+node.nodeType);
-
-						var find = false;
-						for(var ini = 0; ini < translate.inProgressNodes.length; ini++){
-							if(translate.inProgressNodes[ini].node.isSameNode(node)){
-								//有记录了，那么忽略这个node，这个node是因为翻译才导致的变动
-								//console.log('发现相同');
-								find = true;
-								break;
-							}
-						}
-						if(find){
-							continue;
-						}
-
-						//console.log(node);
-						let nodeid = nodeuuid.uuid(node);
-						if(typeof(translate.listener.ignoreNode[nodeid]) != 'undefined'){
-							if(translate.listener.ignoreNode[nodeid].addtime > Date.now() && typeof(node.nodeValue) == 'string' && node.nodeValue == translate.listener.ignoreNode[nodeid].text){
-								//console.log('node 未过忽略期，listener扫描后忽略：'+nodeid);
-								continue;
-							}
-						}
-
-						//不相同，才追加到新的 translateNodes
-						translateNodes.push(node);
-						//console.log('listener ++ '+node.nodeValue);
-						//console.log(node);
-					}
-					if(translateNodes.length < 1){
-						return;
-					}
-					//console.log('translateNodeslength: '+translateNodes.length);
-
-					translate.time.log('将监听到的发生变化的元素进行整理,得到'+translateNodes.length+'个元素，对其进行翻译');
-					//console.log(translateNodes);
-					
-					translate.execute(translateNodes);
-					//setTimeout(function() {
-					//	translate.execute(translateNodes); //指定要翻译的元素的集合,可传入一个或多个元素。如果不设置，默认翻译整个网页
-					//}, 10); //这个要比 task.execute() 中的 settimeout 延迟执行删除 translate.inpr.....nodes 的时间要小，目的是前一个发生变动后，记入 inpr...nodes 然后翻译完成后节点发生变化又触发了listener，此时 inpr....nodes 还有，那么这个变化将不做处理，然后 inp.....nodes 再删除这个标记
+					translate.execute(documents);					
 				}
 			};
 			// 创建一个观察器实例并传入回调函数
@@ -1548,6 +2706,14 @@ var translate = {
 					translate.listener.observer.observe(doc, translate.listener.config);
 				}
 			}
+
+			
+			//如果要对 input 的value进行翻译，那么还要监听 input 的 value 的值
+			if(typeof(translate.element.tagAttribute['input']) === 'object' && translate.element.tagAttribute['input'].attribute.indexOf('value') > -1){
+				translate.listener.input.start();
+			}
+
+
 		},
 		/*
 			每当执行完一次渲染任务（翻译）时会触发此。注意页面一次翻译会触发多个渲染任务。普通情况下，一次页面的翻译可能会触发两三次渲染任务。
@@ -1608,12 +2774,15 @@ var translate = {
 		constructor(){
 			/*
 			 * 任务列表
-			 * 一维数组 [hash] = tasks;  tasks 是多个task的数组集合
-			 * 二维数组 [task,task,...]，存放多个 task，每个task是一个替换。这里的数组是同一个nodeValue的多个task替换
-			 * 三维数组 task['originalText'] 、 task['resultText'] 存放要替换的字符串
-			 		   task['attribute'] 存放要替换的属性，比如 a标签的title属性。 如果是直接替换node.nodeValue ，那这个没有
+			 * map
+			 * key: node
+			 * value: [task,task,...]  是多个task的数组集合，存放多个 task，每个task是一个替换。这里的数组是同一个nodeValue的多个task替换
+			 * 				每个 task:  
+			 					task['originalText'] 
+			 					task['resultText'] 存放要替换的字符串
+			 					task['attribute'] 存放要替换的属性，比如 a标签的title属性。 如果是直接替换node.nodeValue ，那这个没有
 			 */
-			this.taskQueue = [];
+			this.taskQueue = new Map();
 			
 			/*
 			 * 要进行翻译的node元素，
@@ -1629,15 +2798,18 @@ var translate = {
 		 * originalText:待翻译的字符
 		 * resultText:翻译后的结果字符
 		 * attribute: 要替换的是哪个属性，比如 a标签的title属性，这里便是传入title。如果不是替换属性，这里不用传入，或者传入null
+		 * participles: 分词，数组形态。默认不传则是没有其他分词需要保留的。 传入比如  ['你好','你是谁'] 
+        		比如 translateOriginal 传入 '你' 时， text 中的 '你好','你是谁' 是不能被拆出'你'这个字进行替换的，不然就破坏了分词了
 		 */
-		add(node, originalText, resultText, attribute){
+		add(node, originalText, resultText, attribute, participles){
+			//console.log('renderTask.add : originalText:'+originalText+', resultText:'+resultText+', attribute:'+attribute+', node:');
+			//console.log(node);
 			var nodeAnaly = translate.element.nodeAnalyse.get(node, attribute); //node解析
 			//var hash = translate.util.hash(translate.element.getTextByNode(node)); 	//node中内容的hash
 			var hash = translate.util.hash(nodeAnaly['text']);
 			//console.log('--------------'+hash);
 			//console.log(nodeAnaly);
-			//console.log(node);
-			//console.log('originalText:'+originalText+', resultText:'+resultText+', attribute:'+attribute);
+
 			/****** 加入翻译的元素队列  */
 			if(typeof(this.nodes[hash]) == 'undefined'){
 				this.nodes[hash] = new Array();
@@ -1646,7 +2818,8 @@ var translate = {
 			//console.log(node)
 			
 			/****** 加入翻译的任务队列  */
-			var tasks = this.taskQueue[hash];
+			//var tasks = this.taskQueue[hash];
+			var tasks = this.taskQueue.get(node);
 			if(tasks == null || typeof(tasks) == 'undefined'){
 				//console.log(node.nodeValue);
 				tasks = new Array(); //任务列表，存放多个 task，每个task是一个替换。这里的数组是同一个nodeValue的多个task替换
@@ -1674,21 +2847,24 @@ var translate = {
 			task['originalText'] = originalText;
 			task['resultText'] = resultText;
 			task['attribute'] = attribute;
+			task['participles'] = participles;
+			
 
 			//console.log(task);
 			tasks.push(task);
-			this.taskQueue[hash] = tasks;
+			//this.taskQueue[hash] = tasks;
+			this.taskQueue.set(node, tasks);
 			/****** 加入翻译的任务队列 end  */
 		}
 		//进行替换渲染任务，对页面进行渲染替换翻译
 		execute(){
 			//先对tasks任务队列的替换词进行排序，将同一个node的替换词有大到小排列，避免先替换了小的，大的替换时找不到
-			for(var hash in this.taskQueue){
-				if (!this.taskQueue.hasOwnProperty(hash)) {
+			//for(var hash in this.taskQueue){
+			for (let node of this.taskQueue.keys()) {
+				var tasks = this.taskQueue.get(node);
+				if (tasks == null) {
 		    		continue;
 		    	}
-
-				var tasks = this.taskQueue[hash];
 				if(typeof(tasks) == 'function'){
 					//进行异常的预处理调出
 					continue;
@@ -1697,7 +2873,8 @@ var translate = {
 				//进行排序,将原字符串长的放前面，避免造成有部分不翻译的情况（bug是先翻译了短的，导致长的被打断而无法进行适配）
 				tasks.sort((a, b) => b.originalText.length - a.originalText.length);
 				
-				this.taskQueue[hash] = tasks;
+				//this.taskQueue[hash] = tasks;
+				this.taskQueue.set(node, tasks);
 			}
 			
 			//console.log('===========task=========');
@@ -1705,19 +2882,28 @@ var translate = {
 			//console.log(this.nodes);
 			//console.log('===========task======end===');
 
-			//进行翻译前，先刷新一下 dom监听的忽略node，将过期的node剔除，降低listener的压力
-			translate.listener.refreshIgnoreNode();
-
+			
 			//对nodeQueue进行翻译
 			for(var hash in this.nodes){
 				if (!this.nodes.hasOwnProperty(hash)) {
 		    		continue;
 		    	}
 		    	
-				var tasks = this.taskQueue[hash]; //取出当前node元素对应的替换任务
+				//var tasks = this.taskQueue[hash]; //取出当前node元素对应的替换任务
 				//var tagName = this.nodes[hash][0].nodeName; //以下节点的tag name
 				//console.log(tasks);
 				for(var node_index = 0; node_index < this.nodes[hash].length; node_index++){
+					//当前翻译的node
+					var node = this.nodes[hash][node_index];
+
+					//取出当前node元素对应的替换任务
+					var tasks = this.taskQueue.get(node);
+					//console.log(tasks);
+					if (tasks == null) {
+						translate.log('WARNING : renderTask.execute 中，this.taskQueue.get(node) == null ，理论上要进行替换任务，就应该会有内容的，数据在理论上出现异常');
+			    		continue;
+			    	}
+
 					//对这个node元素进行替换翻译字符
 					for(var task_index=0; task_index<tasks.length; task_index++){
 						var task = tasks[task_index];
@@ -1726,56 +2912,54 @@ var translate = {
 							continue;
 						}
 						
-						//翻译完毕后，再将这个翻译的目标node从 inPro....Nodes 中去掉
-						var ipnode = this.nodes[hash][task_index];
-						//console.log('int-----++'+ipnode.nodeValue);
-						setTimeout(function(ipnode){
-							//console.log('int-----'+ipnode.nodeValue);
-							for(var ini = 0; ini < translate.inProgressNodes.length; ini++){
-								if(translate.inProgressNodes[ini].node.isSameNode(ipnode)){
-									//console.log('in progress --');
-									//console.log(ipnode);
-									//有记录了，那么出现次数 +1
-									translate.inProgressNodes[ini].number = translate.inProgressNodes[ini].number - 1;
-									//console.log("inProgressNodes -- number: "+translate.inProgressNodes[ini].number+', text:'+ipnode.nodeValue);
-									if(translate.inProgressNodes[ini].number < 1){
-										translate.inProgressNodes.splice(ini,1);	
-										//console.log("inProgressNodes -- 减去node length: "+translate.inProgressNodes.length+', text:'+ipnode.nodeValue);
-									}
-
-									break;
-								}
-							}
-							
-						}, 50, ipnode);
-
 
 						// translate.node 记录
 						
-						var translateNode; //当前操作的，要记录入 translate.node 中的，进行翻译的node
+						var translateNode = null; //当前操作的，要记录入 translate.node 中的，进行翻译的node
 						var translateNode_attribute = ''; //当前操作的是node中的哪个attribute，如果没有是node本身则是空字符串
 						if(typeof(task['attribute']) === 'string' && task['attribute'].length > 0){
 							//当前渲染任务是针对的元素的某个属性，这是要取出这个元素的具体属性，作为一个目的 node 来进行加入 translate.node 
-							//是操作的元素的某个属性
-							translateNode = this.nodes[hash][node_index].getAttributeNode(task['attribute']);
-							translateNode_attribute = task['attribute'];
+							//是操作的元素的某个属性,这时要判断 是否是 input、textarea 的value属性
+							if(task['attribute'] === 'value'){
+								var nodeNameLowerCase = translate.element.getNodeName(this.nodes[hash][node_index]).toLowerCase();
+								if((nodeNameLowerCase === 'input' || nodeNameLowerCase === 'textarea')){
+									translateNode = this.nodes[hash][node_index];
+									translateNode_attribute = 'value';
+								}
+							}
+							if(translateNode === null){
+								translateNode = this.nodes[hash][node_index].getAttributeNode(task['attribute']);
+								translateNode_attribute = task['attribute'];
+							}
 						}else{
 							//操作的就是node本身
 							translateNode = this.nodes[hash][node_index];
 						}
 						//console.log(translateNode)
 						//var nodeAttribute = translate.node.getAttribute(task['attribute']);
-						if(translate.node.data.get(translateNode) != null){
-							// 记录当前有 translate.js 所触发翻译之后渲染到dom界面显示的时间，13位时间戳
-							translate.node.get(translateNode).lastTranslateRenderTime = Date.now();
-						}else{
-							translate.log('执行异常，渲染时，node 未在 translate.node 中找到, 这个理论上是不应该存在的，当前异常已被容错。 node：'+translateNode);
-							translate.log(this.nodes[hash][task_index]);
+						if(typeof(translate.node.data.get(translateNode)) === 'undefined' || translate.node.data.get(translateNode) === null){
+							translate.log('执行异常，渲染时，node 未在 translate.node 中找到, 这个很有可能是点击过快，上一个翻译任务还在网络请求中，又点击了别的地方导致内容又被改变。当前异常已被容错。 node：');
+							translate.log(translateNode);
+
+							var getNodeText = translate.element.nodeAnalyse.get(node, task['attribute']);
+							translate.node.set(translateNode, {
+								attribute: translateNode_attribute,
+								originalText: getNodeText.text,
+								whole: true,
+								translateTexts: {}
+							});
+							translate.node.setModified(translateNode, 'create:translate.renderTask.execute');
 						}
 
+						// 记录当前有 translate.js 所触发翻译之后渲染到dom界面显示的时间，13位时间戳
+						translate.node.get(translateNode).lastTranslateRenderTime = Date.now();
+
+
 						//渲染页面进行翻译显示
-						//console.log(task.originalText+' ('+task['attribute']+') --> ' + task.resultText);
-						var analyseSet = translate.element.nodeAnalyse.set(this.nodes[hash][task_index], task.originalText, task.resultText, task['attribute']);
+						//console.log(task.originalText+' ('+task['attribute']+') --> ' + task.resultText+', node:');
+						//console.log(node);
+						//console.log(typeof(task['participles']) === 'undefined'? []:task['participles'])
+						var analyseSet = translate.element.nodeAnalyse.set(node, task.originalText, task.resultText, task['attribute'], typeof(task['participles']) === 'undefined'? []:task['participles']);
 						//console.log(analyseSet);
 
 						if(translate.node.data.get(translateNode) != null){
@@ -1788,11 +2972,7 @@ var translate = {
 							translate.history.translateText.add(translate.node.get(translateNode).originalText ,analyseSet.resultText);
 						}
 						
-						//加入 translate.listener.ignoreNode
-						translate.listener.addIgnore(this.nodes[hash][task_index], translate.listener.translateExecuteNodeIgnoreExpireTime, analyseSet.resultText);
-
-
-
+						
 						/*
 						//var tagName = translate.element.getTagNameByNode(this.nodes[hash][task_index]);//节点的tag name
 						//console.log(tagName)
@@ -1824,7 +3004,13 @@ var translate = {
 			//console.log('---listen');
 
 			//监听 - 增加到翻译历史里面 nodeHistory
-			if(typeof(this.taskQueue) != 'undefined' && Object.keys(this.taskQueue).length > 0){
+			var taskQueueSize = 0;
+			if(typeof(this.taskQueue) != 'undefined' && this.taskQueue != null){
+				// taskQueue 当前是 Map，必须使用 size 判断任务数量；保留 Object.keys 兜底，
+				// 避免后续扩展把 taskQueue 换成普通对象时影响 renderTaskFinish 的触发。
+				taskQueueSize = typeof(this.taskQueue.size) == 'number' ? this.taskQueue.size : Object.keys(this.taskQueue).length;
+			}
+			if(taskQueueSize > 0){
 				//50毫秒后执行，以便页面渲染完毕
 				var renderTask = this;
 				setTimeout(function() {
@@ -1865,6 +3051,8 @@ var translate = {
 			二维对象形态，存放执行传入的 docs
 		*/
 		queue:[],
+		//当前队列调度器的 intervalId。 null 表示未启动调度器
+		intervalId:null,
 		/*
 			增加一个翻译任务到翻译队列中
 			docs 同 translate.execute(docs) 的传入参数
@@ -1872,14 +3060,26 @@ var translate = {
 		add:function(docs){
 			//向数组末尾追加
 			translate.waitingExecute.queue.push(docs);
-			//开启一个定时器进行触发
-			let intervalId = setInterval(function() {
+			//调度器已启动，那么只需要入队即可，避免多个 interval 并发竞争同一个队列
+			if(translate.waitingExecute.intervalId !== null){
+				return;
+			}
+			//开启唯一一个定时器进行触发
+			translate.waitingExecute.intervalId = setInterval(function() {
+				if(translate.waitingExecute.queue.length < 1){
+					//队列已空，关闭调度器
+					clearInterval(translate.waitingExecute.intervalId);
+					translate.waitingExecute.intervalId = null;
+					return;
+				}
 				if(translate.state == 0){
-					//清除定时器，结束循环
-					clearInterval(intervalId);
 					var docs = translate.waitingExecute.get();
+					if(docs == null){
+						clearInterval(translate.waitingExecute.intervalId);
+						translate.waitingExecute.intervalId = null;
+						return;
+					}
 					translate.execute(docs);
-					//console.log('stop waitingExecute setInterval');
 				}
 			}, 500);
 		},
@@ -1963,20 +3163,63 @@ var translate = {
 	lifecycle:{
 
 		/*
-			当执行 translate.changeLanguage() 后立即触发此。
-			也就是当用户点击切换语言时，立即触发，然后再进行切换语言
+		 * 切换语言 
+		 */
+		changeLanguage:{
 
-			@param to 翻译为的语种
-		*/
-		changeLanguage:[],
-		changeLanguage_Trigger: function(to){
-			for(var i = 0; i < translate.lifecycle.changeLanguage.length; i++){
-                try{
-                    translate.lifecycle.changeLanguage[i](to);
-                }catch(e){
-                    translate.log(e);
+			/*
+				当触发 translate.changeLanguage(...) 时，会立即先触发此，再去执行 translate.changeLanguage(...) 的处理
+			*/
+			trigger:[],
+			trigger_Trigger:function(data){
+				for(var i = 0; i < translate.lifecycle.changeLanguage.trigger.length; i++){
+	                try{
+	                    translate.lifecycle.changeLanguage.trigger[i](data);
+	                }catch(e){
+	                    translate.log(e);
+	                }
+	            }
+
+	            //兼容旧版本的
+	            for(var i = 0; i < translate.lifecycle.changeLanguage.old_trigger_array.length; i++){
+	                try{
+	                    translate.lifecycle.changeLanguage.old_trigger_array[i](data.to);
+	                }catch(e){
+	                    translate.log(e);
+	                }
+	            }
+			},
+			/*
+				下面这两个是兼容以前版本的
+			*/
+			//通过 push 加入的，只会加入到 old_trigger_array 中，传入参数是 to，也就是 string格式
+			old_trigger_array:[],
+			push: function(func){
+				translate.log('提示， translate.lifecycle.changeLanguage.push 方式已过时，但依旧生效，可正常使用。 最新的方式，文档参考 http://translate.zvo.cn/540189.html ');
+				translate.lifecycle.changeLanguage.trigger.push(func);
+				translate.lifecycle.changeLanguage.old_trigger_array.push(func);
+			},
+
+
+
+			/*
+				在触发 translate.reset() 之后、 执行切换语言动作之前，进行触发
+				{
+					to: 			//翻译为的语种
+				}
+			*/
+			resetAfter:[],
+			resetAfter_Trigger:function(data){
+				var isNextExecute = true; //是否继续向下执行，true则是继续执行，false则是不继续执行。 
+            	for(var i = 0; i < translate.lifecycle.changeLanguage.resetAfter.length; i++){
+            		try{
+                        translate.lifecycle.changeLanguage.resetAfter[i](data);
+                    }catch(e){
+                        translate.log(e);
+                    }
                 }
-            }
+            },
+
 		},
 
 		/*
@@ -2411,32 +3654,6 @@ var translate = {
 			}
 		}
 		
-
-		/********** 翻译进行 */
-		
-		translate.time.log('生命周期-触发翻译进行之前，用户自定义的钩子-开始');
-
-		//生命周期-触发翻译进行之前，用户自定义的钩子
-		translate.lifecycle.execute.start_Trigger({
-			uuid:uuid,
-			to: translate.to
-		});
-		translate.time.log('生命周期-触发翻译进行之前，用户自定义的钩子-完成');
-		
-		translate.time.log('进行图片翻译-开始');
-		//先进行图片的翻译替换，毕竟图片还有加载的过程
-		translate.images.execute();
-		translate.time.log('进行图片翻译-完成');
-
-		
-		//console.log('----要翻译的目标元素-----');
-		//console.log(all)
-		
-		if(all.length > 500){
-			translate.log('------tip------');
-			translate.log('translate.execute( docs ) 传入的docs.length 过大，超过500，这很不正常，当前 docs.length : '+all.length+' ,如果你感觉真的没问题，请联系作者 http://translate.zvo.cn/43006.html 说明情况，根据你的情况进行分析。 当前只取前500个元素进行翻译');
-		}
-
 		//初始化 translate.element.tagAttribute ，主要针对 v3.17.10 版本的适配调整，对 translate.element.tagAttribute  的设置做了改变，做旧版本的适配
 		try{
 			for(var te_tag in translate.element.tagAttribute){
@@ -2458,9 +3675,36 @@ var translate = {
 			translate.log(e);
 		}
 
+
+		/********** 翻译进行 */
+		
+		translate.time.log('生命周期-触发翻译进行之前，用户自定义的钩子-开始');
+
+		//生命周期-触发翻译进行之前，用户自定义的钩子
+		translate.lifecycle.execute.start_Trigger({
+			uuid:uuid,
+			to: translate.to
+		});
+		translate.time.log('生命周期-触发翻译进行之前，用户自定义的钩子-完成');
+		
+		translate.time.log('进行图片翻译-开始');
+		//先进行图片的翻译替换，毕竟图片还有加载的过程
+		translate.images.execute();
+		translate.time.log('进行图片翻译-完成');
+
+		
+		//console.log('----要翻译的目标元素-----');
+		//console.log(all)
+		
+		if(all.length > 1500){
+			translate.log('------tip------');
+			translate.log('警告 translate.execute( docs ) 传入的docs.length 过大，超过1500，这不正常，当前 docs.length : '+all.length+' , 它依旧会正常进行执行，但会有性能损耗。 这个情况很可能是你用的某些框架，没有等dom渲染完就执行了translate.execute() ，同时启用了dom变动监听，导致监听到页面加载大量的DOM渲染； 另外也有可能你本身页面就是列表页或者什么原因就是有大量的动态元素获取后渲染，如果是这种情况，这是正常的。');
+		}
+
+
 		translate.time.log('开始扫描要翻译区域的元素');
 		//检索目标内的node元素
-		for(var i = 0; i< all.length & i < 500; i++){
+		for(var i = 0; i< all.length & i < 15000; i++){
 			var node = all[i];
 			translate.element.whileNodes(uuid, node);	
 		}
@@ -2641,33 +3885,26 @@ var translate = {
 					for(var node_index = 0; node_index < translate.nodeQueue[uuid]['list'][lang][hash]['nodes'].length; node_index++){
 						//console.log(translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][node_index]);
 
-
-						//加入 translate.inProgressNodes
-						//取得这个翻译的node
-						var ipnode = translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][node_index]['node'];
-
-						//判断这个node是否已经在 inProgressNodes 记录了
-						var isFind = false;
-						for(var ini = 0; ini < translate.inProgressNodes.length; ini++){
-							if(translate.inProgressNodes[ini].node.isSameNode(ipnode)){
-								//有记录了，那么出现次数 +1
-								translate.inProgressNodes[ini].number++;
-								isFind = true;
-							}
+						//判断是否是整体翻译，如果不是整体翻译，要考虑到缓存中短句会打散整个句子结构，破坏断句分词，造成 长句子中包含的短句子被翻译了，最后长句子翻译之后未能替换，产生部分未翻译的情况，所以要讲断句的分词也要拿出来
+						var translateNodeData = translate.node.get(translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][node_index].node);
+						var participles = [];
+						if(typeof(translateNodeData) !== 'undefined' && translateNodeData !== null && typeof(translateNodeData.whole) === 'boolean' && translateNodeData.whole === false){
+							//console.log(translateNodeData);
+							//console.log(typeof(translateNodeData.translateTexts))
+							//不是整体翻译，那就要将拆分的每句都整理，避免破坏分词结构
+							for(var translateText_original in translateNodeData.translateTexts){
+								//console.log(translateText_original);
+								if (!translateNodeData.translateTexts.hasOwnProperty(translateText_original)) {
+						    		continue;
+						    	}
+						    	participles.push(translateText_original);
+						    }
 						}
-						//未发现，那么还要将这个node加入进去
-						if(!isFind){
-							//console.log('cache - find - add -- lang:'+lang+', hash:'+hash+' node_index:'+node_index);
-							//console.log(ipnode.nodeValue);
-							translate.inProgressNodes.push({node: ipnode, number:1});
-						}
-
-						//console.log(translate.inProgressNodes);
-						//加入 translate.inProgressNodes -- 结束
-
+						
+						
 						//翻译结果的文本，包含了before  、 after 了
 						var translateResultText = translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][node_index]['beforeText']+cache+translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][node_index]['afterText'];
-						task.add(translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][node_index]['node'], originalWord, translateResultText, translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][node_index]['attribute']);
+						task.add(translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][node_index]['node'], originalWord, translateResultText, translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][node_index]['attribute'], participles);
 						//this.nodeQueue[lang][hash]['nodes'][node_index].nodeValue = this.nodeQueue[lang][hash]['nodes'][node_index].nodeValue.replace(new RegExp(originalWord,'g'), cache);
 						//console.log(translateResultText);
 
@@ -2725,10 +3962,9 @@ var translate = {
 						cacheScanNodes[twoScanIndex_cache]['array'][arrayIndex_cache] = translateResultText;
 						
 					}
-					
 
 
-						
+
 					continue;	//跳出，不用在传入下面的翻译接口了
 				}
 				
@@ -2931,57 +4167,7 @@ var translate = {
 			return;
 		}
 		
-		//加入 translate.inProgressNodes -- start
-		for(var lang in translateHashArray){
-			if (!translateHashArray.hasOwnProperty(lang)) {
-	    		continue;
-	    	}
-			if(typeof(translateHashArray[lang]) == 'undefined'){
-				continue;
-			}
-			if(translateHashArray[lang].length < 1){
-				continue;
-			}
-			for(var hai = 0; hai<translateHashArray[lang].length; hai++){
-				var thhash = translateHashArray[lang][hai];
-				//取得这个翻译的node
-				//var ipnode = translate.nodeQueue[uuid]['list'][lang][thhash].nodes[ipni].node;
-				//console.log('translate.nodeQueue[\''+uuid+'\'][\'list\'][\'chinese_simplified\'][\''+thhash+'\']');
-				//console.log(lang);
-				//console.log(translate.nodeQueue[uuid]['list'][lang][thhash].nodes);
-				if(typeof(translate.nodeQueue[uuid]['list'][lang][thhash].nodes) == 'undefined' || typeof(translate.nodeQueue[uuid]['list'][lang][thhash].nodes.length) == 'undefined'){
-					translate.log('translate.nodeQueue[\''+uuid+'\'][\'list\'][\''+lang+'\'][\''+thhash+'\'].nodes.length is null ，理论上不应该存在，进行异常报出，但不影响使用，已容错。');
-					continue;
-				}
 		
-				for(var ipni = 0; ipni < translate.nodeQueue[uuid]['list'][lang][thhash].nodes.length; ipni++){
-					//取得这个翻译的node
-					var ipnode = translate.nodeQueue[uuid]['list'][lang][thhash].nodes[ipni].node;
-
-					//判断这个node是否已经在 inProgressNodes 记录了
-					var isFind = false;
-					for(var ini = 0; ini < translate.inProgressNodes.length; ini++){
-						if(translate.inProgressNodes[ini].node.isSameNode(ipnode)){
-							//有记录了，那么出现次数 +1
-							//console.log('net request ++');
-							//console.log(ipnode);
-							translate.inProgressNodes[ini].number++;
-							isFind = true;
-						}
-					}
-					//未发现，那么还要将这个node加入进去
-					if(!isFind){
-						//console.log('net request add');
-						//console.log(ipnode);
-						translate.inProgressNodes.push({node: ipnode, number:1});
-					}
-
-				}
-
-			}
-		}
-		//加入 translate.inProgressNodes -- end
-	
 		//状态
 		translate.state = 20;
 
@@ -3003,6 +4189,9 @@ var translate = {
 			list:{}
 		};
 
+		// 当前 translate.execute 内部专用的 SSE 进度遮罩状态。
+		// 只传给 translate.request.sse.collectSafeProgressElements 使用，不作为全局状态保存。
+		let sseProgressState = {};
 
 		//进行掉接口翻译
 		for(var lang_index in fanyiLangs){ //一维数组，取语言
@@ -3084,117 +4273,352 @@ var translate = {
 				//text:JSON.stringify(translateTextArray[lang])
 				text:encodeURIComponent(JSON.stringify(translateTextArray[lang]))
 			};
-			translate.request.post(url, data, function(data){
-				//console.log(data); 
-				//console.log(translateTextArray[data.from]);
-
-				//针对 giteeai 增加了账户余额、账户是否激活的拍的判定，所以增加了 401 这个参数，凡是账户异常的，参数值是 401~499 之间。所以只要不是1都是失败
-				if(data.result != 1){
-					if(typeof(translate.translateRequest[uuid]) == 'object' && typeof(translate.translateRequest[uuid][data.from]) == 'object'){
-						translate.translateRequest[uuid][data.from]['result'] = 2;
-						translate.translateRequest[uuid][data.from].executeFinish = 1; //1是执行完毕
-						translate.translateRequest[uuid][data.from].stoptime = Math.floor(Date.now() / 1000);
-					}else{
-						translate.log('WARINNG!!! translate.translateRequest[uuid][data.from] is not object');
-					}
-
-					//为了兼容 v3.14以前的translate.service 版本，做了判断
-					var from = '';
-					if(typeof(data.from) != 'undefined' && data.from != null){
-						from = data.from;
-					}
-					var to = '';
-					if(typeof(data.to) != 'undefined' && data.to != null){
-						to = data.to;
-					}else{
-						to = translate.to;
-					}
-					translate.waitingExecute.isAllExecuteFinish(uuid, from, to, 0, data.info);
-					
-
-					translate.log('=======ERROR START=======');
-					translate.log(translateTextArray[data.from]);
-					//console.log(encodeURIComponent(JSON.stringify(translateTextArray[data.from])));
-					translate.log('response : '+data.info);
-					translate.log('=======ERROR END  =======');
-					//translate.temp_executeFinishNumber++; //记录执行完的次数
-					return;
-				}
-				
+			let requestLang = lang;
+			let requestTo = translate.to;
+			// 记录当前这一次 translate.json 请求中已经通过 SSE 提前渲染过的原始 text 下标。
+			// done 事件仍然会返回完整结果，这里用于跳过已渲染下标，避免同一段 DOM 被重复替换。
+			let sseRenderedIndexMap = {};
+			// SSE 增量渲染的目标节点索引，只在当前 translate.execute() 闭包内生效。
+			// 以前每个 item/batch 都会反向扫描整批待翻译文本，文本上千且并发较高时会产生大量重复遍历。
+			// 这里按语种预先记录“原始 text 下标 -> 它会影响哪些 node+attribute”，后续只看当前下标涉及的目标，避免跨请求共享状态。
+			let sseRenderTargetStateMap = {};
+			let isTranslateNodeQueueAvailable = function(){
 				if(typeof(translate.nodeQueue[uuid]) == 'undefined'){
 					translate.log('提示：你很可能多次引入了 translate.js 所以造成了翻译本身的数据错乱，这只是个提示，它还是会给你正常翻译的，但是你最好不要重复引入太多次 translate.js ，正常情况下只需要引入一次 translate.js 就可以了。太多的话很可能会导致你页面卡顿');
-					return;
+					return false;
+				}
+				return true;
+			};
+			let buildSseEventResponseData = function(requestData){
+				var responseData = {};
+				responseData.from = requestLang;
+				responseData.to = requestTo;
+				if(typeof(requestData) == 'object' && requestData != null){
+					if(typeof(requestData.from) != 'undefined' && requestData.from != null){
+						responseData.from = requestData.from;
+					}
+					if(typeof(requestData.to) != 'undefined' && requestData.to != null){
+						responseData.to = requestData.to;
+					}
+				}
+				return responseData;
+			};
+			let getSseRenderTargetState = function(renderLang){
+				if(typeof(sseRenderTargetStateMap[renderLang]) != 'undefined'){
+					return sseRenderTargetStateMap[renderLang];
+				}
+				var state = {
+					// targetMap 使用 DOM node 作为第一层 key，attribute 作为第二层 key，避免把 DOM 对象拼成字符串造成误判。
+					targetMap:new Map(),
+					// indexTargets[index] 保存这个原始 text 下标会影响的目标集合，用于后续 O(当前节点数) 判断。
+					indexTargets:[],
+					batchToken:0
+				};
+				if(typeof(translateHashArray[renderLang]) == 'undefined'){
+					sseRenderTargetStateMap[renderLang] = state;
+					return state;
 				}
 
-				//console.log('-----待翻译3：----');
-				//console.log(translate.nodeQueue);
-				
-				//console.log('response:'+uuid);
+				for(var itemIndex = 0; itemIndex < translateHashArray[renderLang].length; itemIndex++){
+					var indexTargets = [];
+					state.indexTargets[itemIndex] = indexTargets;
+					var hash = translateHashArray[renderLang][itemIndex];
+					if(typeof(hash) == 'undefined'
+						|| typeof(translate.nodeQueue[uuid]['list']) == 'undefined'
+						|| typeof(translate.nodeQueue[uuid]['list'][renderLang]) == 'undefined'
+						|| typeof(translate.nodeQueue[uuid]['list'][renderLang][hash]) == 'undefined'
+						|| typeof(translate.nodeQueue[uuid]['list'][renderLang][hash].nodes) == 'undefined'){
+						continue;
+					}
+
+					var nodes = translate.nodeQueue[uuid]['list'][renderLang][hash].nodes;
+					for(var nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++){
+						if(typeof(nodes[nodeIndex]) != 'object' || nodes[nodeIndex] == null || typeof(nodes[nodeIndex].node) == 'undefined' || nodes[nodeIndex].node == null){
+							continue;
+						}
+						var attribute = typeof(nodes[nodeIndex].attribute) == 'string' ? nodes[nodeIndex].attribute : '';
+						var attributeMap = state.targetMap.get(nodes[nodeIndex].node);
+						if(attributeMap == null){
+							attributeMap = new Map();
+							state.targetMap.set(nodes[nodeIndex].node, attributeMap);
+						}
+						var targetState = attributeMap.get(attribute);
+						if(targetState == null){
+							targetState = {
+								pending:0,
+								batchToken:0,
+								batchCount:0
+							};
+							attributeMap.set(attribute, targetState);
+						}
+
+						var alreadyInIndex = false;
+						for(var targetIndex = 0; targetIndex < indexTargets.length; targetIndex++){
+							if(indexTargets[targetIndex] === targetState){
+								alreadyInIndex = true;
+								break;
+							}
+						}
+						if(alreadyInIndex){
+							continue;
+						}
+						// pending 代表这个 node+attribute 还有多少原始 text 下标没有被 SSE 提前渲染。
+						// 后续判断只需要看当前事件是否覆盖了这些 pending 下标，不再全量扫描 translateHashArray。
+						targetState.pending++;
+						indexTargets.push(targetState);
+					}
+				}
+				sseRenderTargetStateMap[renderLang] = state;
+				return state;
+			};
+			let prepareSseRenderBatchState = function(renderLang, currentIndexMap, isSsePartial){
+				if(isSsePartial !== true){
+					return null;
+				}
+				var state = getSseRenderTargetState(renderLang);
+				state.batchToken++;
+				for(var itemIndexKey in currentIndexMap){
+					if(!currentIndexMap.hasOwnProperty(itemIndexKey)){
+						continue;
+					}
+					var itemIndex = parseInt(itemIndexKey, 10);
+					if(isNaN(itemIndex) || sseRenderedIndexMap[itemIndex] === 1){
+						continue;
+					}
+					var indexTargets = state.indexTargets[itemIndex];
+					if(typeof(indexTargets) == 'undefined' || indexTargets == null){
+						continue;
+					}
+					for(var targetIndex = 0; targetIndex < indexTargets.length; targetIndex++){
+						var targetState = indexTargets[targetIndex];
+						if(targetState.batchToken != state.batchToken){
+							targetState.batchToken = state.batchToken;
+							targetState.batchCount = 0;
+						}
+						// batchCount 只统计当前这次 SSE 事件中覆盖到的 pending 下标。
+						// 如果某个目标还有未包含在本事件里的文本，就继续等 done 兜底，避免提前替换打断长文本匹配。
+						targetState.batchCount++;
+					}
+				}
+				return state;
+			};
+			let canRenderSseItemNow = function(renderLang, itemIndex, isSsePartial, batchState){
+				if(isSsePartial !== true){
+					return true;
+				}
+				if(typeof(translateHashArray[renderLang]) == 'undefined' || typeof(translateHashArray[renderLang][itemIndex]) == 'undefined' || batchState == null){
+					return false;
+				}
+				var indexTargets = batchState.indexTargets[itemIndex];
+				if(typeof(indexTargets) == 'undefined' || indexTargets == null || indexTargets.length < 1){
+					return false;
+				}
+				// SSE 的 batch/item 会比 done 更早渲染。若同一个 DOM 节点里还有未返回的文本，
+				// 提前替换其中一段可能破坏后续长文本匹配；这种情况交给 done 统一兜底渲染。
+				for(var targetIndex = 0; targetIndex < indexTargets.length; targetIndex++){
+					var targetState = indexTargets[targetIndex];
+					var currentBatchCount = targetState.batchToken == batchState.batchToken ? targetState.batchCount : 0;
+					if(targetState.pending - currentBatchCount > 0){
+						return false;
+					}
+				}
+				return true;
+			};
+			let markSseItemRendered = function(renderLang, itemIndex, isSsePartial, batchState){
+				sseRenderedIndexMap[itemIndex] = 1;
+				if(isSsePartial !== true || batchState == null){
+					return;
+				}
+				var indexTargets = batchState.indexTargets[itemIndex];
+				if(typeof(indexTargets) == 'undefined' || indexTargets == null){
+					return;
+				}
+				for(var targetIndex = 0; targetIndex < indexTargets.length; targetIndex++){
+					if(indexTargets[targetIndex].pending > 0){
+						indexTargets[targetIndex].pending--;
+					}
+				}
+			};
+			let renderTranslateResultItems = function(responseData, requestData, items, isSsePartial){
+				if(!isTranslateNodeQueueAvailable()){
+					return 0;
+				}
+				if(typeof(responseData) != 'object' || responseData == null){
+					responseData = {};
+				}
+				var renderLang = requestLang;
+				var renderTo = requestTo;
+				if(typeof(responseData.from) != 'undefined' && responseData.from != null){
+					renderLang = responseData.from;
+				}else if(typeof(requestData) == 'object' && requestData != null && typeof(requestData.from) != 'undefined' && requestData.from != null){
+					renderLang = requestData.from;
+				}
+				if(typeof(responseData.to) != 'undefined' && responseData.to != null){
+					renderTo = responseData.to;
+				}else if(typeof(requestData) == 'object' && requestData != null && typeof(requestData.to) != 'undefined' && requestData.to != null){
+					renderTo = requestData.to;
+				}
+				if(typeof(translateHashArray[renderLang]) == 'undefined'){
+					translate.log('WARNING : translateHashArray['+renderLang+'] is undefined');
+					return 0;
+				}
+
+				var renderItems = [];
+				var currentIndexMap = {};
+				if(typeof(items) == 'object' && items != null && typeof(items.length) == 'number'){
+					for(var itemIndex = 0; itemIndex < items.length; itemIndex++){
+						if(typeof(items[itemIndex]) != 'object' || items[itemIndex] == null){
+							continue;
+						}
+						var originalIndex = parseInt(items[itemIndex].index, 10);
+						if(isNaN(originalIndex) || originalIndex < 0){
+							continue;
+						}
+						renderItems.push({
+							index:originalIndex,
+							text:items[itemIndex].text
+						});
+						currentIndexMap[originalIndex] = 1;
+					}
+				}else{
+					for(var fullIndex = 0; fullIndex < translateHashArray[renderLang].length; fullIndex++){
+						renderItems.push({
+							index:fullIndex,
+							text:typeof(responseData.text) == 'object' && responseData.text != null ? responseData.text[fullIndex] : null
+						});
+						currentIndexMap[fullIndex] = 1;
+					}
+				}
+				var sseRenderBatchState = prepareSseRenderBatchState(renderLang, currentIndexMap, isSsePartial);
+				var sseProgressRenderedIndexes = [];
+
 				let task = new translate.renderTask();
-				//遍历 translateHashArray
-				for(var i=0; i<translateHashArray[data.from].length; i++){
+				var renderNumber = 0;
+				for(var renderItemIndex = 0; renderItemIndex < renderItems.length; renderItemIndex++){
+					var i = renderItems[renderItemIndex].index;
+					if(sseRenderedIndexMap[i] === 1){
+						continue;
+					}
+					if(!canRenderSseItemNow(renderLang, i, isSsePartial, sseRenderBatchState)){
+						continue;
+					}
+
 					//翻译前的语种，如 english
-					var lang = data.from;	
+					var lang = renderLang;
 					//翻译后的内容
-					var text = data.text[i];	
-					//如果text为null，那么这个可能是一次翻译字数太多，为了保持数组长度，拼上的null
+					var text = renderItems[renderItemIndex].text;
+					//如果 text 为 null，说明服务端为了保持结果数组下标对齐填充了空结果，这种结果不能渲染。
 					if(text == null){
 						continue;
 					}
 
-					// v3.0.3 添加，避免像是 JavaScript 被错误翻译为 “JavaScript的” ，然后出现了多个句子中都出现了Javascript时，会出现翻译后文本重复的问题
-					// 这里就是验证一下，翻译后的文本，是否会完全包含翻以前的文本，如果包含了，那么强制将翻译后的文本赋予翻译前的原始文本（也就是不被翻译）
-					if(text.toLowerCase().indexOf(translateTextArray[data.from][i].toLowerCase()) > -1){
-						//发现了，那么强制赋予翻以前内容
-						text = translateTextArray[data.from][i];
+					// 保留原有保护逻辑：如果译文完整包含原文，认为翻译结果不可信，回退显示原始文本。
+					// SSE 的 batch/item 与 done 都必须走同一判断，避免两种返回方式展示不一致。
+					if(typeof(text) == 'string' && typeof(translateTextArray[renderLang]) != 'undefined' && typeof(translateTextArray[renderLang][i]) == 'string' && text.toLowerCase().indexOf(translateTextArray[renderLang][i].toLowerCase()) > -1){
+						text = translateTextArray[renderLang][i];
 					}
 
-
-					//翻译前的hash对应下标
-					var hash = translateHashArray[data.from][i];	
+					//翻译前的 hash 对应下标，SSE 事件中的 index 永远对应原始 text 数组下标。
+					var hash = translateHashArray[renderLang][i];
+					if(typeof(hash) == 'undefined' || typeof(translate.nodeQueue[uuid]['list'][lang]) == 'undefined' || typeof(translate.nodeQueue[uuid]['list'][lang][hash]) == 'undefined'){
+						continue;
+					}
 					var cacheHash = translate.nodeQueue[uuid]['list'][lang][hash]['cacheHash'];
 
-
-					
-					//取原始的词，还未经过翻译的，需要进行翻译的词
+					//取原始的词，还未经过翻译的、需要进行翻译的词。
 					var originalWord = '';
 					try{
 						originalWord = translate.nodeQueue[uuid]['list'][lang][hash]['original'];
-						//console.log('bef:'+translate.nodeQueue[uuid]['list'][lang][hash]['beforeText']);
 					}catch(e){
 						translate.log('uuid:'+uuid+', originalWord:'+originalWord+', lang:'+lang+', hash:'+hash+', text:'+text+', queue:'+translate.nodeQueue[uuid]);
 						translate.log(e);
 						continue;
 					}
-					
-					//for(var index = 0; index < translate.nodeQueue[lang][hash].length; index++){
+
 					for(var node_index = 0; node_index < translate.nodeQueue[uuid]['list'][lang][hash]['nodes'].length; node_index++){
-						//translate.nodeQueue[lang][hash]['nodes'][node_index].nodeValue = translate.nodeQueue[lang][hash]['nodes'][node_index].nodeValue.replace(new RegExp(originalWord,'g'), text);
-						//加入任务
 						task.add(translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][node_index]['node'], originalWord, translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][node_index]['beforeText']+text+translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][node_index]['afterText'], translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][node_index]['attribute']);
 					}
-					//}
-					/*
-					for(var index = 0; index < translate.nodeQueue[data.from][hash].length; index++){
-						translate.nodeQueue[data.from][hash][index].nodeValue = text;
+
+					//将翻译结果写入浏览器缓存；SSE 提前渲染和 done 兜底渲染共用同一缓存规则。
+					translate.storage.set('hash_'+renderTo+'_'+cacheHash,text);
+					if(translate.offline.fullExtract.isUse){
+						translate.offline.fullExtract.set(hash, originalWord, renderTo, text);
 					}
-					*/
-					
-					//将翻译结果以 key：hash  value翻译结果的形式缓存
-					translate.storage.set('hash_'+data.to+'_'+cacheHash,text);
-					//如果离线翻译启用了全部提取，那么还要存入离线翻译指定存储
-					if(translate.office.fullExtract.isUse){
-						translate.office.fullExtract.set(hash, originalWord, data.to, text);
+					markSseItemRendered(renderLang, i, isSsePartial, sseRenderBatchState);
+					if(isSsePartial === true){
+						// 这里只记录已经通过安全判断并加入渲染任务的 index；
+						// 解除遮罩必须等 task.execute() 完成后再做，避免 DOM 尚未替换完成时露出原文。
+						sseProgressRenderedIndexes.push(i);
+					}
+					renderNumber++;
+				}
+				if(renderNumber > 0){
+					task.execute(); //执行渲染任务
+					if(isSsePartial === true && sseProgressRenderedIndexes.length > 0){
+						var safeProgressElements = translate.request.sse.collectSafeProgressElements(sseProgressState, {
+							uuid:uuid,
+							fanyiLangs:fanyiLangs,
+							translateHashArray:translateHashArray,
+							renderLang:renderLang,
+							renderedIndexes:sseProgressRenderedIndexes
+						});
+						if(safeProgressElements.length > 0){
+							translate.progress.api.removeUITipByElements(safeProgressElements);
+						}
 					}
 				}
-				task.execute(); //执行渲染任务
+				return renderNumber;
+			};
+			translate.request.post(url, data, function(responseData, requestData){
+				//console.log(data); 
+				//console.log(translateTextArray[data.from]);
+
+				//针对 giteeai 增加了账户余额、账户是否激活的拍的判定，所以增加了 401 这个参数，凡是账户异常的，参数值是 401~499 之间。所以只要不是1都是失败
+				if(responseData.result != 1){
+					if(typeof(translate.translateRequest[uuid]) == 'object' && typeof(translate.translateRequest[uuid][requestData.from]) == 'object'){
+						translate.translateRequest[uuid][requestData.from]['result'] = 2;
+						translate.translateRequest[uuid][requestData.from].executeFinish = 1; //1是执行完毕
+						translate.translateRequest[uuid][requestData.from].stoptime = Math.floor(Date.now() / 1000);
+					}else{
+						translate.log('WARINNG!!! translate.translateRequest[uuid][requestData.from] is not object');
+					}
+
+					//为了兼容 v3.14以前的translate.service 版本，做了判断
+					var from = '';
+					if(typeof(requestData.from) != 'undefined' && requestData.from != null){
+						from = requestData.from;
+					}
+					var to = '';
+					if(typeof(requestData.to) != 'undefined' && requestData.to != null){
+						to = requestData.to;
+					}else{
+						to = translate.to;
+					}
+					translate.waitingExecute.isAllExecuteFinish(uuid, from, to, 0, responseData.info);
+					
+
+					translate.log('=======ERROR START=======');
+					translate.log(translateTextArray[requestData.from]);
+					//console.log(encodeURIComponent(JSON.stringify(translateTextArray[data.from])));
+					translate.log('response : '+responseData.info);
+					translate.log('=======ERROR END  =======');
+					//translate.temp_executeFinishNumber++; //记录执行完的次数
+					return;
+				}
+				
+				if(!isTranslateNodeQueueAvailable()){
+					return;
+				}
+				renderTranslateResultItems(responseData, requestData, null, false);
 				//translate.temp_executeFinishNumber++; //记录执行完的次数
 
-				translate.translateRequest[uuid][lang].result = 1;
-				translate.translateRequest[uuid][lang].executeFinish = 1; //1是执行完毕
-				translate.translateRequest[uuid][lang].stoptime = Math.floor(Date.now() / 1000);
+				var finishLang = typeof(responseData.from) != 'undefined' && responseData.from != null ? responseData.from : requestData.from;
+				var finishTo = typeof(responseData.to) != 'undefined' && responseData.to != null ? responseData.to : requestData.to;
+				translate.translateRequest[uuid][finishLang].result = 1;
+				translate.translateRequest[uuid][finishLang].executeFinish = 1; //1是执行完毕
+				translate.translateRequest[uuid][finishLang].stoptime = Math.floor(Date.now() / 1000);
 				setTimeout(function(){
-					translate.waitingExecute.isAllExecuteFinish(uuid, data.from, data.to, 1, '');
+					translate.waitingExecute.isAllExecuteFinish(uuid, finishLang, finishTo, 1, '');
 				},5);
 			}, function(xhr){
 				translate.translateRequest[uuid][xhr.data.from].executeFinish = 1; //1是执行完毕
@@ -3211,6 +4635,21 @@ var translate = {
 					info = 'Network connection failed. url: '+xhr.requestURL;
 				}
 				translate.waitingExecute.isAllExecuteFinish(uuid, xhr.data.from, translate.to, 0, info);
+			}, {
+				onBatch:function(eventData, requestData){
+					if(typeof(eventData) != 'object' || eventData == null || typeof(eventData.items) != 'object' || eventData.items == null){
+						return;
+					}
+					// batch 是服务端已经确定的一批结果，按原始 text 下标提前渲染；不在这里标记请求完成。
+					renderTranslateResultItems(buildSseEventResponseData(requestData), requestData, eventData.items, true);
+				},
+				onItem:function(eventData, requestData){
+					if(typeof(eventData) != 'object' || eventData == null){
+						return;
+					}
+					// item 是服务端返回的单条 API 翻译结果，仍然只按原始 text 下标渲染当前条。
+					renderTranslateResultItems(buildSseEventResponseData(requestData), requestData, [eventData], true);
+				}
 			});
 			/*** 翻译end ***/
 		}
@@ -3264,27 +4703,47 @@ var translate = {
 			这是一个map，为了兼容es5，这里设置为null，在 translate.execute 中在进行初始化
 
 			key: node ,进行翻译的文本的node， 如果是 div 的 title属性进行的翻译，那这个node是定位在 title 上的node，而不是 div 这个依附的元素
+					注意，如果是对 input、textarea 的value进行翻译，而 value是通过js赋予的，那么这个value属性的值并不是一个单独的node，所以是为空的，此时要记录的node便是  input、textarea 这个node本身。
 			value: 这是一个对像
 				其中，key的取值有这几种：
 				translate_default_value: 如果当前翻译的是元素本身的值或node节点本身的值(nodeValue)，那么这里的key就是固定的 translate_default_value
 				attribute_属性名: 如果当前翻译的是元素的attribute 的某个属性，那么这里就是 attribute_属性名， 比如 a 标签的 title ，那这里便是 attribute_title
+				modified: 被改动的动作，比如创建、值发生改动，都会记录到这里，它没有什么实际作用，仅仅只是为了方便开发调试使用。 
+						这是一个数组格式，其值如：
+						[
+							'create:translate.faultTolerance.documentCreateTextNode.enable',
+							'update:translate.execute'
+						]
+						创建便是 create 开头，数据修改（追加属性、属性值修改、删除属性等）便是 update 开头，后面跟着的是操作它是在哪个方法里
+						越早操作，下标越小，也就是 [0] 是最开始创建的，然后每次修改都会push进一个数据进去
+
 				lastTranslateRenderTime: 记录当前有 translate.js 所触发翻译之后渲染到dom界面显示的时间，13位时间戳。
 										 每当触发渲染时这里都会重新赋予一次最新的时间，这里也就是最后一次渲染的时间。 如果还没渲染那这里便是 undefined 或者 null，总之 typeof 不是 number
-				translateResults: array string 文本数组，这里是被 translate.element.nodeAnalyse.set 进行翻译渲染之后，每次针对node进行一次渲染，它都会讲渲染的文本设置进来，不管是node本身还是属性还是什么，都会直接讲其具体结果拿过来。当listener动态监听是，也是根据这个来判定当前是否是有 translate.js 本身导致的node发生了改变
+										 另外这个时间是渲染的前一刻赋予的，赋予后立即进行的DOM渲染
+				
+				translateResults: array string 文本数组，这里是被 translate.element.nodeAnalyse.set 进行翻译渲染之后，每次针对node进行一次渲染，它都会讲渲染的文本（注意是翻译之后的文本，而不是原文）设置进来，不管是node本身还是属性还是什么，都会直接讲其具体结果拿过来。
+						注意，翻译完毕进行渲染时，是先将要显示的文本（翻译后的文本）拿来赋予到这里，然后在执行 dom渲染（触发listener）  
+						当listener动态监听时，也是根据这个来判定当前是否是有 translate.js 本身导致的node发生了改变
 						{
 							你好，世界:1
 							你是谁:1
 						}
-						它使用是 typeof(translate.node.get(node).translateResults['你好世界']) != 'undefined' 这样使用，至于后面的value为1那纯属是凑的，没任何意义						 
+						它使用是 typeof(translate.node.get(node).translateResults['你好世界']) === 'number' 这样使用，至于后面的value为1那纯属是凑的，没任何意义						 
 				
 				
+				attribute 这个翻译的node对象是否是翻译的其中的某个attribute属性，如果是，那么这里便是长度大于0， 如果是元素或节点本身(nodeValue)，那么这里就是空字符串，注意，是空字符串 ''
+						另外这个字段，当前应该仅仅只是针对 input、textarea 的 value 属性有用，也就是它的值要么是空字符串，要么是 'value'， 因为像是 input value 的属性是不属于dom的，必须 input.value 这样才能点出来
 
-				value值是翻译的这个attribute对象的一些具体数据了
-					attribute 这个翻译的node对象是否是翻译的其中的某个attribute属性，如果是，那么这里便是长度大于0， 如果是元素或节点本身(nodeValue)，那么这里就是空字符串，注意，是空字符串 ''
-					resultText: string 翻译完成后，当前node节点的内容文本，注意，是node节点整体所有的内容文本（是已经翻译渲染过的）
-					originalText: string 翻译前显示的文本，是node节点所有的内容文本，原始的文本，（当前这里仅仅只对元素整体翻译时才会记录这个 - v3.18.14.20250903 增加）	
-					translateTexts: array string 文本数组，这里是被文本翻译接口所翻译的文本。 比如其中某项为 '你好':'hello' ，其中key是翻译前的， value是翻译后的结果， 如果 value 为 null，则代表还未进行翻译拿到翻译结果
-					whole: boolean 当前是否是整体进行翻译的，比如当前即使是设置的整体翻译，但是这个node命中了自定义术语，被术语分割了，那当前翻译也不是整体翻译的。 这个属性在扫描完节点，进行请求翻译接口或命中本地缓存之前，就要被设置。  true:是节点内容整体翻译
+				resultText: string 翻译完成后，当前node节点的内容文本，注意，是node节点整体所有的内容文本（是已经翻译渲染过的）
+									注意，翻译失败或者本身是特殊字符比如数字，不需要被翻译，是没有这个属性的
+				originalText: string 翻译前显示的文本，是node节点所有的内容文本，原始的文本，（当前这里仅仅只对元素整体翻译时才会记录这个 - v3.18.14.20250903 增加）	
+				
+				translateTexts: array string 文本数组，这里是被文本翻译接口所翻译的文本。 
+						比如其中某项为 '你好':'hello' ，其中key是翻译前的， value是翻译后的结果， 如果 value 为 null，则代表还未进行翻译拿到翻译结果
+				
+				whole: boolean 当前是否是整体进行翻译的，比如当前即使是设置的整体翻译，但是这个node命中了自定义术语，被术语分割了，那当前翻译也不是整体翻译的。 
+						这个属性在扫描完节点，进行请求翻译接口或命中本地缓存之前，就要被设置。  
+						true:是节点内容整体翻译
 					
 		*/
 		data: null,
@@ -3300,6 +4759,21 @@ var translate = {
 		},
 		set:function(node, value){
 			translate.node.data.set(node,value);
+		},
+		/*
+			向 translate.node 的元素中，追加属性 modified 的数组内容
+		*/
+		setModified:function(node, text){
+			if(typeof(translate.node.data.get(node)) === 'undefined' || translate.node.data.get(node) === null){
+				translate.log('translate.node.setModified exception: node not find in translate.node,  node:');
+				translate.log(node);
+				return;
+			}
+
+			if(typeof(translate.node.data.get(node).modified) === 'undefined'){
+				translate.node.data.get(node).modified = [];
+			}
+			translate.node.data.get(node).modified.push(text);
 		},
 		//从 translate.node.data 中 删除 key 是 node 的
 		delete: function(node){
@@ -3585,17 +5059,20 @@ var translate = {
 
 				参数：
 					node 当前翻译的node元素
+						注意，如果是对 input、textarea 的value进行翻译，而 value是通过js赋予的，那么这个value属性的值并不是一个单独的node，所以是为空的，此时要记录的node便是  input、textarea 这个node本身。
 					originalText 翻译之前的内容文本
 					resultText 翻译之后的内容文本
 					attribute 存放要替换的属性，比如 a标签的title属性。 如果是直接替换node.nodeValue ，那这个没有
 				返回结果是一个数组，其中：
 					resultText: 翻译完成之后的text内容文本，注意，如果返回的是空字符串，那么则是翻译结果进行替换时，并没有成功替换，应该是翻译的过程中，这个node的值被其他js又赋予其他内容了。
 					node: 进行翻译的目标node	
+					participles: 分词，数组形态。默认不传则是没有其他分词需要保留的。 传入比如  ['你好','你是谁'] 
+        		比如 translateOriginal 传入 '你' 时， text 中的 '你好','你是谁' 是不能被拆出'你'这个字进行替换的，不然就破坏了分词了
 
 				注意，使用本set方法，不要用 返回的 text参数，要用 	resultText 这个参数，这个才是翻译之后的文本	
 			*/
-			set:function(node, originalText, resultText, attribute){
-				return translate.element.nodeAnalyse.analyse(node,originalText,resultText, attribute);
+			set:function(node, originalText, resultText, attribute, participles){
+				return translate.element.nodeAnalyse.analyse(node,originalText,resultText, attribute, participles);
 			},
 			/*	
 				
@@ -3606,29 +5083,37 @@ var translate = {
 					返回结果是一个数组。其中：
 						['text']:要进行翻译的text内容文本
 						['node']:要进行翻译的目标node
+									注意，如果是对 input、textarea 的value进行翻译，而 value是通过js赋予的，那么这个value属性的值并不是一个单独的node，所以是为空的，此时要记录的node便是  input、textarea 这个node本身。
 				2. 传入 node、originalText、 resultText
 					则是进行翻译之后的渲染显示
 
 				attribute : 进行替换渲染时使用，存放要替换的属性，比如 a标签的title属性。 如果是直接替换node.nodeValue ，那这个没有
+				participles: 分词，数组形态。保障 originalText 不被拆乱了。 默认不传则是没有其他分词需要保留的。 传入比如  ['你好','你是谁'] 
+        					比如 translateOriginal 传入 '你' 时， text 中的 '你好','你是谁' 是不能被拆出'你'这个字进行替换的，不然就破坏了分词了
 				
 				返回结果是一个数组，其中：
 					resultText: 翻译完成之后的text内容文本。 当使用 translate.element.nodeAnalyse.set 时才会有这个参数返回。 注意，如果返回的是空字符串，那么则是翻译结果进行替换时，并没有成功替换，应该是翻译的过程中，这个node的值被其他js又赋予其他内容了。
 					text : 要进行翻译的text内容文本，当使用 translate.element.nodeAnalyse.get 时才会有这个参数的返回
-					node: 进行翻译的目标node
+					node: 要进行翻译的目标node
+							注意，如果是对 input、textarea 的value进行翻译，而 value是通过js赋予的，那么这个value属性的值并不是一个单独的node，所以是为空的，此时要记录的node便是  input、textarea 这个node本身。
 			*/
-			analyse:function(node, originalText, resultText, attribute){
+			analyse:function(node, originalText, resultText, attribute, participles){
 				var result = new Array(); //返回的结果
 				result['node'] = node;
 				result['text'] = '';
-
+				
 				var nodename = translate.element.getNodeName(node);
+				//console.log('nodeAnalyse.analyse: NodeName:'+nodename+', originalText:'+originalText+', resultText:'+resultText+', attribute:'+attribute+', node:');
+				//console.log(node)
 
+				//console.log('participles:');
+				//console.log(participles);
 				if(attribute != null && typeof(attribute) == 'string' && attribute.length > 0){
 					//这个node有属性，替换的是node的属性，而不是nodeValue
 
 					var nodeAttributeValue; //这个 attribute 属性的值
-					if(nodename == 'INPUT' && attribute.toLowerCase() == 'value'){
-						//如果是input 的value属性，那么要直接获取，而非通过 attribute ，不然用户自己输入的通过 attribute 是获取不到的 -- catl 赵阳 提出
+					if((nodename === 'INPUT' || nodename === 'TEXTAREA') && attribute.toLowerCase() == 'value'){
+						//如果是input\textarea 的value属性，那么要直接获取，而非通过 attribute ，不然用户自己输入的通过 attribute 是获取不到的 -- catl 赵阳 提出
 						
 						nodeAttributeValue = node.value;
 					}else{
@@ -3641,10 +5126,10 @@ var translate = {
 					if(typeof(originalText) != 'undefined' && originalText.length > 0){
 						if(typeof(nodeAttributeValue) != 'undefined'){
 							//这种是主流框架，像是vue、element、react 都是用这种 DOM Property 的方式，更快
-							var resultShowText = translate.util.textReplace(nodeAttributeValue, originalText, resultText, translate.to);
+							var resultShowText = translate.util.textReplace(nodeAttributeValue, originalText, resultText, translate.to, participles);
 							translate.element.nodeAnalyse.analyseReplaceBefore_DateToTranslateNode(node, attribute, resultShowText);
 
-							if(nodename == 'INPUT' && attribute.toLowerCase() == 'value'){
+							if((nodename === 'INPUT' || nodename === 'TEXTAREA') && attribute.toLowerCase() == 'value'){
 								//input 的value 对于用户输入的必须用 .value 操作
 								node.value = resultShowText;
 							}else{
@@ -3676,6 +5161,8 @@ var translate = {
 					}
 					return result;
 				}
+
+				
 
 				//正常的node ，typeof 都是 object
 
@@ -3712,14 +5199,14 @@ var translate = {
 
 					//input，要对 type=button、submit 的情况进行翻译
 					if(nodename == 'INPUT'){
-						if(typeof(node.attributes.type) != 'undefined' && typeof(node.attributes.type.nodeValue) != null && (node.attributes.type.nodeValue.toLowerCase() == 'button' || node.attributes.type.nodeValue.toLowerCase() == 'submit')){
+						if(node.attributes.type != null && typeof(node.attributes.type.nodeValue) === 'string' && (node.attributes.type.nodeValue.toLowerCase() == 'button' || node.attributes.type.nodeValue.toLowerCase() == 'submit')){
 							//console.log('----是 <input type="button"');
 							//取它的value
 							var input_value_node = node.attributes.value;
 							if(input_value_node != null && typeof(input_value_node) != 'undefined' && typeof(input_value_node.nodeValue) != 'undefined' && input_value_node.nodeValue.length > 0){
 								//替换渲染
 								if(typeof(originalText) != 'undefined' && originalText.length > 0){
-									var resultShowText = translate.util.textReplace(input_value_node.nodeValue, originalText, resultText, translate.to);
+									var resultShowText = translate.util.textReplace(input_value_node.nodeValue, originalText, resultText, translate.to, participles);
 									translate.element.nodeAnalyse.analyseReplaceBefore_DateToTranslateNode(node, attribute, resultShowText);
 
 									input_value_node.nodeValue = resultShowText;  //2025.4.26 变更为此方式
@@ -3743,7 +5230,7 @@ var translate = {
 						//console.log(node);
 						//替换渲染
 						if(typeof(originalText) != 'undefined' && originalText.length > 0){
-							var resultShowText = translate.util.textReplace(node.attributes['placeholder'].nodeValue, originalText, resultText, translate.to);
+							var resultShowText = translate.util.textReplace(node.attributes['placeholder'].nodeValue, originalText, resultText, translate.to, participles);
 							translate.element.nodeAnalyse.analyseReplaceBefore_DateToTranslateNode(node, attribute, resultShowText);
 
 							node.attributes['placeholder'].nodeValue = resultShowText;  //2025.4.26 变更为此方式
@@ -3775,7 +5262,7 @@ var translate = {
 						if(nodeAttributeName == 'keywords' || nodeAttributeName == 'description' || nodeAttributeName == 'sharetitle' || nodeAttributeProperty == 'og:title' || nodeAttributeProperty == 'og:description' || nodeAttributeProperty == 'og:site_name' || nodeAttributeProperty == 'og:novel:latest_chapter_name'){
 							//替换渲染
 							if(typeof(originalText) != 'undefined' && originalText != null && originalText.length > 0){
-								var resultShowText = translate.util.textReplace(node.content, originalText, resultText, translate.to);
+								var resultShowText = translate.util.textReplace(node.content, originalText, resultText, translate.to, participles);
 								translate.element.nodeAnalyse.analyseReplaceBefore_DateToTranslateNode(node, attribute, resultShowText);
 
 								node.content = resultShowText;  //2025.4.26 变更为此方式
@@ -3804,7 +5291,7 @@ var translate = {
 
 					//替换渲染
 					if(typeof(originalText) != 'undefined' && originalText.length > 0){
-						var resultShowText = translate.util.textReplace(node.alt, originalText, resultText, translate.to);
+						var resultShowText = translate.util.textReplace(node.alt, originalText, resultText, translate.to, participles);
 						translate.element.nodeAnalyse.analyseReplaceBefore_DateToTranslateNode(node, attribute, resultShowText);
 
 						node.alt = resultShowText;  //2025.4.26 变更为此方式
@@ -3829,7 +5316,7 @@ var translate = {
 					//替换渲染
 					if(typeof(originalText) != 'undefined' && originalText != null && originalText.length > 0){
 						//console.log(originalText+'|');
-						var resultShowText = translate.util.textReplace(node.nodeValue, originalText, resultText, translate.to);
+						var resultShowText = translate.util.textReplace(node.nodeValue, originalText, resultText, translate.to, participles);
 						translate.element.nodeAnalyse.analyseReplaceBefore_DateToTranslateNode(node, attribute, resultShowText);
 
 						//console.log(resultShowText+'|');
@@ -3852,29 +5339,256 @@ var translate = {
 				resultShowText: translate.element.nodeAnalyse.analyse 进行设置翻译后的文本渲染时，提前计算好这个node显示的所有文本，然后在赋予 dom，这里是计算好的node要整体显示的文本
 			*/	
 			analyseReplaceBefore_DateToTranslateNode:function(node, attribute, resultShowText){
-				var translateNode; //当前操作的，要记录入 translate.node 中的，进行翻译的node
+				//console.log('analyseReplaceBefore_DateToTranslateNode: attribute:'+attribute+', resultShowText:'+resultShowText+', node:');
+				//console.log(node);
+
+				var translateNode = null; //当前操作的，要记录入 translate.node 中的，进行翻译的node
 				var translateNode_attribute = ''; //当前操作的是node中的哪个attribute，如果没有是node本身则是空字符串
 
 				if(typeof(attribute) === 'string' && attribute.length > 0){
-					//是操作的元素的某个属性
-					translateNode = node.getAttributeNode(attribute);
-					translateNode_attribute = attribute;
+					//是操作的元素的某个属性,这时要判断 是否是 input、textarea 的value属性
+					if(attribute !== null && attribute === 'value'){
+						var nodeNameLowerCase = translate.element.getNodeName(node).toLowerCase();
+						if((nodeNameLowerCase === 'input' || nodeNameLowerCase === 'textarea')){
+							translateNode = node;
+							translateNode_attribute = 'value';
+						}
+					}
+					if(translateNode === null){
+						translateNode = node.getAttributeNode(attribute);
+						translateNode_attribute = attribute;
+					}
 				}else{
 					//操作的就是node本身
 					translateNode = node;
 				}
 
 				if(translate.node.find(translateNode)){
-					if(typeof(translate.node.get(translateNode).translateResults) == 'undefined'){
+					if(typeof(translate.node.get(translateNode).translateResults) === 'undefined'){
 						translate.node.get(translateNode).translateResults = {};
 					}
 					translate.node.get(translateNode).translateResults[resultShowText] = 1;
+					translate.node.get(translateNode).resultText = resultShowText;
 				}else{
 					//翻译过程中，会有时间差，比如通过文本翻译api请求，这时node元素本身被其他js改变了，导致翻译完成后，原本的node不存在了
 					//console.log('[debug] 数据异常，analyse - set 中发现 translate.node 中的 node 不存在，理论上应该只要被扫描了，被翻译了，到这里就一定会存在的，不存在怎么会扫描到交给去翻译呢');
 				}
 			},
 		},
+
+		/*js translate.element.iframe start*/
+		iframe:{
+			isUse:false, //是否启用，对非跨域的iframe的页面也进行自动翻译。true则是启用。默认是false为不启用
+			translateJsUrl: '', //设置载入的 translate.js 这个文件的url， iframe 中会自动
+			//启用对同域的iframe也进行翻译（即使页面中没有引入 translate.js）
+			use: function(translateJsUrl){
+				if(typeof(window.location.protocol) === 'string' && window.location.protocol.toLowerCase() === 'file:'){
+					console.log('ERROR: 您当前设置了 translate.element.iframe.use(...); 但是您当前的协议是file协议访问的，这个协议访问会存在跨域问题，所以您的设置没有生效。 您可以通过本地开一个访问服务，以 http、https 等正常请求的方式进行访问。');
+					return;
+				}
+				translate.element.iframe.isUse = true;
+				translate.element.iframe.translateJsUrl = translateJsUrl;
+			},
+			/*
+				用于记录已经操作过的iframe
+				key: iframe 元素
+				value: 
+					addLoad: true  如果没有添加 load 的事件，这里是空的，也就是通过判断 typeof(iframeMap.get(iframe).addLoad) === 'boolean' && iframeMap.get(iframe).addLoad === true 来判断是否已经添加 load 事件了
+					isTranslate: true 是否已经触发过 ifr.injectJs(); 翻译了， 如果已经触发过，则是true 也就是通过判断 typeof(iframeMap.get(iframe).isTranslate) === 'boolean' && iframeMap.get(iframe).isTranslate === true 来判断是否已经触发过
+			*/
+			// iframe 节点可能被页面动态移除，使用 WeakMap 避免缓存强引用导致节点无法释放。
+			iframeMap: new WeakMap(),
+			
+			/**
+			 * 通过URL判断iframe是否未跨域（true=未跨域，false=跨域）
+			 * @param {HTMLIFrameElement} iframe - iframe DOM对象
+			 * @returns {boolean} true=未跨域，false=跨域
+			 */
+			isIframeSameOrigin: function(iframe) {
+				// 1. 先校验iframe参数有效性：不是有效DOM对象，直接返回false（跨域）
+				if (!iframe || !(iframe instanceof HTMLIFrameElement)) {
+					console.warn('传入的iframe不是有效的DOM对象');
+					return false;
+				}
+
+				// 2. 获取当前页面的origin
+				const currentOrigin = window.location.origin;
+
+				// 3. 获取iframe的实际URL（优先取内部URL，跨域则取src，增加兜底）
+				let iframeUrl;
+				try {
+					// 同域时：获取iframe最终的URL（含重定向）
+					iframeUrl = iframe.contentDocument?.URL || iframe.contentWindow?.location.href;
+				} catch (e) {
+					// 跨域时：取src，若src为空则默认about:blank
+					iframeUrl = iframe.src || 'about:blank';
+				}
+
+				// 4. 特殊处理：about:blank 视为未跨域
+				if (iframeUrl === 'about:blank') return true;
+
+				// 5. 解析iframe URL的origin并对比（增加解析容错）
+				try {
+					const iframeOrigin = new URL(iframeUrl).origin;
+					return currentOrigin === iframeOrigin;
+				} catch (e) {
+					// 无效URL解析失败，默认视为跨域
+					return false;
+				}
+			},
+			
+			/*
+				要执行注入时的对象。
+				每次注入一个iframe，都会new一个出来
+			*/
+			iframeJsInjector : class{
+				// 存储要注入的 JS 地址（可选，也可在调用时传入）
+				translateJsUrl = '';
+				iframe = null;
+
+				// 构造函数：初始化 JS 地址
+				constructor(iframe, translateJsUrl) {
+					this.translateJsUrl = translateJsUrl;
+					this.iframe = iframe;
+				}
+
+				//是否已经注入了tranlate.js ， true已经触发 importJsAndTranslateExecute(...) 注入
+				isInjectJs=false;
+
+				importJsAndTranslateExecute = function(){
+					//console.log('importJsAndTranslateExecute -> '+this.translateJsUrl);
+					if(this.isInjectJs === true){
+						console.log('已导入了，不在继续导入');
+						return;
+					}
+					if(!translate.element.iframe.isIframeSameOrigin(this.iframe)){
+						//console.log('iframe跨域，忽略 - ');
+						//console.log(this.iframe);
+						return;
+					}
+					
+					var iframeContentWindow;
+					try{
+						iframeContentWindow = this.iframe.contentWindow;
+					} catch (e) {
+						console.error('注入失败（大概率跨域）', e);
+						return;
+					}
+					
+					this.isInjectJs = true;
+					try {
+						const iframeDoc = this.iframe.contentDocument || this.iframe.contentWindow.document;
+						// 用 iframe 新文档创建 script（此时是新文档，不是之前的 about:blank）
+						const script = iframeDoc.createElement('script');
+						script.type = 'text/javascript';
+						script.src = this.translateJsUrl;
+						
+						script.onload = function() {
+							//console.log('✅ JS 注入成功');
+
+							var parentConfigData = parent.translate.config.get();
+							iframeContentWindow.translate.config.set(parentConfigData);
+							iframeContentWindow.translate.to = iframeContentWindow.translate.language.getCurrent();
+							//iframeContentWindow.translate.time.use = true;
+
+							setTimeout(function(){
+								iframeContentWindow.translate.execute();
+							},10);
+
+						}
+						script.onerror = function(err) {
+							console.log('失败：');
+							console.log(err);
+						}
+
+						// 插入到新文档的任意位置（无需 head，body/html 都可）
+						iframeDoc.documentElement.appendChild(script);
+						
+					} catch (e) {
+						console.error('注入失败（大概率跨域）', e);
+					}
+				}
+
+				injectJs = function(){
+					if(typeof(this.iframe) === 'object'){
+						//存在于当前页面的dom中了
+						if(typeof(this.iframe.contentDocument) === 'object'){
+							//有了dom了
+							if(typeof(this.iframe.contentDocument.readyState) === 'string'){
+								//有了正常的状态了
+								this.importJsAndTranslateExecute();
+							}else{
+								console.log('iframe - '+this.translateJsUrl+' state is not string');
+							}
+						}else{
+							console.log('iframe - '+this.translateJsUrl+' state is not string');
+						}
+					}else{
+						console.log('iframe - '+this.translateJsUrl+' is not find (not object)');
+					}
+				}
+			},
+
+
+			/*
+				对某个iframe进行翻译  
+				iframeTag: 传入 iframe 的对象，比如  document.getElementById('iframe')
+			*/
+			execute: function(iframeTag){
+				if(translate.element.iframe.isUse === false){
+					return;
+				}
+
+				if(!translate.element.iframe.isIframeSameOrigin(iframeTag)){
+					//console.log('iframe跨域，忽略 - ');
+					//console.log(this.iframeTag);
+					return;
+				}
+
+				if(translate.element.iframe.iframeMap.get(iframeTag) === null || typeof(translate.element.iframe.iframeMap.get(iframeTag)) === 'undefined'){
+					translate.element.iframe.iframeMap.set(iframeTag, {});
+				}
+				
+				if(typeof(iframeTag.src) === 'string' && iframeTag.src.trim().length > 0){
+					//是通过 src 加载内容的
+					
+					// 先监听 iframe 的 load（确保 iframe 内部 window 存在）
+					//console.log(typeof(translate.element.iframe.iframeMap.get(iframeTag)));
+					if(typeof(translate.element.iframe.iframeMap.get(iframeTag).addLoad) !== 'boolean' || translate.element.iframe.iframeMap.get(iframeTag).addLoad !== true){
+						//未添加过 load 事件，需要添加
+						translate.element.iframe.iframeMap.get(iframeTag).addLoad = true;
+						iframeTag.addEventListener('load', function() {
+							console.log('----load url: '+iframeTag.src);
+							var iframeWindow = iframeTag.contentWindow;
+							if(typeof(iframeWindow.translate) === 'object' && typeof(iframeWindow.translate.version) === 'string'){
+								//发现了iframe中已经成功引入了 translate.js ，将不在注入
+							}else{
+								//iframe中没有发现 translate.js ，进行注入								
+								translate.element.iframe.iframeMap.get(iframeTag).isTranslate = true;
+								var ifr = new translate.element.iframe.iframeJsInjector(iframeTag, translate.element.iframe.translateJsUrl);
+								ifr.injectJs();
+							}
+						});
+					}
+					
+					
+					
+				}else{
+					//不通过src，根本就没有src参数，直接用js渲染赋予内容的，那么就不用监听了，直接强制赋予
+					var ifr = new translate.element.iframe.iframeJsInjector(iframeTag, translate.element.iframe.translateJsUrl);
+					ifr.injectJs();
+				}
+				
+				
+				
+				// 先监听 iframe 的 load（确保 iframe 内部 window 存在）
+				//iframeTag.addEventListener('load', function() {
+				//	console.log('----load');
+				//});
+			}
+		},
+		/*js translate.element.iframe end*/
+
 		//获取这个node元素的node name ,如果未发现，则返回''空字符串
 		getNodeName:function(node){
 			if(node == null || typeof(node) == 'undefined'){
@@ -3898,7 +5612,10 @@ var translate = {
 				}
 			}
 		},
-		//向下遍历node
+		/*
+			向下遍历node
+			其中如果使用了自定义 textarea 、input 的 value 属性，则认为是 node 本身进行挂钩，而非其 value 值（value值并不是个node）
+		*/
 		whileNodes:function(uuid, node){
 			if(node == null || typeof(node) == 'undefined'){
 				return;
@@ -3922,7 +5639,7 @@ var translate = {
 				//console.log('------------');
 				
 				//判断当前元素是否在ignore忽略的tag、id、class name中
-				if(!translate.ignore.isIgnore(node)){
+				if(!translate.ignore.isIgnore(node, {node: node.getAttributeNode('title'), attribute: 'title'})){
 					//不在忽略的里面，才会加入翻译
 					//translate.addNodeToQueue(uuid, node, node['title'], 'title');
 					translate.addNodeToQueue(uuid, node.getAttributeNode('title'), node['title'], '');
@@ -3934,6 +5651,7 @@ var translate = {
 			if(typeof(translate.element.tagAttribute[nodeNameLowerCase]) != 'undefined'){
 				//console.log('find:'+nodeNameLowerCase);
 				//console.log(translate.element.tagAttribute[nodeNameLowerCase]);
+				//console.log(translate.element.tagAttribute[nodeNameLowerCase].attribute);
 
 				for(var attributeName_index in translate.element.tagAttribute[nodeNameLowerCase].attribute){
 					if (!translate.element.tagAttribute[nodeNameLowerCase].attribute.hasOwnProperty(attributeName_index)) {
@@ -3947,11 +5665,13 @@ var translate = {
 					//console.log(attributeName);
 					//console.log(node.getAttribute(attributeName));
 
-
-					if(nodeNameLowerCase == 'input' && attributeName.toLowerCase() == 'value'){
+					//是否是 input、 textarea 的 value ，如果是 则是 true
+					var isInputValue = false;
+					if((nodeNameLowerCase === 'input' || nodeNameLowerCase === 'textarea') && attributeName.toLowerCase() == 'value'){
 						//如果是input 的value属性，那么要直接获取，而非通过 attribute ，不然用户自己输入的通过 attribute 是获取不到的 - catl 赵阳 提出
 						attributeValue = node.value;
 						DOMPropOrHTMLAttr = 'DOMProperty';
+						isInputValue = true;
 					}else{
 						/*
 						 * 默认是 HtmlAtrribute 也就是 HTML特性。取值有两个:
@@ -3976,10 +5696,10 @@ var translate = {
 					//	//这个tag标签没有这个 attribute，忽略
 					//	continue
 					//}
-					//判断当前元素是否在ignore忽略的tag、id、class name中   v3.15.7 增加					
-					if(!translate.ignore.isIgnore(node)){
+					//判断当前元素是否在ignore忽略的tag、id、class name中   v3.15.7 增加	
+					if(!translate.ignore.isIgnore(node, {attribute: attributeName})){
 						//加入翻译
-						translate.addNodeToQueue(uuid, node.getAttributeNode(attributeName), attributeValue, '');
+						translate.addNodeToQueue(uuid, isInputValue? node:node.getAttributeNode(attributeName), attributeValue, isInputValue? 'value':'');
 					}
 				}
 			}
@@ -4037,18 +5757,19 @@ var translate = {
 
 
 
-			/**** 避免中途局部翻译，在判断一下 ****/
-			//判断当前元素是否在ignore忽略的tag、id、class name中
-			if(translate.ignore.isIgnore(node)){
-				//console.log('node包含在要忽略的元素中：');
-				//console.log(node);
-				return;
-			}
-
 			//node分析，分析这个node的所有可翻译属性（包含自定义翻译属性 translate.element.tagAttribute ）
 			var nodeAnalyChild = translate.element.nodeAnalyse.gets(node);
 			//console.log(nodeAnalyChild);
 			for(var nci = 0; nci < nodeAnalyChild.length; nci++){
+
+				/**** 避免中途局部翻译，在判断一下 ****/
+				//判断当前元素是否在ignore忽略的tag、id、class name中。 这里要放到循环里面，是因为class 有 function 参数进行可编程判断
+				if(translate.ignore.isIgnore(node, {node: nodeAnalyChild[nci].node, attribute: nodeAnalyChild[nci].attribute})){
+					//console.log('node包含在要忽略的元素中：');
+					//console.log(node);
+					continue;
+				}
+
 				translate.addNodeToQueue(uuid, nodeAnalyChild[nci].node, nodeAnalyChild[nci].text, '');
 			}
 			/*
@@ -4183,9 +5904,12 @@ var translate = {
 	 * text 当前要翻译的目标文本
 	 * attribute 是否是元素的某个属性。比如 a标签中的title属性， a.title 再以node参数传入时是string类型的，本身并不是node类型，所以就要传入这个 attribute=title 来代表这是a标签的title属性。同样第二个参数node传入的也不能是a.title，而是传入a这个node元素
 	 			如果不穿或者传入 '' 空字符串，则代表不是 attribute 属性，而是nodeValue 本身
+	 			注意， textarea、input 标签的 value 属性的特殊性，如果 node 是textarea、input ，那么value时这个 attribute 要传递 'value' 进来的
 	 */
 	addNodeToQueue:function(uuid, node, text, attribute){
-		//console.log(text)
+		//console.log('addNodeToQueue - params: uuid:'+uuid+', text:'+text+', attribute:'+attribute+', node:');
+		//console.log(node);
+		
 		if(node == null || text == null || text.length == 0){
 			return;
 		}
@@ -4193,10 +5917,10 @@ var translate = {
 
 		//console.log('find tag ignore : '+node.nodeValue+', '+node.nodeName+", "+node.nodeType+", "+node.tagName);
 		//console.log('addNodeToQueue into -- node:'+node+', text:'+text+', attribute:'+attribute);
-		var nodename = translate.element.getNodeName(node);
+		var nodename = translate.element.getNodeName(node).toLowerCase();
 		
 		//判断如果是被 <!--  --> 注释的区域，不进行翻译
-		if(nodename.toLowerCase() == '#comment'){
+		if(nodename == '#comment'){
 			return;
 		}
 		//console.log('\t\t'+text);
@@ -4238,9 +5962,14 @@ var translate = {
 		var translateNode; //当前操作的，要记录入 translate.node 中的，进行翻译的node
 		var translateNode_attribute = ''; //当前操作的是node中的哪个attribute，如果没有是node本身则是空字符串
 		if(typeof(attribute) === 'string' && attribute.length > 0){
-			//是操作的元素的某个属性
-			translateNode = node.getAttributeNode(attribute);
-			translateNode_attribute = attribute;
+			//是操作的元素的某个属性,这时要判断 是否是 input、textarea 的value属性
+			if((nodename === 'input' || nodename === 'textarea') && attribute !== null && attribute === 'value'){
+				translateNode = node;
+				translateNode_attribute = 'value';
+			}else{
+				translateNode = node.getAttributeNode(attribute);
+				translateNode_attribute = attribute;
+			}
 		}else{
 			//操作的就是node本身
 			translateNode = node;
@@ -4251,7 +5980,7 @@ var translate = {
 
 		//var nodeAttribute = translate.node.getAttribute(attribute);
 		//console.log(text+'-----:');
-		//console.log(nodeAttribute);
+		//console.log(translate.node.get(translateNode));
 		//if(typeof(translate.node.get(translateNode)[nodeAttribute.key]) == 'undefined'){
 		//	translate.node.get(node)[nodeAttribute.key] = {};
 		//}
@@ -4264,7 +5993,8 @@ var translate = {
 			//没有过，是第一次，那么赋予值
 			translate.node.get(translateNode).originalText = text;
 		}
-		//console.log(translate.node.get(node)[nodeAttribute.key]);
+		//console.log(translateNode);
+		//console.log(translate.node.get(translateNode));
 		/*
 		if(typeof(translate.node.get(node).translateTexts) != 'undefined'){ 
 			//这个node之前已经被扫描过了，那么判断一下上次扫描的文本跟当前获取到的文本是否一致，如果一致，那就没必要进行翻译了
@@ -4308,9 +6038,9 @@ var translate = {
 		for (var ri = 0; ri < translate.ignore.textRegex.length; ri++) {
 			var regex = translate.ignore.textRegex[ri];
 			for (var tai = 0; tai < textArray.length; tai++) {
-				var text = textArray[tai];
+				var currentText = textArray[tai];
 				//temporaryIgnoreTexts = text.match(regex) || []
-				var matches = text.match(regex) || [];
+				var matches = currentText.match(regex) || [];
 				temporaryIgnoreTexts = temporaryIgnoreTexts.concat(matches);
 				//translate.ignore.text = translate.ignore.text.concat(ignoreTexts)
 			}
@@ -4321,7 +6051,7 @@ var translate = {
 			temporaryIgnoreTexts = translate.ignore.text;
 		}else{
 			//将其加入 translate.history.translateTexts 中
-			temporaryIgnoreTexts.concat(translate.ignore.text);
+			temporaryIgnoreTexts = temporaryIgnoreTexts.concat(translate.ignore.text);
 			for(var ti = 0; ti<temporaryIgnoreTexts.length; ti ++){
 				translate.history.translateText.add(temporaryIgnoreTexts[ti], temporaryIgnoreTexts[ti]);
 			}
@@ -4338,7 +6068,7 @@ var translate = {
 			//console.log(textArray);
 			textArray = translate.nomenclature.dispose(textArray, temporaryIgnoreTexts[ti], temporaryIgnoreTexts[ti], {
 				node:translateNode,
-				attribute:''
+				attribute:translateNode_attribute
 			}).texts;
 			//console.log(textArray);
 		}
@@ -4367,7 +6097,7 @@ var translate = {
 				//console.log(textArray);
 				var nomenclatureDispose = translate.nomenclature.dispose(textArray, nomenclatureKey, nomenclatureValue, {
 					node:translateNode,
-					attribute:''
+					attribute:translateNode_attribute
 				});
 				
 				textArray = nomenclatureDispose.texts;
@@ -4388,11 +6118,14 @@ var translate = {
 		/**** v3.10.2.20241206 - 自定义术语能力全面优化 - end ****/
 		
 
-
 		//记录 nodeHistory - 判断text是否已经被拆分了
 		if(textArray.length > 0 && textArray[0] != text){  //主要是后面的是否相等，前面的>0只是避免代码报错
 			translate.node.get(translateNode).whole = false; //已经被拆分了，不是整体翻译了
 			//这时，也默认给其赋值操作，将自定义术语匹配后的结果进行赋予
+
+			for(var tai = 0; tai < textArray.length; tai++){
+				translate.node.get(translateNode).translateTexts[textArray[tai]] = null;
+			}
 		}else{
 			translate.node.get(translateNode).whole = true; //未拆分，是整体翻译
 		}
@@ -4424,6 +6157,7 @@ var translate = {
 			*/
 
 			var newAddQueueArray = translate.addNodeToQueueAnalysis(uuid, node, textArray[tai], attribute);
+			//console.log(newAddQueueArray)
 			Array.prototype.push.apply(addQueueObjectArray, newAddQueueArray);
 		}
 		
@@ -4467,6 +6201,8 @@ var translate = {
 	*/
 	addNodeToQueueAnalysis:function(uuid, node, text, attribute){
 		//获取当前是什么语种
+		//console.log('uuid:'+uuid+', text:'+text+', attribute:'+attribute+'node:');
+		//console.log(node);
 		//var langs = translate.language.get(text);
 		var textRecognition = translate.language.recognition(text);
 		var langs = textRecognition.languageArray;
@@ -4615,6 +6351,9 @@ var translate = {
 
 	*/
 	addNodeQueueItem:function(uuid, node, word, attribute, lang, beforeText, afterText){
+		//console.log('uuid:'+uuid+', word:'+word+', attribute:'+attribute+', lang:'+lang+', beforeText:'+beforeText+', afterText:'+afterText+', node:');
+		//console.log(node);
+
 		//创建二维数组， key为语种，如 english
 		if(translate.nodeQueue[uuid]['list'][lang] == null || typeof(translate.nodeQueue[uuid]['list'][lang]) == 'undefined'){
 			translate.nodeQueue[uuid]['list'][lang] = new Array();
@@ -4691,6 +6430,121 @@ var translate = {
 		
 	},
 
+	/*
+		将 wholeContext 行内文本组加入 translate.nodeQueue。
+
+		这个方法只创建一种受控的 wholeContext queue item，不在本提交中接入扫描、
+		请求、缓存或回填流程。普通 nodeQueue item 的结构保持不变；wholeContext
+		item 只通过 type:'wholeContext' 明确标记自己的特殊语义。
+
+		普通 item 的 nodes 表示“多个 DOM 节点共享同一个字符串译文”。
+		wholeContext item 的 nodes 表示“同一个上下文翻译组里的多个分段回填目标”，
+		因此必须满足：
+
+			translateText[i] 对应 nodes[i].node
+
+		这里不复用 addNodeQueueItem(...)，因为 addNodeQueueItem(...) 会按字符串
+		hash 合并相同文本节点；wholeContext 第一版必须让一个 group 对应一个独立
+		item，避免两个相同 group 共用 nodes 数组后破坏下标映射。
+
+		hash 使用 wholeContext 独立命名空间，并加入当前 execute uuid 和随机 uuid：
+		1. 避免 ["Please read ", "the docs"] 与普通 "Please read the docs" 混用同一个 hash。
+		2. 避免两个文本完全相同的 wholeContext group 合并到同一个 item。
+		3. 第一版不做 wholeContext 去重和缓存，避免引入 nodeGroups 等复杂结构。
+	*/
+	addWholeContextToQueue:function(uuid, group){
+		if(!translate.whole.context.isUse()){
+			return null;
+		}
+		if(group == null || typeof(group) == 'undefined'
+			|| typeof(group.nodes) == 'undefined'
+			|| typeof(group.texts) == 'undefined'
+			|| typeof(group.nodes.length) == 'undefined'
+			|| typeof(group.texts.length) == 'undefined'){
+			return null;
+		}
+		if(group.nodes.length < 2 || group.nodes.length !== group.texts.length){
+			return null;
+		}
+
+		for(var i = 0; i < group.texts.length; i++){
+			if(group.nodes[i] == null || typeof(group.nodes[i]) == 'undefined'){
+				return null;
+			}
+			if(typeof(group.texts[i]) !== 'string' || group.texts[i].trim().length == 0){
+				return null;
+			}
+
+			/*
+				普通 addNodeToQueue(...) 会用 originalText 判断节点是否已经入队。
+				wholeContext 后续接入扫描时也必须遵守这个根规则：如果某个 TextNode
+				已经被旧流程记录过，就不能再加入 wholeContext，避免同一节点重复进入
+				普通 item 和 wholeContext item。
+			*/
+			var nodeData = translate.node.get(group.nodes[i]);
+			if(nodeData != null && typeof(nodeData.originalText) === 'string'){
+				return null;
+			}
+		}
+
+		var contextText = group.texts.join('');
+		if(typeof(contextText) !== 'string' || contextText.trim().length == 0){
+			return null;
+		}
+
+		var textRecognition = translate.language.recognition(contextText);
+		var lang = translate.language.recognition_languageName_force(textRecognition);
+		if(typeof(lang) !== 'string' || lang.length == 0){
+			return null;
+		}
+
+		if(typeof(translate.nodeQueue[uuid]) == 'undefined' || translate.nodeQueue[uuid] == null){
+			translate.nodeQueue[uuid] = new Array();
+			translate.nodeQueue[uuid]['expireTime'] = Date.now() + 120*1000;
+			translate.nodeQueue[uuid]['list'] = new Array();
+		}
+		if(translate.nodeQueue[uuid]['list'][lang] == null || typeof(translate.nodeQueue[uuid]['list'][lang]) == 'undefined'){
+			translate.nodeQueue[uuid]['list'][lang] = new Array();
+		}
+
+		var hashSeed = 'wholeContext:'+uuid+':'+translate.util.uuid()+':'+JSON.stringify(group.texts);
+		var hash = translate.util.hash(hashSeed);
+		if(translate.nodeQueue[uuid]['list'][lang][hash] != null && typeof(translate.nodeQueue[uuid]['list'][lang][hash]) != 'undefined'){
+			// 理论上随机 uuid 已经足够避免冲突；这里保守跳过，避免覆盖已有队列项。
+			return null;
+		}
+
+		translate.nodeQueue[uuid]['list'][lang][hash] = new Array();
+		translate.nodeQueue[uuid]['list'][lang][hash]['type'] = 'wholeContext';
+		translate.nodeQueue[uuid]['list'][lang][hash]['nodes'] = new Array();
+		translate.nodeQueue[uuid]['list'][lang][hash]['original'] = contextText;
+		translate.nodeQueue[uuid]['list'][lang][hash]['translateText'] = group.texts.slice(0);
+
+		for(var nodeIndex = 0; nodeIndex < group.nodes.length; nodeIndex++){
+			var node = group.nodes[nodeIndex];
+			var text = group.texts[nodeIndex];
+
+			if(translate.node.get(node) == null){
+				translate.node.set(node, {});
+			}
+			translate.node.get(node).attribute = '';
+			translate.node.get(node).originalText = text;
+			translate.node.get(node).whole = true;
+			if(typeof(translate.node.get(node).translateTexts) === 'undefined'){
+				translate.node.get(node).translateTexts = {};
+			}
+			translate.node.get(node).translateTexts[text] = null;
+
+			translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][nodeIndex] = new Array();
+			translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][nodeIndex]['node'] = node;
+			translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][nodeIndex]['attribute'] = '';
+			translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][nodeIndex]['beforeText'] = '';
+			translate.nodeQueue[uuid]['list'][lang][hash]['nodes'][nodeIndex]['afterText'] = '';
+		}
+
+		return translate.nodeQueue[uuid]['list'][lang][hash];
+	},
+
 	//全部翻译，node内容全部翻译，而不是进行语种提取，直接对node本身的全部内容拿出来进行直接全部翻译
 	whole:{
 		isEnableAll:false, //是否开启对整个html页面的整体翻译，也就是整个页面上所有存在的能被翻译的全部会采用整体翻译的方式。默认是 false不开启		
@@ -4705,6 +6559,297 @@ var translate = {
 		class:[],
 		tag:[],
 		id:[],
+
+		/*
+			whole 行内上下文分段翻译的根开关。
+
+			默认关闭：
+			1. 旧用户即使已经使用 translate.whole，也不会自动进入新的分段上下文请求。
+			2. 只有明确调用 translate.whole.context.use() 后，后续 wholeContext 收集才允许生效。
+			3. 这里不直接触发扫描、入队或请求，只作为后续能力的兼容性开关。
+		*/
+		context:{
+			is_use:false,
+
+			// 开启 whole 行内上下文分段翻译能力；只设置开关，不立即扫描或发起请求。
+			use:function(){
+				translate.whole.context.is_use = true;
+			},
+
+			// 判断 whole 行内上下文分段翻译能力是否已启用，供后续扫描、入队、请求逻辑统一使用。
+			isUse:function(){
+				return translate.whole.context.is_use === true;
+			},
+
+			/*
+				只判断当前元素自身是否命中 translate.whole.tag/class/id。
+				不能复用 translate.whole.isWhole()，因为 isWhole() 会向父级追溯；
+				wholeContext 的收集根必须只认当前元素，否则子元素会重复触发收集。
+				这里不接入 translate.whole.isEnableAll，避免全页面级上下文收集过大。
+			*/
+			isRootElement:function(ele){
+				if(!translate.whole.context.isUse()){
+					return false;
+				}
+				if(ele == null || typeof(ele) == 'undefined' || ele.nodeType !== 1){
+					return false;
+				}
+
+				var nodename = translate.element.getNodeName(ele).toLowerCase();
+				if(nodename.length == 0 || nodename === 'html'){
+					return false;
+				}
+
+				if(translate.whole.tag.length > 0 && translate.whole.tag.indexOf(nodename) > -1){
+					return true;
+				}
+
+				if(translate.whole.id.length > 0 && typeof(ele.id) === 'string' && ele.id.length > 0 && translate.whole.id.indexOf(ele.id) > -1){
+					return true;
+				}
+
+				if(translate.whole.class.length > 0 && typeof(ele.className) === 'string'){
+					var className = ele.className.trim();
+					if(className.length > 0){
+						var classNames = className.split(/\s+/);
+						for(var i = 0; i < classNames.length; i++){
+							if(translate.whole.class.indexOf(classNames[i]) > -1){
+								return true;
+							}
+						}
+					}
+				}
+
+				return false;
+			},
+
+			/*
+				判断元素是否应切断 wholeContext 行内文本流。
+
+				这个方法服务于后续的 wholeContext 收集函数：当一个 translate.whole
+				容器中同时存在 TextNode、a、span 等行内节点时，收集函数会尽量把
+				连续的行内文本组成一个上下文翻译组；但遇到 br、块级元素、code、
+				ignore、translate="no" 等边界时，必须结束当前组，避免把不应该共用
+				上下文的文本强行合并。
+
+				示例：
+				<p>
+					Please <a>read the docs</a><br><code>npm install</code> before use.
+				</p>
+
+				后续收集 p 的子节点时：
+				1. "Please " 和 a 中的 "read the docs" 可以归入同一个行内上下文组。
+				2. br 会让本方法返回 true，从而结束当前组。
+				3. code 也会返回 true，代码内容不参与翻译，也不跨 code 合并上下文。
+				4. " before use." 会在边界之后作为新的文本流重新开始判断。
+
+				这里故意只做静态、保守的边界判断，不读取 getComputedStyle()。
+				原因是 DOM 扫描阶段可能会频繁调用本方法，如果读取运行时样式，
+				浏览器可能触发布局计算，增加页面翻译时的性能成本。第一版先用
+				明确的标签、属性、class 和 translate.ignore 规则保证行为可控。
+
+				translate.ignore.isIgnore(ele) 会向父级追溯并执行用户自定义 ignore
+				函数，成本比普通标签和属性判断更高，所以放在最后执行。
+			*/
+			isBreakElement:function(ele){
+				if(ele == null || typeof(ele) == 'undefined' || ele.nodeType !== 1){
+					return true;
+				}
+
+				var nodename = translate.element.getNodeName(ele).toLowerCase();
+				switch(nodename){
+					case 'br':
+					case 'hr':
+					case 'pre':
+					case 'code':
+					case 'script':
+					case 'style':
+					case 'template':
+					case 'noscript':
+					case 'iframe':
+					case 'canvas':
+					case 'svg':
+					case 'math':
+					case 'div':
+					case 'p':
+					case 'section':
+					case 'article':
+					case 'header':
+					case 'footer':
+					case 'main':
+					case 'nav':
+					case 'aside':
+					case 'blockquote':
+					case 'h1':
+					case 'h2':
+					case 'h3':
+					case 'h4':
+					case 'h5':
+					case 'h6':
+					case 'table':
+					case 'thead':
+					case 'tbody':
+					case 'tfoot':
+					case 'tr':
+					case 'td':
+					case 'th':
+					case 'ul':
+					case 'ol':
+					case 'li':
+					case 'dl':
+					case 'dt':
+					case 'dd':
+					case 'figure':
+					case 'figcaption':
+					case 'form':
+					case 'input':
+					case 'textarea':
+					case 'select':
+					case 'option':
+					case 'button':
+						return true;
+				}
+
+				if(ele.hidden === true || (ele.getAttribute && ele.getAttribute('hidden') !== null)){
+					return true;
+				}
+
+				if(ele.getAttribute){
+					var translateAttr = ele.getAttribute('translate');
+					if(typeof(translateAttr) === 'string' && translateAttr.toLowerCase() === 'no'){
+						return true;
+					}
+				}
+
+				if(ele.isContentEditable === true){
+					return true;
+				}
+
+				if(typeof(ele.className) === 'string'){
+					var className = ele.className.trim();
+					if(className.length > 0){
+						var classNames = className.split(/\s+/);
+						for(var i = 0; i < classNames.length; i++){
+							if(classNames[i] === 'notranslate'){
+								return true;
+							}
+						}
+					}
+				}
+
+				if(translate.ignore.isIgnore(ele)){
+					return true;
+				}
+
+				return false;
+			},
+
+			/*
+				收集 wholeContext 根元素内连续的行内 TextNode。
+
+				返回值只是一组临时扫描结果：
+				[
+					{
+						nodes: [textNode1, textNode2],
+						texts: ["Please read ", "the docs"]
+					}
+				]
+
+				这里不标记 TextNode，也不加入 nodeQueue；后续接入入队能力时，
+				再决定哪些 group 需要真正进入翻译队列。这样可以避免当前提交
+				因为半成品逻辑跳过旧翻译流程。
+
+				注意：
+				1. 从 root.childNodes 开始遍历，而不是直接 walk(root)。root 本身
+				   通常是 p、div 等 whole 容器，如果把 root 交给 isBreakElement(root)，
+				   会被块级规则直接切断，导致完全收集不到内容。
+				2. 参与收集的 TextNode 必须先通过 nodeAnalyse.gets(node) 和
+				   translate.ignore.isIgnore(...) 这两层旧流程判断；wholeContext 只改变
+				   上下文组织方式，不新增旧流程不翻译的节点。
+				3. 空白、换行、缩进 TextNode 按旧流程视为空文本，不参与 wholeContext。
+				   如果多个 segment 之间需要空格辅助翻译，应由后端 segment-aware 接口
+				   根据语言和标点在内部处理，前端不在 DOM 结构外主动补空格。
+				4. 只有跨多个有效 TextNode 的文本流才返回 group；单个 TextNode 继续走旧流程。
+			*/
+			collectInlineTextGroups:function(root){
+				var groups = [];
+				if(!translate.whole.context.isRootElement(root)){
+					return groups;
+				}
+
+				var currentGroup = {nodes:[], texts:[]};
+
+				var flushGroup = function(){
+					if(currentGroup.nodes.length > 1){
+						groups.push(currentGroup);
+					}
+					currentGroup = {nodes:[], texts:[]};
+				};
+
+				var appendTextNode = function(node){
+					/*
+						必须复用旧流程的 nodeAnalyse.gets(node)，不能直接读取 node.nodeValue。
+						这样 wholeContext 只改变“多个 TextNode 如何组成上下文”，不改变
+						“哪些 TextNode 有资格参与翻译”的根规则。
+					*/
+					var nodeAnalyChild = translate.element.nodeAnalyse.gets(node);
+					for(var nci = 0; nci < nodeAnalyChild.length; nci++){
+						if(nodeAnalyChild[nci].attribute !== '' || nodeAnalyChild[nci].node !== node){
+							continue;
+						}
+
+						if(translate.ignore.isIgnore(node, {node: nodeAnalyChild[nci].node, attribute: nodeAnalyChild[nci].attribute})){
+							flushGroup();
+							return;
+						}
+
+						currentGroup.nodes.push(nodeAnalyChild[nci].node);
+						currentGroup.texts.push(nodeAnalyChild[nci].text);
+					}
+				};
+
+				var walk = function(node){
+					if(node == null || typeof(node) == 'undefined'){
+						flushGroup();
+						return;
+					}
+
+					if(node.nodeType === 3){
+						appendTextNode(node);
+						return;
+					}
+
+					if(node.nodeType !== 1){
+						flushGroup();
+						return;
+					}
+
+					if(translate.whole.context.isBreakElement(node)){
+						flushGroup();
+						return;
+					}
+
+					var childNodes = node.childNodes;
+					if(childNodes == null || typeof(childNodes) == 'undefined'){
+						return;
+					}
+					for(var i = 0; i < childNodes.length; i++){
+						walk(childNodes[i]);
+					}
+				};
+
+				var childNodes = root.childNodes;
+				if(childNodes == null || typeof(childNodes) == 'undefined'){
+					return groups;
+				}
+				for(var i = 0; i < childNodes.length; i++){
+					walk(childNodes[i]);
+				}
+				flushGroup();
+
+				return groups;
+			}
+		},
 
 		//运行时出现自检并在浏览器控制台提示性文本。 
 		//在执行翻译，也就是 execute() 时，会调用此方法。
@@ -4766,7 +6911,7 @@ var translate = {
 				
 
 				//判断class name
-				if(parentNode.className != null){
+				if(parentNode.className !== null && typeof(parentNode.className) === 'string'){
 					var classNames = parentNode.className;
 					if(classNames == null || typeof(classNames) != 'string'){
 						continue;
@@ -4962,9 +7107,15 @@ var translate = {
 			}
 			return translate.language.getLocal();
 		},
+
+
 		//如果第一次用，默认以什么语种显示。
 		//比如本地当前语种是简体中文，这里设置为english，那么用户第一次使用时，会自动翻译为english进行显示。如果用户手动切换为其他语种比如韩语，那么就遵循用户手动切换的为主，显示韩语。
+		defaultTo:'',
 		setDefaultTo:function(languageName){
+			if(typeof(languageName) === 'string' && languageName.trim().length > 0){
+				translate.language.defaultTo = languageName;
+			}
 			var to_storage = translate.storage.get('to');
 			if(to_storage != null && typeof(to_storage) != 'undefined' && to_storage.length > 0){
 				//之前有过使用，并且主动设置过目标语种，那么不进行处理
@@ -4989,6 +7140,10 @@ var translate = {
 			translate.to = '';
 			translate.storage.set('to','');
 		},
+		//标记已执行了 translate.language.setUrlParamControl  如果已经执行启用，则是true，默认是不启用是false
+		setUrlParamControl_use: false,
+		// translate.language.setUrlParamControl('language') 这里传入的 language 参数，默认不设置则是 language ，比如传入 lang ，那这个 setUrlParamControl_name 值便是 lang
+		setUrlParamControl_name: 'language',
 		//根据URL传参控制以何种语种显示
 		//设置可以根据当前访问url的某个get参数来控制使用哪种语言显示。
 		//比如当前语种是简体中文，网页url是http://translate.zvo.cn/index.html ,那么可以通过在url后面增加 language 参数指定翻译语种，来使网页内容以英文形态显示 http://translate.zvo.cn/index.html?language=english
@@ -4997,6 +7152,7 @@ var translate = {
 			if(typeof(paramName) == 'undefined' || paramName.length < 1){
 				paramName = 'language';
 			}
+			translate.language.setUrlParamControl_name = paramName;
 			var paramValue = translate.util.getUrlParam(paramName);
 			if(typeof(paramValue) == 'undefined'){
 				return;
@@ -5012,6 +7168,8 @@ var translate = {
 			获取翻译区域的原始文本，翻译前的文本。 这里会把空白符等过滤掉，只返回纯显示的文本
 			也就是获取 translate.setDocument(...) 定义的翻译区域中，翻译前，要参与翻译的文本。 
 			其中像是 translate.ignore.tag 这种忽略翻译的标签，这里也不会获取的，这里只是获取实际要参与翻译的文本。
+
+			返回值： 字符串。 如果获取不到，则返回空字符串 ''
 		 */
 		getTranslateAreaText:function(){
 			//v3.16.1 优化，获取本地语种，针对开源中国只对 readme 部分进行翻译的场景，将针对设置的 translate.setDocument() 区域的元素的显示文本进行判定语种
@@ -5066,7 +7224,7 @@ var translate = {
 			if(translateAreaText == null || typeof(translateAreaText) == 'undefined' || translateAreaText.length < 1){
 				//未取到，默认赋予简体中文
 				translate.language.local = 'chinese_simplified';
-				return;
+				return '';
 			}
 			// 移除所有空白字符（包括空格、制表符、换行符等）
 			translateAreaText = translateAreaText.replace(/\s/g, '');
@@ -5913,11 +8071,11 @@ var translate = {
 		//是否包含 罗马尼亚语
 		romanian:function(str) {
 			/*
-				U+00C0–U+00FF：Latin-1 Supplement （包含带变音符号的字母，如 Ă/ă 的部分形式）
+				U+00C0–U+00FF：Latin-1 Supplement，排除 U+00D7（×）和 U+00F7（÷）
 				U+0100–U+017F：Latin Extended-A （包含罗马尼亚语特有字母 Ă/ă、Â/â、Î/î 等）；
 				U+0218–U+021B：Latin Extended-B （包含 Ș/ș 和 Ț/ț，这是罗马尼亚语标志性字母）
 			*/
-		    return /^[\u00C0-\u00FF\u0100-\u017F\u0218-\u021B]$/.test(str);
+		    return /^[\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF\u0100-\u017F\u0218-\u021B]$/.test(str);
 		},
 		//是否包含希腊语
 		greek:function(str){
@@ -6030,6 +8188,16 @@ var translate = {
 				return true
 			}
 
+			/*
+				U+00D7 ×：乘号
+				U+00F7 ÷：除号
+				这两个字符属于数学运算符，不属于罗马尼亚语字母，必须作为特殊字符处理，
+				避免计算表达式被错误加入罗马尼亚语翻译队列。
+			*/
+			if(/.*[\u00D7\u00F7]+.*$/.test(str)){
+				return true;
+			}
+
 			//其它特殊符号
 			if(/.*[\u2000-\u22FF]+.*$/.test(str)){ 
 				return true
@@ -6117,7 +8285,7 @@ var translate = {
             translateResult: 翻译的某个词或句，在翻译之后的文本，翻译结果
             language: 显示的语种，这里是对应的 translateResult 这个文本的语种。 也就是最终替换之后要显示给用户的语种。比如将中文翻译为英文，这里也就是英文。 这里会根据显示的语种不同，来自主决定是否前后加空格进行分割。 另外这里传入的语种也是 translate.js 的语种标识
         	
-        	(注意，如果 translateResult 中发现 translateOriginal 的存在，将不进行任何处理，因为没必要了，还会造成死循环。直接将 text 返回)
+			(注意，如果 translateResult 与 translateOriginal 完全相同，则不进行空格和标点格式化，直接将 text 返回)
 			
 			使用此方法：
 			var text = '你世好word世界';
@@ -6135,32 +8303,148 @@ var translate = {
 	executeByLocalLanguage:function(){
 		//先读用户自己浏览器的默认语言
 		var browserDefaultLanguage = translate.util.browserDefaultLanguage();
-		if(typeof(browserDefaultLanguage) != 'undefined' && browserDefaultLanguage.length > 0){
+		if(typeof(browserDefaultLanguage) !== 'undefined' && browserDefaultLanguage.length > 0){
 			translate.changeLanguage(browserDefaultLanguage);
 			return;
 		}
 
-		if(typeof(translate.request.api.ip) != 'string' || translate.request.api.ip == null || translate.request.api.ip.length < 1){
+		if(typeof(translate.request.api.ip) !== 'string' || translate.request.api.ip === null || translate.request.api.ip.length < 1){
 			return;
 		}
 
 		//如果用户浏览器没读到默认语言，或者默认语言没有对应到translate.js支持的语种，那么在采用ip识别的方式
-		translate.request.post(translate.request.api.ip, {}, function(data){
-			//console.log(data); 
-			if(data.result == 0){
-				translate.log('==== ERROR 获取当前用户所在区域异常 ====');
-				translate.log(data.info);
-				translate.log('==== ERROR END ====');
+		translate.request.post(translate.request.api.ip, {}, function(responseData, requestData){
+			//console.log(responseData); 
+			if(responseData.result != 1){
+				if(typeof(responseData.info) === 'string' && responseData.info.indexOf('file not find') > -1){
+					translate.log('WARNING ： 服务端未启动根据用户所在的ip来获取用户所在的具体位置（此能力因准确率问题已被废弃）。当前您的浏览器默认语言为：'+', translate.js自动识别出的为：'+browserDefaultLanguage);
+					if(typeof(browserDefaultLanguage) === 'string' && browserDefaultLanguage.length === 0){
+						translate.log('原因是浏览器默认语言未在 translate.js 的语言对照数据中找到对应的语种，请联系我们 https://translate.zvo.cn/4030.html 反馈此问题，我们追加对应的语种对应关系。');
+					}
+				}else{
+					translate.log('==== ERROR 获取当前用户所在区域异常 ====');
+					translate.log(responseData.info);
+					translate.log('==== ERROR END ====');
+				}
 			}else{
-				translate.storage.set('to',data.language);	//设置目标翻译语言
-				translate.to = data.language; //设置目标语言
-				translate.selectLanguageTag
+				translate.storage.set('to',responseData.language);	//设置目标翻译语言
+				translate.to = responseData.language; //设置目标语言
+				//translate.selectLanguageTag
 				translate.execute(); //执行翻译
 			}
 		}, null);
 	},
 	
 	util:{
+
+		/*
+			针对 textReplace 处理时对句子生成其全角、半角状态的处理 的 逆向处理
+
+			text: 要处理的文本句子
+			language: 目标语言，如 english
+			返回数组。
+
+			比如
+			 text 传入的是 :
+				，是吗。
+			 language 传入的是 english
+			 那么返回的数组是：
+			 	[
+					"，是吗。",				
+					", 是吗。",
+					"，是吗. ",
+					", 是吗. ",
+			 	]
+		*/
+		text_full_half_width_generate: function(text, language){
+			//console.log(text);
+
+			if(typeof(text) === 'undefined'){
+				return [text];
+			}
+			if(text.trim().length == 0){
+				return [text];
+			}
+
+			//文字之间需要空格，也就是半角标点符号，像是英语，法语， 则是true
+        	var requireSpace = translate.language.wordBlankConnector(language);
+
+        	/**** 判断 findText 的开始字符跟结束字符是否包含着 特殊符号 ，：。 因为在 translate.util.textReplace 替换时，会根据当前语种，自动将前后有句号等符号时进行中英的符号转换，此时如果 findText 传入的带有句号的，比如 “你好，” 而实际上text的内容是已经被替换过，就会导致 “你好，” 找不到，而 “你好,” 能找到 ****/
+			var punctuationMarks_fullWidth = ['，','：','。']; //标点符号-全角，用于中文等语种
+			var punctuationMarks_halfWidth = [',',':','.']; //标点符号-半角，用于英文等语种
+			
+			//如果要替换的文本只是原文本中的一部分，那么就需要进行处理了
+        	var findText = text;
+
+			//取第一个字符
+			var findTextFirstChar = findText.charAt(0);
+			//取最后一个字符
+			var findTextLastChar = findText.charAt(findText.length-1);
+
+        	/*
+			 * translateOriginal 生成的用于替换的变种，可能是多个，比如  “你好，世界。” 中的  "，世界" 在翻译为英文情况时，会出现这几种变种：
+			 * , 世界。
+			 * , 世界. 
+			 * ，世界。
+			 * ，世界. 
+			 * 根据不同的中英文，标点符号后面是否跟空格也不同
+			 */
+			var originalArray = [];
+			originalArray.push(text); //首先把当前的加入进去
+
+			//翻译替换为半角标点符号，如英语
+			if(requireSpace){
+
+				//第一个发现全角字符， 转为半角处理
+				if(punctuationMarks_fullWidth.indexOf(findTextFirstChar) > -1){
+					var processFirstCharText = punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextFirstChar)]+' '+findText.substring(1, findText.length);
+					originalArray.push(processFirstCharText);
+					
+					//第一个处理后，寻找最后一个全角字符转为半角处理
+					if(punctuationMarks_fullWidth.indexOf(findTextLastChar) > -1){
+						originalArray.push(processFirstCharText.substring(0, processFirstCharText.length-1)+punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextLastChar)]+' ');
+						originalArray.push(processFirstCharText.substring(0, processFirstCharText.length-1)+punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextLastChar)]);
+					}
+				}
+
+				//将最后一个全角字符转为半角处理
+				if(punctuationMarks_fullWidth.indexOf(findTextLastChar) > -1){
+					originalArray.push(findText.substring(0, findText.length-1)+punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextLastChar)]+ ' ');
+					originalArray.push(findText.substring(0, findText.length-1)+punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextLastChar)]);
+				}
+			}else{
+				//翻译替换为全角标点符号，如中文
+
+				//第一个发现半字符， 转为全角处理。这里不用跟上面似的追加去除空格的，因为 textReplace_service 只为了阅读方便追加空格，并没有做去空格处理。 
+				if(punctuationMarks_halfWidth.indexOf(findTextFirstChar) > -1){
+					var processLastCharText = punctuationMarks_fullWidth[punctuationMarks_halfWidth.indexOf(findTextFirstChar)]+findText.substring(1, findText.length);
+					originalArray.push(processLastCharText);
+
+					//判断第二个字符是否是空格，如果是，那可能是自动有英转中时追加的空格，这也要考虑把空格去掉的情况
+					if(processLastCharText.charAt(1) === ' '){
+						originalArray.push(processLastCharText.substring(0, 1) + processLastCharText.substring(2, findText.length));
+					}
+
+					//第一个处理后，寻找最后一个半角字符转为全角处理
+					if(punctuationMarks_halfWidth.indexOf(findTextLastChar) > -1){
+						originalArray.push(processLastCharText.substring(0, processLastCharText.length-1)+punctuationMarks_fullWidth[punctuationMarks_halfWidth.indexOf(findTextLastChar)]);
+						
+						//判断第二个字符是否是空格，如果是，那可能是自动有英转中时追加的空格，这也要考虑把空格去掉的情况
+						if(processLastCharText.charAt(1) === ' '){
+							originalArray.push(processLastCharText.substring(0, 1) + processLastCharText.substring(2, processLastCharText.length-1)+punctuationMarks_fullWidth[punctuationMarks_halfWidth.indexOf(findTextLastChar)]);
+						}
+					}
+				}
+
+				//将最后一个全角字符转为半角处理
+				if(punctuationMarks_halfWidth.indexOf(findTextLastChar) > -1){
+					originalArray.push(findText.substring(0, findText.length-1)+punctuationMarks_fullWidth[punctuationMarks_halfWidth.indexOf(findTextLastChar)]);
+				}
+			}
+			//console.log(originalArray);
+			return originalArray;
+		},
+
 		/*
             文本替换，将替换完毕的结果返回
             自定义术语等都是通过这个来进行替换
@@ -6184,107 +8468,122 @@ var translate = {
 
         */
         textReplace:function(text, translateOriginal, translateResult, language, participles){
-        	//console.log('----text:'+text.replace(/\t/g, '\\t').replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/ /g, '[空白符]')+', translateOriginal:'+translateOriginal+', translateResult:'+translateResult);
+        	//console.log('----text:'+text.replace(/\t/g, '\\t').replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/ /g, '[空白符]')+', translateOriginal:'+translateOriginal+', translateResult:'+translateResult+',\tparticiples:');
+        	//console.log(participles);
+        	
         	//如果要替换的源文本直接就是整个文本，那也就不用在做什么判断了，直接将 翻译的结果文本返回就好了
         	if(text == translateOriginal){
         		return translateResult;
         	}
+
+			// 翻译结果与原文完全相同，不执行额外的空格或标点处理，避免破坏原始文本格式。
+			if(translateOriginal === translateResult){
+				return text;
+			}
         	
+        	//console.log('participles ---- 处理');
+        	//console.log(participles);
+        	if(typeof(participles) === 'object'){
+        		for(var pi = participles.length; pi >= 0; pi--){
+        			var participlesItemArray = translate.util.text_full_half_width_generate(participles[pi], language);
+        			if(participlesItemArray.length > 1){
+        				//被拆了，要合并
+        				participlesItemArray.shift(); // 移除第一个，也就是原本的participles中的元素
+        				participles = participles.concat(participlesItemArray);
+        			}
+        		}
+        	}
+        	
+
+        	/*
+        	//文字之间需要空格，也就是半角标点符号，像是英语，法语， 则是true
+        	var requireSpace = translate.language.wordBlankConnector(language);
+
+        	//如果要替换的文本只是原文本中的一部分，那么就需要进行处理了
         	var findText = translateOriginal;
+			*/
+
 
         	/**** 判断 findText 的开始字符跟结束字符是否包含着 特殊符号 ，：。 因为在 translate.util.textReplace 替换时，会根据当前语种，自动将前后有句号等符号时进行中英的符号转换，此时如果 findText 传入的带有句号的，比如 “你好，” 而实际上text的内容是已经被替换过，就会导致 “你好，” 找不到，而 “你好,” 能找到 ****/
+			/*
 			var punctuationMarks_fullWidth = ['，','：','。']; //标点符号-全角，用于中文等语种
 			var punctuationMarks_halfWidth = [',',':','.']; //标点符号-半角，用于英文等语种
 			
 			//取第一个字符
 			var findTextFirstChar = findText.charAt(0);
+			//取最后一个字符
 			var findTextLastChar = findText.charAt(findText.length-1);
+			*/
 
+			/*
+			 * translateOriginal 生成的用于替换的变种，可能是多个，比如  “你好，世界。” 中的  "，世界" 在翻译为英文情况时，会出现这几种变种：
+			 * , 世界。
+			 * , 世界. 
+			 * ，世界。
+			 * ，世界. 
+			 * 根据不同的中英文，标点符号后面是否跟空格也不同
+			 */
+        	var originalArray = translate.util.text_full_half_width_generate(translateOriginal, language);
+			/*
+			var originalArray = [];
+			originalArray.push(translateOriginal); //首先把当前的加入进去
 
-			if(punctuationMarks_fullWidth.indexOf(findTextFirstChar) > -1){
-				//第一个字符发现了全角符号，将其替换为半角
+			
 
-				var newFindText = punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextFirstChar)]+findText.substring(1, findText.length);
-				//console.log('\t第一个字符发现了全角符号，将其替换为半角 - > '+newFindText);
-				//先进针对第一个字符的半角后替换处理
-				text = translate.util.textReplace_service(text, newFindText, translateResult, language, participles);
+			//翻译替换为半角标点符号，如英语
+			if(requireSpace){
 
-				if(punctuationMarks_fullWidth.indexOf(findTextLastChar) > -1){
-					//最后一个字符发现了全角符号，将其替换为半角
-
-					//第一个字符不转换情况下在进行替换
-					text = translate.util.textReplace_service(text, findText.substring(0, findText.length-1)+punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextLastChar)], translateResult, language, participles); 
-
-					//第一个字符转换后再进行替换
-					newFindText = newFindText.substring(0, findText.length-1)+punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextLastChar)];
-					//console.log('\tlast - 全角变半角 - > '+newFindText);
-					text = translate.util.textReplace_service(text, newFindText, translateResult, language, participles);
+				//第一个发现全角字符， 转为半角处理
+				if(punctuationMarks_fullWidth.indexOf(findTextFirstChar) > -1){
+					var processFirstCharText = punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextFirstChar)]+' '+findText.substring(1, findText.length);
+					originalArray.push(processFirstCharText);
 					
-				}else if(punctuationMarks_halfWidth.indexOf(findTextLastChar) > -1){
-					//最后一个字符发现了半角符号，将其替换为全角
-
-					//第一个字符不转换情况下在进行替换
-					text = translate.util.textReplace_service(text, findText.substring(0, findText.length-1)+punctuationMarks_fullWidth[punctuationMarks_halfWidth.indexOf(findTextLastChar)], translateResult, language, participles); 
-
-					//第一个字符转换后再进行替换
-					newFindText = newFindText.substring(0, findText.length-1)+punctuationMarks_fullWidth[punctuationMarks_halfWidth.indexOf(findTextLastChar)];
-					//console.log('\tlast - 半角变全角 - > '+newFindText);
-					text = translate.util.textReplace_service(text, newFindText, translateResult, language, participles);
-					text = translate.util.textReplace_service(text, findText, translateResult, language, participles); //第一个字符不转换情况下在进行替换
+					//第一个处理后，寻找最后一个全角字符转为半角处理
+					if(punctuationMarks_fullWidth.indexOf(findTextLastChar) > -1){
+						originalArray.push(processFirstCharText.substring(0, processFirstCharText.length-1)+punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextLastChar)]);
+					}
 				}
 
-			}else if(punctuationMarks_halfWidth.indexOf(findTextFirstChar) > -1){
-				//第一个字符发现了半角符号，将其替换为全角
-
-				var newFindText = punctuationMarks_fullWidth[punctuationMarks_halfWidth.indexOf(findTextFirstChar)]+findText.substring(1, findText.length);
-				//console.log('\t第一个字符发现了半角符号，将其替换为全角 - > '+newFindText);
-				//先进针对第一个字符的全角后替换处理
-				text = translate.util.textReplace_service(text, newFindText, translateResult, language, participles);
-
+				//将最后一个全角字符转为半角处理
 				if(punctuationMarks_fullWidth.indexOf(findTextLastChar) > -1){
-					//最后一个字符发现了全角符号，将其替换为半角
-
-					//第一个字符不转换情况下在进行替换
-					text = translate.util.textReplace_service(text, findText.substring(0, findText.length-1)+punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextLastChar)], translateResult, language, participles); 
-
-					//第一个字符转换后再进行替换
-					newFindText = newFindText.substring(0, findText.length-1)+punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextLastChar)];
-					//console.log('\tlast - 全角变半角 - > '+newFindText);
-					text = translate.util.textReplace_service(text, newFindText, translateResult, language, participles);
-				}else if(punctuationMarks_halfWidth.indexOf(findTextLastChar) > -1){
-					//最后一个字符发现了半角符号，将其替换为全角
-					
-					//第一个字符不转换情况下在进行替换
-					text = translate.util.textReplace_service(text, findText.substring(0, findText.length-1)+punctuationMarks_fullWidth[punctuationMarks_halfWidth.indexOf(findTextLastChar)], translateResult, language, participles); 
-
-					//第一个字符转换后再进行替换
-					newFindText = newFindText.substring(0, findText.length-1)+punctuationMarks_fullWidth[punctuationMarks_halfWidth.indexOf(findTextLastChar)];
-					//console.log('\tlast - 半角变全角 - > '+newFindText);
-					text = translate.util.textReplace_service(text, newFindText, translateResult, language, participles);
+					originalArray.push(findText.substring(0, findText.length-1)+punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextLastChar)]);
 				}
-			}else if(punctuationMarks_fullWidth.indexOf(findTextLastChar) > -1){
-				//第一个字符不是那几种标点符号，最后一个字符发现了全角符号，将其替换为半角
-				var newFindText = findText.substring(0, findText.length-1)+punctuationMarks_halfWidth[punctuationMarks_fullWidth.indexOf(findTextLastChar)];
-				//console.log('第一个字符不是标点符号 - 最后一个字符是全角标点符号 - 全角变半角 - > '+newFindText);
-				text = translate.util.textReplace_service(text, newFindText, translateResult, language, participles);				
-			}else if(punctuationMarks_halfWidth.indexOf(findTextLastChar) > -1){
-				//第一个字符不是那几种标点符号，最后一个字符发现了半角符号，将其替换为全角
-				var newFindText = findText.substring(0, findText.length-1)+punctuationMarks_fullWidth[punctuationMarks_halfWidth.indexOf(findTextLastChar)];
-				//console.log('第一个字符不是标点符号 - 最后一个字符是半角标点符号 - 半角变全角 - > '+newFindText);
-				text = translate.util.textReplace_service(text, newFindText, translateResult, language, participles);				
+			}else{
+				//翻译替换为全角标点符号，如中文
+
+				//第一个发现半字符， 转为全角处理。这里不用跟上面似的追加去除空格的，因为 textReplace_service 只为了阅读方便追加空格，并没有做去空格处理。 
+				if(punctuationMarks_halfWidth.indexOf(findTextFirstChar) > -1){
+					var processLastCharText = punctuationMarks_fullWidth[punctuationMarks_halfWidth.indexOf(findTextFirstChar)]+' '+findText.substring(1, findText.length);
+					originalArray.push(processLastCharText);
+
+					//第一个处理后，寻找最后一个半角字符转为全角处理
+					if(punctuationMarks_halfWidth.indexOf(findTextLastChar) > -1){
+						originalArray.push(processLastCharText.substring(0, processLastCharText.length-1)+punctuationMarks_fullWidth[punctuationMarks_halfWidth.indexOf(findTextLastChar)]);
+					}
+				}
+
+				//将最后一个全角字符转为半角处理
+				if(punctuationMarks_halfWidth.indexOf(findTextLastChar) > -1){
+					originalArray.push(findText.substring(0, findText.length-1)+punctuationMarks_fullWidth[punctuationMarks_halfWidth.indexOf(findTextLastChar)]);
+				}
 			}
+			*/
 
-			//最后，进行一次正常替换
-			text = translate.util.textReplace_service(text, translateOriginal, translateResult, language, participles);
-			//console.log(text.replace(/\t/g, '\\t').replace(/\r/g, '\\r').replace(/\n/g, '\\n').replace(/ /g, '[空白符]'));
-            return text;
+			for(var i = 0; i < originalArray.length; i++){
+				if(text.indexOf(originalArray[i]) > -1){
+					text = translate.util.textReplace_service(text, originalArray[i], translateResult, language, participles);
+				}
+			}
+			
+			return text;
         },
         /*
             它服务于上面的 textReplace，不需要直接使用这个
 
         */
         textReplace_service:function(text, translateOriginal, translateResult, language, participles){
-        	//console.log('----text:'+text+', translateOriginal:'+translateOriginal+', translateResult:'+translateResult);
+        	//console.log('----text:'+text+', translateOriginal:'+translateOriginal+', translateResult:'+translateResult+", participles:");
+        	//console.log(participles);
         	//如果要替换的源文本直接就是整个文本，那也就不用在做什么判断了，直接将 翻译的结果文本返回就好了
         	if(text == translateOriginal){
         		return translateResult;
@@ -6311,6 +8610,7 @@ var translate = {
            		let replaceResultText = ''+translateResult; 
            		//替换的文本 ，这里有可能会追加上某些标点符号，所以单独也列出来，而不是使用方法中传入的 translateOriginal
            		let replaceOriginalText = '' + translateOriginal; 
+
 
            		//根据不同的语种，如果有的语种需要加空格来进行区分单词，那么也要进行空格的判定
            		if(translate.language.wordBlankConnector(language)){
@@ -6391,12 +8691,13 @@ var translate = {
 	            }
         	}
 
+        	//console.log(text);
             return text;
         },
         /*
 			从一个字符串中, 寻找某个分词。这个分词不能破坏其他分词。
 			text: 原始文本，翻译的某句或者某个词就在这个文本之中
-			findParticiple: 寻找的分词文本
+			findText: 寻找的分词文本
 			participles: 分词，数组形态。默认不传则是没有其他分词需要保留的。 传入比如  ['你好','你是谁'] 
         		比如 translateOriginal 传入 '你' 时， text 中的 '你好','你是谁' 是不能被拆出'你'这个字进行替换的，不然就破坏了分词了
 			
@@ -6408,78 +8709,164 @@ var translate = {
 
         */
         findParticiple:function(text, findText, translateTexts){
-        	var resultArray = [];
+            var resultArray = [];
 
-			//兼容 translateTexts 不传入的情况
-			if(typeof(translateTexts) == 'undefined' || translateTexts == null){
-				translateTexts = [];
-			}
+            //兼容 translateTexts 不传入的情况
+            if(typeof(translateTexts) == 'undefined' || translateTexts == null){
+                translateTexts = [];
+            }
 
-			/*****1. 先过滤，过滤掉 translateTexts 中 不包含 translateOriginal、 以及文本长度小于等于 translateOriginal  这个分词的情况*****/
-			var newTranslateTexts = []; 
-			for(var i = 0; i < translateTexts.length; i++){
-				if(translateTexts[i].indexOf(findText) != -1 && translateTexts[i].length > findText.length){
-					newTranslateTexts.push(translateTexts[i]);
-				}
-			}
-			//console.log('包含'+findText+'的分词：');
-			//console.log(newTranslateTexts)
+            /*****1. 先过滤，过滤掉 translateTexts 中 不包含 translateOriginal、 以及文本长度小于等于 translateOriginal  这个分词的情况*****/
+            var newTranslateTexts = [];
+            for(var i = 0; i < translateTexts.length; i++){
+                if(translateTexts[i].indexOf(findText) != -1 && translateTexts[i].length > findText.length){
+                    newTranslateTexts.push(translateTexts[i]);
+                }
+            }
+            //console.log('包含'+findText+'的分词：');
+            //console.log(newTranslateTexts)
 
-			//当前替换后，替换结果结束位置的下标。 
-			//一开始还没进行替换，那么这个下标就是 0
-			//比如 你好吗  中的 好 替换为 "好的" 那最后结果为 "你好的吗" ，这里是 “的” 的下标 2
-			var currentReplaceEndIndex = 0;
+            //当前替换后，替换结果结束位置的下标。
+            //一开始还没进行替换，那么这个下标就是 0
+            //比如 你好吗  中的 好 替换为 "好的" 那最后结果为 "你好的吗" ，这里是 “的” 的下标 2
+            var currentReplaceEndIndex = 0;
 
-			//while最大循环次数30次，免得出现未知异常导致死循环
-			var maxWhileNumber = 30;
+            // TODO 【原方案】
+            // //while最大循环次数30次，免得出现未知异常导致死循环
+            // var maxWhileNumber = 30;
+            //
+            // // 识别，indexOf 逐个识别 '你' ，识别到之后，再跟 其他比如 '你是谁'  进行判断，比如  '你是谁'  就要讲 indexOf 的下标+2 来截取这text中的三个字符，去跟 '你是谁' 判定，以判定是否是一个正常的不能拆分的分词
+            // while(text.indexOf(findText, currentReplaceEndIndex) > -1 && maxWhileNumber-- > 0){
+            //     var index = text.indexOf(findText, currentReplaceEndIndex);
+            //
+            //     var findParticiple = false; //发现是其他分词了是true，没发现可以替换则是false
+            //     console.log('index -> ', index)
+            //
+            //     //进行其他分词发现策略（旧：将句子按下标进行拆分，判断出是否属于分词）
+            //     if(newTranslateTexts.length > 0){
+            //         //发现的这个词可能是其他分词中的一部分，这个要判断当前index是否是其他分词的一部分。 这里要进行遍历 newTranslateTexts 逐个取出进行对比
+            //
+            //         for(var j = 0; j < newTranslateTexts.length; j++){
+            //             //判断 newTranslateTexts[j] 这个分词中包含的 findText 这个文本，这个文本是在 newTranslateTexts[j] 的下标的多少
+						   //注意，这里有bug
+						   //当前替换后，替换结果结束位置的下标。 
+						   //一开始还没进行替换，那么这个下标就是 0
+						   //比如 你好吗  中的 好 替换为 "好的" 那最后结果为 "你好的吗" ，这里是 “的” 的下标 2、
+            //             var indexInNewTranslateTexts = newTranslateTexts[j].indexOf(findText);
+            //             // 因为 newTranslateTexts 是通过筛选包含 findText 而出的，所以它肯定是包含的，有下标的
+            //             // 这里要从 text 中，根据 indexInNewTranslateTexts 及 原本 findText 的 index，在这个index的前或者后，追加几个文本，这追加的文本长度，也就是根据 indexInNewTranslateTexts 以及 newTranslateTexts[j] 的长度
+            //
+            //             //这里准备要根据 newTranslateTexts[j] 、 indexInNewTranslateTexts ，来定义从 text 中去取 对应 newTranslateTexts[j] 的长度，以判断当前index是否是取的 newTranslateTexts[j] 这个分词的
+            //             var length = newTranslateTexts[j].length;
+            //             var split_text = text.substring(index-indexInNewTranslateTexts, index-indexInNewTranslateTexts + length);
+            //             if(split_text == newTranslateTexts[j]){
+            //                 //说明当前index是取的 newTranslateTexts[j] 这个分词的,那这个就不能替换，要忽略
+            //                 //console.log('当前是其他分词，不能直接替换 ： '+newTranslateTexts[j]);
+            //                 findParticiple = true;
+            //                 break;
+            //             }
+            //             console.log('split_text -> ', split_text);
+            //             console.log('newTranslateTexts[j] -> ', newTranslateTexts[j]);
+            //             console.log('split_text == newTranslateTexts[j] -> ', split_text == newTranslateTexts[j]);
+            //             console.log('indexInNewTranslateTexts -> ', indexInNewTranslateTexts);
+            //             console.log('length -> ', length);
+            //             console.log('index-indexInNewTranslateTexts -> ', index-indexInNewTranslateTexts);
+            //             console.log('index-index-indexInNewTranslateTexts + length -> ', index-indexInNewTranslateTexts + length);
+            //         }
+            //     }
+            //
+            //     console.log('findParticiple -> ', findParticiple);
+            //     if(!findParticiple){
+            //         resultArray.push(index);
+            //     }
+            //     currentReplaceEndIndex = index+findText.length;
+            //     console.log(" ---------- ")
+            // }
 
-			// 识别，indexOf 逐个识别 '你' ，识别到之后，再跟 其他比如 '你是谁'  进行判断，比如  '你是谁'  就要讲 indexOf 的下标+2 来截取这text中的三个字符，去跟 '你是谁' 判定，以判定是否是一个正常的不能拆分的分词
-			while(text.indexOf(findText, currentReplaceEndIndex) > -1 && maxWhileNumber-- > 0){
-				var index = text.indexOf(findText, currentReplaceEndIndex);
+            // 【方案1】使用下标数组记录位置
+            let flagArr = translate.util.participleIndexFind(text, newTranslateTexts);
 
-				var findParticiple = false; //发现是其他分词了是true，没发现可以替换则是false
+            // while最大循环次数30次，免得出现未知异常导致死循环
+            var maxWhileNumber = 300;
 
-				//进行其他分词发现策略
-				if(newTranslateTexts.length > 0){
-					//发现的这个词可能是其他分词中的一部分，这个要判断当前index是否是其他分词的一部分。 这里要进行遍历 newTranslateTexts 逐个取出进行对比
+            // 识别，indexOf 逐个识别 '你' ，识别到之后，再跟 其他比如 '你是谁'  进行判断，比如  '你是谁'  就要讲 indexOf 的下标+2 来截取这text中的三个字符，去跟 '你是谁' 判定，以判定是否是一个正常的不能拆分的分词
+            while(text.indexOf(findText, currentReplaceEndIndex) > -1 && maxWhileNumber-- > 0){
+                var index = text.indexOf(findText, currentReplaceEndIndex);
 
-					for(var j = 0; j < newTranslateTexts.length; j++){
-						//判断 newTranslateTexts[j] 这个分词中包含的 findText 这个文本，这个文本是在 newTranslateTexts[j] 的下标的多少
-						var indexInNewTranslateTexts = newTranslateTexts[j].indexOf(findText);
-						// 因为 newTranslateTexts 是通过筛选包含 findText 而出的，所以它肯定是包含的，有下标的
-						// 这里要从 text 中，根据 indexInNewTranslateTexts 及 原本 findText 的 index，在这个index的前或者后，追加几个文本，这追加的文本长度，也就是根据 indexInNewTranslateTexts 以及 newTranslateTexts[j] 的长度
+                var findParticiple = false; //发现是其他分词了是true，没发现可以替换则是false
 
-						//这里准备要根据 newTranslateTexts[j] 、 indexInNewTranslateTexts ，来定义从 text 中去取 对应 newTranslateTexts[j] 的长度，以判断当前index是否是取的 newTranslateTexts[j] 这个分词的 
-						var length = newTranslateTexts[j].length;
-						var split_text = text.substring(index-indexInNewTranslateTexts, index-indexInNewTranslateTexts + length);
-						if(split_text == newTranslateTexts[j]){
-							//说明当前index是取的 newTranslateTexts[j] 这个分词的,那这个就不能替换，要忽略
-							//console.log('当前是其他分词，不能直接替换 ： '+newTranslateTexts[j]);
-							findParticiple = true;
-							break;
-						}
-					}
-				}
+                // 遍历分词，获取出在原句子中的位置，根据下标对比判断是否属于分词
+                if(newTranslateTexts.length > 0 && flagArr.length > 0){
+                    // 发现的这个词可能是其他分词中的一部分，这个要判断当前index是否是其他分词的一部分。 这里要进行遍历 flagArr，如果index在此数组中的范围内说明属于其他分词
+                    for(var j = 0; j < flagArr.length; j++){
+                        // 取出子数组，标记了分词在原文中的位置
+                        let flagItem = flagArr[j];
+                        if(index >= flagItem.start && index <= flagItem.end){
+                            // 说明当前index是取的 flagArr[j] 这个分词的,那这个就不能替换，要忽略
+                            findParticiple = true;
+                            break;
+                        }
+                    }
+                }
 
-				if(!findParticiple){
-					resultArray.push(index);
-				}
-				currentReplaceEndIndex = index+findText.length;
-			}
+                if(!findParticiple){
+                    resultArray.push(index);
+                }
+                currentReplaceEndIndex = index+findText.length;
+            }
 
 
 
-			  /*
+            /*
 			    这里需要将下面的 9、7 这个下标找出来，然后进行替换。  注意要先从后进行替换，避免从前替换，之后的下标长度出现变化
 			  */
 
-			  //text = translate.util.replaceFromIndex(text, 9, translateOriginal, translateResult).text;
-			  //text = translate.util.replaceFromIndex(text, 7, translateOriginal, translateResult).text;
+            //text = translate.util.replaceFromIndex(text, 9, translateOriginal, translateResult).text;
+            //text = translate.util.replaceFromIndex(text, 7, translateOriginal, translateResult).text;
 
 
-			  //return text;
+            //return text;
 
-			return resultArray;
+            return resultArray;
+        },
+        /**
+         * 方案1：使用下标数组来标记分词位置
+         *  传入原文和分词内容数组，返回分词在原文中的下标数组
+         *  例如：
+         *      text 传入 "只有那些敢于追求梦想的人，才能实现梦想。"
+         *      newTranslateTexts 传入 ["梦想", "敢于追求"]
+         *      则输出 [{start: 4, end: 7}, {"start": 8, "end": 9}, {"start": 17, "end": 18}]
+         * @param text 原文。字符串
+         * @param newTranslateTexts 分词内容数组
+         * @returns 分词所在的下标范围的数组。格式为 [{"start": 1, "end": 2}]
+         */
+        participleIndexFind:function(text, newTranslateTexts) {
+        	//console.log('text: '+text+', newTranslateTexts: ');
+        	//console.log(newTranslateTexts);
+            let indexArr = [];
+            // 遍历分词
+            for(let i = newTranslateTexts.length-1; i >= 0; i--){
+                // 取出分词
+                let word = newTranslateTexts[i];
+                // 找出分词在原文中出现的所有位置
+                let startIndex = 0; // 起始位置
+                while(text.indexOf(word, startIndex) > -1) {
+                    // 开始的下标
+                    let index = text.indexOf(word, startIndex);
+                    // 结束的下标
+                    let endIndex = index+word.length-1;
+                    // 封装成数组，存入二维数组中
+                    let item = {
+                        start: index,
+                        end: endIndex
+                    }
+                    indexArr.push(item);
+                    // 改变起始位置
+                    startIndex = index+word.length-1;
+                }
+            }
+            //console.log(indexArr);
+            return indexArr;
         },
         /*
 			js 的 replace 能力，这个是可以指定从第几个字符开始进行replace
@@ -7058,7 +9445,7 @@ var translate = {
 		*/
 		browserDefaultLanguage:function(){
 			var language = navigator.language || navigator.userLanguage;
-			if(typeof(language) == 'string' && language.length > 0){
+			if(typeof(language) === 'string' && language.length > 0){
 				var tLang = translate.util.browserLanguage[language];
 				if(typeof(tLang) == 'undefined'){
 					//没有在里面
@@ -7233,7 +9620,7 @@ var translate = {
 
 					if(serviceName.toLowerCase() == 'giteeai'){
 						//设定翻译接口为GiteeAI的
-						translate.request.api.host=['https://giteeai.zvo.cn/','https://deutsch.enterprise.api.translate.zvo.cn:1000/','https://api.translate.zvo.cn:1000/'];
+						translate.request.api.host=['https://giteeai.zvo.cn/','https://deutsch.enterprise.api.translate.zvo.cn:1000/','https://api.translate.zvo.cn:1000/', 'https://america.api.translate.zvo.cn:1000/'];
 						return;
 					}
 					if(serviceName.toLowerCase() == 'siliconflow'){
@@ -7250,10 +9637,8 @@ var translate = {
 		//客户端方式的edge提供机器翻译服务
 		edge:{
 			api:{ //edge浏览器的翻译功能
-				auth:'https://edge.microsoft.com/translate/auth', //auth授权拉取
-				translate:'https://api.cognitive.microsofttranslator.com/translate?from={from}&to={to}&api-version=3.0&includeSentenceLength=true' //翻译接口
+				translate:'https://edge.microsoft.com/translate/translatetext?from={from}&to={to}&isEnterpriseClient=false' //翻译接口
 			},
-
 			language:{
 
 				json:[{"id":"ukrainian","name":"Україна","serviceId":"uk"},{"id":"norwegian","name":"Norge","serviceId":"no"},{"id":"welsh","name":"Iaith Weleg","serviceId":"cy"},{"id":"dutch","name":"nederlands","serviceId":"nl"},{"id":"japanese","name":"日本語","serviceId":"ja"},{"id":"filipino","name":"Pilipino","serviceId":"fil"},{"id":"english","name":"English","serviceId":"en"},{"id":"lao","name":"ກະຣຸນາ","serviceId":"lo"},{"id":"telugu","name":"తెలుగుName","serviceId":"te"},{"id":"romanian","name":"Română","serviceId":"ro"},{"id":"nepali","name":"नेपालीName","serviceId":"ne"},{"id":"french","name":"Français","serviceId":"fr"},{"id":"haitian_creole","name":"Kreyòl ayisyen","serviceId":"ht"},{"id":"czech","name":"český","serviceId":"cs"},{"id":"swedish","name":"Svenska","serviceId":"sv"},{"id":"russian","name":"Русский язык","serviceId":"ru"},{"id":"malagasy","name":"Malagasy","serviceId":"mg"},{"id":"burmese","name":"ဗာရမ်","serviceId":"my"},{"id":"pashto","name":"پښتوName","serviceId":"ps"},{"id":"thai","name":"คนไทย","serviceId":"th"},{"id":"armenian","name":"Արմենյան","serviceId":"hy"},{"id":"chinese_simplified","name":"简体中文","serviceId":"zh-CHS"},{"id":"persian","name":"Persian","serviceId":"fa"},{"id":"chinese_traditional","name":"繁體中文","serviceId":"zh-CHT"},{"id":"kurdish","name":"Kurdî","serviceId":"ku"},{"id":"turkish","name":"Türkçe","serviceId":"tr"},{"id":"hindi","name":"हिन्दी","serviceId":"hi"},{"id":"bulgarian","name":"български","serviceId":"bg"},{"id":"malay","name":"Malay","serviceId":"ms"},{"id":"swahili","name":"Kiswahili","serviceId":"sw"},{"id":"oriya","name":"ଓଡିଆ","serviceId":"or"},{"id":"icelandic","name":"ÍslandName","serviceId":"is"},{"id":"irish","name":"Íris","serviceId":"ga"},{"id":"khmer","name":"ភាសា​ខ្មែរName","serviceId":"km"},{"id":"gujarati","name":"ગુજરાતી","serviceId":"gu"},{"id":"slovak","name":"Slovenská","serviceId":"sk"},{"id":"kannada","name":"ಕನ್ನಡ್Name","serviceId":"kn"},{"id":"hebrew","name":"היברית","serviceId":"he"},{"id":"hungarian","name":"magyar","serviceId":"hu"},{"id":"marathi","name":"मराठीName","serviceId":"mr"},{"id":"tamil","name":"தாமில்","serviceId":"ta"},{"id":"estonian","name":"eesti keel","serviceId":"et"},{"id":"malayalam","name":"മലമാലം","serviceId":"ml"},{"id":"inuktitut","name":"ᐃᓄᒃᑎᑐᑦ","serviceId":"iu"},{"id":"arabic","name":"بالعربية","serviceId":"ar"},{"id":"deutsch","name":"Deutsch","serviceId":"de"},{"id":"slovene","name":"slovenščina","serviceId":"sl"},{"id":"bengali","name":"বেঙ্গালী","serviceId":"bn"},{"id":"urdu","name":"اوردو","serviceId":"ur"},{"id":"azerbaijani","name":"azerbaijani","serviceId":"az"},{"id":"portuguese","name":"português","serviceId":"pt"},{"id":"samoan","name":"lifiava","serviceId":"sm"},{"id":"afrikaans","name":"afrikaans","serviceId":"af"},{"id":"tongan","name":"汤加语","serviceId":"to"},{"id":"greek","name":"ελληνικά","serviceId":"el"},{"id":"indonesian","name":"IndonesiaName","serviceId":"id"},{"id":"spanish","name":"Español","serviceId":"es"},{"id":"danish","name":"dansk","serviceId":"da"},{"id":"amharic","name":"amharic","serviceId":"am"},{"id":"punjabi","name":"ਪੰਜਾਬੀName","serviceId":"pa"},{"id":"albanian","name":"albanian","serviceId":"sq"},{"id":"lithuanian","name":"Lietuva","serviceId":"lt"},{"id":"italian","name":"italiano","serviceId":"it"},{"id":"vietnamese","name":"Tiếng Việt","serviceId":"vi"},{"id":"korean","name":"한국어","serviceId":"ko"},{"id":"maltese","name":"Malti","serviceId":"mt"},{"id":"finnish","name":"suomi","serviceId":"fi"},{"id":"catalan","name":"català","serviceId":"ca"},{"id":"croatian","name":"hrvatski","serviceId":"hr"},{"id":"bosnian","name":"bosnian","serviceId":"bs-Latn"},{"id":"polish","name":"Polski","serviceId":"pl"},{"id":"latvian","name":"latviešu","serviceId":"lv"},{"id":"maori","name":"Maori","serviceId":"mi"}],
@@ -7282,105 +9667,90 @@ var translate = {
 			 */
 			translate:function(path, data, func, abnormalFunc){
 				var textArray = JSON.parse(decodeURIComponent(data.text));
-				let translateTextArray = translate.util.split(textArray, 40000, 900);
-				
-				translate.request.send(translate.service.edge.api.auth, {},{}, function(auth){
-					var appendXhrData = {
-						"from":data.from+'',
-						"to":data.to,
-						"text":data.text
-					};
-					var from = data.from;
-					if(from != 'auto'){
-						if(from == 'romance'){
-							//这里额外加了一个罗曼语族(romance)会自动认为是法语(fr)
-							from = 'fr';
-						}else{
-							from = translate.service.edge.language.getMap()[data.from];
-						}
+				var translateTextArray = translate.util.split(textArray, 40000, 900);
+
+
+				var appendXhrData = {
+					"from":data.from+'',
+					"to":data.to,
+					"text":data.text
+				};
+				var from = data.from;
+				if(from != 'auto'){
+					if(from == 'romance'){
+						//这里额外加了一个罗曼语族(romance)会自动认为是法语(fr)
+						from = 'fr';
+					}else{
+						from = translate.service.edge.language.getMap()[data.from];
 					}
-					
-					var to = translate.service.edge.language.getMap()[data.to];
-					var transUrl = translate.service.edge.api.translate.replace('{from}',from).replace('{to}',to);
+				}
+				
+				var to = translate.service.edge.language.getMap()[data.to];
+				var transUrl = translate.service.edge.api.translate.replace('{from}',from).replace('{to}',to);
 
-					//如果翻译量大，要拆分成多次翻译请求
-					for(var tai = 0; tai<translateTextArray.length; tai++){
-						var json = [];
-						for(var i = 0; i<translateTextArray[tai].length; i++){
-							json.push({"Text":translateTextArray[tai][i]});
+				//如果翻译量大，要拆分成多次翻译请求
+				for(var tai = 0; tai<translateTextArray.length; tai++){
+					/*
+					var json = [];
+					for(var i = 0; i<translateTextArray[tai].length; i++){
+						json.push({"Text":translateTextArray[tai][i]});
+					}
+					*/
+
+					(function(chunkIndex){
+						translate.request.send(transUrl, JSON.stringify(translateTextArray[chunkIndex]), appendXhrData, function(result){
+						var d = {};
+						d.info = 'SUCCESS';
+						d.result = 1;
+						d.from = data.from;
+						d.to = data.to;
+						d.text = [];
+						for(var t = 0; t < result.length; t++){
+							d.text.push(result[t].translations[0].text);
 						}
-
-						translate.request.send(transUrl, JSON.stringify(json), appendXhrData, function(result){
-							var d = {};
-							d.info = 'SUCCESS';
-							d.result = 1;
-							d.from = data.from;
-							d.to = data.to;
-							d.text = [];
-							for(var t = 0; t < result.length; t++){
-								d.text.push(result[t].translations[0].text);
-							}
-							
-
-							//判断当前翻译是否又被拆分过，比如一次超过5万字符的话就要拆分成多次请求了
-							if(translateTextArray.length > 1){
-								//这一次翻译呗拆分了多次请求，那么要进行补全数组，使数组个数能一致
-
-								/*
-
-									注意这里根据数组的长度来判断当前属于第几个数组，
-									有几率会是拆分的数组，其中有两组的长度是一样的，
-									这样的话是有问题的，只不过几率很小，就先这样了
-									但终归还是留了个坑 -- 记录
-
-								*/
-
-								var currentIndex = -1;	//当前翻译请求属于被拆分的第几个的数组下标，从0开始的
-								for(var cri = 0; cri < translateTextArray.length; cri++){
-									if(translateTextArray[cri].length - d.text.length == 0){
-										currentIndex = cri;
-										break;
-									}
-								}
-
-								//进行对前后进行补齐数组
-								if(currentIndex < 0){
-									translate.log('------ERROR--------');
-									translate.log('翻译内容过多，进行拆分，但拆分判断出现异常，currentIndex：-1 请联系 http://translate.zvo.cn/43006.html 说明');
-								}
-								//前插入空数组填充
-								for(var addbeforei = 0; addbeforei<currentIndex; addbeforei++){
-									var beforeItemArrayLength = translateTextArray[addbeforei].length;
-									//console.log('beforeItemArrayLength:'+beforeItemArrayLength);
-									for(var bi = 0; bi < beforeItemArrayLength; bi++){
-										d.text.unshift(null);
-									}
-								}
-								//后插入空数组填充
-								for(var addafteri = translateTextArray.length-1; addafteri>currentIndex; addafteri--){
-									var afterItemArrayLength = translateTextArray[addafteri].length;
-									for(var bi = 0; bi < afterItemArrayLength; bi++){
-										d.text.push(null);
-									}
-								}
-								
-							}
-							
-							func(d);
-						}, 'post', true, {'Authorization':'Bearer '+auth, 'Content-Type':'application/json'}, abnormalFunc, true);
 						
 
-					}
-					//console.log('translateResultArray')
-					//console.log(translateResultArray);
+						//判断当前翻译是否又被拆分过，比如一次超过5万字符的话就要拆分成多次请求了
+						if(translateTextArray.length > 1){
+							//这一次翻译呗拆分了多次请求，那么要进行补全数组，使数组个数能一致
+
+							//使用当前分片下标，不再根据返回的长度猜测属于哪个分片
+							var currentIndex = chunkIndex;	//当前翻译请求属于被拆分的第几个的数组下标，从0开始的
+
+							//进行对前后进行补齐数组
+							if(currentIndex < 0){
+								translate.log('------ERROR--------');
+								translate.log('翻译内容过多，进行拆分，但拆分判断出现异常，currentIndex：-1 请联系 http://translate.zvo.cn/43006.html 说明');
+							}
+							//前插入空数组填充
+							for(var addbeforei = 0; addbeforei<currentIndex; addbeforei++){
+								var beforeItemArrayLength = translateTextArray[addbeforei].length;
+								//console.log('beforeItemArrayLength:'+beforeItemArrayLength);
+								for(var bi = 0; bi < beforeItemArrayLength; bi++){
+									d.text.unshift(null);
+								}
+							}
+							//后插入空数组填充
+							for(var addafteri = translateTextArray.length-1; addafteri>currentIndex; addafteri--){
+								var afterItemArrayLength = translateTextArray[addafteri].length;
+								for(var bi = 0; bi < afterItemArrayLength; bi++){
+									d.text.push(null);
+								}
+							}
+						
+						}
+						
+						func(d);
+					}, 'post', true, {
+						'Content-Type':'application/json'
+					}, abnormalFunc, true);
+					})(tai);
 					
 
-				}, 'get', true, {'content-type':'application/x-www-form-urlencoded'}, function(xhr){
-					translate.log('---------error--------');
-					translate.log('edge translate service error, http code : '+xhr.status + ', response text : '+xhr.responseText);
-				}, true);
+				}
 
 
+				
 				
 
 				
@@ -7424,10 +9794,539 @@ var translate = {
 			//backupHost:['',''],
 			language:'language.json', //获取支持的语种列表接口
 			translate:'translate.json', //翻译接口
-			ip:'ip.json', //根据用户当前ip获取其所在地的语种
+			ip:'', //根据用户当前ip获取其所在地的语种 ，原本的值为 ip.json ，v4版本已废弃。 如果启用，可手动设置此值为 ip.json ,注意，需服务端的 ip.json 开启此能力
 			connectTest:'connectTest.json',	//用于 translate.js 多节点翻译自动检测网络连通情况
 			init:'init.json', //获取最新版本号，跟当前版本进行比对，用于提醒版本升级等使用
 
+		},
+		// translate.json 的 SSE 流式响应能力。默认关闭，开启后仍然保留 XHR JSON 降级路径。
+		sse:{
+			use:false,
+			/**
+			 * 所有 SSE 事件的统一旁路回调。
+			 * <p>当前步骤先建立协议读取能力，不在这里直接改 DOM 渲染主流程。后续接入渐进渲染时，
+			 * 可以在 translate.execute() 的翻译请求上下文中消费 batch/item。</p>
+			 */
+			onEvent:null,
+			onBatch:null,
+			onItem:null,
+			onDone:null,
+			onError:null,
+			start:function(){
+				translate.request.sse.use = true;
+			},
+			stop:function(){
+				translate.request.sse.use = false;
+			},
+			/**
+			 * 判断当前浏览器是否具备 POST SSE 所需的基础能力。
+			 * <p>EventSource 只适合 GET，不适合当前 translate.json 的 POST 表单请求；这里必须依赖
+			 * fetch + ReadableStream 主动读取 text/event-stream。</p>
+			 * <p>这里仅做浏览器能力的同步判断，不判断服务端是否真的返回 text/event-stream；
+			 * 服务端响应类型仍由 translate.request.sse.post() 收到 response 后再兜底校验。</p>
+			 */
+			isSupport:function(){
+				if(typeof(window) == 'undefined'
+					|| typeof(window.fetch) != 'function'
+					|| typeof(window.TextDecoder) != 'function'
+					|| typeof(window.Promise) != 'function'
+					|| typeof(window.Response) != 'function'){
+					return false;
+				}
+				try{
+					var response = new window.Response('');
+					return response.body != null && typeof(response.body.getReader) == 'function';
+				}catch(e){
+					return false;
+				}
+			},
+			/**
+			 * 解析一段完整的 SSE 事件文本块。
+			 *
+			 * @param block 不包含空行分隔符的 SSE 文本块
+			 * @return {name, data, dataText, dispatch}
+			 */
+			parseEventBlock:function(block){
+				var eventName = 'message';
+				var dataLines = [];
+				var hasDataField = false;
+				var lines = block.split('\n');
+				for(var i = 0; i < lines.length; i++){
+					var line = lines[i];
+					if(line.length == 0){
+						continue;
+					}
+					if(line.indexOf(':') == 0){
+						// SSE 允许服务端发送 ": xxx" 注释行作为心跳；注释不属于业务事件，必须忽略。
+						continue;
+					}
+					var separatorIndex = line.indexOf(':');
+					var field = line;
+					var value = '';
+					if(separatorIndex > -1){
+						field = line.substring(0, separatorIndex);
+						value = line.substring(separatorIndex+1);
+						if(value.indexOf(' ') == 0){
+							// SSE 规范只剥离冒号后的一个前导空格，避免破坏 data 正文中的有效空格。
+							value = value.substring(1);
+						}
+					}
+					if(field == 'event'){
+						eventName = value;
+					}else if(field == 'data'){
+						hasDataField = true;
+						dataLines.push(value);
+					}
+				}
+				var dataText = dataLines.join('\n');
+				var data = dataText;
+				if(dataText.length > 0){
+					try{
+						data = JSON.parse(dataText);
+					}catch(e){
+						// data 不一定必须是 JSON，解析失败时保留原始字符串，避免因为服务端扩展事件导致流被中断。
+						data = dataText;
+					}
+				}
+				return {
+					// event: 为空时按 SSE 规范回落为 message，避免空事件名阻断统一 onEvent 监听。
+					name:eventName.length > 0 ? eventName : 'message',
+					data:data,
+					dataText:dataText,
+					// 只有包含 data 字段的事件才应该派发；纯心跳、id、retry 等控制块不能触发业务回调。
+					dispatch:hasDataField
+				};
+			},
+			/**
+			 * 触发 SSE 事件旁路回调。
+			 * <p>这些回调不能影响主请求结果；回调异常只记录日志，不中断后续 done/error 处理。</p>
+			 */
+			triggerEvent:function(eventName, eventData, requestData, sseCallbacks){
+				var runCallback = function(owner, callback, args, callbackName){
+					if(typeof(callback) != 'function'){
+						return;
+					}
+					try{
+						// 每个回调单独捕获异常，避免某个监听失败后阻断同一事件的后续监听。
+						callback.apply(owner, args);
+					}catch(e){
+						translate.log('translate.request.sse '+callbackName+' callback error: '+e.message);
+					}
+				};
+				// 单次请求回调用于 translate.execute() 这种带有请求上下文的消费场景。
+				// 这里不复用全局 onBatch/onItem，避免多个翻译请求并发时互相覆盖回调状态。
+				if(typeof(sseCallbacks) == 'object' && sseCallbacks != null){
+					runCallback(sseCallbacks, sseCallbacks.onEvent, [eventName, eventData, requestData], 'onEvent');
+					if(eventName == 'batch'){
+						runCallback(sseCallbacks, sseCallbacks.onBatch, [eventData, requestData], 'onBatch');
+					}else if(eventName == 'item'){
+						runCallback(sseCallbacks, sseCallbacks.onItem, [eventData, requestData], 'onItem');
+					}else if(eventName == 'done'){
+						runCallback(sseCallbacks, sseCallbacks.onDone, [eventData, requestData], 'onDone');
+					}else if(eventName == 'error'){
+						runCallback(sseCallbacks, sseCallbacks.onError, [eventData, requestData], 'onError');
+					}
+				}
+				runCallback(translate.request.sse, translate.request.sse.onEvent, [eventName, eventData, requestData], 'global onEvent');
+				if(eventName == 'batch'){
+					runCallback(translate.request.sse, translate.request.sse.onBatch, [eventData, requestData], 'global onBatch');
+				}else if(eventName == 'item'){
+					runCallback(translate.request.sse, translate.request.sse.onItem, [eventData, requestData], 'global onItem');
+				}else if(eventName == 'done'){
+					runCallback(translate.request.sse, translate.request.sse.onDone, [eventData, requestData], 'global onDone');
+				}else if(eventName == 'error'){
+					runCallback(translate.request.sse, translate.request.sse.onError, [eventData, requestData], 'global onError');
+				}
+			},
+			/**
+			 * 收集本次 SSE 安全增量渲染后，可以提前移除翻译进度遮罩的元素。
+			 * <p>这里不直接改 DOM，只根据当前 translate.execute 的临时状态做输入输出，方便后续排查。
+			 * 如果判断异常，只记录日志并返回空数组，剩余遮罩仍会在最终 translateNetworkAfter 中统一清理。</p>
+			 *
+			 * @param state 当前 translate.execute 闭包内的 SSE 进度状态
+			 * @param data {uuid, fanyiLangs, translateHashArray, renderLang, renderedIndexes}
+			 * @return 可以安全取消遮罩的元素数组
+			 */
+			collectSafeProgressElements:function(state, data){
+				var logPrefix = 'translate.request.sse.collectSafeProgressElements';
+				try{
+					if(translate.progress.api.use !== true || translate.progress.api.isTip !== true){
+						return [];
+					}
+					if(typeof(state) != 'object' || state == null){
+						translate.log(logPrefix+' 参数异常：state 不是对象');
+						return [];
+					}
+					if(typeof(data) != 'object' || data == null){
+						translate.log(logPrefix+' 参数异常：data 不是对象');
+						return [];
+					}
+					if(typeof(data.uuid) == 'undefined' || data.uuid == null){
+						translate.log(logPrefix+' 参数异常：uuid 为空');
+						return [];
+					}
+					if(typeof(data.renderLang) != 'string' || data.renderLang.length < 1){
+						translate.log(logPrefix+' 参数异常：renderLang 为空');
+						return [];
+					}
+					if(typeof(data.renderedIndexes) != 'object' || data.renderedIndexes == null || typeof(data.renderedIndexes.length) != 'number'){
+						translate.log(logPrefix+' 参数异常：renderedIndexes 不是数组');
+						return [];
+					}
+					if(typeof(data.fanyiLangs) != 'object' || data.fanyiLangs == null || typeof(data.fanyiLangs.length) != 'number'){
+						translate.log(logPrefix+' 参数异常：fanyiLangs 不是数组');
+						return [];
+					}
+					if(typeof(data.translateHashArray) != 'object' || data.translateHashArray == null){
+						translate.log(logPrefix+' 参数异常：translateHashArray 不是对象');
+						return [];
+					}
+					if(typeof(data.translateHashArray[data.renderLang]) == 'undefined'){
+						translate.log(logPrefix+' 数据异常：translateHashArray 中不存在 renderLang '+data.renderLang);
+						return [];
+					}
+					if(typeof(translate.nodeQueue[data.uuid]) == 'undefined' || translate.nodeQueue[data.uuid] == null || typeof(translate.nodeQueue[data.uuid]['list']) == 'undefined'){
+						translate.log(logPrefix+' 数据异常：nodeQueue 中不存在 uuid '+data.uuid);
+						return [];
+					}
+
+					var buildIndexElements = function(lang, itemIndex){
+						var resultElements = [];
+						var elementMap = new Map();
+						if(typeof(data.translateHashArray[lang]) == 'undefined' || typeof(data.translateHashArray[lang][itemIndex]) == 'undefined'){
+							translate.log(logPrefix+' 数据异常：未找到 translateHashArray，uuid:'+data.uuid+', lang:'+lang+', index:'+itemIndex);
+							return resultElements;
+						}
+						var hash = data.translateHashArray[lang][itemIndex];
+						if(typeof(translate.nodeQueue[data.uuid]['list'][lang]) == 'undefined'
+							|| typeof(translate.nodeQueue[data.uuid]['list'][lang][hash]) == 'undefined'
+							|| typeof(translate.nodeQueue[data.uuid]['list'][lang][hash].nodes) == 'undefined'){
+							translate.log(logPrefix+' 数据异常：未找到渲染 index 对应的 nodeQueue，uuid:'+data.uuid+', lang:'+lang+', index:'+itemIndex);
+							return resultElements;
+						}
+						var nodes = translate.nodeQueue[data.uuid]['list'][lang][hash].nodes;
+						for(var nodeIndex = 0; nodeIndex < nodes.length; nodeIndex++){
+							if(typeof(nodes[nodeIndex]) != 'object' || nodes[nodeIndex] == null || typeof(nodes[nodeIndex].node) == 'undefined' || nodes[nodeIndex].node == null){
+								continue;
+							}
+							var elements = translate.element.nodeToElement([nodes[nodeIndex].node]);
+							for(var elementIndex = 0; elementIndex < elements.length; elementIndex++){
+								elementMap.set(elements[elementIndex], elements[elementIndex]);
+							}
+						}
+						for(let element of elementMap.keys()){
+							resultElements.push(element);
+						}
+						return resultElements;
+					};
+
+					if(state.initialized !== true){
+						state.elementPendingMap = new Map();
+						state.indexElementMap = {};
+						state.renderedIndexMap = {};
+						for(var langIndex = 0; langIndex < data.fanyiLangs.length; langIndex++){
+							var lang = data.fanyiLangs[langIndex];
+							if(typeof(lang) != 'string' || lang.length < 1){
+								continue;
+							}
+							if(typeof(data.translateHashArray[lang]) == 'undefined'){
+								translate.log(logPrefix+' 数据异常：初始化时 translateHashArray 中不存在 lang '+lang);
+								continue;
+							}
+							state.indexElementMap[lang] = [];
+							for(var itemIndex = 0; itemIndex < data.translateHashArray[lang].length; itemIndex++){
+								var indexElements = buildIndexElements(lang, itemIndex);
+								state.indexElementMap[lang][itemIndex] = indexElements;
+								for(var elementIndex = 0; elementIndex < indexElements.length; elementIndex++){
+									var pending = state.elementPendingMap.get(indexElements[elementIndex]);
+									state.elementPendingMap.set(indexElements[elementIndex], typeof(pending) == 'number' ? pending + 1 : 1);
+								}
+							}
+						}
+						state.initialized = true;
+					}
+
+					if(state.elementPendingMap == null || typeof(state.elementPendingMap.get) != 'function'){
+						translate.log(logPrefix+' 状态异常：elementPendingMap 不存在');
+						return [];
+					}
+					if(typeof(state.indexElementMap) != 'object' || state.indexElementMap == null){
+						translate.log(logPrefix+' 状态异常：indexElementMap 不存在');
+						return [];
+					}
+					if(typeof(state.renderedIndexMap) != 'object' || state.renderedIndexMap == null){
+						state.renderedIndexMap = {};
+					}
+
+					var safeElementMap = new Map();
+					var renderedIndexMap = {};
+					for(var renderedIndex = 0; renderedIndex < data.renderedIndexes.length; renderedIndex++){
+						var itemIndex = parseInt(data.renderedIndexes[renderedIndex], 10);
+						if(isNaN(itemIndex) || itemIndex < 0){
+							translate.log(logPrefix+' 参数异常：renderedIndexes 中存在非法 index，uuid:'+data.uuid+', lang:'+data.renderLang+', index:'+data.renderedIndexes[renderedIndex]);
+							continue;
+						}
+						if(renderedIndexMap[itemIndex] === 1){
+							continue;
+						}
+						renderedIndexMap[itemIndex] = 1;
+
+						var renderedKey = data.renderLang+'_'+itemIndex;
+						if(state.renderedIndexMap[renderedKey] === 1){
+							continue;
+						}
+						state.renderedIndexMap[renderedKey] = 1;
+
+						if(typeof(state.indexElementMap[data.renderLang]) == 'undefined' || typeof(state.indexElementMap[data.renderLang][itemIndex]) == 'undefined'){
+							translate.log(logPrefix+' 状态异常：未找到 indexElementMap，uuid:'+data.uuid+', lang:'+data.renderLang+', index:'+itemIndex);
+							continue;
+						}
+						var indexElements = state.indexElementMap[data.renderLang][itemIndex];
+						for(var elementIndex = 0; elementIndex < indexElements.length; elementIndex++){
+							var pending = state.elementPendingMap.get(indexElements[elementIndex]);
+							if(typeof(pending) != 'number'){
+								translate.log(logPrefix+' 状态异常：elementPendingMap 中未找到元素 pending，uuid:'+data.uuid+', lang:'+data.renderLang+', index:'+itemIndex);
+								continue;
+							}
+							pending--;
+							if(pending > 0){
+								state.elementPendingMap.set(indexElements[elementIndex], pending);
+							}else{
+								state.elementPendingMap.delete(indexElements[elementIndex]);
+								safeElementMap.set(indexElements[elementIndex], indexElements[elementIndex]);
+							}
+						}
+					}
+
+					var safeElements = [];
+					for(let element of safeElementMap.keys()){
+						safeElements.push(element);
+					}
+					return safeElements;
+				}catch(e){
+					translate.log(logPrefix+' 执行异常：'+e.message);
+					return [];
+				}
+			},
+			/**
+			 * 使用 fetch + ReadableStream 发起 translate.json SSE POST 请求。
+			 * <p>返回 true 表示请求已经由 SSE 接管；如果浏览器不支持流式读取会返回 false，让调用方继续走 XHR。
+			 * 如果 fetch 在收到任何 SSE 事件前失败，会调用 fallbackFunc 降级到原 JSON 请求。</p>
+			 * <p>如果服务端返回 200 但不是 text/event-stream，说明服务端按普通 translate.json 响应了；
+			 * 此时直接消费当前响应，避免同一批大文本再发起一次 XHR 请求。</p>
+			 */
+			post:function(path, data, func, abnormalFunc, fallbackFunc, sseCallbacks){
+				if(!translate.request.sse.isSupport()){
+					return false;
+				}
+
+				var url = translate.request.getUrl(path);
+				var params = translate.request.buildPostParams(data, {stream:'1'});
+				var headers = translate.request.buildHeaders({
+					'content-type':'application/x-www-form-urlencoded',
+					'Accept':'text/event-stream'
+				});
+				var requestState = {
+					data:data,
+					requestURL:url,
+					status:0,
+					readyState:0,
+					responseText:'',
+					response:'',
+					// SSE 没有原生 XMLHttpRequest 对象。这里仅标记当前是 SSE 最小兼容响应对象，
+					// 供 translate.request.response(xhr) 的旧扩展代码识别来源，避免误认为它是完整 XHR。
+					sse:true
+				};
+				var hasEvent = false;
+				var finished = false;
+				var fallbacked = false;
+				var responseTriggered = false;
+				var triggerResponse = function(responseData){
+					if(responseTriggered){
+						return;
+					}
+					responseTriggered = true;
+					requestState.readyState = 4;
+					if(typeof(responseData) != 'undefined'){
+						try{
+							// 保持与普通 translate.json 尽量接近：最终 done/error 的 data 作为响应正文。
+							// batch/item 只是流式中间结果，不写入 responseText，也不触发 response 回调。
+							requestState.responseText = typeof(responseData) == 'string' ? responseData : JSON.stringify(responseData);
+						}catch(e){
+							requestState.responseText = '';
+						}
+						requestState.response = requestState.responseText;
+					}
+					try{
+						translate.request.response(requestState);
+					}catch(e){
+						// 用户自定义 response 回调不能影响 SSE 网络状态，否则 Promise catch 会误判为请求失败。
+						translate.log('translate.request.response SSE callback error: '+e.message);
+					}
+				};
+				var callFallback = function(){
+					if(fallbacked){
+						return;
+					}
+					fallbacked = true;
+					if(typeof(fallbackFunc) == 'function'){
+						fallbackFunc();
+					}
+				};
+				var callAbnormalFunc = function(){
+					if(typeof(abnormalFunc) != 'function'){
+						return;
+					}
+					try{
+						abnormalFunc(requestState);
+					}catch(e){
+						// abnormalFunc 是用户异常回调，它自身的异常应暴露给调用方，
+						// 但不能再次进入 fetch/read 的 Promise catch 被包装成新的 SSE 网络异常。
+						setTimeout(function(){
+							throw e;
+						}, 0);
+					}
+				};
+				var callAbnormal = function(info){
+					requestState.info = info;
+					triggerResponse();
+					callAbnormalFunc();
+				};
+				var callResponseFunc = function(args){
+					try{
+						func.apply(null, args);
+					}catch(e){
+						// func 是业务完成回调，异常应像 XHR onreadystatechange 中的回调异常一样暴露出去，
+						// 但不能进入 fetch/read 的 Promise catch，否则会被误判为 SSE 网络失败并触发 abnormalFunc。
+						setTimeout(function(){
+							throw e;
+						}, 0);
+					}
+				};
+				var handleNormalResponse = function(response){
+					return response.text().then(function(responseText){
+						// 这里代表 translate.json 已经返回了完整普通响应，不再触发 fallback 重复请求。
+						// 后续若用户回调自身抛错，也应按已收到业务响应处理，而不是误判为 fetch 失败后再发 XHR。
+						hasEvent = true;
+						triggerResponse(responseText);
+
+						var json = null;
+						if(typeof(responseText) == 'undefined' || responseText == null){
+							// 与 XHR 旧逻辑保持一致：空响应不解析 JSON，直接把原始内容交给调用方。
+						}else{
+							if(responseText.indexOf('{') > -1 && responseText.indexOf('}') > -1){
+								try{
+									json = JSON.parse(responseText);
+								}catch(e){
+									translate.log(e);
+								}
+							}
+						}
+
+						if(json === null){
+							callResponseFunc([responseText]);
+						}else{
+							callResponseFunc([json, data, requestState]);
+						}
+					});
+				};
+
+				window.fetch(url, {
+					method:'POST',
+					headers:headers,
+					body:params
+				}).then(function(response){
+					requestState.status = response.status;
+					if(response.status != 200){
+						if(!hasEvent){
+							callFallback();
+							return null;
+						}
+						callAbnormal('HTTP response code : '+response.status+', url: '+url);
+						return null;
+					}
+					var contentType = '';
+					if(response.headers != null && typeof(response.headers.get) == 'function'){
+						contentType = response.headers.get('content-type') || '';
+					}
+					if(contentType.toLowerCase().indexOf('text/event-stream') < 0){
+						return handleNormalResponse(response);
+					}
+					if(typeof(response.body) == 'undefined' || response.body == null || typeof(response.body.getReader) != 'function'){
+						callFallback();
+						return null;
+					}
+
+					var reader = response.body.getReader();
+					var decoder = new window.TextDecoder('utf-8');
+					var buffer = '';
+					var handleBlock = function(block){
+						if(block == null || block.length < 1){
+							return;
+						}
+						var event = translate.request.sse.parseEventBlock(block);
+						if(event.dispatch !== true){
+							// 注释心跳、id、retry 等 SSE 控制块不代表服务端已经返回业务数据，
+							// 不能把 hasEvent 提前置为 true，否则后续断流时会阻断原 JSON 请求降级。
+							return;
+						}
+						hasEvent = true;
+						if(event.name == 'done'){
+							finished = true;
+							requestState.sseEventName = event.name;
+							triggerResponse(event.data);
+						}else if(event.name == 'error'){
+							finished = true;
+							requestState.sseEventName = event.name;
+							triggerResponse(event.data);
+						}
+						translate.request.sse.triggerEvent(event.name, event.data, data, sseCallbacks);
+						if(event.name == 'done'){
+							callResponseFunc([event.data, data, requestState]);
+						}else if(event.name == 'error'){
+							callResponseFunc([event.data, data, requestState]);
+						}
+					};
+					var read = function(){
+						return reader.read().then(function(result){
+							if(result.done){
+								buffer = buffer + decoder.decode();
+								buffer = buffer.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+								if(buffer.length > 0){
+									handleBlock(buffer);
+									buffer = '';
+								}
+								if(!finished){
+									if(!hasEvent){
+										callFallback();
+									}else{
+										callAbnormal('SSE connection finished before done event. url: '+url);
+									}
+								}
+								return;
+							}
+							buffer = buffer + decoder.decode(result.value, {stream:true});
+							buffer = buffer.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+							var splitIndex = buffer.indexOf('\n\n');
+							while(splitIndex > -1){
+								var block = buffer.substring(0, splitIndex);
+								buffer = buffer.substring(splitIndex+2);
+								handleBlock(block);
+								splitIndex = buffer.indexOf('\n\n');
+							}
+							return read();
+						});
+					};
+					return read();
+				}).catch(function(e){
+					if(!hasEvent){
+						callFallback();
+					}else{
+						callAbnormal('SSE request error: '+e.message+', url: '+url);
+					}
+				});
+				return true;
+			}
 		},
 		/*
 			v3.18.35.20250920 增加
@@ -7480,8 +10379,9 @@ var translate = {
 				}
 
 				try{
-					translate.request.post(
+					translate.request.send(
 						translate.request.api.init,
+						{},
 						{},
 						function(data){
 							if (data.result == 0){
@@ -7498,9 +10398,13 @@ var translate = {
 								}
 							}
 						},
+						'post',
+						true,
+						null,
 						function(data){
 							//console.log('eeerrr');
-						}
+						},
+						false
 					);
 				}catch(e){
 				}
@@ -7537,9 +10441,12 @@ var translate = {
 		},
 		/*
 			请求后端接口的响应。无论是否成功，都会触发此处。
-			另外当 xhr.readyState==4 的状态时才会触发。
+			普通 XHR 请求会在 xhr.readyState==4 的状态时触发。
+			如果 translate.json 启用了 SSE 并由 SSE 成功接管请求，这里会传入一个最小兼容响应对象，
+			它不是原生 XMLHttpRequest，但会保留 status、readyState、responseText、response、data、requestURL 等常用字段，
+			并通过 sse:true 标记来源，方便旧扩展代码兼容判断。
 			此处会在接口请求响应后、且在translate.js处理前就会触发
-			@param xhr XMLHttpRequest 接口请求
+			@param xhr XMLHttpRequest 接口请求；SSE 请求为最小兼容响应对象
 			
 		*/
 		response:function(xhr){
@@ -7791,19 +10698,6 @@ var translate = {
 				return translate.request.speedDetectionControl.hostQueueIndex;
 			},
 
-			//当前节点请求失败后切换到队列中的下一个节点。
-			useNextHost:function(){
-				var queue = translate.request.speedDetectionControl.getHostQueue();
-				if(queue.length < 2){
-					return false;
-				}
-				var currentIndex = Number(translate.request.speedDetectionControl.getHostQueueIndex());
-				var nextIndex = (currentIndex + 1) % queue.length;
-				translate.request.speedDetectionControl.hostQueueIndex = nextIndex;
-				translate.storage.set('speedDetectionControl_hostQueueIndex', nextIndex);
-				return true;
-			},
-
 			//获取当前要使用的host
 			getHost:function(){
 				var queue = translate.request.speedDetectionControl.getHostQueue();
@@ -7830,6 +10724,99 @@ var translate = {
 			return url;
 		},
 		/**
+		 * 按 translate.request.send 原有规则组装 POST 表单参数。
+		 * <p>XHR 和 SSE 都必须通过这里生成参数，避免 stream=1 分支遗漏 browserDefaultLanguage、
+		 * appendParams 或企业版 key，导致同一个 translate.json 请求在两条传输路径上的行为不一致。</p>
+		 *
+		 * @param data 请求参数对象或字符串。传入对象时会按原逻辑追加公共参数。
+		 * @param extraParams 仅当前请求额外追加的参数，例如 SSE 请求的 stream=1。
+		 * @return application/x-www-form-urlencoded 格式的请求体
+		 */
+		buildPostParams:function(data, extraParams){
+			var params = '';
+
+			if(data == null || typeof(data) == 'undefined'){
+				data = {};
+			}
+
+			if(typeof(data) == 'string'){
+				params = data; //payload 方式 , edge 的方式
+			}else{
+				//表单提交方式
+
+				//加入浏览器默认语种  v3.6.1 增加，以便更好的进行自动切换语种
+				data.browserDefaultLanguage = translate.util.browserDefaultLanguage();
+
+				//追加附加参数
+				for(var apindex in translate.request.appendParams){
+					if (!translate.request.appendParams.hasOwnProperty(apindex)) {
+						continue;
+					}
+					data[apindex] = translate.request.appendParams[apindex];
+				}
+
+				if(typeof(translate.enterprise) != 'undefined'){
+					//加入key
+					if(typeof(translate.enterprise.key) != 'undefined' && typeof(translate.enterprise.key) == 'string' && translate.enterprise.key.length > 0){
+						data.key = translate.enterprise.key;
+					}
+				}
+
+				//只服务当前传输方式的临时参数放在最后追加，避免被 appendParams 覆盖。
+				if(typeof(extraParams) == 'object' && extraParams != null){
+					for(var epindex in extraParams){
+						if (!extraParams.hasOwnProperty(epindex)) {
+							continue;
+						}
+						data[epindex] = extraParams[epindex];
+					}
+				}
+
+				//组合参数
+				for(var index in data){
+					if (!data.hasOwnProperty(index)) {
+						continue;
+					}
+					if(params.length > 0){
+						params = params + '&';
+					}
+					params = params + index + '=' + data[index];
+				}
+			}
+			return params;
+		},
+		/**
+		 * 按 translate.request.send 原有规则组装请求头。
+		 * <p>这里返回普通对象，XHR 会逐个 setRequestHeader，fetch 会直接作为 headers 使用。</p>
+		 *
+		 * @param headers 当前请求自己的 header
+		 * @return 合并 appendHeaders 和 currentpage 后的 header 对象
+		 */
+		buildHeaders:function(headers){
+			var requestHeaders = {};
+			if(headers != null){
+				for(var index in headers){
+					if (!headers.hasOwnProperty(index)) {
+						continue;
+					}
+					requestHeaders[index] = headers[index];
+				}
+			}
+
+			//追加附加参数
+			for(var ahindex in translate.request.appendHeaders){
+				if (!translate.request.appendHeaders.hasOwnProperty(ahindex)) {
+					continue;
+				}
+				requestHeaders[ahindex] = translate.request.appendHeaders[ahindex];
+			}
+
+			if(translate.service.name != 'client.edge'){
+				requestHeaders.currentpage = window.location.href+'';
+			}
+			return requestHeaders;
+		},
+		/**
 		 * post请求
 		 * @param path 请求的path（path，传入的是translate.request.api.translate 这种的，需要使用 getUrl 来组合真正请求的url ）
 		 * @param data 请求的参数数据，传入如 
@@ -7839,10 +10826,15 @@ var translate = {
 		 * 			to: "chinese_traditional
 		 * 		}
 		 * 		
-		 * @param func 请求完成的回调，传入如 function(data){ console.log(data); }
+		 * @param func 请求完成的回调，也就是只要响应码是 200 ，则会触发这个方法。 传入如 function(responseData, requestData){ console.log(responseData); }
+		 * 				其中的参数：
+		 * 					responseData 响应的数据
+		 * 					requestData post请求所携带的数据
+		 * 				注意，是响应数据是第一个参数，请求数据是第二个参数。 以向前兼容
 		 * @param abnormalFunc 响应异常所执行的方法，响应码不是200就会执行这个方法 ,传入如 function(xhr){}  另外这里的 xhr 会额外有个参数  xhr.requestURL 返回当前请求失败的url
+		 * @param sseCallbacks SSE 单次请求回调，只对当前请求生效，避免 translate.execute() 并发请求共享全局回调造成串线。
 		 */
-		post:function(path, data, func, abnormalFunc){
+		post:function(path, data, func, abnormalFunc, sseCallbacks){
 			var headers = {
 				'content-type':'application/x-www-form-urlencoded',
 			};
@@ -7876,38 +10868,36 @@ var translate = {
 			}
 			// ------- edge end --------
 
-			var maxAttempts = translate.request.speedDetectionControl.getHostQueue().length;
-			if(maxAttempts < 1){
-				maxAttempts = 1;
+			if(path == translate.request.api.translate && translate.request.sse.use === true && typeof(data) == 'object' && data != null){
+				var sseData = {};
+				for(var sseDataIndex in data){
+					if (!data.hasOwnProperty(sseDataIndex)) {
+						continue;
+					}
+					sseData[sseDataIndex] = data[sseDataIndex];
+				}
+				var selfRequest = this;
+				var sseStarted = translate.request.sse.post(path, sseData, func, abnormalFunc, function(){
+					// 只有在 SSE 还没有收到任何事件前失败，才降级回原始 JSON 请求。
+					// 这里继续使用原始 data，避免 stream=1 残留到降级请求里造成再次进入 SSE 入口。
+					selfRequest.send(path, data, data, func, 'post', true, headers, abnormalFunc, true);
+				}, sseCallbacks);
+				if(sseStarted){
+					return;
+				}
 			}
-			var attempt = 0;
-			var sendAttempt = function(){
-				attempt++;
-				return translate.request.send(path, data, data, function(response){
-					var serviceRejected = response && typeof(response) == 'object' && response.result == 0;
-					if(serviceRejected && attempt < maxAttempts && translate.request.speedDetectionControl.useNextHost()){
-						sendAttempt();
-						return;
-					}
-					func(response);
-				}, 'post', true, headers, function(xhr){
-					if(attempt < maxAttempts && translate.request.speedDetectionControl.useNextHost()){
-						sendAttempt();
-						return;
-					}
-					if(abnormalFunc != null){
-						abnormalFunc(xhr);
-					}
-				}, true);
-			};
-			return sendAttempt();
+
+			this.send(path, data, data, func, 'post', true, headers, abnormalFunc, true);
 		},
 		/**
 		 * 发送请求
 		 * url 请求的url或者path（path，传入的是translate.request.api.translate 这种的，需要使用 getUrl 来组合真正请求的url ）
 		 * data 请求的数据，如 {"author":"管雷鸣",'site':'www.guanleiming.com'} 
 		 * appendXhrData 附加到 xhr.data 中的对象数据，传入比如  {"from":"english","to":"japanese"} ，他会直接赋予 xhr.data
-		 * func 请求完成的回调，传入如 function(data){}
+		 * func 请求完成的回调，也就是只要响应码是 200 ，则会触发这个方法。 传入如 function(requestData, responseData, xhr){ console.log(responseData); }
+		 * 				其中的参数：
+		 * 					requestData post请求所携带的数据
+		 * 					responseData 响应的数据
 		 * method 请求方式，可传入 post、get
 		 * isAsynchronize 是否是异步请求， 传入 true 是异步请求，传入false 是同步请求。 如果传入false，则本方法返回xhr
 		 * headers 设置请求的header，传入如 {'content-type':'application/x-www-form-urlencoded'};
@@ -7916,47 +10906,7 @@ var translate = {
 		 */
 		send:function(url, data, appendXhrData, func, method, isAsynchronize, headers, abnormalFunc, showErrorLog){
 			//post提交的参数
-			var params = '';
-
-			if(data == null || typeof(data) == 'undefined'){
-				data = {};
-			}
-			
-			if(typeof(data) == 'string'){
-				params = data; //payload 方式 , edge 的方式
-			}else{
-				//表单提交方式
-				
-				//加入浏览器默认语种  v3.6.1 增加，以便更好的进行自动切换语种
-				data.browserDefaultLanguage = translate.util.browserDefaultLanguage();
-				
-				//追加附加参数
-				for(var apindex in translate.request.appendParams){
-					if (!translate.request.appendParams.hasOwnProperty(apindex)) {
-			    		continue;
-			    	}
-					data[apindex] = translate.request.appendParams[apindex];
-				}
-
-				if(typeof(translate.enterprise) != 'undefined'){
-					//加入key
-					if(typeof(translate.enterprise.key) != 'undefined' && typeof(translate.enterprise.key) == 'string' && translate.enterprise.key.length > 0){
-						data.key = translate.enterprise.key;
-					}
-				}
-				
-				//组合参数
-				for(var index in data){
-					if (!data.hasOwnProperty(index)) {
-			    		continue;
-			    	}
-					if(params.length > 0){
-						params = params + '&';
-					}
-					params = params + index + '=' + data[index];
-				}
-			}
-			
+			var params = translate.request.buildPostParams(data);
 			if(url.indexOf('https://') == 0 || url.indexOf('http://') == 0){
 				//采用的url绝对路径
 			}else{
@@ -7974,28 +10924,12 @@ var translate = {
 			//2.调用open方法（true----异步）
 			xhr.open(method,url,isAsynchronize);
 			//设置headers
-			if(headers != null){
-				for(var index in headers){
-					if (!headers.hasOwnProperty(index)) {
-			    		continue;
-			    	}
-					xhr.setRequestHeader(index,headers[index]);
-				}
-			}
-
-			//追加附加参数
-			for(var ahindex in translate.request.appendHeaders){
-				if (!translate.request.appendHeaders.hasOwnProperty(ahindex)) {
+			var requestHeaders = translate.request.buildHeaders(headers);
+			for(var headerIndex in requestHeaders){
+				if (!requestHeaders.hasOwnProperty(headerIndex)) {
 		    		continue;
 		    	}
-				xhr.setRequestHeader(ahindex,translate.request.appendHeaders[ahindex]);
-			}
-
-			if(translate.service.name != 'client.edge'){
-				xhr.setRequestHeader('currentpage', window.location.href+'');
-			}
-			if(isAsynchronize && translate.service.name == 'translate.service'){
-				xhr.timeout = 10000;
+				xhr.setRequestHeader(headerIndex,requestHeaders[headerIndex]);
 			}
 			xhr.send(params);
 			//4.请求状态改变事件
@@ -8020,10 +10954,10 @@ var translate = {
 				        	}
 			        	}
 			        	
-			        	if(json == null){
+			        	if(json === null){
 			        		func(xhr.responseText);
 			        	}else{
-			        		func(json);
+			        		func(json, xhr.data, xhr);
 			        	}
 			        }else{
 			        	if(showErrorLog){
@@ -8064,10 +10998,16 @@ var translate = {
 				function: 翻译完毕后的处理函数。传入如 function(data){ console.log(data); }
 						  注意，返回的data.result 为 1，则是翻译成功。  为0则是出错，可通过data.info 得到错误原因。 更详细说明参考： http://api.zvo.cn/translate/service/20230807/translate.json.html
 
+				abnormalFunc: 翻译失败后的处理函数。传入如 function(xhr){ console.log(xhr); }
+						  注意，这里的 xhr 是 XMLHttpRequest 对象，可以通过 xhr.status 获取响应状态码，通过 xhr.responseText 获取响应内容。
+
 			使用案例一： 
 			translate.request.translateText('你好，我是翻译的内容', function(data){
 				//打印翻译结果
 				console.log(data);
+			}, function(xhr){
+				//打印翻译失败后的信息
+				console.log(xhr);
 			});
 			
 			使用案例二：
@@ -8075,6 +11015,9 @@ var translate = {
 			translate.request.translateText(texts, function(data){
 				//打印翻译结果
 				console.log(data);
+			}, function(xhr){
+				//打印翻译失败后的信息
+				console.log(xhr);
 			});
 
 			使用案例三：
@@ -8086,9 +11029,12 @@ var translate = {
 			translate.request.translateText(obj, function(data){
 				//打印翻译结果
 				console.log(data);
+			}, function(xhr){
+				//打印翻译失败后的信息
+				console.log(xhr);
 			});
 		*/
-		translateText:function(obj, func){
+		translateText:function(obj, func, abnormalFunc){
 			var texts = new Array();
 			var from = translate.language.getLocal();
 			var to = translate.language.getCurrent();
@@ -8133,7 +11079,7 @@ var translate = {
 
 			// 筛选需要翻译的文本及其原始索引
   			var apiTranslateText = [];
-			var apiTranslateArray = {};
+			var apiTranslateItems = [];
 			for(var i = 0; i < texts.length; i++){
 				//判断是否在浏览器缓存中出现了
 				var hash = translate.util.hash(texts[i]);
@@ -8145,7 +11091,11 @@ var translate = {
 				}else{
 					translateResultArray[i] = '';
 					apiTranslateText.push(texts[i]);
-					apiTranslateArray[hash] = i;
+					apiTranslateItems.push({
+						index: i,
+						text: texts[i],
+						hash: hash
+					});
 				}
 			}
 			if (apiTranslateText.length == 0) {
@@ -8176,41 +11126,52 @@ var translate = {
 				text:encodeURIComponent(JSON.stringify(apiTranslateText))
 			};
 			//console.log(apiTranslateText);
-			translate.request.post(url, data, function(resultData){
-				//console.log(resultData); 
+			translate.request.post(url, data, function(responseData, requestData){
+				//console.log(responseData); 
 				//console.log(data); 
-				if(resultData.result == 0){
+				if(responseData.result != 1){
 					translate.log('=======ERROR START=======');
-					translate.log('from : '+resultData.from);
-					translate.log('to : '+resultData.to);
+					translate.log('from : '+requestData.from);
+					translate.log('to : '+requestData.to);
 					translate.log('translate text array : '+texts);
-					translate.log('response : '+resultData.info);
+					translate.log('response error info: '+responseData.info);
 					translate.log('=======ERROR END  =======');
-					//return;
+					return;
 				}
 
-				for(var i = 0; i < resultData.text.length; i++){
+				for(var i = 0; i < responseData.text.length; i++){
+					if(typeof(apiTranslateItems[i]) === 'undefined'){
+						continue;
+					}
+
 					//将翻译结果以 key：hash  value翻译结果的形式缓存
-					var hash = translate.util.hash(apiTranslateText[i]);
-					translate.storage.set('hash_'+to+'_'+hash, resultData.text[i]);
+					var hash = apiTranslateItems[i].hash;
+					translate.storage.set('hash_'+to+'_'+hash, responseData.text[i]);
 					//如果离线翻译启用了全部提取，那么还要存入离线翻译指定存储
-					if(translate.office.fullExtract.isUse){
-						translate.office.fullExtract.set(hash, apiTranslateText[i], data.to, resultData.text[i]);
+					if(translate.offline.fullExtract.isUse){
+						translate.offline.fullExtract.set(hash, apiTranslateItems[i].text, data.to, responseData.text[i]);
 					}
 
 					//进行组合数据到 translateResultArray
-					translateResultArray[apiTranslateArray[hash]] = resultData.text[i];
+					translateResultArray[apiTranslateItems[i].index] = responseData.text[i];
 				}
-				resultData.text = translateResultArray;			
+				responseData.text = translateResultArray;			
 
-				func(resultData);
-			}, null);
+				func(responseData);
+			}, (function(xhr){
+				if(abnormalFunc && typeof(abnormalFunc) == 'function'){
+					abnormalFunc(xhr);
+				}
+			}));
 		},
 		listener:{
 			//是否已经启动过 translate.request.listener.addListener() 开始监听了，开始了则是true，默认没开始则是false
 			isStart:false,
 			//用户的代码里是否启用了 translate.request.listener.start() ，true：启用
 			use:false, 
+			// request listener 启动后创建的资源，保存引用便于 reset() 释放。
+			intervalId:null,
+			observer:null,
 			minIntervalTime:800, // 两次触发的最小间隔时间，单位是毫秒，这里默认是800毫秒。最小填写时间为 200毫秒
 			lasttime:0,// 最后一次触发执行 translate.execute() 的时间，进行执行的那一刻，而不是执行完。13位时间戳
 			/*
@@ -8275,6 +11236,19 @@ var translate = {
 			start:function(){
 				translate.request.listener.use = true;
 			},
+
+			reset:function(){
+				if(translate.request.listener.intervalId !== null){
+					clearInterval(translate.request.listener.intervalId);
+					translate.request.listener.intervalId = null;
+				}
+				if(translate.request.listener.observer !== null){
+					translate.request.listener.observer.disconnect();
+					translate.request.listener.observer = null;
+				}
+				translate.request.listener.isStart = false;
+				translate.request.listener.executetime = 0;
+			},
 			/*js translate.request.listener.start end*/
 
 			// 当 translate.execute() 触发时，也就是触发了生命周期的 start 时，才会启动这里。这里要在翻译进行后才能触发，不然提前出发会导致跟用户设置的启动时间不相符造成异常
@@ -8292,7 +11266,7 @@ var translate = {
 				}
 
 				//增加一个没100毫秒检查一次执行任务的线程
-				setInterval(function(){
+				translate.request.listener.intervalId = setInterval(function(){
 					var currentTime = Date.now();
 					//console.log(translate.request.listener.executetime)
 					if(translate.request.listener.executetime > 1 && currentTime > translate.request.listener.executetime+translate.request.listener.delayExecuteTime){
@@ -8311,6 +11285,7 @@ var translate = {
 
 				if(typeof(PerformanceObserver) == 'undefined'){
 					translate.log('因浏览器版本较低， translate.request.listener.start() 中 PerformanceObserver 对象不存在，浏览器不支持，所以 translate.request.listener.start() 未生效。');
+					translate.request.listener.reset();
 					return;
 				}
 
@@ -8338,18 +11313,17 @@ var translate = {
 				        		}
 				        	}
 				        	//client.edge 判断   translate.service.edge可能会被精简translate.js定制时给直接干掉，所以提前加个判断
-				        	if(typeof(translate.service.edge) != 'undefined' && url.indexOf(translate.service.edge.api.auth) > -1){
-				        		ignoreUrl = true;
+				        	if(typeof(translate.service.edge) != 'undefined'){
+				        		if(url.indexOf('edge.microsoft.com/translate/translatetext') > -1){
+					        		ignoreUrl = true;
+					        	}
 				        	}
-				        	if(url.indexOf('.microsofttranslator.com/translate') > -1){
-				        		ignoreUrl = true;
-				        	}
-
+				        	
 				        	if(ignoreUrl){
 				        		//console.log('忽略：'+url);
 								continue;
 				        	}
-				        	if(translate.request.listener.trigger()){
+				        	if(translate.request.listener.trigger(url)){
 				        		//正常，会触发翻译，也是默认的
 				        	}else{
 				        		//不触发翻译，跳过
@@ -8365,6 +11339,7 @@ var translate = {
 				    	translate.request.listener.addExecute();
 				    }
 				});
+				translate.request.listener.observer = observer;
 
 				//v3.15.14.20250617 增加
 				// 优先使用 entryTypes  兼容 ES5 的写法
@@ -8395,6 +11370,7 @@ var translate = {
 					translate.log("使用 PerformanceObserver type");
 				} catch (e) {
 					translate.log("当前浏览器不支持 PerformanceObserver 的任何参数, translate.request.listener.start() 未启动");
+					translate.request.listener.reset();
 				}
 
 			}
@@ -8476,7 +11452,7 @@ var translate = {
 			/*
 				列出针对key进行模糊匹配的所有键值对
 				使用方式：
-					const users = await translate.storage.indexedDB.list("*us*r*");
+					const users = await translate.storage.IndexedDB.list("*us*r*");
 					其中传入的key可以模糊搜索，其中的 * 标识另个或多个
 			*/
 			list: async function (key = '') {
@@ -8706,19 +11682,15 @@ var translate = {
 		*/
 
 		//清除 translate.listener 
-		if(typeof(translate.listener.observer) != 'undefined' && translate.listener.observer != null){
-			translate.listener.observer.disconnect();
-		}
-		if(translate.listener.isStart){
-			translate.listener.isStart = false; //设置为未启动	
-		}
+		translate.listener.reset();
+
 		//translate.temp_listenerStartInterval = undefined; //设置为尚未启动
 		translate.init_first_trigger_execute = undefined; //translate.init 的 execute钩子，设置为未初始化状态
 		
 
 		/** 使用基于 translate.node 的还原 **/
 		for (let key of translate.node.data.keys()) {
-			if (!translate.node.get(key) == null) {
+			if (translate.node.get(key) == null) {
 	    		continue;
 	    	}
 			//for(var attr in translate.node.get(key)){
@@ -8733,7 +11705,20 @@ var translate = {
 				//translate.element.nodeAnalyse.analyse(key, analyse.text, translate.node.get(key).originalText, translate.node.get(key).attribute);
 				
 				//标注此次改动是有 translate.js 导致的 -- 这里就不用标记了，因为先已经移除了 translate.listener.observer 监听，所以不会再监听到还原的操作了
-				key.nodeValue = translate.node.get(key).originalText;
+				
+				//是否是 input、 textarea 的 value ，如果是 则是 true
+				var isInputValue = false;
+				if(typeof(translate.node.get(key).attribute) === 'string' && translate.node.get(key).attribute === 'value'){
+					//可能是input\textarea 的value
+					var nodename = translate.element.getNodeName(key).toLowerCase();
+					if(nodename === 'input' || nodename === 'textarea'){
+						key.value = translate.node.get(key).originalText;
+						isInputValue = true;
+					}
+				}	
+				if(!isInputValue){
+					key.nodeValue = translate.node.get(key).originalText;
+				}
 			//}
 		}
 
@@ -8780,9 +11765,11 @@ var translate = {
 	/*
 		划词翻译，鼠标在网页中选中一段文字，会自动出现对应翻译后的文本
 		有网友 https://gitee.com/huangguishen 提供。
-		详细使用说明参见：http://translate.zvo.cn/41557.html
+		详细使用说明参见：https://translate.zvo.cn/4072.html
 	*/
 	selectionTranslate:{
+		//是否启用，默认是false，不启用。如果启用，则是 translate.selectionTranslate.start();
+		use:false,
 		selectionX:0,
 		selectionY:0,
 		callTranslate:function (event){
@@ -8805,16 +11792,27 @@ var translate = {
 				to:translate.to,
 				text:encodeURIComponent(JSON.stringify([translateText]))
 			};
-			translate.request.post(url, data, function(data) {
-				if (data.result == 0) return;
+			translate.request.post(url, data, function(responseData, requestData) {
+				if (responseData.result != 1){
+					translate.log('translate.selectionTranslate network response error : '+responseData.info);
+					return;
+				};
 				let curTooltipEle = document.querySelector('#translateTooltip')
-				curTooltipEle.innerText = data.text[0];
+				curTooltipEle.innerText = responseData.text[0];
 				curTooltipEle.style.top =selectionY+20+"px";
 				curTooltipEle.style.left = selectionX+50+"px" ;
 				curTooltipEle.style.display = "";
 			}, null);
 		},
 		start:function () {
+			// start() 是公开方法，可能被用户代码直接多次调用。
+			// 已启动时直接返回，避免重复创建 tooltip 节点以及重复绑定 document 事件。
+			if(translate.selectionTranslate.use === true){
+				return;
+			}
+
+			translate.selectionTranslate.use = true;
+
 			//新建一个tooltip元素节点用于显示翻译
 			let tooltipEle = document.createElement('span');
 			tooltipEle.innerText = '';
@@ -8952,6 +11950,7 @@ var translate = {
 		 */
 		api:{
 			isTip:true,//是否显示ui的提示，true显示，false不显示
+			use: false, //默认不使用，translate.progress.api.startUITip(); 可以设置为启用
 			setUITip:function(tip){
 				translate.progress.api.isTip = tip;
 			},
@@ -8979,13 +11978,52 @@ var translate = {
 				if(typeof(node.className) != 'string'){
 					return;
 				}
-				if(node.className.indexOf('translate_api_in_progress') < -1){
+				if(node.className.indexOf('translate_api_in_progress') === -1){
 					return;
 				}
 				node.className = node.className.replace(/translate_api_in_progress/g, '');
 			},
+			// 移除指定元素上的翻译中 UI 提示。
+			// 这里保持原有 className 字符串替换方式，避免第一步抽公共能力时改变旧浏览器或特殊元素的行为。
+			removeUITipByElements:function(elements){
+				if(typeof(elements) == 'undefined' || elements == null){
+					return;
+				}
+				for(var r = 0; r<elements.length; r++){
+					if(typeof(elements[r]) == 'undefined' || elements[r] == null || typeof(elements[r].className) !== 'string'){
+						continue;
+					}
+					if(elements[r].className.indexOf('translatejs-text-element-hidden') > -1){
+						elements[r].className = elements[r].className.replace(/translatejs-text-element-hidden/g, '');
+					}
+					if(elements[r].className.indexOf('translate_api_in_progress') > -1){
+						elements[r].className = elements[r].className.replace(/translate_api_in_progress/g, '');
+					}
+				}
+			},
 			
-			startUITip:function(){
+			/*
+				config: 可设置的一些参数
+					{
+						maskLayerMinWidth:10.0 	//当翻译时，需要请求网络，此时翻译的文本上会出现遮罩层显示一个进行中的动画，这个动画出现在的元素，最小宽度是多少。如果不设置，默认是10，也就是10像素，也就是当元素大于等于10像素时，才会在上面显示这个进行中的动画。而小于10像素宽度的元素，则是空白一片什么也不显示。 它支持设置float类型的值
+					}
+
+				
+			*/
+			startUITip:function(config){
+				// 进度提示只需要启用一次，重复调用会重复注册生命周期回调。
+				if(translate.progress.api.use === true){
+					return;
+				}
+
+				translate.progress.api.use = true;
+
+				if(typeof(config) === 'undefined'){
+					config = {};
+				}
+				if(typeof(config.maskLayerMinWidth) !== 'number'){
+					config.maskLayerMinWidth = 10;
+				}
 				
 				//创建隐藏文字的 style
 				var translatejsTextElementHidden = document.getElementById('translatejs-text-element-hidden');
@@ -9013,6 +12051,8 @@ var translate = {
 				if(translate.progress.api.isTip){
 					//translate.listener.execute.renderStartByApi.push(function(uuid, from, to){
 					translate.lifecycle.execute.translateNetworkBefore.push(function(data){
+						var startTime = new Date().getTime();
+
 						//取出当前变动的node，对应的元素
 						var elements = translate.element.nodeToElement(data.nodes);
 						//console.log(elements)
@@ -9030,34 +12070,48 @@ var translate = {
 					    var sortRects = translate.visual.coordinateSort(rectsOneArray);
 						//console.log(sortRects);
 
-					    //去重
-					    sortRects = translate.visual.filterNodeRepeat(sortRects);
-					    //console.log(sortRects);
-
-						var rectLineSplit = translate.visual.filterRectsByLineInterval(rectsOneArray, 2);
-						for(var r = 0; r<rectLineSplit.length; r++){
-					    	if(typeof(rectLineSplit[r].node.className) === 'string' && rectLineSplit[r].node.className.indexOf('translate_api_in_progress') > -1){
-					    		//已经存在了，就不继续加了
-					    	}else{
-					    		rectLineSplit[r].node.className = rectLineSplit[r].node.className+' translate_api_in_progress';	
-					    	}
+					    //过滤，比如过滤掉宽度非常小的，不然显示出来会很丑
+						// 1. 收集需要删除的下标
+						const indicesToRemove = [];
+						for (let i = 0; i < sortRects.length; i++) {
+						  if (sortRects[i].width < config.maskLayerMinWidth) {
+						    indicesToRemove.push(i);
+						  }
 						}
+						// 2. 移除宽度极小的rects元素
+						for(var di = indicesToRemove.length-1; di > -1; di--){
+							//console.log(sortRects[indicesToRemove[di]]);
+							sortRects.splice(indicesToRemove[di], 1);
+						}
+
+					    //去除空间重叠
+					    var spaceEORects = translate.visual.rectsSpaceEliminateOverlap(sortRects);
+					    //console.log('计算耗时：'+(new Date().getTime() - startTime));
+
+						//var rectLineSplit = translate.visual.filterRectsByLineInterval(spaceEORects.rects, 1);
+						var rectLineSplit = spaceEORects.rects;
+						//var rectLineSplit = sortRects;
+						for(var r = 0; r<rectLineSplit.length; r++){
+							//判断这个元素的父级是否已经添加了，可能存在检测到多个本地语种，然后中文转英语后，又出现了日语转英语。 这里避免第二次日语转英语时，跟第一次中文转英语重复，导致出现样式过渡动画的重叠
+							var parentNode = rectLineSplit[r].node.parentNode;
+							if(typeof(parentNode) !== 'undefined' && typeof(parentNode.className) === 'string' && parentNode.className.indexOf('translate_api_in_progress') > -1){
+								//上级已经有了，那么就不需要再加动画了
+							}else{
+								//上级没有加，那么这个才能考虑加
+								if(typeof(rectLineSplit[r].node.className) === 'string' && rectLineSplit[r].node.className.indexOf('translate_api_in_progress') > -1){
+						    		//已经存在了，就不继续加了
+						    	}else{
+						    		rectLineSplit[r].node.className = rectLineSplit[r].node.className+' translate_api_in_progress';	
+						    	}
+							}
+						}
+						//console.log('计算+渲染耗时：'+(new Date().getTime() - startTime));
 					});
 					
 					translate.lifecycle.execute.translateNetworkAfter.push(function(data){
 						//取出当前变动的node，对应的元素
 						var elements = translate.element.nodeToElement(data.nodes);
-				    	
-				    	for(var r = 0; r<elements.length; r++){
-				    		if(typeof(elements[r].className) === 'string'){
-				    			if(elements[r].className.indexOf('translatejs-text-element-hidden') > -1){
-				    				elements[r].className = elements[r].className.replace(/translatejs-text-element-hidden/g, '');
-				    			}
-				    			if(elements[r].className.indexOf('translate_api_in_progress') > -1){
-									elements[r].className = elements[r].className.replace(/translate_api_in_progress/g, '');	
-								}
-				    		}
-				    	}
+						translate.progress.api.removeUITipByElements(elements);
 						
 						
 					});
@@ -9371,20 +12425,99 @@ var translate = {
 
 			obj: js对象
 			formatSupplementaryCharLength: 对这个js对象进行格式化自动补充字符的长度，比如 2、 4
+
+			2025.10.10 优化传入参数
+			obj:{
+				jsObject: 原本的obj参数， 也就是js对象
+				formatSupplementaryCharLength: 对这个js对象进行格式化自动补充字符的长度，比如 2、 4 ,默认不设置则是4
+				functionBodyHandle: 针对值是function函数类型时，可以自定义对函数体的源码进行处理，它是传入 function 类型的，比如：
+						functionBodyHandle: function(functionBody){
+							functionBody = functionBody+'123';
+							return functionBody;
+						}
+						传入值是函数体的string类型的源码内容
+						返回值是修改过后最新的函数体的string类型的源码内容
+						这是 2025.10.10 新增参数，应对layui的 i18n 全自动翻译函数体中的字符串文本
+			}
 		*/
 		objToString:function(obj, formatSupplementaryCharLength){
+			if(obj != null && typeof(obj) === 'object'){
+				if(typeof(obj.jsObject) === 'object'){
+					//是 2025.10.10 以后的新版本
+				}else{
+					//是 2025.10.10 以前的旧版本
+					var newObj = {
+						jsObject: obj
+					}
+					obj = newObj;
+				}
+			}else{
+				obj = {};
+			}
+			if(typeof(formatSupplementaryCharLength) === 'number'){
+				obj.formatSupplementaryCharLength = formatSupplementaryCharLength;
+			}
+			//未设置，就赋予默认值4
+			if(typeof(obj.formatSupplementaryCharLength) !== 'number'){
+				obj.formatSupplementaryCharLength = 4; 
+			}
+
 			// 自定义replacer函数，将函数转换为字符串
-			const jsonStr = JSON.stringify(obj, (key, value) => {
+			let jsonStr = JSON.stringify(obj.jsObject, (key, value) => {
 			  if (typeof value === 'function') {
 			    // 将函数转换为其源代码字符串
-			    return value.toString();
+			    var funcString = value.toString();
+			    if(typeof(funcString) === 'string' && funcString.length > 0){
+			    	funcString = funcString.replace(/\n/g, '___TRANSLATEJS_LINE_BREAK___');	
+			    }
+			    return funcString;
+			  }else{
+			  	return value;
 			  }
-			  return value;
-			}, formatSupplementaryCharLength);
 
-			// 将转义的\n替换为实际的换行符
-			const formattedStr = jsonStr.replace(/\\n/g, '\n');
-			return formattedStr;
+	          return result;
+			}, obj.formatSupplementaryCharLength);
+
+
+			//对 function 的函数体进行处理
+			// 将转义的\n替换为实际的换行符 -- 20251009 优化，去掉换行符替换，layui 工具中发现这样会将原本文本中的换行符替换掉，而是调整为仅仅针对function方法进行针对替换
+			// 逐行判断，判断其中哪一行的value是function，要将function的字符串格式变为function函数格式
+			if(jsonStr.indexOf('___TRANSLATEJS_LINE_BREAK___') > -1){
+				const lines = jsonStr.split('\n');
+			    for(var li = 0; li<lines.length; li++){
+			    	// 检查当前行是否包含特定标记
+			        if (lines[li].includes('___TRANSLATEJS_LINE_BREAK___')) {
+			        	lines[li] = lines[li].replace(/___TRANSLATEJS_LINE_BREAK___/g, '\n'); //将其替换为原本的换行符
+
+			            // 查找值部分（假设格式是 "key": "function..."）
+			            const valueMatch = lines[li].match(/"[^"]+":\s*"([^"]+)"/);
+			            if (valueMatch && valueMatch[1]) {
+			                // 替换换行标记为实际换行
+			                let functionStr = valueMatch[1].replace(/___TRANSLATEJS_LINE_BREAK___/g, '\n');
+			                
+			                // 将函数字符串转换为实际函数
+			                try {
+			                    // 使用Function构造函数创建函数更安全一些
+			                    const functionParts = functionStr.match(/function\s*([^\(]*)\(([^)]*)\)\s*\{([\s\S]*)\}/);
+			                    
+			                    if (functionParts) {
+			                        var [, name, params, body] = functionParts;
+			                        if(typeof(obj.functionBodyHandle) === 'function'){
+			                        	body = obj.functionBodyHandle(body);
+			                        }
+			                        // 替换原行中的字符串为函数表达式
+			                        lines[li] = lines[li].replace(`"${valueMatch[1]}"`, `function${name}(${params}){${body}}`);
+			                    }
+			                } catch (e) {
+			                    console.error('转换函数时出错:', e);
+			                }
+			            }
+			        }
+			    }
+			 	jsonStr = lines.join('\n');   
+			}
+		    
+			return jsonStr;
 		}
 	},
 	/*js dispose end*/
@@ -9407,6 +12540,9 @@ var translate = {
 
 	*/	
 	network: {
+		//是否启用， true为启用 ，通过 translate.network.use(); 设置启用。 更多说明：  https://translate.zvo.cn/479724.html
+	    isUse:false, 
+
 	    // 原始方法保存
 	    originalOpen: XMLHttpRequest.prototype.open,
 	    originalSend: XMLHttpRequest.prototype.send,
@@ -9428,7 +12564,7 @@ var translate = {
 			    const rule = translate.network.rules[i];
 			    
 			    // 检查 URL 是否匹配
-			    if(typeof(rule.url) == 'undefined' && rule.url == ''){
+			    if(typeof(rule.url) == 'undefined' || rule.url == ''){
 			    	translate.log('WARINNG : translate.network.rule find url is null:');
 			    	translate.log(rule);
 			    	continue;
@@ -9451,6 +12587,8 @@ var translate = {
 			return null;
 	    },
 	    use:function(){
+	    	translate.network.isUse = true;
+
 	    	// 应用Hook
 			XMLHttpRequest.prototype.open = function(...args) {
 			    return translate.network.hookOpen.apply(this, args);
@@ -9521,7 +12659,7 @@ var translate = {
 	        async handleGet(url, rule) {
 	        	//console.log(url);
 	        	//console.log(rule);
-	        	if(typeof(rule.params) == 'undefined' && typeof(rule.params.length) == 'undefined' && rule.params.length < 1){
+				if(!Array.isArray(rule.params) || rule.params.length < 1){
 	        		translate.log('WARINNG: rule not find params , rule : ');
 	        		translate.log(rule);
 	        		rule.params = [];
@@ -9956,6 +13094,154 @@ var translate = {
 		    return filtered;
 		},
 		/*
+			对传入的 rects 进行重叠识别排除，将重叠的、且面积小的删掉。
+			说明：
+				 * - 认为“重叠”必须在水平和垂直两个方向均严格交叉，交叉的位置比如水平或垂直产生了2个像素或超过2个像素的重叠，也就是面积上实际上已经重叠了。
+				 *   所以如果两个矩形仅在边界上相接（例如 a.bottom === b.top 或 a.right === b.left）则不视为重叠，甚至稍微重叠不超过2像素也不视为重叠， 不会删除任何一方。
+				 * - 决定保留哪一个：保留面积更大的矩形；若面积相等，则保留在排序中先出现的那个（确定性）。
+				 * - 性能优化：先按 left 升序排序，比较时只与那些 left < current.right 的后续矩形比较（剪枝）。
+				 * - 不做原地 splice（避免 O(n^2) 的移动开销），而是用布尔标记 removed[]，最后重建结果数组。
+
+			@param rects 一维的矩形信息数组（包含node和坐标信息），比如 translate.visual.coordinateSort(rects); 排序后取得的信息。
+						输入: rects: [{left, top, right, bottom}, ...]
+			@return 返回排除重叠的坐标数组。
+					{ 
+						rects: 保留的不互相覆盖的矩形数组, 
+						removes: rects中被移除的矩形数组 
+					}
+
+		*/
+		rectsSpaceEliminateOverlap: function (inputRects) {
+			if (!Array.isArray(inputRects) || inputRects.length === 0){
+				return { rects: [], removes: [] };
+			}
+
+			const pixelThreshold = 2;
+			const EPS = 1e-6;
+
+			const areaOf = r =>
+			Math.max(0, r.right - r.left) * Math.max(0, r.bottom - r.top);
+
+			const intersectionWH = (a, b) => ({
+				w: Math.min(a.right, b.right) - Math.max(a.left, b.left),
+				h: Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top)
+			});
+
+			const rectsWithIndex = inputRects.map((r, idx) => {
+				let { left, top, right, bottom } = r;
+				if (right < left){
+					[left, right] = [right, left];
+				}
+				if (bottom < top){
+					[top, bottom] = [bottom, top]
+				};
+				return { r: { left, top, right, bottom }, idx };
+			});
+
+			rectsWithIndex.sort((A, B) => {
+				if (Math.abs(A.r.left - B.r.left) > EPS){
+					return A.r.left - B.r.left;
+				}
+				if (Math.abs(A.r.top - B.r.top) > EPS){
+					return A.r.top - B.r.top;
+				}
+				if (Math.abs(A.r.right - B.r.right) > EPS){
+					return A.r.right - B.r.right;
+				}
+				return A.r.bottom - B.r.bottom;
+			});
+
+			const n = rectsWithIndex.length;
+			const removed = new Array(n).fill(false);
+			const areas = rectsWithIndex.map(x => areaOf(x.r));
+
+			for (let i = 0; i < n; i++) {
+				if (removed[i]) {
+					continue;
+				}
+				const Ai = rectsWithIndex[i].r;
+				const Ai_area = areas[i];
+
+				for (let j = i + 1; j < n; j++) {
+					if (removed[j]) {
+						continue;
+					}
+					const Bj = rectsWithIndex[j].r;
+
+					// ---- 优先检测包含（几何方式，带阈值）
+					const A_contains_B =
+						Ai.left <= Bj.left + pixelThreshold &&
+						Ai.top <= Bj.top + pixelThreshold &&
+						Ai.right >= Bj.right - pixelThreshold &&
+						Ai.bottom >= Bj.bottom - pixelThreshold;
+
+					const B_contains_A =
+						Bj.left <= Ai.left + pixelThreshold &&
+						Bj.top <= Ai.top + pixelThreshold &&
+						Bj.right >= Ai.right - pixelThreshold &&
+						Bj.bottom >= Ai.bottom - pixelThreshold;
+
+					if (A_contains_B || B_contains_A) {
+						if (A_contains_B && !B_contains_A) {
+							removed[j] = true;
+							continue;
+						}
+						if (B_contains_A && !A_contains_B) {
+							removed[i] = true;
+							break;
+						}
+						// 双包含（几乎重合）按面积或顺序
+						const Bj_area = areas[j];
+						if (Ai_area >= Bj_area){
+							removed[j] = true;
+						}else {
+							removed[i] = true;
+							break;
+						}
+					}
+
+					// ---- 剪枝 ----
+					if (Bj.left >= Ai.right - EPS){
+						break;
+					}
+
+					// ---- 检查普通重叠 ----
+					const { w, h } = intersectionWH(Ai, Bj);
+					if (w <= pixelThreshold || h <= pixelThreshold){
+						continue
+					};
+
+					const Bj_area = areas[j];
+					if (Ai_area > Bj_area){
+						 removed[j] = true;
+					}else if (Bj_area > Ai_area) {
+						removed[i] = true;
+						break;
+					} else {
+						removed[j] = true;
+					}
+				}
+			}
+
+			const keeps = [], removes = [];
+			const sortedToOrig = rectsWithIndex.map(x => x.idx);
+			const origToSorted = new Map();
+			for (let p = 0; p < n; p++){
+				origToSorted.set(sortedToOrig[p], p);
+			}
+			for (let origIdx = 0; origIdx < inputRects.length; origIdx++) {
+				const pos = origToSorted.get(origIdx);
+				if (pos === undefined || !removed[pos]) {
+					keeps.push(inputRects[origIdx]);
+				}else{
+					removes.push(inputRects[origIdx]);
+				}
+			}
+
+			return { rects: keeps, removes };
+		},
+
+		/*
 			对一组坐标进行排序
 			按开始坐标从左到右、从上到下排序
 			@param rects translate.visual.getRects获取到的坐标数据
@@ -9972,41 +13258,18 @@ var translate = {
 		    });
 		  return sortedRects;
 		},
-		/*
-			对一组坐标进行去重处理，同一个node，只会取从下标0开始往后的第一个
-			@param rects translate.visual.getRects 获取到的坐标数据，经过 translate.visual.rectsToOneArray(rects); 处理后得到的一维数组，可以直接传入，也可以进行 translate.visual.coordinateSort(rectsOneArray); 排序处理后传入
-		*/
-		filterNodeRepeat:function(rects){
-			var map = new Map(); //key是node，value随便
-			//console.log(rects);
-
-			var deleteIndexArray = [];
-			for(var i = 0; i < rects.length; i++){
-				if(map.get(rects[i].node) != null){
-					//要删除
-					deleteIndexArray.push(i);
-					continue;
-				}
-				//加入map
-				map.set(rects[i].node, 1);
-			}
-			//console.log(deleteIndexArray);
-			for(var di = deleteIndexArray.length-1; di > -1; di--){
-				//console.log(deleteIndexArray[di]);
-				rects.splice(deleteIndexArray[di], 1); // 从索引 deleteIndexArray[di] 开始，删除1个元素
-			}
-
-			map = undefined;
-			return rects;
-		},
+		
 		/**
 		 * 查找左右紧邻的矩形对
 		 * @param rects translate.visual.getRects 获取到的坐标数据，转化为 一维数组 后传入
 		 * @returns {Array<{before: Object, after: Object}>} - 左右紧邻的矩形对数组
 		 */
 		afterAdjacent:function(rects){
+		  //进行从左到右-从上到下进行排序
 		  var sortedRects = translate.visual.coordinateSort(rects);
+
 		  const adjacentPairs = [];
+		  //按行分组的矩形
 		  const lineGroups = translate.visual.groupRectsByLine(sortedRects);
 		  
 		  // 检查每行中的所有紧邻元素对
@@ -10160,12 +13423,47 @@ var translate = {
 			nodesToAddSpace.forEach(node => {
 			// 确保只修改文本内容，不影响HTML结构
 			if (node.nodeType === Node.TEXT_NODE) {
-				node.textContent = node.textContent + '\u00A0';
+				
+				//判断它的最后一个字符是否是空格，如果不是空格，才有必要加空格符
+				if(node.textContent.length === 0 || node.textContent.substring(node.textContent.length -1, node.textContent.length) !== '\u00A0'){
+
+					//找到它对应的 translate.node.data 的数据，先将其进行改动 - 目的是 listener 监听改动知道这是translate.js自己改的 - 以及 让 translate.node 的数据对应起来
+					if(translate.node.get(node) !== null){
+						if(typeof(translate.node.get(node).resultText) !== 'string'){
+							//没有resultText这个属性，如果翻译失败或者本身是特殊字符比如数字，不需要被翻译，是没有这个属性的，那这里默认赋予 originalText 给他，以做记录，免得被listener监听
+							translate.node.get(node).resultText = translate.node.get(node).originalText;
+						}
+						translate.node.get(node).resultText = translate.node.get(node).resultText + '\u00A0';
+
+						if(typeof(translate.node.get(node).translateResults) === 'undefined'){
+							translate.node.get(node).translateResults = {};
+						}
+						translate.node.get(node).translateResults[translate.node.get(node).resultText] = 1;
+
+						translate.node.get(node).lastTranslateRenderTime = Date.now();
+					}
+
+					//console.log(node.textContent+'-->'+node.textContent.substring(node.textContent.length -1, node.textContent.length));
+					node.textContent = node.textContent + '\u00A0';
+				}
+				
+				//console.log(translate.node.get(node))
 			} else if (node.nodeType === Node.ELEMENT_NODE) {
 				// 如果是元素节点，修改其最后一个子节点（假设是文本节点）
 				const lastChild = node.lastChild;
 				if (lastChild && lastChild.nodeType === Node.TEXT_NODE) {
-					lastChild.textContent = lastChild.textContent + '\u00A0';
+					//判断它的最后一个字符是否是空格，如果不是空格，才有必要加空格符
+					if(lastChild.textContent.length === 0 || lastChild.textContent.substring(lastChild.textContent.length -1, lastChild.textContent.length) !== '\u00A0'){
+						//找到它对应的 translate.node.data 的数据，先将其进行改动 - 目的是 listener 监听改动知道这是translate.js自己改的 - 以及 让 translate.node 的数据对应起来
+						if(translate.node.get(lastChild) !== null){
+							if(typeof(translate.node.get(lastChild).resultText) === 'string'){
+								translate.node.get(lastChild).resultText = translate.node.get(lastChild).resultText + '\u00A0';
+								translate.node.get(lastChild).translateResults[translate.node.get(lastChild).resultText] = 1;
+								translate.node.get(lastChild).lastTranslateRenderTime = Date.now();
+							}
+						}
+						lastChild.textContent = lastChild.textContent + '\u00A0';
+					}
 				}
 			}
 			});
@@ -10181,7 +13479,11 @@ var translate = {
 				if (!translate.nodeQueue[uuid].list.hasOwnProperty(from)) {
 					continue;
 				}
-				if(from.length < 1){
+				//空的，也就是有数字标点符号等这一类，也要加入，因为也要算入视觉间隔中去，比如 我有9个，其中的9如果不算的话，翻译后 my have9ge 就没有间隔了
+				//if(from.length < 1){
+				//	continue;
+				//}
+				if(typeof(translate.nodeQueue[uuid].list[from]) === 'undefined'){
 					continue;
 				}
 				for(var hash in translate.nodeQueue[uuid].list[from]){
@@ -10199,20 +13501,7 @@ var translate = {
 			}
 			translate.visual.adjustTranslationSpaces(nodes);
 		},
-		/*
-			通过 translate.nodeQueue 中最后一次执行的 uuid，来获取这个 translate.nodeQueue[uuid] 中所包含涉及到的所有node (除特殊字符外 ，也就是 translate.nodeQueue[uuid].list 下 特殊字符那一类是不会使用的)
-		*/
-		adjustTranslationSpacesByLastNodequeueUuid:function(uuid){
-			var uuid = '';
-			for(var uuid_index in translate.nodeQueue){
-				uuid = uuid_index;
-				break;
-			}
-			if(typeof(uuid) == 'string' && uuid.length > 1){
-				translate.visual.adjustTranslationSpacesByNodequeueUuid(uuid);
-			}
-		},
-
+		
 		/**
 		 * 隐藏当前网页的所有文本
 		 *
@@ -10293,7 +13582,7 @@ var translate = {
 				document.documentElement.classList.remove(id);
 				//删除 style
 				var style_translatejs_text_hidden = document.getElementById(id);
-				if(typeof(style_translatejs_text_hidden) != null && style_translatejs_text_hidden != null){
+				if(style_translatejs_text_hidden !== null){
 					style_translatejs_text_hidden.remove();
 				}
 			}
@@ -10324,6 +13613,11 @@ var translate = {
 			 	}
 		 */
 		webPageLoadTranslateBeforeHiddenText:function(config){
+			// 该能力只需要在页面加载阶段启用一次，重复调用会重复注册生命周期回调。
+			if(translate.visual.webPageLoadTranslateBeforeHiddenText_use === true){
+				return;
+			}
+
 			if(typeof(config) == 'undefined'){
 				config = {};
 			}
@@ -10482,8 +13776,10 @@ var translate = {
 				if(translate.time.execute.isUse){
 					//已经启动过了，不需要再启动了
 					translate.log('translate.time.execute.start() 已经启动过了，不需要再启动了');
+					return;
 				}
 
+				translate.time.execute.isUse = true;
 				translate.time.execute.data.isUse = true;
 
 				//翻译开始
@@ -10635,9 +13931,12 @@ var translate = {
 				如果触发此启用，那么会根据用户切换语言及设置，自动进行判定是否介入
 			*/
 			use:function(){
-				if(translate.faultTolerance.documentCreateTextNode.node == null){
-					translate.faultTolerance.documentCreateTextNode.node = new Map();
+				// use() 只需要注册一次生命周期回调，重复调用会导致同一套容错逻辑重复执行。
+				if(translate.faultTolerance.documentCreateTextNode.node != null){
+					return;
 				}
+				// 文本节点可能被页面动态移除，使用 WeakMap 避免缓存强引用导致节点无法释放。
+				translate.faultTolerance.documentCreateTextNode.node = new WeakMap();
 
 				//当用户点击切换语言时触发
 				translate.lifecycle.changeLanguage.push(function(to){
@@ -10842,6 +14141,45 @@ var translate = {
 	},
 	/*js translate.recycle end*/
 
+	/*js translate.debug start*/
+	debug: {
+
+		loadDebugJs: function(func, debugJsUrl){
+			if(typeof(debugJsUrl) !== 'string' || debugJsUrl.length < 5){
+				debugJsUrl = 'https://translate.zvo.cn/static/debug.min.js';
+			}
+			if(typeof(translate.debug.data) === 'undefined'){
+				//载入 translate_debug.js
+
+				//if(window.location.protocol.toLowerCase() === 'file:'){
+					if(debugJsUrl.indexOf('file') !== 0){
+						//alert('您当前的页面是file协议，请手动下载 https://translate.zvo.cn/static/debug.min.js 这个js文件，然后传入 translate.debug.showUIDialog(\'file://a/b/debug.min.js\'); 使用')
+					}
+					// 1. 创建script标签
+				    const script = document.createElement('script');
+				    script.src = debugJsUrl;
+				    script.onload = script.onreadystatechange = function() {
+				    	func();
+				    }
+				    document.head.appendChild(script);
+				//}else{
+				//	translate.util.synchronizesLoadJs(debugJsUrl);
+				//}
+
+			}
+		},
+
+		/*
+			显示debug 的 UI对话界面
+		*/
+		use: function(debugJsUrl){
+			translate.debug.loadDebugJs(function(){
+				translate.debug.showUIDialog();
+			}, debugJsUrl);
+		}
+	},
+	/*js translate.debug end*/
+
 	/*js translate.init start*/
 	/*
 		初始化，如版本检测、初始数据加载、map声明、监听启动 等
@@ -10929,7 +14267,9 @@ var translate = {
 			// 创建定时器，每1分钟执行一次 translate.recycle 进行清理数据存储
 			setInterval(translate.recycle, 60 * 1000);
 		}
-		
+
+		//初始化 postMessage 监听器，用于跨域 iframe 通信
+		translate.postMessage.init();
 	},
 	/*js translate.init end*/
 
@@ -10993,7 +14333,7 @@ var nodeuuid = {
 //延迟触发，方便拦截自定义
 setTimeout(function(){
 	translate.log('------ translate.js ------\nTwo lines of js html automatic translation, page without change, no language configuration file, no API Key, SEO friendly! Open warehouse : https://github.com/xnx3/translate \n两行js实现html全自动翻译。 无需改动页面、无语言配置文件、无API Key、对SEO友好！完全开源，代码仓库：https://gitee.com/mail_osc/translate');
-}, 1000);
+}, 3000);
 /*js copyright-notice end*/
 
 //初始化
