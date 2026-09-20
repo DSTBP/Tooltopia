@@ -28,7 +28,6 @@
         translateApi.service.use('translate.service');
         translateApi.language.setDefaultTo('chinese_simplified');
         translateApi.language.setLocal('chinese_simplified');
-        translateApi.listener.start();
         translateApi.selectLanguageTag.show = true;
         if (typeof translateApi.setAutoDiscriminateLocalLanguage === 'function') {
             translateApi.setAutoDiscriminateLocalLanguage();
@@ -131,14 +130,10 @@
                 if (!configureTranslate(translateApi)) {
                     throw new Error('translate.js not ready');
                 }
+                // Translation is an optional enhancement. Execute once after the
+                // page is usable; dynamic data renders are translated by script.js.
                 translateApi.execute();
                 setTimeout(syncSelectorSize, 50);
-                setTimeout(() => {
-                    const retryTranslate = window.translate;
-                    if (isTranslateLibrary(retryTranslate)) {
-                        retryTranslate.execute();
-                    }
-                }, 500);
                 setTimeout(syncTitleShadow, 1000);
             })
             .catch(error => {
@@ -146,10 +141,12 @@
             });
     };
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+    const startAfterPageLoad = () => setTimeout(init, 0);
+
+    if (document.readyState === 'complete') {
+        startAfterPageLoad();
     } else {
-        init();
+        window.addEventListener('load', startAfterPageLoad, { once: true });
     }
 
     window.addEventListener('resize', () => {

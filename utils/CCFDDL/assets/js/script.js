@@ -164,12 +164,12 @@ document.addEventListener('DOMContentLoaded', () => {
             scheduledTranslationTimer = null;
             if (window.translate && typeof window.translate.execute === 'function') {
                 try {
-                    window.translate.execute();
+                    window.translate.execute(document.getElementById('root') || document.body);
                 } catch (error) {
                     console.warn('[CCFDDL] Dynamic translation failed:', error);
                 }
             }
-        }, 80);
+        }, 250);
     }
 
     function setContainerMessage(message, isError = false) {
@@ -1499,16 +1499,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const subs = Object.keys(subMap);
             const results = await Promise.allSettled(subs.map(async (sub) => {
                 const url = `https://ccfddl.com/conference/deadlines_zh_${sub}.ics`;
-                const response = await fetch(url, {
-                    cache: forceRefresh ? 'no-store' : 'default'
-                });
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                try {
+                    const response = await fetch(url, {
+                        cache: forceRefresh ? 'no-store' : 'default',
+                        signal: controller.signal
+                    });
 
-                if (!response.ok) {
-                    throw new Error(`${sub}:${response.status}`);
+                    if (!response.ok) {
+                        throw new Error(`${sub}:${response.status}`);
+                    }
+
+                    const text = await response.text();
+                    return parseICS(text, sub);
+                } finally {
+                    clearTimeout(timeoutId);
                 }
-
-                const text = await response.text();
-                return parseICS(text, sub);
             }));
 
             let rawData = [];
@@ -1935,7 +1942,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${deadlineHTML}
                     </td>
                     <td class="countdown-timer-container" data-ts="${timeStatus.ms || ''}">
-                        <span class="countdown-text">计算中..</span>
+                        <span class="countdown-text">
+                            <span class="countdown-running">
+                                <span>剩余:</span>
+                                <span class="no-translate" data-countdown-part="days">0</span><span>天</span>
+                                <span class="no-translate" data-countdown-part="hours">0</span><span>时</span>
+                                <span class="no-translate" data-countdown-part="minutes">0</span><span>分</span>
+                                <span class="no-translate" data-countdown-part="seconds">0</span><span>秒</span>
+                            </span>
+                            <span class="countdown-status countdown-tbd" hidden>状态: 时间未定 (TBD)</span>
+                            <span class="countdown-status countdown-finished" hidden>状态: 已截止</span>
+                        </span>
                     </td>
                     <td class="col-conf-date" style="white-space: normal;">${confDate}</td>
                     <td class="col-place" style="white-space: normal;">${place}</td>
@@ -2482,25 +2499,37 @@ document.addEventListener('DOMContentLoaded', () => {
         const now = Date.now();
         document.querySelectorAll('.countdown-timer-container').forEach(el => {
             const tsAttr = el.getAttribute('data-ts');
-            const textSpan = el.querySelector('.countdown-text');
+            const running = el.querySelector('.countdown-running');
+            const tbdStatus = el.querySelector('.countdown-tbd');
+            const finishedStatus = el.querySelector('.countdown-finished');
+            const setVisibility = state => {
+                if (running) running.hidden = state !== 'running';
+                if (tbdStatus) tbdStatus.hidden = state !== 'tbd';
+                if (finishedStatus) finishedStatus.hidden = state !== 'finished';
+            };
             el.classList.remove('timer-normal', 'timer-warning', 'timer-urgent', 'timer-finished', 'timer-tbd');
 
             if (!tsAttr || tsAttr === 'null') {
-                if(textSpan) textSpan.textContent = '状态: 时间未定 (TBD)';
+                setVisibility('tbd');
                 el.classList.add('timer-tbd');
                 return;
             }
 
             const diff = parseInt(tsAttr, 10) - now;
             if (diff <= 0) {
-                if(textSpan) textSpan.textContent = '状态: 已截止';
+                setVisibility('finished');
                 el.classList.add('timer-finished');
             } else {
                 const d = Math.floor(diff / (1000 * 60 * 60 * 24));
                 const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
                 const m = Math.floor((diff / (1000 * 60)) % 60);
                 const s = Math.floor((diff / 1000) % 60);
-                if(textSpan) textSpan.textContent = `剩余: ${d}天 ${h}时 ${m}分 ${s}秒`;
+                setVisibility('running');
+                const values = { days: d, hours: h, minutes: m, seconds: s };
+                Object.entries(values).forEach(([part, value]) => {
+                    const node = el.querySelector(`[data-countdown-part="${part}"]`);
+                    if (node && node.textContent !== String(value)) node.textContent = String(value);
+                });
                 
                 if (d < 3) el.classList.add('timer-urgent');
                 else if (d < 10) el.classList.add('timer-warning');

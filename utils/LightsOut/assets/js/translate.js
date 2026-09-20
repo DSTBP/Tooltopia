@@ -73,6 +73,22 @@ var translate = {
 		*/
 		languages:'',
 		alreadyRender:false, //当前是否已渲染过了 true为是 v2.2增加
+		languageLoadRetryCount:0,
+		languageLoadRetryTimer:null,
+		retryLanguageLoad:function(){
+			translate.selectLanguageTag.alreadyRender = false;
+			if(translate.selectLanguageTag.languageLoadRetryCount >= 2){
+				return;
+			}
+			translate.selectLanguageTag.languageLoadRetryCount++;
+			if(translate.request && translate.request.speedDetectionControl){
+				translate.request.speedDetectionControl.useNextHost();
+			}
+			clearTimeout(translate.selectLanguageTag.languageLoadRetryTimer);
+			translate.selectLanguageTag.languageLoadRetryTimer = setTimeout(function(){
+				translate.selectLanguageTag.render();
+			}, translate.selectLanguageTag.languageLoadRetryCount * 1000);
+		},
 		selectOnChange:function(event){
 			var language = event.target.value;
 			translate.changeLanguage(language);
@@ -188,12 +204,17 @@ var translate = {
 				translate.request.post(translate.request.api.language, {}, function(data){
 					if(data.result == 0){
 						translate.log('load language list error : '+data.info);
+						translate.selectLanguageTag.retryLanguageLoad();
 						return;
 					}
 					//console.log(data.list);
+					translate.selectLanguageTag.languageLoadRetryCount = 0;
+					clearTimeout(translate.selectLanguageTag.languageLoadRetryTimer);
 					translate.request.api.language = data.list; //进行缓存，下一次切换语言渲染的时候直接从缓存取，就不用在通过网络加载了
 					translate.selectLanguageTag.customUI(data.list);
-				}, null);
+				}, function(){
+					translate.selectLanguageTag.retryLanguageLoad();
+				});
 			}else if(typeof(translate.request.api.language) == 'object'){
 				//无网络环境下，自定义显示语种
 				translate.selectLanguageTag.customUI(translate.request.api.language);
@@ -7459,9 +7480,8 @@ var translate = {
 				}
 
 				try{
-					translate.request.send(
+					translate.request.post(
 						translate.request.api.init,
-						{},
 						{},
 						function(data){
 							if (data.result == 0){
@@ -7478,13 +7498,9 @@ var translate = {
 								}
 							}
 						},
-						'post',
-						true,
-						null,
 						function(data){
 							//console.log('eeerrr');
-						},
-						false
+						}
 					);
 				}catch(e){
 				}
@@ -7775,6 +7791,19 @@ var translate = {
 				return translate.request.speedDetectionControl.hostQueueIndex;
 			},
 
+			//当前节点请求失败后切换到队列中的下一个节点。
+			useNextHost:function(){
+				var queue = translate.request.speedDetectionControl.getHostQueue();
+				if(queue.length < 2){
+					return false;
+				}
+				var currentIndex = Number(translate.request.speedDetectionControl.getHostQueueIndex());
+				var nextIndex = (currentIndex + 1) % queue.length;
+				translate.request.speedDetectionControl.hostQueueIndex = nextIndex;
+				translate.storage.set('speedDetectionControl_hostQueueIndex', nextIndex);
+				return true;
+			},
+
 			//获取当前要使用的host
 			getHost:function(){
 				var queue = translate.request.speedDetectionControl.getHostQueue();
@@ -7847,7 +7876,31 @@ var translate = {
 			}
 			// ------- edge end --------
 
-			this.send(path, data, data, func, 'post', true, headers, abnormalFunc, true);
+			var maxAttempts = translate.request.speedDetectionControl.getHostQueue().length;
+			if(maxAttempts < 1){
+				maxAttempts = 1;
+			}
+			var attempt = 0;
+			var sendAttempt = function(){
+				attempt++;
+				return translate.request.send(path, data, data, function(response){
+					var serviceRejected = response && typeof(response) == 'object' && response.result == 0;
+					if(serviceRejected && attempt < maxAttempts && translate.request.speedDetectionControl.useNextHost()){
+						sendAttempt();
+						return;
+					}
+					func(response);
+				}, 'post', true, headers, function(xhr){
+					if(attempt < maxAttempts && translate.request.speedDetectionControl.useNextHost()){
+						sendAttempt();
+						return;
+					}
+					if(abnormalFunc != null){
+						abnormalFunc(xhr);
+					}
+				}, true);
+			};
+			return sendAttempt();
 		},
 		/**
 		 * 发送请求
@@ -7940,6 +7993,9 @@ var translate = {
 
 			if(translate.service.name != 'client.edge'){
 				xhr.setRequestHeader('currentpage', window.location.href+'');
+			}
+			if(isAsynchronize && translate.service.name == 'translate.service'){
+				xhr.timeout = 10000;
 			}
 			xhr.send(params);
 			//4.请求状态改变事件
