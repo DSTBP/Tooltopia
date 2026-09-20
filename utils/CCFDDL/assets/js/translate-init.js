@@ -141,12 +141,12 @@
             });
     };
 
-    const startAfterPageLoad = () => setTimeout(init, 0);
+    const startTranslate = () => setTimeout(init, 0);
 
-    if (document.readyState === 'complete') {
-        startAfterPageLoad();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startTranslate, { once: true });
     } else {
-        window.addEventListener('load', startAfterPageLoad, { once: true });
+        startTranslate();
     }
 
     window.addEventListener('resize', () => {
