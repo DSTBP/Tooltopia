@@ -243,16 +243,24 @@
             
             <footer class="footer">
                 <p style="font-size: 0.85em; opacity: 0.75; line-height: 1.8;">
-                    数据来源于开源社区 <a href="https://github.com/ccfddl/ccf-deadlines" target="_blank" rel="noopener noreferrer" style="text-decoration: underline; text-underline-offset: 2px;">CCF-Deadlines</a><br>
+                    截稿数据来源于 <a href="https://github.com/ccfddl/ccf-deadlines" target="_blank" rel="noopener noreferrer" style="text-decoration: underline; text-underline-offset: 2px;">CCF-Deadlines</a>，并由 <a href="https://paperswithcode.co/ai-deadlines" target="_blank" rel="noopener noreferrer" style="text-decoration: underline; text-underline-offset: 2px;">AI Deadlines</a> 补充<br>
                     Frontend Refactored from Tooltopia
                 </p>
             </footer>
+        </div>
+        <div id="deadline-modal" class="deadline-modal" hidden>
+            <div class="deadline-modal-backdrop" data-close-deadline-modal></div>
+            <section class="deadline-dialog" role="dialog" aria-modal="true" aria-labelledby="deadline-modal-title" tabindex="-1">
+                <button type="button" class="deadline-modal-close" aria-label="关闭详情" data-close-deadline-modal>×</button>
+                <div id="deadline-modal-content"></div>
+            </section>
         </div>
     </div>
     
     <script src="../../assets/js/loader.js"></script>
     <script src="assets/js/translate-init.js"></script>
     <script src="assets/js/theme-toggle.js"></script>
+    <script src="assets/js/deadline-supplement.js"></script>
     <script src="assets/js/script.js"></script>
 </body>
 </html>
