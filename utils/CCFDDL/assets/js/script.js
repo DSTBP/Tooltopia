@@ -1494,18 +1494,58 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function loadYamlParser() {
+        if (window.jsyaml) return Promise.resolve(window.jsyaml);
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js';
+            script.onload = () => window.jsyaml ? resolve(window.jsyaml) : reject(new Error('YAML 解析器不可用'));
+            script.onerror = () => reject(new Error('YAML 解析器加载失败'));
+            document.head.appendChild(script);
+        });
+    }
+
+    async function fetchDeadlineSupplement() {
+        const listingResponse = await fetch(
+            'https://api.github.com/repos/huggingface/ai-deadlines/contents/src/data/conferences',
+            { cache: 'no-store' }
+        );
+        if (!listingResponse.ok) throw new Error(`目录 HTTP ${listingResponse.status}`);
+        const listing = await listingResponse.json();
+        if (!Array.isArray(listing)) throw new Error('AI Deadlines 目录格式错误');
+        const files = listing.filter(file => file.type === 'file' && /\.ya?ml$/i.test(file.name));
+        if (!files.length) throw new Error('AI Deadlines 目录为空');
+        const parser = await loadYamlParser();
+        const records = [];
+        let failed = 0;
+        let next = 0;
+        await Promise.all(Array.from({ length: Math.min(8, files.length) }, async () => {
+            while (next < files.length) {
+                const file = files[next++];
+                try {
+                    const response = await fetch(file.download_url, { cache: 'no-store' });
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const entries = parser.load(await response.text(), { schema: parser.JSON_SCHEMA });
+                    if (!Array.isArray(entries)) throw new Error('YAML 数据格式错误');
+                    records.push(...entries);
+                } catch (error) {
+                    failed++;
+                    console.warn('[CCFDDL] AI Deadlines file unavailable:', file.name, error);
+                }
+            }
+        }));
+        if (!records.length) throw new Error('AI Deadlines 数据不可用');
+        return { records, failed };
+    }
+
     async function loadDeadlineSupplement(forceRefresh = false) {
-        if (runtimeState.supplementLoadPromise && !forceRefresh) return runtimeState.supplementLoadPromise;
-        runtimeState.supplementLoadPromise = fetch('./assets/data/ai-deadlines.json', {
-            cache: forceRefresh ? 'no-cache' : 'default'
-        }).then(async response => {
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const snapshot = await response.json();
-            if (!Array.isArray(snapshot.results)) throw new Error('会议补充数据格式错误');
-            deadlineSupplement = snapshot;
-            runtimeState.supplementWarning = '';
+        if (runtimeState.supplementLoadPromise) return runtimeState.supplementLoadPromise;
+        if (deadlineSupplement && !forceRefresh) return deadlineSupplement;
+        runtimeState.supplementLoadPromise = fetchDeadlineSupplement().then(({ records, failed }) => {
+            deadlineSupplement = records;
+            runtimeState.supplementWarning = failed ? `AI Deadlines 部分文件加载失败 (${failed})` : '';
             applyDeadlineSupplement();
-            return snapshot;
+            return records;
         }).catch(error => {
             console.warn('[CCFDDL] AI Deadlines supplement unavailable:', error);
             runtimeState.supplementWarning = 'AI Deadlines 补充暂不可用';
@@ -1548,7 +1588,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         runtimeState.deadlineLoadPromise = (async () => {
-            const subs = Object.keys(subMap);
+            const subs = Object.keys(subMap).filter(sub => sub !== 'EXT');
             const results = await Promise.allSettled(subs.map(async (sub) => {
                 const url = `https://ccfddl.com/conference/deadlines_zh_${sub}.ics`;
                 const controller = new AbortController();
@@ -1659,7 +1699,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (conf.confs && conf.confs.length > 0 && conf.confs[0].year) years.add(conf.confs[0].year);
         });
 
-        createMultiSelect('category-filter', Array.from(categories).sort(compareText).map(sub => ({value: sub, label: subMap[sub] || sub})), '所有领域');
+        createMultiSelect('category-filter', Array.from(categories)
+            .sort((a, b) => a === 'EXT' ? 1 : b === 'EXT' ? -1 : compareText(a, b))
+            .map(sub => ({value: sub, label: subMap[sub] || sub})), '所有领域');
         createMultiSelect('level-filter', Array.from(levels).sort().map(lvl => ({value: lvl, label: lvl === 'N' ? '未标注 / 无评级' : `CCF-${lvl}`})), '所有级别');
         createMultiSelect('year-filter', Array.from(years).sort((a,b)=>b-a).map(y => ({value: y, label: y})), '所有年份');
         
@@ -1941,8 +1983,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? formatToSelectedTz(timeStatus.ms, selectedTimezone, activeEvent.timezone || latestConf.timezone)
                 : 'TBD';
             const activeLabel = activeEvent ? formatDeadlineLabel(activeEvent.comment) : '时间未定';
-            const moreCount = Math.max(0, (latestConf.timeline?.length || 0) - (activeEvent ? 1 : 0));
             const deadlineTitle = buildTimelineDeadlineTitle(deadlineEntries);
+            const shortDeadline = activeTime === 'TBD' ? activeTime : activeTime.slice(0, 16);
 
             const place = escapeDisplayText(latestConf.place, 'TBA');
             const confName = escapeDisplayText(conf.description, 'TBA');
@@ -1967,9 +2009,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td><span class="${ccfClass}">${rankText}</span></td>
                     <td class="deadline-cell" title="${deadlineTitle}">
                         <div class="deadline-main">
-                            <span class="deadline-clamp-one no-translate">${escapeDisplayText(activeTime, 'TBD')}</span>
+                            <span class="deadline-clamp-one no-translate">${escapeDisplayText(shortDeadline, 'TBD')}</span>
                             <span class="deadline-badge">${escapeDisplayText(activeLabel)}</span>
-                            ${moreCount ? `<span class="deadline-more">另有 ${moreCount} 个节点</span>` : ''}
                         </div>
                     </td>
                     <td class="countdown-timer-container" data-ts="${timeStatus.ms || ''}">
@@ -1978,8 +2019,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span>剩余:</span>
                                 <span class="no-translate" data-countdown-part="days">0</span><span>天</span>
                                 <span class="no-translate" data-countdown-part="hours">0</span><span>时</span>
-                                <span class="no-translate" data-countdown-part="minutes">0</span><span>分</span>
-                                <span class="no-translate" data-countdown-part="seconds">0</span><span>秒</span>
                             </span>
                             <span class="countdown-status countdown-tbd" hidden>状态: 时间未定 (TBD)</span>
                             <span class="countdown-status countdown-finished" hidden>状态: 已截止</span>
@@ -1998,13 +2037,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <table class="sjr-table deadline-table">
                     <thead>
                         <tr>
-                            ${buildSortableHeader(deadlineSortConfig, 'title', '简称', 'clamp(82px, 10vw, 118px)', 'col-abbr')}
-                            ${buildSortableHeader(deadlineSortConfig, 'fullname', '全称', '160px')}
+                            ${buildSortableHeader(deadlineSortConfig, 'title', '简称', '', 'col-abbr')}
+                            ${buildSortableHeader(deadlineSortConfig, 'fullname', '全称')}
                             ${buildSortableHeader(deadlineSortConfig, 'grade', '级别')}
-                            ${buildSortableHeader(deadlineSortConfig, 'deadline', '截止时间', '200px')}
+                            ${buildSortableHeader(deadlineSortConfig, 'deadline', '截止时间')}
                             ${buildSortableHeader(deadlineSortConfig, 'countdown', '倒计时')}
-                            ${buildSortableHeader(deadlineSortConfig, 'confDate', '会议时间', 'clamp(102px, 13vw, 140px)', 'col-conf-date')}
-                            ${buildSortableHeader(deadlineSortConfig, 'place', '地点', 'clamp(102px, 13vw, 140px)', 'col-place')}
+                            ${buildSortableHeader(deadlineSortConfig, 'confDate', '会议时间', '', 'col-conf-date')}
+                            ${buildSortableHeader(deadlineSortConfig, 'place', '地点', '', 'col-place')}
                             ${buildSortableHeader(deadlineSortConfig, 'domain', '领域')}
                             ${buildSortableHeader(deadlineSortConfig, 'link', '官网')}
                         </tr>
@@ -2020,8 +2059,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function openDeadlineModal(conf, trigger) {
         if (!deadlineModal || !deadlineModalContent) return;
         const edition = conf.confs[0];
-        const source = conf.supplementOnly ? 'AI Deadlines 补充' :
-            conf.enriched ? 'CCF-Deadlines · AI Deadlines 补充' : 'CCF-Deadlines';
+        const source = conf.supplementOnly ? 'Hugging Face AI Deadlines 补充' :
+            conf.enriched ? 'CCF-Deadlines · Hugging Face AI Deadlines 补充' : 'CCF-Deadlines';
         const typeNames = {
             abstract: '摘要', paper: '论文投稿', registration: '注册',
             review_release: '审稿意见公布', rebuttal_start: '答辩开始',
@@ -2042,7 +2081,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="deadline-timeline-meta">
                         <span>${escapeDisplayText(typeNames[type] || type, '事件')}</span>
-                        <span>${event.source === 'paperswithcode' ? 'AI Deadlines' : 'CCF-Deadlines'}</span>
+                        <span>${event.source === 'aideadlines' ? 'Hugging Face AI Deadlines' : 'CCF-Deadlines'}</span>
                     </div>
                     <time class="no-translate">${escapeDisplayText(date, 'TBD')}</time>
                 </div>

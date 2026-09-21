@@ -7,9 +7,15 @@ const source = fs.readFileSync(
     path.join(__dirname, '../../utils/CCFDDL/assets/js/deadline-supplement.js'),
     'utf8'
 );
-const context = { window: {} };
+const context = { window: {}, Intl, Date, Set, Map };
 vm.runInNewContext(source, context);
-const { merge, status, key } = context.window.CCFDeadlineSupplement;
+const { merge, status, key, deadlineMs, roundOf } = context.window.CCFDeadlineSupplement;
+
+assert.equal(deadlineMs('2026-05-06 23:59:59', 'AoE'), Date.parse('2026-05-07T11:59:59Z'));
+assert.equal(deadlineMs('2026-05-06 23:59:59', 'PST'), Date.parse('2026-05-07T07:59:59Z'));
+assert.equal(deadlineMs('2026-05-06 23:59:59', 'Asia/Seoul'), Date.parse('2026-05-06T14:59:59Z'));
+assert.equal(roundOf('first round'), 'Round 1');
+assert.equal(roundOf('Round 2 Paper Submission'), 'Round 2');
 
 const paperMs = Date.parse('2026-05-07T11:59:00Z');
 const base = [{
@@ -28,27 +34,28 @@ const base = [{
         ]
     }]
 }];
-const supplement = { results: [{
-    short_name: 'NeurIPS',
+const supplement = [{
+    title: 'NeurIPS',
     year: 2026,
-    name: 'NeurIPS 2026',
-    location: 'Sydney, Australia',
+    full_name: 'Conference on Neural Information Processing Systems',
+    link: 'https://neurips.cc/',
+    city: 'Sydney',
+    country: 'Australia',
     deadlines: [
-        { type: 'paper', label: 'Paper submission deadline', deadline_at: '2026-05-07T11:59:59Z', timezone: 'AoE' },
-        { type: 'review_release', label: 'Reviews released', deadline_at: '2026-07-23T11:59:59Z', timezone: 'AoE' },
-        { type: 'rebuttal_start', label: 'Rebuttal starts', deadline_at: '2026-07-27T12:00:00Z', timezone: 'AoE' },
-        { type: 'notification', label: 'Author notification', deadline_at: '2026-09-25T11:59:59Z', timezone: 'AoE' }
+        { type: 'paper', label: 'Paper submission deadline', date: '2026-05-06 23:59:59', timezone: 'AoE' },
+        { type: 'review_release', label: 'Reviews released', date: '2026-07-22 23:59:59', timezone: 'AoE' },
+        { type: 'rebuttal_start', label: 'Rebuttal starts', date: '2026-07-27 00:00:00', timezone: 'AoE' },
+        { type: 'notification', label: 'Author notification', date: '2026-09-24 23:59:59', timezone: 'AoE' }
     ]
 }, {
-    short_name: 'RLC',
+    title: 'RLC',
     year: 2026,
-    name: 'RLC 2026',
+    full_name: 'Reinforcement Learning Conference',
     deadlines: [
-        { type: 'registration', label: 'Round 1 Paper Registration', deadline_at: '2026-10-01T11:59:59Z', timezone: 'AoE' },
-        { type: 'submission', label: 'Round 1 Paper Submission', deadline_at: '2026-10-08T11:59:59Z', timezone: 'AoE' },
-        { type: 'submission', label: 'Round 2 Paper Submission', deadline_at: '2026-11-08T11:59:59Z', timezone: 'AoE' }
+        { type: 'paper', label: 'Round 1 Paper Submission', date: '2026-10-08 23:59:59', timezone: 'AoE' },
+        { type: 'paper', label: 'Round 2 Paper Submission', date: '2026-11-08 23:59:59', timezone: 'AoE' }
     ]
-}] };
+}];
 
 const result = merge(base, supplement);
 assert.equal(result.length, 2);
@@ -60,5 +67,18 @@ assert.equal(result[0].confs[0].timeline.length, 5);
 assert.equal(status(result[0], Date.parse('2026-08-01T00:00:00Z')).state, 'passed');
 assert.equal(result[1].supplementOnly, true);
 assert.equal(result[1].sub, 'EXT');
-assert.equal(status(result[1], Date.parse('2026-10-09T00:00:00Z')).comment, 'Round 2 Paper Submission');
+assert.equal(result[1].confs[0].timeline.length, 2);
+assert.equal(status(result[1], Date.parse('2026-10-10T00:00:00Z')).comment, 'Round 2 Paper Submission');
+
+const legacy = merge([], [{
+    title: 'CVPR',
+    year: 2025,
+    deadline: '2024-11-14 23:59:00',
+    abstract_deadline: '2024-11-07 23:59:00',
+    review_release_date: '2025-01-23 07:59:59',
+    timezone: 'UTC-8'
+}]);
+assert.equal(legacy[0].confs[0].timeline.length, 3);
+assert.equal(legacy[0].confs[0].timeline.find(event => event.type === 'abstract').deadlineMs, Date.parse('2024-11-08T07:59:00Z'));
+assert.equal(legacy[0].confs[0].timeline.find(event => event.type === 'review_release').deadlineMs, Date.parse('2025-01-23T07:59:59Z'));
 console.log('CCF deadline merge tests passed');
