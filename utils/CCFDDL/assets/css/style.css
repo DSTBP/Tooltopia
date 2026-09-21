@@ -132,7 +132,7 @@ img, svg { display: block; vertical-align: middle; max-width: 100%; }
 /* ============================================================
    5. 主内容与卡片 (Main Content & Cards)
    ============================================================ */
-.main-content { max-width: 112rem; margin: 0 auto; padding: 0 1rem; }
+.main-content { max-width: 105rem; margin: 0 auto; padding: 0 1rem; }
 .archive-section { margin-bottom: 3.5rem; }
 .section-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.5rem; }
 .section-title { font-size: 1.5rem; font-weight: bold; color: hsl(0 0% 95%); letter-spacing: 0.025em; }
@@ -808,6 +808,10 @@ body.day-mode .deadline-table .deadline-source { color: #64748b; }
     padding-right: 7px;
 }
 .deadline-table tbody tr.deadline-row td { padding-left: 7px; padding-right: 7px; }
+.deadline-table th:first-child,
+.deadline-table tbody tr.deadline-row td:first-child { padding-left: 16px; }
+.deadline-table th:last-child,
+.deadline-table tbody tr.deadline-row td:last-child { padding-right: 16px; }
 .deadline-table th:nth-child(1) { width: 10%; }
 .deadline-table th:nth-child(2) { width: 17%; }
 .deadline-table th:nth-child(3) { width: 8%; }
@@ -855,6 +859,10 @@ body.day-mode .deadline-table .deadline-source { color: #64748b; }
         margin-left: 0;
         margin-right: 0;
     }
+    .deadline-table th:first-child,
+    .deadline-table tbody tr.deadline-row td:first-child { padding-left: 12px; }
+    .deadline-table th:nth-child(5),
+    .deadline-table tbody tr.deadline-row td:nth-child(5) { padding-right: 12px; }
     .deadline-table th:nth-child(3), .deadline-table td:nth-child(3),
     .deadline-table th:nth-child(9), .deadline-table td:nth-child(9) { display: none; }
     .deadline-table th:nth-child(1) { width: 28%; }
