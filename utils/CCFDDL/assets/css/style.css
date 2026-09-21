@@ -791,7 +791,7 @@ body.day-mode .deadline-table .deadline-source { color: #64748b; }
     width: 100%;
     min-width: 0;
     table-layout: fixed;
-    font-size: 0.84rem;
+    font-size: 0.95rem;
 }
 .deadline-table th,
 .deadline-table td,

@@ -2019,6 +2019,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span>剩余:</span>
                                 <span class="no-translate" data-countdown-part="days">0</span><span>天</span>
                                 <span class="no-translate" data-countdown-part="hours">0</span><span>时</span>
+                                <span class="no-translate" data-countdown-part="minutes">0</span><span>分</span>
+                                <span class="no-translate" data-countdown-part="seconds">0</span><span>秒</span>
                             </span>
                             <span class="countdown-status countdown-tbd" hidden>状态: 时间未定 (TBD)</span>
                             <span class="countdown-status countdown-finished" hidden>状态: 已截止</span>
