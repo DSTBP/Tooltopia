@@ -234,6 +234,25 @@ img, svg { display: block; vertical-align: middle; max-width: 100%; }
 .enlarged-input .search-icon { left: 0.85rem; width: 18px; height: 18px; }
 .enlarged-input #timezone-selector { padding: 0.6rem 1.25rem; min-width: 240px; font-size: 0.95rem; }
 .form-select, .enlarged-input #timezone-selector { height: 40px !important; box-sizing: border-box !important; padding: 0.5rem 1rem !important; font-size: 0.9rem !important; border-radius: 8px !important; }
+.timezone-wrapper.enlarged-input { position: relative; }
+.timezone-wrapper.enlarged-input #timezone-selector {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 2.75rem !important;
+}
+.timezone-wrapper.enlarged-input::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 1.25rem;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-70%) rotate(45deg);
+    opacity: 0.7;
+    pointer-events: none;
+}
 
 /* 布局切换器 */
 .layout-toggles { display: flex; align-items: center; gap: 0.25rem; margin-left: auto; background: rgba(30, 30, 30, 0.4); padding: 0.35rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); flex-shrink: 0; }
@@ -813,10 +832,10 @@ body.day-mode .deadline-table .deadline-source { color: #64748b; }
 .deadline-table th:last-child,
 .deadline-table tbody tr.deadline-row td:last-child { padding-right: 20px; }
 .deadline-table th:nth-child(1) { width: 10%; }
-.deadline-table th:nth-child(2) { width: 17%; }
+.deadline-table th:nth-child(2) { width: 18%; }
 .deadline-table th:nth-child(3) { width: 8%; }
 .deadline-table th:nth-child(4) { width: 17%; }
-.deadline-table th:nth-child(5) { width: 16%; }
+.deadline-table th:nth-child(5) { width: 15%; }
 .deadline-table th:nth-child(6) { width: 12%; }
 .deadline-table th:nth-child(7) { width: 10%; }
 .deadline-table th:nth-child(8) { width: 5%; }
@@ -845,10 +864,10 @@ body.day-mode .deadline-table .deadline-source { color: #64748b; }
     .deadline-table th:nth-child(6), .deadline-table td:nth-child(6),
     .deadline-table th:nth-child(7), .deadline-table td:nth-child(7) { display: none; }
     .deadline-table th:nth-child(1) { width: 14%; }
-    .deadline-table th:nth-child(2) { width: 17%; }
+    .deadline-table th:nth-child(2) { width: 18%; }
     .deadline-table th:nth-child(3) { width: 9%; }
     .deadline-table th:nth-child(4) { width: 20%; }
-    .deadline-table th:nth-child(5) { width: 26%; }
+    .deadline-table th:nth-child(5) { width: 25%; }
     .deadline-table th:nth-child(8) { width: 7%; }
     .deadline-table th:nth-child(9) { width: 7%; }
 }
