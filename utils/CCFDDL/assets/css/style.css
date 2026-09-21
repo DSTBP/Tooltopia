@@ -51,7 +51,7 @@ img, svg { display: block; vertical-align: middle; max-width: 100%; }
     -webkit-backdrop-filter: blur(12px) saturate(1.2);
 }
 
-.nav-content { max-width: 80rem; margin: 0 auto; padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.nav-content { max-width: 105rem; margin: 0 auto; padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .logo-wrapper { display: flex; align-items: center; gap: 0.75rem; flex-shrink: 0; }
 .logo-icon { width: 2.25rem; height: 2.25rem; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.3); object-fit: cover; }
 .logo-text-desktop { font-weight: 900; color: hsl(0 0% 95%); letter-spacing: 0.05em; font-size: 1.125rem; font-family: 'Righteous', 'Microsoft YaHei', sans-serif; }
@@ -809,18 +809,18 @@ body.day-mode .deadline-table .deadline-source { color: #64748b; }
 }
 .deadline-table tbody tr.deadline-row td { padding-left: 7px; padding-right: 7px; }
 .deadline-table th:first-child,
-.deadline-table tbody tr.deadline-row td:first-child { padding-left: 16px; }
+.deadline-table tbody tr.deadline-row td:first-child { padding-left: 20px; }
 .deadline-table th:last-child,
-.deadline-table tbody tr.deadline-row td:last-child { padding-right: 16px; }
+.deadline-table tbody tr.deadline-row td:last-child { padding-right: 20px; }
 .deadline-table th:nth-child(1) { width: 10%; }
 .deadline-table th:nth-child(2) { width: 17%; }
 .deadline-table th:nth-child(3) { width: 8%; }
 .deadline-table th:nth-child(4) { width: 17%; }
-.deadline-table th:nth-child(5) { width: 12%; }
+.deadline-table th:nth-child(5) { width: 16%; }
 .deadline-table th:nth-child(6) { width: 12%; }
-.deadline-table th:nth-child(7) { width: 11%; }
-.deadline-table th:nth-child(8) { width: 7%; }
-.deadline-table th:nth-child(9) { width: 6%; }
+.deadline-table th:nth-child(7) { width: 10%; }
+.deadline-table th:nth-child(8) { width: 5%; }
+.deadline-table th:nth-child(9) { width: 5%; }
 .deadline-table .deadline-badge {
     display: block;
     width: fit-content;
@@ -831,16 +831,26 @@ body.day-mode .deadline-table .deadline-source { color: #64748b; }
 }
 .deadline-table .countdown-running { white-space: normal; }
 
-@media (max-width: 1100px) {
+@media (min-width: 801px) {
+    .deadline-table .countdown-running {
+        display: inline-flex;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+    }
+    .deadline-table .countdown-running[hidden] { display: none; }
+    .deadline-table .countdown-running > span { flex: none; }
+}
+
+@media (max-width: 1280px) {
     .deadline-table th:nth-child(6), .deadline-table td:nth-child(6),
     .deadline-table th:nth-child(7), .deadline-table td:nth-child(7) { display: none; }
     .deadline-table th:nth-child(1) { width: 14%; }
-    .deadline-table th:nth-child(2) { width: 23%; }
-    .deadline-table th:nth-child(3) { width: 10%; }
-    .deadline-table th:nth-child(4) { width: 22%; }
-    .deadline-table th:nth-child(5) { width: 17%; }
-    .deadline-table th:nth-child(8) { width: 8%; }
-    .deadline-table th:nth-child(9) { width: 6%; }
+    .deadline-table th:nth-child(2) { width: 17%; }
+    .deadline-table th:nth-child(3) { width: 9%; }
+    .deadline-table th:nth-child(4) { width: 20%; }
+    .deadline-table th:nth-child(5) { width: 26%; }
+    .deadline-table th:nth-child(8) { width: 7%; }
+    .deadline-table th:nth-child(9) { width: 7%; }
 }
 
 @media (max-width: 800px) {
