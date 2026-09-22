@@ -1,4 +1,4 @@
-## 创新点进阶
+## 创新点发现
 
 ### 简洁版
 
@@ -22,10 +22,6 @@ Prefer deep investigation of a promising direction over repeatedly switching to 
 Do not change the research target simply because it appears difficult.
 
 The objective is research-quality novelty: pursue results that would be worth publishing, rather than low-hanging fruit or minor variations of known approaches.
-
-
-
-
 
 
 

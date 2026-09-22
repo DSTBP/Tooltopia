@@ -75,29 +75,19 @@
 
   "科研创新": [
     {
-      "name": "创新点合理性与可辩护性审查",
-      "path": "./research-innovation/innovation-defensibility-review.md",
-      "tag": ["需适配"]
-    },
-    {
-      "name": "创新点发现与验证",
+      "name": "创新点发现与验证 (详细)",
       "path": "./research-innovation/innovation-discovery.md",
-      "tag": ["需适配"]
+      "tag": []
     },
     {
-      "name": "创新点进阶",
+      "name": "创新点发现",
       "path": "./research-innovation/advanced-innovation.md",
-      "tag": ["需适配"]
+      "tag": []
     },
     {
       "name": "方案正确性检查",
       "path": "./research-innovation/solution-correctness.md",
-      "tag": ["需适配"]
-    },
-    {
-      "name": "科研画图",
-      "path": "./research-innovation/draw-diagrams.md",
-      "tag": ["需适配"]
+      "tag": []
     }
   ],
 
@@ -105,22 +95,40 @@
     {
       "name": "汇报 PPT",
       "path": "./reporting/report-presentation.md",
-      "tag": ["需适配"]
+      "tag": []
     },
     {
       "name": "汇报内容",
       "path": "./reporting/report-content.md",
-      "tag": ["需适配"]
+      "tag": ["重点"]
     },
     {
       "name": "飞书表格",
       "path": "./reporting/feishu-sheet.md",
+      "tag": ["备份"]
+    }
+  ],
+
+  "论文撰写": [
+    {
+      "name": "科研画图",
+      "path": "./writing/draw-diagrams.md",
       "tag": ["需适配"]
     },
     {
-      "name": "综述汇报",
-      "path": "./reporting/survey-report.md",
+      "name": "创新点合理性与可辩护性审查",
+      "path": "./writing/innovation-defensibility-review.md",
       "tag": ["需适配"]
+    },
+    {
+      "name": "整体行文",
+      "path": "./writing/overall-writing.md",
+      "tag": ["需适配"]
+    },
+    {
+      "name": "实验部分",
+      "path": "./writing/experiment-section.md",
+      "tag": []
     }
   ]
 }
