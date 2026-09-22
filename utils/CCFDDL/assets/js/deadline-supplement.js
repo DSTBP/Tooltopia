@@ -1,9 +1,11 @@
-/* Merge the CCF calendar with live Hugging Face ai-deadlines entries. */
+/* Merge CCF calendar editions with conference supplement sources. */
 window.CCFDeadlineSupplement = (() => {
     const submissionTypes = new Set(['abstract', 'paper', 'registration', 'commitment_deadline']);
+    const acronymAliases = { atc: 'sigopsatc', usenixatc: 'sigopsatc', cgo: 'ieeeacmcgo' };
 
     function key(name, year) {
-        return `${String(name || '').replace(/\s+\d{4}$/, '').replace(/[^a-z0-9]/gi, '').toLowerCase()}|${year}`;
+        const acronym = String(name || '').replace(/\s+\d{4}$/, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+        return `${acronymAliases[acronym] || acronym}|${year}`;
     }
 
     function typeOf(event) {
@@ -18,7 +20,7 @@ window.CCFDeadlineSupplement = (() => {
 
     function roundOf(label) {
         const raw = String(label || '');
-        const match = raw.match(/round\s*(\d+)|(?:first|second|third)\s+(?:round|cycle)|第[一二三四1234]轮/i);
+        const match = raw.match(/round\s*(\d+)|(?:first|second|third)\s+(?:round|cycle|submission)|第[一二三四1234]轮/i);
         if (!match) return '';
         const words = { first: 1, second: 2, third: 3, '一': 1, '二': 2, '三': 3, '四': 4 };
         return `Round ${match[1] || words[match[0].split(/\s+/)[0].toLowerCase()] || words[match[0].charAt(1)] || match[0].match(/\d+/)?.[0]}`;
@@ -26,6 +28,57 @@ window.CCFDeadlineSupplement = (() => {
 
     function eventMs(event) {
         return Number.isFinite(event.deadlineMs) ? event.deadlineMs : null;
+    }
+
+    function cycleOf(event) {
+        return String(event.cycle || roundOf(event.comment) || '').trim().toLowerCase();
+    }
+
+    function eventDay(event) {
+        if (event.dateOnly) return event.date;
+        if (event.localDate) return event.localDate;
+        const fromDeadline = String(event.deadline || '').match(/^(\d{4}-\d{2}-\d{2})/);
+        if (fromDeadline) return fromDeadline[1];
+        const ms = eventMs(event);
+        if (ms === null) return '';
+        const zone = String(event.timezone || 'UTC');
+        if (zone.includes('/')) {
+            try {
+                const parts = new Intl.DateTimeFormat('en-US', {
+                    timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit'
+                }).formatToParts(new Date(ms));
+                const part = type => parts.find(item => item.type === type)?.value || '';
+                return `${part('year')}-${part('month')}-${part('day')}`;
+            } catch (_) { /* Use the fixed-offset path below. */ }
+        }
+        let offset = /^AoE$/i.test(zone) ? -12 * 60 : /^PST$/i.test(zone) ? -8 * 60 : /^PDT$/i.test(zone) ? -7 * 60 : 0;
+        const match = zone.match(/^(?:UTC|GMT)([+-])(\d{1,2})(?::?(\d{2}))?$/i);
+        if (match) offset = (Number(match[2]) * 60 + Number(match[3] || 0)) * (match[1] === '+' ? 1 : -1);
+        return new Date(ms + offset * 60000).toISOString().slice(0, 10);
+    }
+
+    function sameEvent(a, b) {
+        if (typeOf(a) !== typeOf(b)) return false;
+        if (typeOf(a) === 'milestone' && a.comment !== b.comment) return false;
+        const aCycle = cycleOf(a);
+        const bCycle = cycleOf(b);
+        if (aCycle && bCycle && aCycle !== bCycle) return false;
+        const aMs = eventMs(a);
+        const bMs = eventMs(b);
+        if (aMs !== null && bMs !== null) return Math.abs(aMs - bMs) <= 60000;
+        return Boolean(eventDay(a) && eventDay(a) === eventDay(b));
+    }
+
+    function sameStage(a, b, existingEvents) {
+        if (typeOf(a) !== typeOf(b)) return false;
+        if (typeOf(a) === 'milestone' && a.comment !== b.comment) return false;
+        const aCycle = cycleOf(a);
+        const bCycle = cycleOf(b);
+        if (aCycle === bCycle) return true;
+        // A source with one unlabelled submission usually means the first round.
+        const labelled = aCycle || bCycle;
+        return (!aCycle || !bCycle) && labelled === 'round 1' &&
+            !existingEvents.some(event => typeOf(event) === typeOf(a) && cycleOf(event) === 'round 1');
     }
 
     function deadlineMs(dateText, timezone) {
@@ -63,45 +116,89 @@ window.CCFDeadlineSupplement = (() => {
 
     function mergeTimeline(base, additions) {
         const result = [...base];
-        const consumed = new Set();
-        for (const original of base) {
-            const originalType = typeOf(original);
-            if (!submissionTypes.has(originalType) || eventMs(original) === null) continue;
-            const candidates = additions
-                .map((event, index) => ({ event, index }))
-                .filter(({ event, index }) =>
-                    !consumed.has(index) &&
-                    typeOf(event) === originalType &&
-                    (!roundOf(original.comment) || roundOf(original.comment).toLowerCase() === roundOf(event.comment).toLowerCase())
-                )
-                .sort((a, b) =>
-                    Math.abs(eventMs(a.event) - eventMs(original)) -
-                    Math.abs(eventMs(b.event) - eventMs(original))
-                );
-            if (candidates.length && Math.abs(eventMs(candidates[0].event) - eventMs(original)) <= 60000) {
-                consumed.add(candidates[0].index);
-            }
+        for (const event of additions) {
+            if (!result.some(existing => sameEvent(existing, event)) &&
+                !base.some(existing => sameStage(existing, event, base))) result.push(event);
         }
-        additions.forEach((event, index) => {
-            if (consumed.has(index)) return;
-            const duplicate = result.some(existing =>
-                typeOf(existing) === typeOf(event) &&
-                roundOf(existing.comment).toLowerCase() === roundOf(event.comment).toLowerCase() &&
-                eventMs(existing) === eventMs(event) &&
-                existing.comment === event.comment
-            );
-            if (!duplicate) result.push(event);
-        });
         return result;
     }
 
-    function fromSource(record) {
+    function fromJiajun(record) {
+        const labels = {
+            abstract: '摘要截稿', paper: '论文投稿', notification: '结果通知',
+            camera_ready: '终稿', review_release: '审稿意见公布',
+            rebuttal: '答辩', revision_due: '修订截止', milestone: '时间节点'
+        };
+        const events = (record.events || []).map(event => {
+            const ms = event.at ? Date.parse(event.at) : null;
+            const offset = String(event.at || '').match(/(Z|[+-]\d{2}:\d{2})$/);
+            const timezone = event.timezone === 'AoE' ? 'AoE'
+                : offset ? (offset[1] === 'Z' ? 'UTC+0' : `UTC${offset[1]}`)
+                    : (event.timezone || 'UTC');
+            const cycle = String(event.cycle || '').trim();
+            const label = String(event.label || labels[event.type] || event.type || '时间节点').trim();
+            return {
+                type: event.type,
+                comment: cycle ? `${cycle} · ${label}` : label,
+                cycle,
+                timezone,
+                deadlineMs: Number.isFinite(ms) ? ms : null,
+                dateOnly: !Number.isFinite(ms),
+                date: event.date || '',
+                endDate: event.endDate || '',
+                localDate: event.at ? event.at.slice(0, 10) : event.date || '',
+                source: 'jiajun'
+            };
+        }).filter(event => event.deadlineMs !== null || event.date);
+        const conferenceDate = [record.conferenceStart, record.conferenceEnd].filter(Boolean).join(' — ') || 'TBA';
+        return {
+            title: `${record.acronym} ${record.year}`,
+            description: record.acronym,
+            sub: 'EXT',
+            rank: { ccf: 'N' },
+            supplementOnly: true,
+            jiajunOnly: true,
+            confs: [{
+                year: record.year, link: '#', timezone: 'UTC',
+                date: conferenceDate, place: 'TBA', tags: [], timeline: events
+            }]
+        };
+    }
+
+    function mergeJiajun(base, records) {
+        const output = base.map(entry => ({
+            ...entry,
+            confs: [{ ...entry.confs[0], timeline: [...(entry.confs[0].timeline || [])] }]
+        }));
+        const byKey = new Map(output.map((entry, index) => [key(entry.title, entry.confs[0].year), index]));
+        for (const record of records) {
+            if (!record.acronym || !record.year || !Array.isArray(record.events)) continue;
+            const supplement = fromJiajun(record);
+            const identity = key(record.acronym, record.year);
+            const match = byKey.get(identity);
+            if (match === undefined) {
+                byKey.set(identity, output.length);
+                output.push(supplement);
+                continue;
+            }
+            const entry = output[match];
+            const conf = entry.confs[0];
+            const extra = supplement.confs[0];
+            if (!conf.date || conf.date === 'TBA') conf.date = extra.date;
+            conf.timeline = mergeTimeline(conf.timeline || [], extra.timeline);
+            entry.jiajunEnriched = true;
+        }
+        return output;
+    }
+
+    function fromSource(record, source = 'aideadlines') {
         const events = (record.deadlines || []).map(event => ({
             type: event.type,
             comment: event.label || event.type,
-            timezone: event.timezone || 'AoE',
-            deadlineMs: deadlineMs(event.date, event.timezone),
-            source: 'aideadlines'
+            timezone: event.timezone || (source === 'paperswithcode' ? 'UTC' : 'AoE'),
+            deadlineMs: source === 'paperswithcode'
+                ? Date.parse(event.deadline_at) : deadlineMs(event.date, event.timezone),
+            source
         })).filter(event => Number.isFinite(event.deadlineMs));
         const legacy = [
             ['deadline', 'paper', '论文投稿', record.timezone || 'AoE'],
@@ -113,20 +210,23 @@ window.CCFDeadlineSupplement = (() => {
         for (const [field, type, comment, timezone] of legacy) {
             if (!record[field] || events.some(event => typeOf(event) === type)) continue;
             const ms = deadlineMs(record[field], timezone);
-            if (ms !== null) events.push({ type, comment, timezone, deadlineMs: ms, source: 'aideadlines' });
+            if (ms !== null) events.push({ type, comment, timezone, deadlineMs: ms, source });
         }
+        const acronym = record.title || record.short_name;
         return {
-            title: `${record.title} ${record.year}`,
-            description: record.full_name || record.title,
+            title: `${acronym} ${record.year}`,
+            description: record.full_name || record.name || acronym,
             sub: 'EXT',
             rank: { ccf: 'N' },
             supplementOnly: true,
+            aiOnly: source === 'aideadlines',
+            pwcOnly: source === 'paperswithcode',
             confs: [{
                 year: record.year,
-                link: record.link || '#',
+                link: record.link || record.url || '#',
                 timezone: 'UTC',
-                date: record.date || [record.start, record.end].filter(Boolean).join(' — ') || 'TBA',
-                place: [record.city, record.country].filter(Boolean).join(', ') || 'TBA',
+                date: record.date || [record.start || record.start_date, record.end || record.end_date].filter(Boolean).join(' — ') || 'TBA',
+                place: record.location || [record.city, record.country].filter(Boolean).join(', ') || 'TBA',
                 venue: record.venue || '',
                 tags: record.tags || [],
                 timeline: events
@@ -134,18 +234,19 @@ window.CCFDeadlineSupplement = (() => {
         };
     }
 
-    function merge(base, records) {
+    function merge(base, records, source = 'aideadlines') {
         const output = base.map(entry => ({
             ...entry,
             confs: [{ ...entry.confs[0], timeline: [...(entry.confs[0].timeline || [])] }]
         }));
         const byKey = new Map(output.map((entry, index) => [key(entry.title, entry.confs[0].year), index]));
         for (const record of records) {
-            if (!record.title || !record.year) continue;
-            const supplement = fromSource(record);
-            const match = byKey.get(key(record.title, record.year));
+            const acronym = record.title || record.short_name;
+            if (!acronym || !record.year) continue;
+            const supplement = fromSource(record, source);
+            const match = byKey.get(key(acronym, record.year));
             if (match === undefined) {
-                byKey.set(key(record.title, record.year), output.length);
+                byKey.set(key(acronym, record.year), output.length);
                 output.push(supplement);
                 continue;
             }
@@ -159,7 +260,70 @@ window.CCFDeadlineSupplement = (() => {
             conf.venue = extra.venue || conf.venue || '';
             conf.tags = [...new Set([...(conf.tags || []), ...extra.tags])];
             conf.timeline = mergeTimeline(conf.timeline, extra.timeline);
-            entry.enriched = true;
+            if (source === 'paperswithcode') entry.pwcEnriched = true;
+            else entry.enriched = true;
+        }
+        return output;
+    }
+
+    function fromCycle(record) {
+        const labels = {
+            abstract: '摘要截稿', paper: '论文投稿', review_release: '审稿意见公布',
+            rebuttal_start: '答辩开始', rebuttal_end: '答辩结束',
+            notification: '结果通知', camera_ready: '终稿'
+        };
+        const events = (record.events || []).map(event => {
+            const ms = event.at ? Date.parse(event.at) : null;
+            const cycle = String(event.cycle || '').trim();
+            const label = labels[event.type] || event.type || '时间节点';
+            return {
+                type: event.type, comment: cycle ? `${cycle} · ${label}` : label,
+                cycle, timezone: 'UTC', deadlineMs: Number.isFinite(ms) ? ms : null,
+                dateOnly: !Number.isFinite(ms), date: event.date || '',
+                localDate: event.at ? event.at.slice(0, 10) : event.date || '',
+                source: 'ccfcycle'
+            };
+        }).filter(event => event.deadlineMs !== null || event.date);
+        return {
+            title: `${record.acronym} ${record.year}`,
+            description: record.acronym, sub: 'EXT', rank: { ccf: 'N' },
+            supplementOnly: true, cycleOnly: true,
+            confs: [{
+                year: record.year, link: record.websiteUrl || '#', timezone: 'UTC',
+                date: [record.conferenceStart, record.conferenceEnd].filter(Boolean).join(' — ') || 'TBA',
+                place: 'TBA', tags: [], timeline: events,
+                cfpUrl: record.cfpUrl || '', dblpUrl: record.dblpUrl || '',
+                yearChanges: Array.isArray(record.changes) ? record.changes : []
+            }]
+        };
+    }
+
+    function mergeCycle(base, records) {
+        const output = base.map(entry => ({
+            ...entry,
+            confs: [{ ...entry.confs[0], timeline: [...(entry.confs[0].timeline || [])] }]
+        }));
+        const byKey = new Map(output.map((entry, index) => [key(entry.title, entry.confs[0].year), index]));
+        for (const record of records) {
+            if (!record.acronym || !record.year || !Array.isArray(record.events)) continue;
+            const supplement = fromCycle(record);
+            const identity = key(record.acronym, record.year);
+            const match = byKey.get(identity);
+            if (match === undefined) {
+                byKey.set(identity, output.length);
+                output.push(supplement);
+                continue;
+            }
+            const entry = output[match];
+            const conf = entry.confs[0];
+            const extra = supplement.confs[0];
+            if (!conf.link || conf.link === '#') conf.link = extra.link;
+            if (!conf.date || conf.date === 'TBA') conf.date = extra.date;
+            conf.cfpUrl = conf.cfpUrl || extra.cfpUrl;
+            conf.dblpUrl = conf.dblpUrl || extra.dblpUrl;
+            conf.yearChanges = extra.yearChanges;
+            conf.timeline = mergeTimeline(conf.timeline || [], extra.timeline);
+            entry.cycleEnriched = true;
         }
         return output;
     }
@@ -185,5 +349,5 @@ window.CCFDeadlineSupplement = (() => {
             : { ms: null, event: null, comment: '', isUrgent: false, state: 'tbd' };
     }
 
-    return { key, merge, status, typeOf, roundOf, deadlineMs };
+    return { key, merge, mergeJiajun, mergeCycle, status, typeOf, roundOf, deadlineMs };
 })();

@@ -1,0 +1,1866 @@
+{
+  "generatedAt": "2026-09-21T15:58:51Z",
+  "conferences": [
+    {
+      "acronym": "ASPLOS",
+      "year": 2027,
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "April cycle",
+          "at": "2026-04-15T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "April cycle",
+          "label": "Author response",
+          "date": "2026-07-06",
+          "endDate": "2026-07-09",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "April cycle",
+          "date": "2026-07-27"
+        },
+        {
+          "type": "paper",
+          "cycle": "September cycle",
+          "at": "2026-09-09T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "September cycle",
+          "label": "Author response",
+          "date": "2026-12-01",
+          "endDate": "2026-12-04",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "September cycle",
+          "date": "2026-12-21"
+        }
+      ],
+      "conferenceStart": "2027-04-11",
+      "conferenceEnd": "2027-04-15"
+    },
+    {
+      "acronym": "ATC",
+      "year": 2026,
+      "events": [
+        {
+          "type": "paper",
+          "at": "2026-06-10T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "milestone",
+          "label": "Early reject",
+          "date": "2026-08-01"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Author response",
+          "date": "2026-08-29",
+          "endDate": "2026-09-02"
+        },
+        {
+          "type": "notification",
+          "date": "2026-09-18"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Camera ready",
+          "date": "2026-10-16"
+        }
+      ],
+      "conferenceStart": "2026-11-15",
+      "conferenceEnd": "2026-11-18"
+    },
+    {
+      "acronym": "CGO",
+      "year": 2026,
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "at": "2025-05-29T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Author response",
+          "date": "2025-07-08",
+          "endDate": "2025-07-10",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "date": "2025-07-21"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "at": "2025-09-11T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Author response",
+          "date": "2025-10-21",
+          "endDate": "2025-10-23",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "date": "2025-11-03"
+        }
+      ],
+      "conferenceStart": "2026-01-31",
+      "conferenceEnd": "2026-02-04"
+    },
+    {
+      "acronym": "CGO",
+      "year": 2027,
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "at": "2026-06-11T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Author response",
+          "date": "2026-07-21",
+          "endDate": "2026-07-23",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "date": "2026-08-03"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "at": "2026-09-10T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Round 1",
+          "label": "Invited revision due",
+          "date": "2026-09-24",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Author response",
+          "date": "2026-10-27",
+          "endDate": "2026-10-29",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "date": "2026-11-09"
+        }
+      ],
+      "conferenceStart": "2027-03-20",
+      "conferenceEnd": "2027-03-24"
+    },
+    {
+      "acronym": "EuroSys",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Spring",
+          "at": "2025-05-08T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Spring",
+          "at": "2025-05-15T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Spring",
+          "label": "Author response",
+          "date": "2025-07-30",
+          "endDate": "2025-08-01",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Spring",
+          "date": "2025-08-22"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Fall",
+          "at": "2025-09-18T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Spring",
+          "label": "One-shot revision due",
+          "date": "2025-09-25",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Fall",
+          "at": "2025-09-25T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Spring",
+          "label": "Camera ready",
+          "date": "2025-09-26",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Fall",
+          "label": "Author response",
+          "date": "2026-01-07",
+          "endDate": "2026-01-09",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Fall",
+          "date": "2026-01-30"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Fall",
+          "label": "Camera ready",
+          "date": "2026-03-06",
+          "timezone": "AoE"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Fall",
+          "label": "One-shot revision due",
+          "date": "2026-05-14",
+          "timezone": "AoE"
+        }
+      ],
+      "conferenceStart": "2026-04-27",
+      "conferenceEnd": "2026-04-30"
+    },
+    {
+      "acronym": "EuroSys",
+      "year": 2027,
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Spring",
+          "at": "2026-05-07T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Spring",
+          "at": "2026-05-14T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Spring",
+          "label": "Author response",
+          "date": "2026-07-29",
+          "endDate": "2026-07-31",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Spring",
+          "date": "2026-08-21"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Fall",
+          "at": "2026-09-17T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Spring",
+          "label": "One-shot revision due",
+          "date": "2026-09-24",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Fall",
+          "at": "2026-09-24T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Spring",
+          "label": "Camera ready",
+          "date": "2026-09-25",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Fall",
+          "label": "Author response",
+          "date": "2027-01-06",
+          "endDate": "2027-01-08",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Fall",
+          "date": "2027-01-29"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Fall",
+          "label": "Camera ready",
+          "date": "2027-03-05",
+          "timezone": "AoE"
+        }
+      ],
+      "conferenceStart": "2027-04-19",
+      "conferenceEnd": "2027-04-23"
+    },
+    {
+      "acronym": "FAST",
+      "year": 2026,
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Spring",
+          "at": "2025-03-18T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Spring",
+          "label": "Author response",
+          "date": "2025-05-20",
+          "endDate": "2025-05-22",
+          "timezone": "23:59 AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Spring",
+          "date": "2025-06-05"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Spring",
+          "label": "Final paper",
+          "at": "2025-07-29T23:59:00-12:00",
+          "timezone": "23:59 AoE"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Spring",
+          "label": "One-shot revision due",
+          "date": "2025-09-16",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Fall",
+          "at": "2025-09-16T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Fall",
+          "label": "Author response",
+          "date": "2025-11-18",
+          "endDate": "2025-11-20",
+          "timezone": "23:59 AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Fall",
+          "date": "2025-12-08"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Fall",
+          "label": "Final paper",
+          "at": "2026-01-27T23:59:00-12:00",
+          "timezone": "23:59 AoE"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Fall",
+          "label": "One-shot revision due",
+          "date": "2026-03-17",
+          "timezone": "AoE"
+        }
+      ],
+      "conferenceStart": "2026-02-24",
+      "conferenceEnd": "2026-02-26"
+    },
+    {
+      "acronym": "FAST",
+      "year": 2027,
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Spring",
+          "at": "2026-03-17T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Spring",
+          "label": "Author response",
+          "date": "2026-05-18",
+          "endDate": "2026-05-20",
+          "timezone": "23:59 AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Spring",
+          "date": "2026-06-04"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Spring",
+          "label": "Final paper",
+          "at": "2026-07-28T23:59:00-12:00",
+          "timezone": "23:59 AoE"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Spring",
+          "label": "One-shot revision due",
+          "date": "2026-09-15",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Fall",
+          "at": "2026-09-15T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Fall",
+          "label": "Author response",
+          "date": "2026-11-17",
+          "endDate": "2026-11-19",
+          "timezone": "23:59 AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Fall",
+          "date": "2026-12-08"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Fall",
+          "label": "Final paper",
+          "at": "2027-01-26T23:59:00-12:00",
+          "timezone": "23:59 AoE"
+        }
+      ],
+      "conferenceStart": "2027-02-23",
+      "conferenceEnd": "2027-02-25"
+    },
+    {
+      "acronym": "HPCA",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2025-07-25T23:59:00+00:00",
+          "timezone": "23:59 UTC"
+        },
+        {
+          "type": "paper",
+          "at": "2025-08-01T23:59:00+00:00",
+          "timezone": "23:59 UTC"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Revision/rebuttal",
+          "date": "2025-10-07",
+          "endDate": "2025-10-20"
+        },
+        {
+          "type": "notification",
+          "date": "2025-11-07"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Final paper",
+          "date": "2025-12-04"
+        }
+      ],
+      "conferenceStart": "2026-01-31",
+      "conferenceEnd": "2026-02-04"
+    },
+    {
+      "acronym": "HPCA",
+      "year": 2027,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2026-07-24T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "at": "2026-07-31T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Revision/rebuttal",
+          "date": "2026-09-28",
+          "endDate": "2026-10-09"
+        },
+        {
+          "type": "notification",
+          "date": "2026-11-06"
+        }
+      ],
+      "conferenceStart": "2027-03-20",
+      "conferenceEnd": "2027-03-24"
+    },
+    {
+      "acronym": "HPDC",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2026-01-29T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "at": "2026-02-05T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "date": "2026-03-31"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Final paper",
+          "date": "2026-04-30"
+        }
+      ],
+      "conferenceStart": "2026-07-13",
+      "conferenceEnd": "2026-07-16"
+    },
+    {
+      "acronym": "ICDE",
+      "year": 2026,
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "at": "2025-06-18T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 1",
+          "label": "First decision",
+          "at": "2025-08-18T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Round 1",
+          "label": "Revision due",
+          "at": "2025-09-22T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "date": "2025-10-20"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "at": "2025-10-27T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 2",
+          "label": "First decision",
+          "at": "2025-12-22T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Round 2",
+          "label": "Revision due",
+          "at": "2026-01-26T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "date": "2026-02-23"
+        }
+      ],
+      "conferenceStart": "2026-05-04",
+      "conferenceEnd": "2026-05-08"
+    },
+    {
+      "acronym": "ICDE",
+      "year": 2027,
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "at": "2026-06-11T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Rebuttal period",
+          "date": "2026-08-08",
+          "endDate": "2026-08-15",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "date": "2026-09-10"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Round 1",
+          "label": "Camera ready",
+          "at": "2026-10-10T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "at": "2026-11-11T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Rebuttal period",
+          "date": "2027-01-08",
+          "endDate": "2027-01-15",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "date": "2027-02-10"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Round 2",
+          "label": "Camera ready",
+          "at": "2027-03-10T17:00:00-08:00",
+          "timezone": "5pm PT"
+        }
+      ],
+      "conferenceStart": "2027-05-17",
+      "conferenceEnd": "2027-05-21"
+    },
+    {
+      "acronym": "ICPP",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2026-04-24T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "at": "2026-05-01T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "date": "2026-06-30"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Final paper",
+          "date": "2026-07-30"
+        }
+      ],
+      "conferenceStart": "2026-09-28",
+      "conferenceEnd": "2026-10-01"
+    },
+    {
+      "acronym": "ICS",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "at": "2025-12-09T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "at": "2025-12-16T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "at": "2026-02-02T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "at": "2026-02-09T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Author response",
+          "date": "2026-02-10",
+          "endDate": "2026-02-12"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "date": "2026-02-24"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Round 1",
+          "label": "Camera ready",
+          "date": "2026-03-24"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Author response",
+          "date": "2026-03-24",
+          "endDate": "2026-03-26"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "date": "2026-04-06"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Round 2",
+          "label": "Camera ready",
+          "date": "2026-05-06"
+        }
+      ],
+      "conferenceStart": "2026-07-06",
+      "conferenceEnd": "2026-07-09"
+    },
+    {
+      "acronym": "IPDPS",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2025-10-02T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "at": "2025-10-09T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Author response",
+          "date": "2025-12-01",
+          "endDate": "2025-12-04"
+        },
+        {
+          "type": "review_release",
+          "label": "First decision",
+          "date": "2025-12-18"
+        },
+        {
+          "type": "revision_due",
+          "label": "Revision due",
+          "date": "2026-01-19"
+        },
+        {
+          "type": "notification",
+          "date": "2026-02-02"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Camera ready",
+          "date": "2026-02-20"
+        }
+      ],
+      "conferenceStart": "2026-05-25",
+      "conferenceEnd": "2026-05-29"
+    },
+    {
+      "acronym": "IPDPS",
+      "year": 2027,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2026-10-01T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "at": "2026-10-08T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Author response",
+          "date": "2026-11-30",
+          "endDate": "2026-12-03"
+        },
+        {
+          "type": "review_release",
+          "label": "First decision",
+          "date": "2026-12-18"
+        },
+        {
+          "type": "revision_due",
+          "label": "Revision due",
+          "date": "2027-01-18"
+        },
+        {
+          "type": "notification",
+          "date": "2027-02-01"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Camera ready",
+          "date": "2027-02-19"
+        }
+      ],
+      "conferenceStart": "2027-06-01",
+      "conferenceEnd": "2027-06-05"
+    },
+    {
+      "acronym": "ISCA",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2025-11-10T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "at": "2025-11-17T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Rebuttal/Revision",
+          "date": "2026-02-16",
+          "endDate": "2026-03-06",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "date": "2026-03-27"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Camera ready",
+          "at": "2026-05-06T17:00:00-07:00",
+          "timezone": "5pm PT"
+        }
+      ],
+      "conferenceStart": "2026-06-27",
+      "conferenceEnd": "2026-07-01"
+    },
+    {
+      "acronym": "MICRO",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2026-03-31T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "at": "2026-04-07T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Rebuttal/Revision",
+          "date": "2026-06-03",
+          "endDate": "2026-06-17"
+        },
+        {
+          "type": "notification",
+          "date": "2026-07-07"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Camera ready",
+          "date": "2026-09-11"
+        }
+      ],
+      "conferenceStart": "2026-10-31",
+      "conferenceEnd": "2026-11-04"
+    },
+    {
+      "acronym": "NSDI",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Spring",
+          "at": "2025-04-18T23:59:00-07:00",
+          "timezone": "11:59pm US PDT"
+        },
+        {
+          "type": "paper",
+          "cycle": "Spring",
+          "at": "2025-04-25T23:59:00-07:00",
+          "timezone": "11:59pm US PDT"
+        },
+        {
+          "type": "notification",
+          "cycle": "Spring",
+          "date": "2025-07-24"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Fall",
+          "at": "2025-09-11T23:59:00-07:00",
+          "timezone": "11:59pm US PDT"
+        },
+        {
+          "type": "paper",
+          "cycle": "Fall",
+          "at": "2025-09-18T23:59:00-07:00",
+          "timezone": "11:59pm US PDT"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Spring",
+          "label": "One-shot revision due",
+          "at": "2025-09-18T23:59:00-07:00",
+          "timezone": "11:59pm US PDT"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Spring",
+          "label": "Final paper",
+          "date": "2025-10-27"
+        },
+        {
+          "type": "notification",
+          "cycle": "Fall",
+          "date": "2025-12-09"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Fall",
+          "label": "Final paper",
+          "date": "2026-03-05"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Fall",
+          "label": "One-shot revision due",
+          "at": "2026-04-23T23:59:00-04:00",
+          "timezone": "11:59pm US EDT"
+        }
+      ],
+      "conferenceStart": "2026-05-04",
+      "conferenceEnd": "2026-05-06"
+    },
+    {
+      "acronym": "NSDI",
+      "year": 2027,
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Spring",
+          "at": "2026-04-16T23:59:00-04:00",
+          "timezone": "11:59pm US EDT"
+        },
+        {
+          "type": "paper",
+          "cycle": "Spring",
+          "at": "2026-04-23T23:59:00-04:00",
+          "timezone": "11:59pm US EDT"
+        },
+        {
+          "type": "notification",
+          "cycle": "Spring",
+          "date": "2026-07-23"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Fall",
+          "at": "2026-09-10T23:59:00-04:00",
+          "timezone": "11:59pm US EDT"
+        },
+        {
+          "type": "paper",
+          "cycle": "Fall",
+          "at": "2026-09-17T23:59:00-04:00",
+          "timezone": "11:59pm US EDT"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Spring",
+          "label": "One-shot revision due",
+          "at": "2026-09-17T23:59:00-04:00",
+          "timezone": "11:59pm US EDT"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Spring",
+          "label": "Final paper",
+          "date": "2026-10-20"
+        },
+        {
+          "type": "notification",
+          "cycle": "Fall",
+          "date": "2026-12-08"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Fall",
+          "label": "Final paper",
+          "date": "2027-03-04"
+        }
+      ],
+      "conferenceStart": "2027-05-11",
+      "conferenceEnd": "2027-05-13"
+    },
+    {
+      "acronym": "OSDI",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2025-12-04T17:59:00-05:00",
+          "timezone": "5:59pm EST"
+        },
+        {
+          "type": "paper",
+          "at": "2025-12-11T17:59:00-05:00",
+          "timezone": "5:59pm EST"
+        },
+        {
+          "type": "notification",
+          "date": "2026-03-26"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Final paper",
+          "date": "2026-06-09"
+        }
+      ],
+      "conferenceStart": "2026-07-13",
+      "conferenceEnd": "2026-07-15"
+    },
+    {
+      "acronym": "OSDI",
+      "year": 2027,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2026-12-01T17:59:00-05:00",
+          "timezone": "5:59pm EST"
+        },
+        {
+          "type": "paper",
+          "at": "2026-12-08T17:59:00-05:00",
+          "timezone": "5:59pm EST"
+        },
+        {
+          "type": "notification",
+          "date": "2027-03-16"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Final paper",
+          "date": "2027-06-03"
+        }
+      ],
+      "conferenceStart": "2027-07-07",
+      "conferenceEnd": "2027-07-09"
+    },
+    {
+      "acronym": "PLDI",
+      "year": 2026,
+      "events": [
+        {
+          "type": "paper",
+          "at": "2025-11-13T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Author response",
+          "date": "2026-02-17",
+          "endDate": "2026-02-22",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "date": "2026-03-05"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Camera ready",
+          "date": "2026-04-16",
+          "timezone": "AoE"
+        }
+      ],
+      "conferenceStart": "2026-06-15",
+      "conferenceEnd": "2026-06-19"
+    },
+    {
+      "acronym": "PLDI",
+      "year": 2027,
+      "events": [
+        {
+          "type": "paper",
+          "at": "2026-11-12T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Author response",
+          "date": "2027-02-16",
+          "endDate": "2027-02-18",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "date": "2027-03-04"
+        },
+        {
+          "type": "revision_due",
+          "label": "Revision due",
+          "date": "2027-03-23",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "label": "Final acceptance notification",
+          "date": "2027-04-01"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Camera ready",
+          "date": "2027-04-15",
+          "timezone": "AoE"
+        }
+      ],
+      "conferenceStart": "2027-06-05",
+      "conferenceEnd": "2027-06-11"
+    },
+    {
+      "acronym": "POPL",
+      "year": 2027,
+      "events": [
+        {
+          "type": "paper",
+          "at": "2026-07-09T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Author response",
+          "date": "2026-09-07",
+          "endDate": "2026-09-10",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "date": "2026-10-05"
+        },
+        {
+          "type": "revision_due",
+          "label": "Revision due",
+          "date": "2026-10-26",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "label": "Final acceptance notification",
+          "date": "2026-11-09"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Camera ready",
+          "date": "2026-11-20",
+          "timezone": "AoE"
+        }
+      ],
+      "conferenceStart": "2027-01-10",
+      "conferenceEnd": "2027-01-16"
+    },
+    {
+      "acronym": "PPoPP",
+      "year": 2026,
+      "events": [
+        {
+          "type": "paper",
+          "at": "2025-09-01T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Author response",
+          "date": "2025-11-02",
+          "endDate": "2025-11-04",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "date": "2025-11-10"
+        }
+      ],
+      "conferenceStart": "2026-01-31",
+      "conferenceEnd": "2026-02-04"
+    },
+    {
+      "acronym": "PPoPP",
+      "year": 2027,
+      "events": [
+        {
+          "type": "paper",
+          "at": "2026-08-03T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Author response",
+          "date": "2026-10-06",
+          "endDate": "2026-10-08",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "date": "2026-10-26"
+        }
+      ],
+      "conferenceStart": "2027-03-20",
+      "conferenceEnd": "2027-03-24"
+    },
+    {
+      "acronym": "SC",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2026-04-01T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "at": "2026-04-08T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Author response",
+          "date": "2026-06-08",
+          "endDate": "2026-06-11"
+        },
+        {
+          "type": "notification",
+          "date": "2026-07-01"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Final paper",
+          "date": "2026-08-28"
+        }
+      ],
+      "conferenceStart": "2026-11-15",
+      "conferenceEnd": "2026-11-20"
+    },
+    {
+      "acronym": "SIGCOMM",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2026-01-30T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "at": "2026-02-06T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "label": "Early notification",
+          "date": "2026-04-02"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Rebuttal period",
+          "date": "2026-04-27",
+          "endDate": "2026-04-29"
+        },
+        {
+          "type": "notification",
+          "date": "2026-05-11"
+        },
+        {
+          "type": "revision_due",
+          "label": "One-shot revision due",
+          "date": "2026-06-19"
+        },
+        {
+          "type": "notification",
+          "label": "Revision result",
+          "date": "2026-06-29"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Camera ready",
+          "at": "2026-07-03T23:59:00+00:00",
+          "timezone": "23:59 UTC"
+        }
+      ],
+      "conferenceStart": "2026-08-17",
+      "conferenceEnd": "2026-08-21"
+    },
+    {
+      "acronym": "SIGCOMM",
+      "year": 2027,
+      "events": [],
+      "conferenceStart": "2027-08-08",
+      "conferenceEnd": "2027-08-12"
+    },
+    {
+      "acronym": "SIGMOD",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 4",
+          "at": "2025-10-10T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 4",
+          "at": "2025-10-17T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 4",
+          "label": "Author feedback",
+          "date": "2025-12-01",
+          "endDate": "2025-12-08",
+          "timezone": "AoE"
+        },
+        {
+          "type": "milestone",
+          "cycle": "Round 4",
+          "label": "Interactive discussion",
+          "date": "2025-12-09",
+          "endDate": "2025-12-15",
+          "timezone": "AoE"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 4",
+          "label": "First decision",
+          "date": "2026-01-04",
+          "timezone": "AoE"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Round 4",
+          "label": "Revision due",
+          "date": "2026-02-04",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 4",
+          "date": "2026-02-23"
+        }
+      ],
+      "conferenceStart": "2026-05-31",
+      "conferenceEnd": "2026-06-05"
+    },
+    {
+      "acronym": "SIGMOD",
+      "year": 2027,
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "at": "2026-01-10T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "at": "2026-01-17T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 1",
+          "label": "Author feedback",
+          "date": "2026-03-10",
+          "endDate": "2026-03-17",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "at": "2026-04-10T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "at": "2026-04-17T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 1",
+          "label": "First decision",
+          "date": "2026-04-19",
+          "timezone": "AoE"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Round 1",
+          "label": "Revision due",
+          "date": "2026-05-19",
+          "timezone": "AoE"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 2",
+          "label": "Author feedback",
+          "date": "2026-06-10",
+          "endDate": "2026-06-17",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "date": "2026-06-12"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 3",
+          "at": "2026-07-10T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 3",
+          "at": "2026-07-17T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 2",
+          "label": "First decision",
+          "date": "2026-07-19",
+          "timezone": "AoE"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Round 2",
+          "label": "Revision due",
+          "date": "2026-08-19",
+          "timezone": "AoE"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 3",
+          "label": "Author feedback",
+          "date": "2026-09-10",
+          "endDate": "2026-09-17",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "date": "2026-09-12"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 4",
+          "at": "2026-10-10T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 4",
+          "at": "2026-10-17T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 3",
+          "label": "First decision",
+          "date": "2026-10-19",
+          "timezone": "AoE"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Round 3",
+          "label": "Revision due",
+          "date": "2026-11-19",
+          "timezone": "AoE"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 4",
+          "label": "Author feedback",
+          "date": "2026-12-10",
+          "endDate": "2026-12-17",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 3",
+          "date": "2026-12-12"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 4",
+          "label": "First decision",
+          "date": "2027-01-19",
+          "timezone": "AoE"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Round 4",
+          "label": "Revision due",
+          "date": "2027-02-19",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 4",
+          "date": "2027-03-12"
+        }
+      ],
+      "conferenceStart": "2027-06-13",
+      "conferenceEnd": "2027-06-19"
+    },
+    {
+      "acronym": "SOSP",
+      "year": 2026,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2026-03-26T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "at": "2026-04-01T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "label": "Author response",
+          "date": "2026-06-22",
+          "endDate": "2026-06-24"
+        },
+        {
+          "type": "notification",
+          "date": "2026-07-03"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Camera ready",
+          "date": "2026-08-28"
+        }
+      ],
+      "conferenceStart": "2026-09-29",
+      "conferenceEnd": "2026-10-02"
+    },
+    {
+      "acronym": "VLDB",
+      "year": 2026,
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Final monthly cycle",
+          "at": "2026-03-01T17:00:00-08:00",
+          "timezone": "5pm PT"
+        }
+      ],
+      "conferenceStart": "2026-08-31",
+      "conferenceEnd": "2026-09-04"
+    },
+    {
+      "acronym": "VLDB",
+      "year": 2027,
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "April 2026 cycle",
+          "at": "2026-03-25T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "paper",
+          "cycle": "April 2026 cycle",
+          "at": "2026-04-01T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "abstract",
+          "cycle": "May 2026 cycle",
+          "at": "2026-04-25T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "paper",
+          "cycle": "May 2026 cycle",
+          "at": "2026-05-01T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "April 2026 cycle",
+          "at": "2026-05-15T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "abstract",
+          "cycle": "June 2026 cycle",
+          "at": "2026-05-25T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "paper",
+          "cycle": "June 2026 cycle",
+          "at": "2026-06-01T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "May 2026 cycle",
+          "at": "2026-06-15T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "abstract",
+          "cycle": "July 2026 cycle",
+          "at": "2026-06-25T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "paper",
+          "cycle": "July 2026 cycle",
+          "at": "2026-07-01T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "June 2026 cycle",
+          "at": "2026-07-15T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "abstract",
+          "cycle": "August 2026 cycle",
+          "at": "2026-07-25T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "paper",
+          "cycle": "August 2026 cycle",
+          "at": "2026-08-01T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "July 2026 cycle",
+          "at": "2026-08-15T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "abstract",
+          "cycle": "September 2026 cycle",
+          "at": "2026-08-25T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "paper",
+          "cycle": "September 2026 cycle",
+          "at": "2026-09-01T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "August 2026 cycle",
+          "at": "2026-09-15T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "abstract",
+          "cycle": "October 2026 cycle",
+          "at": "2026-09-25T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "paper",
+          "cycle": "October 2026 cycle",
+          "at": "2026-10-01T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "September 2026 cycle",
+          "at": "2026-10-15T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "abstract",
+          "cycle": "November 2026 cycle",
+          "at": "2026-10-25T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "paper",
+          "cycle": "November 2026 cycle",
+          "at": "2026-11-01T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "October 2026 cycle",
+          "at": "2026-11-15T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "abstract",
+          "cycle": "December 2026 cycle",
+          "at": "2026-11-25T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "paper",
+          "cycle": "December 2026 cycle",
+          "at": "2026-12-01T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "November 2026 cycle",
+          "at": "2026-12-15T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "abstract",
+          "cycle": "January 2027 cycle",
+          "at": "2026-12-25T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "paper",
+          "cycle": "January 2027 cycle",
+          "at": "2027-01-01T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "December 2026 cycle",
+          "at": "2027-01-15T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "abstract",
+          "cycle": "February 2027 cycle",
+          "at": "2027-01-25T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "paper",
+          "cycle": "February 2027 cycle",
+          "at": "2027-02-01T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "January 2027 cycle",
+          "at": "2027-02-15T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "abstract",
+          "cycle": "March 2027 cycle (final)",
+          "at": "2027-02-25T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "paper",
+          "cycle": "March 2027 cycle (final)",
+          "at": "2027-03-01T17:00:00-08:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "February 2027 cycle",
+          "at": "2027-03-15T17:00:00-07:00",
+          "timezone": "5pm PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "March 2027 cycle (final)",
+          "at": "2027-04-15T17:00:00-07:00",
+          "timezone": "5pm PT"
+        }
+      ],
+      "conferenceStart": "2027-08-23",
+      "conferenceEnd": "2027-08-27"
+    }
+  ]
+}

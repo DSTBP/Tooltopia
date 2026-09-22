@@ -977,8 +977,10 @@ body.deadline-modal-open { overflow: hidden; }
 .deadline-detail-grid strong { display: block; font-size: 0.9rem; font-weight: 500; overflow-wrap: anywhere; }
 .deadline-detail-grid .deadline-detail-wide { grid-column: 1 / -1; }
 .deadline-detail-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
-.deadline-detail-link { margin: 18px 0; }
+.deadline-detail-link { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 18px 0; }
 .deadline-detail-section-title { margin: 24px 0 4px; color: #f3f4f6; font-size: 1.1rem; }
+.deadline-year-changes { margin: 8px 0 16px; padding-left: 22px; color: #d1d5db; font-size: 0.86rem; line-height: 1.6; }
+.deadline-year-changes li { margin: 4px 0; overflow-wrap: anywhere; }
 .deadline-detail-hint { margin: 0 0 16px; color: #9ca3af; font-size: 0.82rem; }
 .deadline-timeline { margin: 0 0 0 7px; padding: 0 0 0 20px; list-style: none; border-left: 1px solid rgba(78, 205, 196, 0.35); }
 .deadline-timeline-item { position: relative; margin-bottom: 12px; }
@@ -1011,6 +1013,7 @@ body.day-mode .deadline-dialog-heading h2,
 body.day-mode .deadline-detail-section-title { color: #111827; }
 body.day-mode .deadline-dialog-heading p,
 body.day-mode .deadline-detail-grid span,
+body.day-mode .deadline-year-changes,
 body.day-mode .deadline-detail-hint,
 body.day-mode .deadline-timeline-meta,
 body.day-mode .deadline-raw-details { color: #64748b; }

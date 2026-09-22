@@ -1,0 +1,102 @@
+name: Update CCFDDL deadline snapshots and Pages
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "51 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: ccfddl-deadlines-pages
+  cancel-in-progress: false
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        if: github.event_name != 'push'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test deadline parsers
+        if: github.event_name != 'push'
+        run: python -m unittest discover -s scripts/tests -p "test_*_deadlines.py" -v
+
+      - name: Test conference merge
+        if: github.event_name != 'push'
+        run: node scripts/tests/test_ccf_deadline_merge.js
+
+      - name: Refresh Jiajun conference times
+        id: jiajun
+        if: github.event_name != 'push'
+        continue-on-error: true
+        run: python scripts/update_jiajun_deadlines.py
+
+      - name: Refresh CCF Cycle conference details
+        id: cycle
+        if: github.event_name != 'push'
+        continue-on-error: true
+        run: python scripts/update_ccf_cycle_deadlines.py
+
+      - name: Refresh Papers with Code fallback
+        id: paperswithcode
+        if: github.event_name != 'push'
+        continue-on-error: true
+        run: python scripts/update_ccf_deadlines.py
+
+      - name: Validate Jiajun JSON
+        if: github.event_name != 'push' && steps.jiajun.outcome == 'success'
+        run: python -m json.tool utils/CCFDDL/assets/data/jiajun-deadlines.json > /dev/null
+
+      - name: Validate CCF Cycle JSON
+        if: github.event_name != 'push' && steps.cycle.outcome == 'success'
+        run: python -m json.tool utils/CCFDDL/assets/data/ccf-cycle-deadlines.json > /dev/null
+
+      - name: Validate Papers with Code JSON
+        if: github.event_name != 'push' && steps.paperswithcode.outcome == 'success'
+        run: python -m json.tool utils/CCFDDL/assets/data/ai-deadlines.json > /dev/null
+
+      - name: Commit refreshed snapshot
+        if: github.event_name != 'push'
+        shell: bash
+        run: |
+          if git diff --quiet -- utils/CCFDDL/assets/data/jiajun-deadlines.json utils/CCFDDL/assets/data/ccf-cycle-deadlines.json utils/CCFDDL/assets/data/ai-deadlines.json; then
+            echo "Conference snapshots are unchanged."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add utils/CCFDDL/assets/data/jiajun-deadlines.json utils/CCFDDL/assets/data/ccf-cycle-deadlines.json utils/CCFDDL/assets/data/ai-deadlines.json
+            git commit -m "chore: refresh CCFDDL conference snapshots"
+            git push
+          fi
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: .
+
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Report source update failure
+        if: github.event_name != 'push' && (steps.jiajun.outcome == 'failure' || steps.cycle.outcome == 'failure' || steps.paperswithcode.outcome == 'failure')
+        run: exit 1

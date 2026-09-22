@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let confData = [];
     let baseConfData = [];
     let deadlineSupplement = null;
+    let papersWithCodeFallback = null;
+    let jiajunSupplement = null;
+    let cycleSupplement = null;
     let ccfData = [];
     let eiData = [];
     let sciData = [];
@@ -53,6 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
         activeModeToken: 0,
         deadlineLoadPromise: null,
         supplementLoadPromise: null,
+        jiajunLoadPromise: null,
+        cycleLoadPromise: null,
         acceptanceLoadPromise: null,
         ccfLoadPromise: null,
         eiLoadPromise: null,
@@ -61,6 +66,8 @@ document.addEventListener('DOMContentLoaded', () => {
         jcrLoadPromise: null,
         deadlinesLoaded: false,
         supplementWarning: '',
+        jiajunWarning: '',
+        cycleWarning: '',
         ccfLoaded: false,
         eiLoaded: false,
         sciLoaded: false,
@@ -358,10 +365,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return (timeline || [])
             .map(item => {
                 const timezone = normalizeTimezoneLabel(item.timezone || fallbackTimezone || 'AoE') || 'AoE';
-                const deadlineMs = Number.isFinite(item.deadlineMs)
+                const dateOnly = Boolean(item.dateOnly && /^\d{4}-\d{2}-\d{2}$/.test(item.date));
+                const deadlineMs = dateOnly ? null : Number.isFinite(item.deadlineMs)
                     ? item.deadlineMs
                     : getAbsoluteMs(item.deadline, timezone);
-                const deadline = item.deadline || (Number.isFinite(deadlineMs) ? formatMsForTimezone(deadlineMs, timezone).replace(/\s+\(.+?\)$/, '') : 'TBD');
+                const deadline = dateOnly ? item.date : item.deadline ||
+                    (Number.isFinite(deadlineMs) ? formatMsForTimezone(deadlineMs, timezone).replace(/\s+\(.+?\)$/, '') : 'TBD');
                 const comment = String(item.comment || '截稿').trim() || '截稿';
                 return {
                     deadline,
@@ -369,20 +378,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     comment,
                     timezone,
                     type: item.type || '',
-                    source: item.source || 'ccfddl'
+                    source: item.source || 'ccfddl',
+                    dateOnly,
+                    date: dateOnly ? item.date : '',
+                    endDate: dateOnly ? item.endDate || '' : '',
+                    cycle: item.cycle || '',
+                    localDate: item.localDate || ''
                 };
             })
             .filter(item => {
-                const dedupeKey = `${item.comment}|${item.deadlineMs ?? item.deadline}|${item.timezone}`;
+                const dedupeKey = `${item.type}|${item.cycle}|${item.comment}|${item.deadlineMs ?? item.deadline}|${item.endDate}`;
                 if (seen.has(dedupeKey)) return false;
                 seen.add(dedupeKey);
                 return true;
             })
             .sort((a, b) => {
-                if (a.deadlineMs === null && b.deadlineMs === null) return compareText(a.comment, b.comment);
-                if (a.deadlineMs === null) return 1;
-                if (b.deadlineMs === null) return -1;
-                return a.deadlineMs - b.deadlineMs;
+                const aDay = a.dateOnly ? a.date : a.localDate || a.deadline.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ||
+                    (Number.isFinite(a.deadlineMs) ? new Date(a.deadlineMs).toISOString().slice(0, 10) : '');
+                const bDay = b.dateOnly ? b.date : b.localDate || b.deadline.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ||
+                    (Number.isFinite(b.deadlineMs) ? new Date(b.deadlineMs).toISOString().slice(0, 10) : '');
+                if (!aDay) return bDay ? 1 : compareText(a.comment, b.comment);
+                if (!bDay) return -1;
+                return compareText(aDay, bDay) || (a.deadlineMs ?? 0) - (b.deadlineMs ?? 0);
             });
     }
 
@@ -1122,9 +1139,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    function createMultiSelect(selectId, options, placeholder) {
+    function createMultiSelect(selectId, options, placeholder, preserveSelection = false) {
         const originalSelect = document.getElementById(selectId);
         if (!originalSelect) return;
+
+        const priorValues = preserveSelection ? getSelectedValues(selectId) : ['all'];
+        const retainedValues = options.filter(option => priorValues.includes(String(option.value)));
+        const allSelected = priorValues.includes('all') || retainedValues.length === 0;
 
         originalSelect.style.display = 'none';
         originalSelect.multiple = true;
@@ -1151,9 +1172,9 @@ document.addEventListener('DOMContentLoaded', () => {
         dropdown.className = 'dropdown-list';
         dropdown.setAttribute('role', 'listbox');
         
-        let html = `<label class="dropdown-item"><input type="checkbox" value="all" checked> <span class="truncate">所有选项</span></label>`;
+        let html = `<label class="dropdown-item"><input type="checkbox" value="all"${allSelected ? ' checked' : ''}> <span class="truncate">所有选项</span></label>`;
         options.forEach(opt => {
-            html += `<label class="dropdown-item"><input type="checkbox" value="${escapeHTML(opt.value)}"> <span class="truncate">${escapeHTML(opt.label)}</span></label>`;
+            html += `<label class="dropdown-item"><input type="checkbox" value="${escapeHTML(opt.value)}"${!allSelected && priorValues.includes(String(opt.value)) ? ' checked' : ''}> <span class="truncate">${escapeHTML(opt.label)}</span></label>`;
         });
         dropdown.innerHTML = html;
         
@@ -1469,7 +1490,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function mergeConfData(rawData) {
         const mergedMap = new Map();
         rawData.forEach(item => {
-            const key = `${item.title}-${item.confs[0].year}`;
+            const key = window.CCFDeadlineSupplement.key(item.title, item.confs[0].year);
             if (mergedMap.has(key)) {
                 const existing = mergedMap.get(key);
                 existing.confs[0].timeline.push(...item.confs[0].timeline);
@@ -1483,13 +1504,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return Array.from(mergedMap.values()).map(finalizeConferenceEntry);
     }
 
+    function combinedDeadlineData() {
+        let combined = baseConfData;
+        if (deadlineSupplement) combined = window.CCFDeadlineSupplement.merge(combined, deadlineSupplement);
+        if (papersWithCodeFallback) combined = window.CCFDeadlineSupplement.merge(combined, papersWithCodeFallback, 'paperswithcode');
+        if (jiajunSupplement) combined = window.CCFDeadlineSupplement.mergeJiajun(combined, jiajunSupplement);
+        if (cycleSupplement) combined = window.CCFDeadlineSupplement.mergeCycle(combined, cycleSupplement);
+        return combined.map(finalizeConferenceEntry);
+    }
+
     function applyDeadlineSupplement() {
         if (!baseConfData.length) return;
-        confData = deadlineSupplement
-            ? window.CCFDeadlineSupplement.merge(baseConfData, deadlineSupplement).map(finalizeConferenceEntry)
-            : baseConfData;
+        confData = combinedDeadlineData();
         if (currentMode === 'deadlines') {
-            initDeadlineFilters();
+            initDeadlineFilters(true);
             scheduleUpdateView();
         }
     }
@@ -1538,23 +1566,108 @@ document.addEventListener('DOMContentLoaded', () => {
         return { records, failed };
     }
 
+    async function fetchPapersWithCodeFallback(onlineRecords = []) {
+        const response = await fetch('./assets/data/ai-deadlines.json', { cache: 'no-cache' });
+        if (!response.ok) throw new Error(`JSON HTTP ${response.status}`);
+        const snapshot = await response.json();
+        if (!Array.isArray(snapshot.results) || !snapshot.results.length) {
+            throw new Error('Papers with Code 快照格式无效');
+        }
+        const onlineKeys = new Set(onlineRecords.map(record =>
+            window.CCFDeadlineSupplement.key(record.title, record.year)));
+        return snapshot.results.filter(record => !onlineKeys.has(
+            window.CCFDeadlineSupplement.key(record.short_name, record.year)));
+    }
+
     async function loadDeadlineSupplement(forceRefresh = false) {
         if (runtimeState.supplementLoadPromise) return runtimeState.supplementLoadPromise;
-        if (deadlineSupplement && !forceRefresh) return deadlineSupplement;
-        runtimeState.supplementLoadPromise = fetchDeadlineSupplement().then(({ records, failed }) => {
+        if ((deadlineSupplement || papersWithCodeFallback) && !forceRefresh) {
+            return deadlineSupplement || papersWithCodeFallback;
+        }
+        runtimeState.supplementLoadPromise = fetchDeadlineSupplement().then(async ({ records, failed }) => {
             deadlineSupplement = records;
-            runtimeState.supplementWarning = failed ? `AI Deadlines 部分文件加载失败 (${failed})` : '';
+            papersWithCodeFallback = null;
+            runtimeState.supplementWarning = '';
+            if (failed) {
+                try {
+                    papersWithCodeFallback = await fetchPapersWithCodeFallback(records);
+                    runtimeState.supplementWarning = `AI Deadlines 部分文件加载失败 (${failed})，已使用 Papers with Code 补缺`;
+                } catch (fallbackError) {
+                    console.warn('[CCFDDL] Papers with Code fallback unavailable:', fallbackError);
+                    runtimeState.supplementWarning = `AI Deadlines 部分文件加载失败 (${failed})，备用数据暂不可用`;
+                }
+            }
             applyDeadlineSupplement();
             return records;
-        }).catch(error => {
+        }).catch(async error => {
             console.warn('[CCFDDL] AI Deadlines supplement unavailable:', error);
-            runtimeState.supplementWarning = 'AI Deadlines 补充暂不可用';
-            if (currentMode === 'deadlines' && baseConfData.length) scheduleUpdateView();
-            return null;
+            deadlineSupplement = null;
+            try {
+                papersWithCodeFallback = await fetchPapersWithCodeFallback();
+                runtimeState.supplementWarning = 'AI Deadlines 在线数据不可用，已使用 Papers with Code 备用数据';
+                applyDeadlineSupplement();
+                return papersWithCodeFallback;
+            } catch (fallbackError) {
+                console.warn('[CCFDDL] Papers with Code fallback unavailable:', fallbackError);
+                papersWithCodeFallback = null;
+                runtimeState.supplementWarning = 'AI Deadlines 与 Papers with Code 备用数据暂不可用';
+                applyDeadlineSupplement();
+                return null;
+            }
         }).finally(() => {
             runtimeState.supplementLoadPromise = null;
         });
         return runtimeState.supplementLoadPromise;
+    }
+
+    async function loadJiajunSupplement(forceRefresh = false) {
+        if (runtimeState.jiajunLoadPromise) return runtimeState.jiajunLoadPromise;
+        if (jiajunSupplement && !forceRefresh) return jiajunSupplement;
+        runtimeState.jiajunLoadPromise = fetch('./assets/data/jiajun-deadlines.json', { cache: 'no-cache' })
+            .then(async response => {
+                if (!response.ok) throw new Error(`JSON HTTP ${response.status}`);
+                const payload = await response.json();
+                if (!payload || !Array.isArray(payload.conferences) || !payload.conferences.length) {
+                    throw new Error('会议时间快照格式无效');
+                }
+                jiajunSupplement = payload.conferences;
+                runtimeState.jiajunWarning = '';
+                applyDeadlineSupplement();
+                return jiajunSupplement;
+            }).catch(error => {
+                console.warn('[CCFDDL] Jiajun deadlines snapshot unavailable:', error);
+                runtimeState.jiajunWarning = '会议时间快照暂不可用';
+                if (currentMode === 'deadlines' && baseConfData.length) scheduleUpdateView();
+                return null;
+            }).finally(() => {
+                runtimeState.jiajunLoadPromise = null;
+            });
+        return runtimeState.jiajunLoadPromise;
+    }
+
+    async function loadCycleSupplement(forceRefresh = false) {
+        if (runtimeState.cycleLoadPromise) return runtimeState.cycleLoadPromise;
+        if (cycleSupplement && !forceRefresh) return cycleSupplement;
+        runtimeState.cycleLoadPromise = fetch('./assets/data/ccf-cycle-deadlines.json', { cache: 'no-cache' })
+            .then(async response => {
+                if (!response.ok) throw new Error(`JSON HTTP ${response.status}`);
+                const payload = await response.json();
+                if (!payload || !Array.isArray(payload.conferences) || !payload.conferences.length) {
+                    throw new Error('CCF Cycle 快照格式无效');
+                }
+                cycleSupplement = payload.conferences;
+                runtimeState.cycleWarning = '';
+                applyDeadlineSupplement();
+                return cycleSupplement;
+            }).catch(error => {
+                console.warn('[CCFDDL] CCF Cycle snapshot unavailable:', error);
+                runtimeState.cycleWarning = 'CCF Cycle 补充暂不可用';
+                if (currentMode === 'deadlines' && baseConfData.length) scheduleUpdateView();
+                return null;
+            }).finally(() => {
+                runtimeState.cycleLoadPromise = null;
+            });
+        return runtimeState.cycleLoadPromise;
     }
 
     async function fetchConferencesData(forceRefresh = false) {
@@ -1570,12 +1683,12 @@ document.addEventListener('DOMContentLoaded', () => {
             : [];
 
         loadDeadlineSupplement(forceRefresh);
+        loadJiajunSupplement(forceRefresh);
+        loadCycleSupplement(forceRefresh);
 
         if (!runtimeState.deadlinesLoaded && hydratedCache.length > 0) {
             baseConfData = hydratedCache;
-            confData = deadlineSupplement
-                ? window.CCFDeadlineSupplement.merge(baseConfData, deadlineSupplement).map(finalizeConferenceEntry)
-                : baseConfData;
+            confData = combinedDeadlineData();
             runtimeState.deadlinesLoaded = true;
             if (currentMode === 'deadlines') {
                 initDeadlineFilters();
@@ -1629,9 +1742,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (rawData.length === 0) {
                 if (hydratedCache.length > 0) {
                     baseConfData = hydratedCache;
-                    confData = deadlineSupplement
-                        ? window.CCFDeadlineSupplement.merge(baseConfData, deadlineSupplement).map(finalizeConferenceEntry)
-                        : baseConfData;
+                    confData = combinedDeadlineData();
                     runtimeState.deadlinesLoaded = true;
                     setWarningMessage('网络更新失败，已显示缓存数据');
                     if (currentMode === 'deadlines') {
@@ -1650,9 +1761,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             baseConfData = mergeConfData(rawData);
-            confData = deadlineSupplement
-                ? window.CCFDeadlineSupplement.merge(baseConfData, deadlineSupplement).map(finalizeConferenceEntry)
-                : baseConfData;
+            confData = combinedDeadlineData();
             runtimeState.deadlinesLoaded = true;
             writeCachedData(STORAGE_KEYS.deadlines, baseConfData);
             setWarningMessage(
@@ -1688,7 +1797,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 动态生成下拉筛选器
     // ==========================================
-    function initDeadlineFilters() {
+    function initDeadlineFilters(preserveSelection = false) {
         const categories = new Set();
         const levels = new Set();
         const years = new Set();
@@ -1701,15 +1810,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         createMultiSelect('category-filter', Array.from(categories)
             .sort((a, b) => a === 'EXT' ? 1 : b === 'EXT' ? -1 : compareText(a, b))
-            .map(sub => ({value: sub, label: subMap[sub] || sub})), '所有领域');
-        createMultiSelect('level-filter', Array.from(levels).sort().map(lvl => ({value: lvl, label: lvl === 'N' ? '未标注 / 无评级' : `CCF-${lvl}`})), '所有级别');
-        createMultiSelect('year-filter', Array.from(years).sort((a,b)=>b-a).map(y => ({value: y, label: y})), '所有年份');
+            .map(sub => ({value: sub, label: subMap[sub] || sub})), '所有领域', preserveSelection);
+        createMultiSelect('level-filter', Array.from(levels).sort().map(lvl => ({value: lvl, label: lvl === 'N' ? '未标注 / 无评级' : `CCF-${lvl}`})), '所有级别', preserveSelection);
+        createMultiSelect('year-filter', Array.from(years).sort((a,b)=>b-a).map(y => ({value: y, label: y})), '所有年份', preserveSelection);
         
         createMultiSelect('deadline-filter', [
             {value: 'upcoming', label: '即将截稿 (30天内)'},
             {value: 'open', label: '开放投稿'},
             {value: 'passed', label: '已截稿'}
-        ], '所有状态');
+        ], '所有状态', preserveSelection);
     }
     
     function initCCFListFilters() {
@@ -1873,8 +1982,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getTimelineDeadlineMs(item, fallbackTimezone) {
+        if (item.dateOnly) return null;
         if (Number.isFinite(item.deadlineMs)) return item.deadlineMs;
         return getAbsoluteMs(item.deadline, item.timezone || fallbackTimezone);
+    }
+
+    function formatTimelineEvent(item, fallbackTimezone) {
+        if (item.dateOnly) {
+            const range = item.endDate ? `${item.date} — ${item.endDate}` : item.date;
+            return `${range}${item.timezone && item.timezone !== 'UTC' ? ` (${item.timezone})` : ''}`;
+        }
+        return formatToSelectedTz(getTimelineDeadlineMs(item, fallbackTimezone), selectedTimezone,
+            item.timezone || fallbackTimezone);
     }
 
     function formatDeadlineLabel(comment) {
@@ -1897,11 +2016,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }];
 
         return timeline.map(item => {
-            const timezone = item.timezone || fallbackTimezone;
-            const ms = getTimelineDeadlineMs(item, timezone);
             return {
                 label: formatDeadlineLabel(item.comment || fallbackStatus.comment),
-                formatted: formatToSelectedTz(ms, selectedTimezone, timezone)
+                formatted: formatTimelineEvent(item, fallbackTimezone)
             };
         });
     }
@@ -2061,19 +2178,24 @@ document.addEventListener('DOMContentLoaded', () => {
     function openDeadlineModal(conf, trigger) {
         if (!deadlineModal || !deadlineModalContent) return;
         const edition = conf.confs[0];
-        const source = conf.supplementOnly ? 'Hugging Face AI Deadlines 补充' :
-            conf.enriched ? 'CCF-Deadlines · Hugging Face AI Deadlines 补充' : 'CCF-Deadlines';
+        const sources = [conf.supplementOnly ? '' : 'CCF-Deadlines',
+            (conf.enriched || conf.aiOnly) ? 'Hugging Face AI Deadlines' : '',
+            (conf.pwcEnriched || conf.pwcOnly) ? 'Papers with Code' : '',
+            (conf.jiajunEnriched || conf.jiajunOnly) ? 'Jiajun Huang Deadlines' : '',
+            (conf.cycleEnriched || conf.cycleOnly) ? 'CCF Cycle' : ''].filter(Boolean);
+        const source = sources.join(' · ');
         const typeNames = {
             abstract: '摘要', paper: '论文投稿', registration: '注册',
             review_release: '审稿意见公布', rebuttal_start: '答辩开始',
             rebuttal_end: '答辩结束', notification: '结果通知',
-            camera_ready: '终稿', supplementary: '补充材料'
+            camera_ready: '终稿', supplementary: '补充材料', rebuttal: '答辩',
+            revision_due: '修订截止', milestone: '时间节点'
         };
         const eventsHTML = (edition.timeline || []).map(event => {
             const ms = getTimelineDeadlineMs(event, edition.timezone);
             const type = window.CCFDeadlineSupplement.typeOf(event);
-            const round = window.CCFDeadlineSupplement.roundOf(event.comment);
-            const date = formatToSelectedTz(ms, selectedTimezone, event.timezone || edition.timezone);
+            const round = event.cycle || window.CCFDeadlineSupplement.roundOf(event.comment);
+            const date = formatTimelineEvent(event, edition.timezone);
             return `<li class="deadline-timeline-item ${Number.isFinite(ms) && ms < Date.now() ? 'is-past' : ''}">
                 <span class="deadline-timeline-dot" aria-hidden="true"></span>
                 <div class="deadline-timeline-card">
@@ -2083,7 +2205,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="deadline-timeline-meta">
                         <span>${escapeDisplayText(typeNames[type] || type, '事件')}</span>
-                        <span>${event.source === 'aideadlines' ? 'Hugging Face AI Deadlines' : 'CCF-Deadlines'}</span>
+                        <span>${event.source === 'aideadlines' ? 'Hugging Face AI Deadlines' : event.source === 'paperswithcode' ? 'Papers with Code' : event.source === 'jiajun' ? 'Jiajun Huang Deadlines' : event.source === 'ccfcycle' ? 'CCF Cycle' : 'CCF-Deadlines'}</span>
                     </div>
                     <time class="no-translate">${escapeDisplayText(date, 'TBD')}</time>
                 </div>
@@ -2091,6 +2213,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
         const tags = (edition.tags || []).map(tag =>
             `<span class="deadline-detail-tag no-translate">${escapeHTML(tag)}</span>`
+        ).join('');
+        const yearChanges = (edition.yearChanges || []).map(change =>
+            `<li>${escapeDisplayText(change)}</li>`
         ).join('');
         const rank = conf.supplementOnly ? '未标注' : (conf.rank?.ccf || 'N');
         deadlineModalContent.innerHTML = `
@@ -2107,7 +2232,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${edition.venue ? `<div class="deadline-detail-wide"><span>会场</span><strong>${escapeDisplayText(edition.venue)}</strong></div>` : ''}
             </div>
             ${tags ? `<div class="deadline-detail-tags">${tags}</div>` : ''}
-            <div class="deadline-detail-link">${buildLinkHTML(edition.link, '访问会议官网 ↗', 'table-link')}</div>
+            <div class="deadline-detail-link">
+                ${buildLinkHTML(edition.link, '访问会议官网 ↗', 'table-link')}
+                ${edition.cfpUrl ? buildLinkHTML(edition.cfpUrl, 'Call for Papers ↗', 'table-link') : ''}
+                ${edition.dblpUrl ? buildLinkHTML(edition.dblpUrl, 'DBLP 论文入口 ↗', 'table-link') : ''}
+            </div>
+            ${yearChanges ? `<h3 class="deadline-detail-section-title">与去年相比的变化</h3><ul class="deadline-year-changes">${yearChanges}</ul>` : ''}
             <h3 class="deadline-detail-section-title">完整时间线</h3>
             <p class="deadline-detail-hint">按当前页面选择的时区显示；仅列出数据源提供的日期。</p>
             ${eventsHTML ? `<ol class="deadline-timeline">${eventsHTML}</ol>` : '<p>暂无可用时间节点</p>'}
@@ -2563,7 +2693,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const warningSuffix = runtimeState.warningMessage ? ` · ${runtimeState.warningMessage}` : '';
             const supplementSuffix = currentMode === 'deadlines' && runtimeState.supplementWarning
                 ? ` · ${runtimeState.supplementWarning}` : '';
-            totalCountSpan.textContent = `已检索到 ${filteredData.length} 个结果${warningSuffix}${supplementSuffix}`;
+            const jiajunSuffix = currentMode === 'deadlines' && runtimeState.jiajunWarning
+                ? ` · ${runtimeState.jiajunWarning}` : '';
+            const cycleSuffix = currentMode === 'deadlines' && runtimeState.cycleWarning
+                ? ` · ${runtimeState.cycleWarning}` : '';
+            totalCountSpan.textContent = `已检索到 ${filteredData.length} 个结果${warningSuffix}${supplementSuffix}${jiajunSuffix}${cycleSuffix}`;
         }
 
         // --- 分页逻辑 ---
