@@ -218,7 +218,10 @@ async function fetchPromptSources() {
                 throw new Error(`提示词「${name}」包含无效 path`);
             }
 
-            if (typeof tag !== 'string' || tag.trim() === '') {
+            if (
+                !Array.isArray(tag)
+                || tag.some(item => typeof item !== 'string' || item.trim() === '')
+            ) {
                 throw new Error(`提示词「${name}」包含无效 tag`);
             }
 
@@ -266,7 +269,7 @@ function parsePromptSources(promptSources) {
                 body,
                 sourceIndex,
                 charCount: Array.from(body).length,
-                searchText: `${source.name}\n${source.tag}\n${body}`
+                searchText: `${source.name}\n${source.tag.join('\n')}\n${body}`
                     .toLocaleLowerCase('zh-CN')
             };
         })
@@ -406,11 +409,15 @@ function createPromptCard(prompt) {
     categoryBadge.className = 'category-badge';
     categoryBadge.textContent = prompt.category;
 
-    const tagBadge = document.createElement('span');
-    tagBadge.className = 'category-badge';
-    tagBadge.textContent = prompt.tag;
+    badgeGroup.append(categoryBadge);
 
-    badgeGroup.append(categoryBadge, tagBadge);
+    prompt.tag.forEach(tag => {
+        const tagBadge = document.createElement('span');
+        tagBadge.className = 'category-badge';
+        tagBadge.textContent = tag;
+
+        badgeGroup.append(tagBadge);
+    });
 
     const number = document.createElement('span');
     number.className = 'prompt-number';
@@ -531,7 +538,8 @@ function openPromptModal(prompt, trigger) {
     appState.currentPrompt = prompt;
     appState.lastFocusedElement = trigger || document.activeElement;
     UI.modalTitle.textContent = prompt.name;
-    UI.modalCategory.textContent = `${prompt.category} · ${prompt.tag}`;
+    UI.modalCategory.textContent =
+    `${prompt.category} · ${prompt.tag.join(' · ')}`;
     UI.modalMeta.textContent = `${formatNumber(prompt.charCount)} 字`;
     UI.modalBody.textContent = prompt.body;
     UI.modalBody.scrollTop = 0;

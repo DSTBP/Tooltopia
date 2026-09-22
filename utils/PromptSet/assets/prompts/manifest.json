@@ -3,22 +3,22 @@
     {
       "name": "主题文献检索",
       "path": "./literature-research/literature-search.md",
-      "tag": "需适配"
+      "tag": ["需适配"]
     },
     {
       "name": "标准文献阅读模板",
       "path": "./literature-research/standard-literature-record.md",
-      "tag": ""
+      "tag": []
     },
     {
       "name": "综述文献阅读模板",
       "path": "./literature-research/survey-literature-reading-template.md",
-      "tag": "需适配"
+      "tag": ["需适配"]
     },
     {
       "name": "顶会录用状态",
       "path": "./literature-research/conference-acceptance-status.md",
-      "tag": "需适配"
+      "tag": ["需适配"]
     }
   ],
 
@@ -26,27 +26,27 @@
     {
       "name": "密码学原语解释",
       "path": "./academic-support/cryptographic-primitives.md",
-      "tag": ""
+      "tag": []
     },
     {
       "name": "核心原理概述",
       "path": "./academic-support/principle-overview.md",
-      "tag": "需适配"
+      "tag": ["需适配"]
     },
     {
       "name": "段落翻译",
       "path": "./academic-support/translation.md",
-      "tag": ""
+      "tag": []
     },
     {
       "name": "快速理解论文方案",
       "path": "./academic-support/quick-understanding.md",
-      "tag": "需适配"
+      "tag": ["需适配"]
     },
     {
       "name": "GPT 提示词规范",
       "path": "./academic-support/gpt-prompt-guidelines.md",
-      "tag": ""
+      "tag": []
     }
   ],
 
@@ -59,17 +59,17 @@
     {
       "name": "代码清理",
       "path": "./engineering/code-cleanup.md",
-      "tag": "需确认"
+      "tag": ["需确认"]
     },
     {
       "name": "代码编写",
       "path": "./engineering/code-writing.md",
-      "tag": "未完成"
+      "tag": ["未完成"]
     },
     {
       "name": "反防御性代码",
       "path": "./engineering/anti-defensive-code.md",
-      "tag": ""
+      "tag": []
     }
   ],
 
