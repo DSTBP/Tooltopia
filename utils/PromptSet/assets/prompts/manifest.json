@@ -8,7 +8,7 @@
     {
       "name": "标准文献阅读模板",
       "path": "./literature-research/standard-literature-record.md",
-      "tag": "直接使用"
+      "tag": ""
     },
     {
       "name": "综述文献阅读模板",
@@ -26,12 +26,17 @@
     {
       "name": "密码学原语解释",
       "path": "./academic-support/cryptographic-primitives.md",
+      "tag": ""
+    },
+    {
+      "name": "核心原理概述",
+      "path": "./academic-support/principle-overview.md",
       "tag": "需适配"
     },
     {
-      "name": "论文段落翻译",
+      "name": "段落翻译",
       "path": "./academic-support/translation.md",
-      "tag": "需适配"
+      "tag": ""
     },
     {
       "name": "快速理解论文方案",
@@ -41,7 +46,7 @@
     {
       "name": "GPT 提示词规范",
       "path": "./academic-support/gpt-prompt-guidelines.md",
-      "tag": "直接使用"
+      "tag": ""
     }
   ],
 
@@ -49,22 +54,22 @@
     {
       "name": "项目结构整理",
       "path": "./engineering/project-structure.md",
-      "tag": "需适配"
+      "tag": ["需适配", "需确认"]
     },
     {
       "name": "代码清理",
       "path": "./engineering/code-cleanup.md",
-      "tag": "需适配"
+      "tag": "需确认"
     },
     {
       "name": "代码编写",
       "path": "./engineering/code-writing.md",
-      "tag": "需适配"
+      "tag": "未完成"
     },
     {
       "name": "反防御性代码",
       "path": "./engineering/anti-defensive-code.md",
-      "tag": "需适配"
+      "tag": ""
     }
   ],
 

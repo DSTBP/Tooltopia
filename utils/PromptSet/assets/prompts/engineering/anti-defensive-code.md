@@ -1,6 +1,5 @@
 ## 反防御性代码
 
-=== SCOPE LIMITS (these bound what you PROPOSE, never what you look for) ===
 Report anything that is actually wrong here — including a rare-looking case, if
 this project actually produces it. Then keep the fix in scope:
 
