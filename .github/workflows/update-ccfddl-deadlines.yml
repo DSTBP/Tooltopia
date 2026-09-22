@@ -28,8 +28,10 @@ jobs:
       - name: Test deadline parsers
         run: python -m unittest discover -s scripts/tests -p "test_*_deadlines.py" -v
 
-      - name: Test conference merge
-        run: node scripts/tests/test_ccf_deadline_merge.js
+      - name: Test conference merge and timeline
+        run: |
+          node scripts/tests/test_ccf_deadline_merge.js
+          node scripts/tests/test_ccf_deadline_chart.js
 
       - name: Refresh Jiajun conference times
         id: jiajun

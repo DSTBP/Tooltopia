@@ -191,14 +191,19 @@
                             <span id="total-count">正在获取数据...</span>
                         </div>
 
-                        <div class="page-size-control" aria-label="每页展示数量">
-                            <span class="page-size-label">每页</span>
-                            <div class="page-size-buttons" role="group" aria-label="选择每页展示数量">
-                                <button type="button" class="page-size-btn active" data-page-size="25" aria-pressed="true">25</button>
-                                <button type="button" class="page-size-btn" data-page-size="50" aria-pressed="false">50</button>
-                                <button type="button" class="page-size-btn" data-page-size="100" aria-pressed="false">100</button>
+                        <div class="page-size-and-chart">
+                            <div class="page-size-control" aria-label="每页展示数量">
+                                <span class="page-size-label">每页</span>
+                                <div class="page-size-buttons" role="group" aria-label="选择每页展示数量">
+                                    <button type="button" class="page-size-btn active" data-page-size="25" aria-pressed="true">25</button>
+                                    <button type="button" class="page-size-btn" data-page-size="50" aria-pressed="false">50</button>
+                                    <button type="button" class="page-size-btn" data-page-size="100" aria-pressed="false">100</button>
+                                </div>
+                                <span class="page-size-label">条</span>
                             </div>
-                            <span class="page-size-label">条</span>
+                            <button type="button" id="deadline-chart-toggle" class="deadline-chart-toggle" aria-controls="deadline-chart-section" aria-label="显示会议时间轴" aria-pressed="false" title="显示会议时间轴">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                            </button>
                         </div>
 
                         <!-- <div class="layout-toggles">
@@ -214,6 +219,48 @@
                         </div> -->
                     </div>
                 </div>
+
+                <section id="deadline-chart-section" class="deadline-chart-section" aria-label="会议时间轴" hidden>
+                    <div class="deadline-chart-heading">
+                        <div>
+                            <h2>会议时间轴</h2>
+                            <p>查看会议投稿与审稿的关键时间节点</p>
+                        </div>
+                        <div class="deadline-chart-mode" role="group" aria-label="时间轴会议范围">
+                            <button type="button" class="deadline-chart-btn active" data-chart-mode="auto" aria-pressed="true">自动前 3 条</button>
+                            <button type="button" class="deadline-chart-btn" data-chart-mode="custom" aria-pressed="false">我的关注</button>
+                        </div>
+                    </div>
+                    <div class="deadline-chart-controls">
+                        <details id="deadline-chart-picker" class="deadline-chart-picker">
+                            <summary>选择会议 <span id="deadline-chart-selected-count">(0)</span></summary>
+                            <div class="deadline-chart-picker-panel">
+                                <label for="deadline-chart-search">搜索会议</label>
+                                <input id="deadline-chart-search" type="search" placeholder="输入会议简称或全称..." autocomplete="off">
+                                <div id="deadline-chart-options" class="deadline-chart-options" role="group" aria-label="可关注的会议"></div>
+                            </div>
+                        </details>
+                        <div class="deadline-chart-ranges" role="group" aria-label="时间轴范围">
+                            <button type="button" class="deadline-chart-btn" data-chart-range="3M" aria-pressed="false">3M</button>
+                            <button type="button" class="deadline-chart-btn" data-chart-range="6M" aria-pressed="false">6M</button>
+                            <button type="button" class="deadline-chart-btn active" data-chart-range="1Y" aria-pressed="true">1Y</button>
+                            <button type="button" class="deadline-chart-btn" data-chart-range="ALL" aria-pressed="false">ALL</button>
+                        </div>
+                    </div>
+                    <div class="deadline-chart-legend" aria-label="时间节点图例">
+                        <span><i class="chart-swatch chart-deadline"></i>Deadline</span>
+                        <span><i class="chart-swatch chart-review"></i>Review</span>
+                        <span><i class="chart-swatch chart-rebuttal"></i>Rebuttal</span>
+                        <span><i class="chart-swatch chart-notification"></i>Notification</span>
+                        <span><i class="chart-swatch chart-camera"></i>Camera Ready</span>
+                        <span><i class="chart-swatch chart-conference"></i>Conference</span>
+                        <span><i class="chart-swatch chart-date-only"></i>仅日期</span>
+                    </div>
+                    <div id="deadline-chart-scroll" class="deadline-chart-scroll" tabindex="0" aria-label="可横向和纵向滚动的会议时间轴">
+                        <div id="deadline-chart-content"></div>
+                    </div>
+                    <p id="deadline-chart-status" class="deadline-chart-status" aria-live="polite"></p>
+                </section>
 
                 <section class="archive-section active" id="main-section">
                     <div id="ccf-list-notice" class="ccf-notice">
@@ -261,6 +308,7 @@
     <script src="assets/js/translate-init.js"></script>
     <script src="assets/js/theme-toggle.js"></script>
     <script src="assets/js/deadline-supplement.js"></script>
+    <script src="assets/js/deadline-chart.js"></script>
     <script src="assets/js/script.js"></script>
 </body>
 </html>

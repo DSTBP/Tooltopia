@@ -8,6 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const deadlineModal = document.getElementById('deadline-modal');
     const deadlineModalContent = document.getElementById('deadline-modal-content');
     const deadlineDialog = deadlineModal?.querySelector('.deadline-dialog');
+    const deadlineChartToggle = document.getElementById('deadline-chart-toggle');
+    const deadlineChartSection = document.getElementById('deadline-chart-section');
+    const deadlineChartContent = document.getElementById('deadline-chart-content');
+    const deadlineChartStatus = document.getElementById('deadline-chart-status');
+    const deadlineChartOptions = document.getElementById('deadline-chart-options');
+    const deadlineChartSearch = document.getElementById('deadline-chart-search');
+    const deadlineChartPicker = document.getElementById('deadline-chart-picker');
     let deadlineModalTrigger = null;
 
     let searchQuery = '';
@@ -46,7 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const STORAGE_KEYS = {
         deadlines: 'ccfddl.deadlines.cache.v3',
         acceptanceRates: 'ccfddl.acceptance.cache.v1',
-        pageSize: 'ccfddl.page-size.v1'
+        pageSize: 'ccfddl.page-size.v1',
+        timelineSelection: 'ccfddl.timeline.selection.v1'
     };
     const CACHE_TTL_MS = {
         deadlines: 30 * 60 * 1000,
@@ -1020,6 +1028,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 分页状态控制
     let currentPage = 1;
+    let lastFilteredDeadlineRows = [];
+    let deadlineChartVisible = false;
+    let deadlineChartRange = '1Y';
+    let deadlineChartMode = 'auto';
+    let selectedChartSeries = [];
+    try {
+        const saved = JSON.parse(safeStorage.get(STORAGE_KEYS.timelineSelection) || 'null');
+        if (saved && Array.isArray(saved.seriesIds)) {
+            selectedChartSeries = [...new Set(saved.seriesIds.filter(id => typeof id === 'string' && /^[a-z0-9]+$/.test(id)))];
+            if (saved.mode === 'custom') deadlineChartMode = 'custom';
+        }
+    } catch (_) {
+        // An unreadable preference should not prevent loading the deadlines.
+    }
     const PAGE_SIZE_OPTIONS = [25, 50, 100];
     const storedPageSize = Number.parseInt(safeStorage.get(STORAGE_KEYS.pageSize), 10);
     let itemsPerPage = PAGE_SIZE_OPTIONS.includes(storedPageSize) ? storedPageSize : 25;
@@ -1347,6 +1369,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (labelFilter3) labelFilter3.textContent = config.labels[2];
         if (filterCol4) filterCol4.style.display = config.showDeadlineFilter ? 'block' : 'none';
         if (timezoneWrapper) timezoneWrapper.style.display = config.showTimezone ? 'block' : 'none';
+        if (deadlineChartToggle) deadlineChartToggle.hidden = mode !== 'deadlines';
+        if (deadlineChartSection) deadlineChartSection.hidden = mode !== 'deadlines' || !deadlineChartVisible;
         dataNotices.forEach(notice => {
             if (notice) notice.style.display = notice === config.activeNotice ? 'flex' : 'none';
         });
@@ -2258,6 +2282,138 @@ document.addEventListener('DOMContentLoaded', () => {
         deadlineModalTrigger = null;
     }
 
+    function saveDeadlineChartSelection() {
+        safeStorage.set(STORAGE_KEYS.timelineSelection, JSON.stringify({
+            mode: deadlineChartMode,
+            seriesIds: selectedChartSeries
+        }));
+    }
+
+    function chartEventCategory(event) {
+        const type = window.CCFDeadlineSupplement.typeOf(event);
+        if (['paper', 'abstract', 'registration', 'commitment_deadline'].includes(type)) return 'deadline';
+        if (type === 'review_release') return 'review';
+        if (['rebuttal', 'rebuttal_start', 'rebuttal_end', 'rebuttal_and_revision', 'author_response'].includes(type)) return 'rebuttal';
+        if (['notification', 'final_decision', 'first_notification', 'final_notification'].includes(type)) return 'notification';
+        if (type === 'camera_ready') return 'camera';
+        return 'other';
+    }
+
+    function chartSourceLabel(source) {
+        return {
+            aideadlines: 'Hugging Face AI Deadlines', paperswithcode: 'Papers with Code',
+            jiajun: 'Jiajun Huang Deadlines', ccfcycle: 'CCF Cycle'
+        }[source] || 'CCF-Deadlines';
+    }
+
+    function renderDeadlineChartPicker() {
+        if (!deadlineChartOptions) return;
+        const chart = window.CCFDeadlineChart;
+        const latest = chart.latestSeries(confData);
+        const search = normalizeSearchText(deadlineChartSearch?.value || '');
+        const ids = [...latest.keys()].sort((a, b) => compareText(latest.get(a).title, latest.get(b).title));
+        for (const id of selectedChartSeries) if (!latest.has(id)) ids.unshift(id);
+        const visible = ids.filter(id => {
+            const conf = latest.get(id);
+            return !search || normalizeSearchText(id, conf?.title, conf?.description).includes(search);
+        });
+        deadlineChartOptions.innerHTML = visible.length ? visible.map(id => {
+            const conf = latest.get(id);
+            const label = conf ? `${conf.title} · ${conf.description || conf.title}` : `${id} · 暂无最新数据`;
+            return `<label class="deadline-chart-option"><input type="checkbox" data-chart-series="${escapeHTML(id)}"${selectedChartSeries.includes(id) ? ' checked' : ''}><span class="no-translate">${escapeHTML(label)}</span></label>`;
+        }).join('') : '<p class="deadline-chart-option-empty">没有匹配的会议</p>';
+        const count = document.getElementById('deadline-chart-selected-count');
+        if (count) count.textContent = `(${selectedChartSeries.length})`;
+    }
+
+    function renderDeadlineChart() {
+        if (!deadlineChartSection || !deadlineChartContent) return;
+        deadlineChartSection.hidden = currentMode !== 'deadlines' || !deadlineChartVisible;
+        if (deadlineChartToggle) {
+            deadlineChartToggle.setAttribute('aria-pressed', deadlineChartVisible ? 'true' : 'false');
+            deadlineChartToggle.setAttribute('aria-label', deadlineChartVisible ? '隐藏会议时间轴' : '显示会议时间轴');
+            deadlineChartToggle.title = deadlineChartVisible ? '隐藏会议时间轴' : '显示会议时间轴';
+            deadlineChartToggle.classList.toggle('active', deadlineChartVisible);
+        }
+        if (deadlineChartSection.hidden) return;
+
+        deadlineChartSection.querySelectorAll('[data-chart-mode]').forEach(button => {
+            const active = button.dataset.chartMode === deadlineChartMode;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        deadlineChartSection.querySelectorAll('[data-chart-range]').forEach(button => {
+            const active = button.dataset.chartRange === deadlineChartRange;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        renderDeadlineChartPicker();
+
+        const chart = window.CCFDeadlineChart;
+        const rows = chart.selectedRows(lastFilteredDeadlineRows, confData, deadlineChartMode, selectedChartSeries);
+        if (!rows.length) {
+            deadlineChartContent.innerHTML = `<p class="deadline-chart-empty">${deadlineChartMode === 'custom' ? '请选择需要关注的会议。' : runtimeState.deadlinesLoaded ? '当前筛选条件没有匹配的会议。' : '正在加载会议数据...'}</p>`;
+            if (deadlineChartStatus) deadlineChartStatus.textContent = '';
+            scheduleDynamicTranslation();
+            return;
+        }
+
+        const axis = chart.axisRange(rows, deadlineChartRange);
+        const ticks = chart.monthTicks(axis);
+        const axisWidth = Math.max(960, ticks.length * 78);
+        const today = Date.now();
+        const todayLine = today >= axis.start && today < axis.end
+            ? `<span class="deadline-chart-today" style="left:${chart.position(today, axis)}%" title="今日"></span>` : '';
+        const gridLines = ticks.map(tick =>
+            `<span class="deadline-chart-gridline" style="left:${tick.percent}%"></span>`).join('');
+        const monthFormatter = new Intl.DateTimeFormat('zh-CN', { timeZone: 'UTC', year: 'numeric', month: 'short' });
+        const monthLabels = ticks.map(tick =>
+            `<span class="deadline-chart-month" style="left:${tick.percent}%">${escapeHTML(monthFormatter.format(tick.ms))}</span>`).join('');
+        let visibleEvents = 0;
+        const rowHtml = rows.map(({ conf, id }) => {
+            if (!conf) return `<div class="deadline-chart-row"><div class="deadline-chart-name no-translate">${escapeHTML(id)}<small>暂无最新数据</small></div><div class="deadline-chart-track">${gridLines}${todayLine}</div></div>`;
+            const edition = conf.confs[0];
+            const confKey = window.CCFDeadlineSupplement.key(conf.title, edition.year);
+            const dates = chart.conferenceDates(conf);
+            let conferenceBar = '';
+            if (dates.length) {
+                const first = Math.max(axis.start, dates[0]);
+                const last = Math.min(axis.end, dates[1] || dates[0] + 24 * 60 * 60 * 1000);
+                if (last >= first && first < axis.end) {
+                    conferenceBar = `<span class="deadline-chart-conference-bar" style="left:${chart.position(first, axis)}%;width:${Math.max(0.45, chart.position(last, axis) - chart.position(first, axis))}%" title="会议日期：${escapeHTML(edition.date)}"></span>`;
+                }
+            }
+            const markerPositions = [];
+            const marks = (edition.timeline || []).map((event, index) => {
+                const ms = chart.eventMs(event);
+                const end = event.dateOnly ? chart.dayMs(event.endDate) : null;
+                if (ms === null || ms >= axis.end || (ms < axis.start && (end === null || end < axis.start))) return '';
+                visibleEvents += 1;
+                const category = chartEventCategory(event);
+                const label = `${event.comment || '时间节点'} · ${formatTimelineEvent(event, edition.timezone)} · ${chartSourceLabel(event.source)}${event.dateOnly ? ' · 仅日期' : ''}`;
+                const lane = index % 4;
+                const rangeBar = end !== null && end > ms
+                    ? `<span class="deadline-chart-event-range chart-${category}" style="left:${chart.position(Math.max(ms, axis.start), axis)}%;width:${Math.max(0.45, chart.position(Math.min(end, axis.end), axis) - chart.position(Math.max(ms, axis.start), axis))}%"></span>` : '';
+                const markerTop = 18 + lane * 21;
+                if (ms >= axis.start) markerPositions.push(chart.position(ms, axis));
+                const marker = ms >= axis.start
+                    ? `<span class="deadline-chart-stem" style="left:${chart.position(ms, axis)}%;top:${Math.min(markerTop + 10, 58)}px;height:${Math.abs(markerTop + 10 - 58)}px"></span><button type="button" class="deadline-chart-marker chart-${category}${event.dateOnly ? ' is-date-only' : ''}" style="left:${chart.position(ms, axis)}%;top:${markerTop}px" data-chart-conf="${escapeHTML(confKey)}" title="${escapeHTML(label)}" aria-label="${escapeHTML(conf.title + ' ' + label)}"><span class="deadline-chart-marker-dot"></span><span class="deadline-chart-marker-tooltip">${escapeHTML(label)}</span></button>` : '';
+                return rangeBar + marker;
+            }).join('');
+            const firstMarker = Math.min(...markerPositions);
+            const lastMarker = Math.max(...markerPositions);
+            const connectingLine = markerPositions.length > 1
+                ? `<span class="deadline-chart-connector" style="left:${firstMarker}%;width:${lastMarker - firstMarker}%"></span>` : '';
+            const dateText = edition.date && edition.date !== 'TBA' ? edition.date : '会议日期待定';
+            return `<div class="deadline-chart-row"><div class="deadline-chart-name"><button type="button" class="no-translate" data-chart-conf="${escapeHTML(confKey)}">${escapeHTML(conf.title)}</button><small>${escapeHTML(dateText)}</small></div><div class="deadline-chart-track">${gridLines}${todayLine}<span class="deadline-chart-baseline"></span>${connectingLine}${conferenceBar}${marks}</div></div>`;
+        }).join('');
+        deadlineChartContent.innerHTML = `<div class="deadline-chart-grid" style="--chart-track-width:${axisWidth}px"><div class="deadline-chart-axis"><div class="deadline-chart-axis-title">会议</div><div class="deadline-chart-axis-track">${gridLines}${monthLabels}${todayLine}</div></div>${rowHtml}</div>`;
+        if (deadlineChartStatus) deadlineChartStatus.textContent = visibleEvents
+            ? `显示 ${rows.length} 条会议 · ${visibleEvents} 个时间节点`
+            : `显示 ${rows.length} 条会议 · 当前范围无时间节点，试试 ALL`;
+        scheduleDynamicTranslation();
+    }
+
     function createCCFTableHTML(dataList) {
         if (!dataList || dataList.length === 0) {
             return '<p class="empty-text" style="grid-column: 1/-1; text-align: center;">未找到符合条件的 CCF 推荐数据</p>';
@@ -2497,7 +2653,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- 分支 1：CCF Deadlines 数据逻辑 ---
         if (currentMode === 'deadlines') {
-            if (!confData || confData.length === 0) return;
+            if (!confData || confData.length === 0) {
+                lastFilteredDeadlineRows = [];
+                renderDeadlineChart();
+                return;
+            }
             
             filteredData = confData.map(conf => {
                 return { conf: conf, statusInfo: getConfStatus(conf) };
@@ -2579,6 +2739,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cmp = compareText(valA, valB);
                 return deadlineSortConfig.asc ? cmp : -cmp;
             });
+
+            lastFilteredDeadlineRows = filteredData;
+            renderDeadlineChart();
 
         // --- 分支 2：CCF推荐列表 数据逻辑 ---
         } else if (currentMode === 'ccf_list') {
@@ -2845,6 +3008,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     syncPageSizeButtons();
+
+    deadlineChartToggle?.addEventListener('click', () => {
+        deadlineChartVisible = !deadlineChartVisible;
+        renderDeadlineChart();
+    });
+    deadlineChartSection?.addEventListener('click', event => {
+        const modeButton = event.target.closest('[data-chart-mode]');
+        if (modeButton) {
+            deadlineChartMode = modeButton.dataset.chartMode;
+            saveDeadlineChartSelection();
+            if (deadlineChartMode === 'custom' && !selectedChartSeries.length && deadlineChartPicker) {
+                deadlineChartPicker.open = true;
+                deadlineChartSearch?.focus();
+            }
+            renderDeadlineChart();
+            return;
+        }
+        const rangeButton = event.target.closest('[data-chart-range]');
+        if (rangeButton) {
+            deadlineChartRange = rangeButton.dataset.chartRange;
+            renderDeadlineChart();
+            return;
+        }
+        const conferenceButton = event.target.closest('[data-chart-conf]');
+        if (conferenceButton) {
+            const conf = confData.find(item => window.CCFDeadlineSupplement.key(item.title, item.confs[0].year) === conferenceButton.dataset.chartConf);
+            if (conf) openDeadlineModal(conf, conferenceButton);
+        }
+    });
+    deadlineChartOptions?.addEventListener('change', event => {
+        const checkbox = event.target.closest('input[data-chart-series]');
+        if (!checkbox) return;
+        const id = checkbox.dataset.chartSeries;
+        if (checkbox.checked && !selectedChartSeries.includes(id)) selectedChartSeries.push(id);
+        else if (!checkbox.checked) selectedChartSeries = selectedChartSeries.filter(value => value !== id);
+        deadlineChartMode = selectedChartSeries.length ? 'custom' : 'auto';
+        saveDeadlineChartSelection();
+        renderDeadlineChart();
+        deadlineChartOptions.querySelector(`input[data-chart-series="${id}"]`)?.focus();
+    });
+    deadlineChartSearch?.addEventListener('input', renderDeadlineChartPicker);
 
     // 初始化默认模式
     setMode('deadlines');
