@@ -119,6 +119,19 @@ window.CCFDeadlineChart = (() => {
         };
     }
 
+    function panAxis(axis, pixels, width) {
+        const offset = pixels / width * (axis.end - axis.start);
+        return { start: axis.start - offset, end: axis.end - offset };
+    }
+
+    function centeredAxis(axis, range) {
+        const months = { '3M': 3, '6M': 6, '1Y': 12 }[range];
+        const center = (axis.start + axis.end) / 2;
+        const month = monthStart(center);
+        const span = shiftMonths(month, months) - month;
+        return { start: center - span / 2, end: center + span / 2 };
+    }
+
     function position(ms, axis) {
         return (ms - axis.start) / (axis.end - axis.start) * 100;
     }
@@ -142,5 +155,5 @@ window.CCFDeadlineChart = (() => {
         return bands;
     }
 
-    return { seriesId, latestSeries, selectedRows, dayMs, eventMs, eventPeriods, conferenceDates, axisRange, position, monthTicks, yearBands };
+    return { seriesId, latestSeries, selectedRows, dayMs, eventMs, eventPeriods, conferenceDates, axisRange, panAxis, centeredAxis, position, monthTicks, yearBands };
 })();
