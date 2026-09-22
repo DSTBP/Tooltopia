@@ -1311,6 +1311,13 @@ body.day-mode .sort-icon.active {
 }
 .deadline-chart-axis-title { z-index: 8; display: flex; align-items: center; font-weight: 600; color: #cbd5e1; }
 .deadline-chart-axis-track, .deadline-chart-track { position: relative; min-width: 0; overflow: visible; cursor: grab; }
+.deadline-chart-axis-track, .deadline-chart-track { overflow-x: clip; overflow-y: visible; }
+.deadline-chart-row-grid, .deadline-chart-events { position: absolute; inset: 0; pointer-events: none; }
+.deadline-chart-row-grid { z-index: 0; }
+.deadline-chart-events { z-index: 1; will-change: transform; }
+.deadline-chart-events .deadline-chart-marker,
+.deadline-chart-events .deadline-chart-period,
+.deadline-chart-events .deadline-chart-conference-bar { pointer-events: auto; }
 .deadline-chart-scroll.is-dragging .deadline-chart-axis-track,
 .deadline-chart-scroll.is-dragging .deadline-chart-track { cursor: grabbing; }
 .deadline-chart-year { position: absolute; top: 0; height: 32px; box-sizing: border-box; padding: 7px 8px; border-right: 1px solid rgba(255,255,255,0.12); color: #e5e7eb; font-size: 0.92rem; font-weight: 700; overflow: hidden; white-space: nowrap; }

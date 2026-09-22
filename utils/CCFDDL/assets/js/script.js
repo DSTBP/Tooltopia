@@ -1034,6 +1034,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let deadlineChartRange = '1Y';
     let deadlineChartMode = 'auto';
     let deadlineChartAxis = null;
+    let deadlineChartWorldAxis = null;
     let deadlineChartPanned = false;
     let deadlineChartDataRef = null;
     let deadlineChartRowsKey = '';
@@ -2334,55 +2335,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (count) count.textContent = `(${selectedChartSeries.length})`;
     }
 
-    function renderDeadlineChart({ contentOnly = false, translate = true } = {}) {
-        if (!deadlineChartSection || !deadlineChartContent) return;
-        if (!contentOnly) {
-            deadlineChartSection.hidden = currentMode !== 'deadlines' || !deadlineChartVisible;
-            if (deadlineChartToggle) {
-                deadlineChartToggle.setAttribute('aria-pressed', deadlineChartVisible ? 'true' : 'false');
-                deadlineChartToggle.setAttribute('aria-label', deadlineChartVisible ? '隐藏会议时间轴' : '显示会议时间轴');
-                deadlineChartToggle.title = deadlineChartVisible ? '隐藏会议时间轴' : '显示会议时间轴';
-                deadlineChartToggle.classList.toggle('active', deadlineChartVisible);
-            }
-        }
-        if (deadlineChartSection.hidden) return;
-
-        if (!contentOnly) {
-            deadlineChartSection.querySelectorAll('[data-chart-mode]').forEach(button => {
-                const active = button.dataset.chartMode === deadlineChartMode;
-                button.classList.toggle('active', active);
-                button.setAttribute('aria-pressed', active ? 'true' : 'false');
-            });
-            deadlineChartSection.querySelectorAll('[data-chart-range]').forEach(button => {
-                const active = button.dataset.chartRange === deadlineChartRange;
-                button.classList.toggle('active', active);
-                button.setAttribute('aria-pressed', active ? 'true' : 'false');
-            });
-            renderDeadlineChartPicker();
-        }
-
+    // Only the calendar grid moves with the visible date window. Conference events
+    // remain mounted at their original coordinates and are translated as one layer.
+    function updateDeadlineChartViewport({ translate = true, updateFocus = true } = {}) {
+        if (!deadlineChartAxis || !deadlineChartWorldAxis || !deadlineChartScroll) return;
         const chart = window.CCFDeadlineChart;
-        const rows = chart.selectedRows(lastFilteredDeadlineRows, confData, deadlineChartMode, selectedChartSeries);
-        const rowsKey = rows.map(({ conf, id }) => conf
-            ? window.CCFDeadlineSupplement.key(conf.title, conf.confs[0].year) : `missing:${id}`).join('|');
-        const rowsChanged = deadlineChartDataRef !== confData || deadlineChartRowsKey !== rowsKey;
-        deadlineChartDataRef = confData;
-        deadlineChartRowsKey = rowsKey;
-        if (!rows.length) {
-            deadlineChartContent.innerHTML = `<p class="deadline-chart-empty">${deadlineChartMode === 'custom' ? '请选择需要关注的会议。' : runtimeState.deadlinesLoaded ? '当前筛选条件没有匹配的会议。' : '正在加载会议数据...'}</p>`;
-            if (deadlineChartStatus) deadlineChartStatus.textContent = '';
-            if (translate) scheduleDynamicTranslation();
-            return;
-        }
-
-        if (!deadlineChartAxis || (deadlineChartRange === 'ALL' && rowsChanged)) {
-            deadlineChartAxis = chart.axisRange(rows, deadlineChartRange);
-            if (deadlineChartRange === 'ALL') deadlineChartPanned = false;
-        }
         const axis = deadlineChartAxis;
         const ticks = chart.monthTicks(axis);
-        const labelWidth = Number.parseFloat(getComputedStyle(deadlineChartScroll).getPropertyValue('--chart-label-width')) || 220;
-        const axisWidth = Math.max(1, deadlineChartScroll.clientWidth - labelWidth);
+        const axisTrack = deadlineChartContent.querySelector('.deadline-chart-axis-track');
+        if (!axisTrack) return;
+        const axisWidth = Math.max(1, axisTrack.clientWidth);
         const today = Date.now();
         const todayVisible = today >= axis.start && today < axis.end;
         const todayPosition = todayVisible ? chart.position(today, axis) : null;
@@ -2403,64 +2365,126 @@ document.addEventListener('DOMContentLoaded', () => {
             return true;
         }).map(tick =>
             `<span class="deadline-chart-month" style="left:${tick.percent}%">${escapeHTML(monthFormatter.format(tick.ms))}</span>`).join('');
-        let visibleEvents = 0;
+        axisTrack.innerHTML = `${yearLabels}${gridLines}${monthLabels}${todayLine}${todayLabel}`;
+        deadlineChartContent.querySelectorAll('.deadline-chart-row-grid').forEach(grid => {
+            grid.innerHTML = gridLines + todayLine;
+        });
+        const world = deadlineChartWorldAxis;
+        const offset = (world.start - axis.start) / (world.end - world.start) * axisWidth;
+        deadlineChartContent.querySelectorAll('.deadline-chart-events').forEach(layer => {
+            layer.style.transform = `translate3d(${offset}px, 0, 0)`;
+        });
+        if (updateFocus) deadlineChartContent.querySelectorAll('[data-chart-time-start]').forEach(node => {
+            const start = Number(node.dataset.chartTimeStart);
+            const end = Number(node.dataset.chartTimeEnd);
+            const visible = end >= axis.start && start < axis.end;
+            node.tabIndex = visible ? 0 : -1;
+            if (!visible && document.activeElement === node) deadlineChartScroll.focus({ preventScroll: true });
+        });
+        if (translate) scheduleDynamicTranslation();
+    }
+
+    function renderDeadlineChart() {
+        if (!deadlineChartSection || !deadlineChartContent) return;
+        deadlineChartSection.hidden = currentMode !== 'deadlines' || !deadlineChartVisible;
+        if (deadlineChartToggle) {
+            deadlineChartToggle.setAttribute('aria-pressed', deadlineChartVisible ? 'true' : 'false');
+            deadlineChartToggle.setAttribute('aria-label', deadlineChartVisible ? '隐藏会议时间轴' : '显示会议时间轴');
+            deadlineChartToggle.title = deadlineChartVisible ? '隐藏会议时间轴' : '显示会议时间轴';
+            deadlineChartToggle.classList.toggle('active', deadlineChartVisible);
+        }
+        if (deadlineChartSection.hidden) return;
+
+        deadlineChartSection.querySelectorAll('[data-chart-mode]').forEach(button => {
+            const active = button.dataset.chartMode === deadlineChartMode;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        deadlineChartSection.querySelectorAll('[data-chart-range]').forEach(button => {
+            const active = button.dataset.chartRange === deadlineChartRange;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        renderDeadlineChartPicker();
+
+        const chart = window.CCFDeadlineChart;
+        const rows = chart.selectedRows(lastFilteredDeadlineRows, confData, deadlineChartMode, selectedChartSeries);
+        const rowsKey = rows.map(({ conf, id }) => conf
+            ? window.CCFDeadlineSupplement.key(conf.title, conf.confs[0].year) : `missing:${id}`).join('|');
+        const rowsChanged = deadlineChartDataRef !== confData || deadlineChartRowsKey !== rowsKey;
+        deadlineChartDataRef = confData;
+        deadlineChartRowsKey = rowsKey;
+        if (!rows.length) {
+            deadlineChartWorldAxis = null;
+            deadlineChartContent.innerHTML = `<p class="deadline-chart-empty">${deadlineChartMode === 'custom' ? '请选择需要关注的会议。' : runtimeState.deadlinesLoaded ? '当前筛选条件没有匹配的会议。' : '正在加载会议数据...'}</p>`;
+            if (deadlineChartStatus) deadlineChartStatus.textContent = '';
+            scheduleDynamicTranslation();
+            return;
+        }
+
+        if (!deadlineChartAxis || (deadlineChartRange === 'ALL' && rowsChanged)) {
+            deadlineChartAxis = chart.axisRange(rows, deadlineChartRange);
+            if (deadlineChartRange === 'ALL') deadlineChartPanned = false;
+        }
+        const world = { ...deadlineChartAxis };
+        deadlineChartWorldAxis = world;
+        const labelWidth = Number.parseFloat(getComputedStyle(deadlineChartScroll).getPropertyValue('--chart-label-width')) || 220;
+        const axisWidth = Math.max(1, deadlineChartScroll.clientWidth - labelWidth);
+        let totalEvents = 0;
         const rowHtml = rows.map(({ conf, id }) => {
-            if (!conf) return `<div class="deadline-chart-row"><div class="deadline-chart-name no-translate">${escapeHTML(id)}<small>暂无最新数据</small></div><div class="deadline-chart-track">${gridLines}${todayLine}</div></div>`;
+            if (!conf) return `<div class="deadline-chart-row"><div class="deadline-chart-name no-translate">${escapeHTML(id)}<small>暂无最新数据</small></div><div class="deadline-chart-track"><div class="deadline-chart-row-grid"></div><div class="deadline-chart-events"></div></div></div>`;
             const edition = conf.confs[0];
             const confKey = window.CCFDeadlineSupplement.key(conf.title, edition.year);
             const dates = chart.conferenceDates(conf);
             let conferenceBar = '';
             if (dates.length) {
-                const first = Math.max(axis.start, dates[0]);
-                const last = Math.min(axis.end, dates[1] || dates[0] + 24 * 60 * 60 * 1000);
-                if (last >= first && first < axis.end) {
+                const first = dates[0];
+                const last = dates[1] || dates[0] + 24 * 60 * 60 * 1000;
+                if (last >= first) {
                     const conferenceHint = `会议举办时间：${edition.date}。`;
-                    conferenceBar = `<span class="deadline-chart-conference-bar" style="left:${chart.position(first, axis)}%;width:${Math.max(0.45, chart.position(last, axis) - chart.position(first, axis))}%" tabindex="0" aria-label="${escapeHTML(conferenceHint)}"><span class="deadline-chart-conference-tooltip">${escapeHTML(conferenceHint)}</span></span>`;
+                    conferenceBar = `<span class="deadline-chart-conference-bar" style="left:${chart.position(first, world)}%;width:${Math.max(0.45, chart.position(last, world) - chart.position(first, world))}%" data-chart-time-start="${first}" data-chart-time-end="${last}" tabindex="0" aria-label="${escapeHTML(conferenceHint)}"><span class="deadline-chart-conference-tooltip">${escapeHTML(conferenceHint)}</span></span>`;
                 }
             }
             const timeline = edition.timeline || [];
             const { periods, used } = chart.eventPeriods(timeline);
-            const visiblePeriods = periods.filter(period => period.end > axis.start && period.start < axis.end);
             const events = timeline.map((event, index) => ({ event, index, ms: chart.eventMs(event) }))
-                .filter(item => !used.has(item.index) && item.ms !== null && item.ms >= axis.start && item.ms < axis.end)
+                .filter(item => !used.has(item.index) && item.ms !== null)
                 .sort((a, b) => a.ms - b.ms || a.index - b.index);
-            visibleEvents += events.length + visiblePeriods.length;
-            const positions = events.map(item => chart.position(item.ms, axis));
-            for (const period of visiblePeriods) {
-                positions.push(chart.position(Math.max(period.start, axis.start), axis));
-                positions.push(chart.position(Math.min(period.end, axis.end), axis));
+            totalEvents += events.length + periods.length;
+            const positions = events.map(item => chart.position(item.ms, world));
+            for (const period of periods) {
+                positions.push(chart.position(period.start, world));
+                positions.push(chart.position(period.end, world));
             }
             const firstMarker = Math.min(...positions);
             const lastMarker = Math.max(...positions);
             const connectingLine = positions.length > 1 && lastMarker > firstMarker
                 ? `<span class="deadline-chart-trackbar" style="left:${firstMarker}%;width:${lastMarker - firstMarker}%"></span>` : '';
-            const periodBars = visiblePeriods.map(period => {
+            const periodBars = periods.map(period => {
                 const category = chartEventCategory(period.startEvent);
-                const start = Math.max(period.start, axis.start);
-                const end = Math.min(period.end, axis.end);
                 const startText = formatTimelineEvent(period.startEvent, edition.timezone);
                 const endText = period.endEvent
                     ? formatTimelineEvent(period.endEvent, edition.timezone)
                     : `${period.startEvent.endDate}（仅日期）`;
                 const label = `${period.startEvent.comment || '时间段'}：${startText} 至 ${endText} · ${chartSourceLabel(period.startEvent.source)}`;
-                return `<button type="button" class="deadline-chart-period chart-${category}" style="left:${chart.position(start, axis)}%;width:${Math.max(0.45, chart.position(end, axis) - chart.position(start, axis))}%" data-chart-conf="${escapeHTML(confKey)}" aria-label="${escapeHTML(conf.title + ' ' + label)}"><span class="deadline-chart-period-tooltip">${escapeHTML(label)}</span></button>`;
+                return `<button type="button" class="deadline-chart-period chart-${category}" style="left:${chart.position(period.start, world)}%;width:${Math.max(0.45, chart.position(period.end, world) - chart.position(period.start, world))}%" data-chart-time-start="${period.start}" data-chart-time-end="${period.end}" data-chart-conf="${escapeHTML(confKey)}" aria-label="${escapeHTML(conf.title + ' ' + label)}"><span class="deadline-chart-period-tooltip">${escapeHTML(label)}</span></button>`;
             }).join('');
             const marks = events.map(({ event, ms }, index) => {
-                const percent = chart.position(ms, axis);
+                const percent = chart.position(ms, world);
                 const category = chartEventCategory(event);
                 const label = `${event.comment || '时间节点'} · ${formatTimelineEvent(event, edition.timezone)} · ${chartSourceLabel(event.source)}${event.dateOnly ? ' · 仅日期' : ''}`;
-                const collision = events.slice(0, index).filter(previous => Math.abs(previous.ms - ms) / (axis.end - axis.start) * axisWidth < 18).length;
+                const collision = events.slice(0, index).filter(previous => Math.abs(previous.ms - ms) / (world.end - world.start) * axisWidth < 18).length;
                 const horizontalOffset = [0, 12, -12, 24, -24][collision % 5];
-                return `<button type="button" class="deadline-chart-marker chart-${category}" style="left:${percent}%;top:40px;margin-left:${horizontalOffset}px" data-chart-conf="${escapeHTML(confKey)}" title="${escapeHTML(label)}" aria-label="${escapeHTML(conf.title + ' ' + label)}"><span class="deadline-chart-marker-dot"></span><span class="deadline-chart-marker-tooltip">${escapeHTML(label)}</span></button>`;
+                return `<button type="button" class="deadline-chart-marker chart-${category}" style="left:${percent}%;top:40px;margin-left:${horizontalOffset}px" data-chart-time-start="${ms}" data-chart-time-end="${ms}" data-chart-conf="${escapeHTML(confKey)}" title="${escapeHTML(label)}" aria-label="${escapeHTML(conf.title + ' ' + label)}"><span class="deadline-chart-marker-dot"></span><span class="deadline-chart-marker-tooltip">${escapeHTML(label)}</span></button>`;
             }).join('');
             const dateText = edition.date && edition.date !== 'TBA' ? edition.date : '会议日期待定';
-            return `<div class="deadline-chart-row"><div class="deadline-chart-name"><button type="button" class="no-translate" data-chart-conf="${escapeHTML(confKey)}">${escapeHTML(conf.title)}</button><small>${escapeHTML(dateText)}</small></div><div class="deadline-chart-track">${gridLines}${connectingLine}${periodBars}${conferenceBar}${marks}${todayLine}</div></div>`;
+            return `<div class="deadline-chart-row"><div class="deadline-chart-name"><button type="button" class="no-translate" data-chart-conf="${escapeHTML(confKey)}">${escapeHTML(conf.title)}</button><small>${escapeHTML(dateText)}</small></div><div class="deadline-chart-track"><div class="deadline-chart-row-grid"></div><div class="deadline-chart-events">${connectingLine}${periodBars}${conferenceBar}${marks}</div></div></div>`;
         }).join('');
-        deadlineChartContent.innerHTML = `<div class="deadline-chart-grid"><div class="deadline-chart-axis"><div class="deadline-chart-axis-title">会议</div><div class="deadline-chart-axis-track">${yearLabels}${gridLines}${monthLabels}${todayLine}${todayLabel}</div></div>${rowHtml}</div>`;
-        if (deadlineChartStatus) deadlineChartStatus.textContent = visibleEvents
-            ? `显示 ${rows.length} 条会议 · ${visibleEvents} 个时间信息`
-            : `显示 ${rows.length} 条会议 · 当前范围无时间信息，试试 ALL`;
-        if (translate) scheduleDynamicTranslation();
+        deadlineChartContent.innerHTML = `<div class="deadline-chart-grid"><div class="deadline-chart-axis"><div class="deadline-chart-axis-title">会议</div><div class="deadline-chart-axis-track"></div></div>${rowHtml}</div>`;
+        if (deadlineChartStatus) deadlineChartStatus.textContent = totalEvents
+            ? `显示 ${rows.length} 条会议 · ${totalEvents} 个时间信息`
+            : `显示 ${rows.length} 条会议 · 暂无可用时间信息`;
+        updateDeadlineChartViewport();
     }
 
     function createCCFTableHTML(dataList) {
@@ -3117,7 +3141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         deadlineChartScroll.classList.add('is-dragging');
         if (!deadlineChartFrame) deadlineChartFrame = requestAnimationFrame(() => {
             deadlineChartFrame = 0;
-            renderDeadlineChart({ contentOnly: true, translate: false });
+            updateDeadlineChartViewport({ translate: false, updateFocus: false });
         });
     });
     const finishDeadlineChartDrag = event => {
@@ -3131,7 +3155,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (drag.moved) {
             cancelAnimationFrame(deadlineChartFrame);
             deadlineChartFrame = 0;
-            renderDeadlineChart({ contentOnly: true });
+            updateDeadlineChartViewport();
         }
     };
     deadlineChartScroll?.addEventListener('pointerup', finishDeadlineChartDrag);
@@ -3144,7 +3168,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const pixels = width * (event.key === 'ArrowLeft' ? 0.2 : -0.2);
         deadlineChartAxis = window.CCFDeadlineChart.panAxis(deadlineChartAxis, pixels, width);
         deadlineChartPanned = true;
-        renderDeadlineChart({ contentOnly: true });
+        updateDeadlineChartViewport();
+    });
+    window.addEventListener('resize', () => {
+        if (deadlineChartVisible && currentMode === 'deadlines') updateDeadlineChartViewport({ translate: false });
     });
     deadlineChartOptions?.addEventListener('change', event => {
         const checkbox = event.target.closest('input[data-chart-series]');
