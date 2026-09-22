@@ -100,5 +100,16 @@ window.CCFDeadlineChart = (() => {
         return ticks;
     }
 
-    return { seriesId, latestSeries, selectedRows, dayMs, eventMs, conferenceDates, axisRange, position, monthTicks };
+    function yearBands(axis) {
+        const bands = [];
+        for (let ms = axis.start; ms < axis.end;) {
+            const year = new Date(ms).getUTCFullYear();
+            const next = Math.min(axis.end, Date.UTC(year + 1, 0, 1));
+            bands.push({ year, percent: position(ms, axis), width: position(next, axis) - position(ms, axis) });
+            ms = next;
+        }
+        return bands;
+    }
+
+    return { seriesId, latestSeries, selectedRows, dayMs, eventMs, conferenceDates, axisRange, position, monthTicks, yearBands };
 })();

@@ -1369,6 +1369,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (labelFilter3) labelFilter3.textContent = config.labels[2];
         if (filterCol4) filterCol4.style.display = config.showDeadlineFilter ? 'block' : 'none';
         if (timezoneWrapper) timezoneWrapper.style.display = config.showTimezone ? 'block' : 'none';
+        if (mode !== 'deadlines' && deadlineChartPicker) deadlineChartPicker.open = false;
         if (deadlineChartToggle) deadlineChartToggle.hidden = mode !== 'deadlines';
         if (deadlineChartSection) deadlineChartSection.hidden = mode !== 'deadlines' || !deadlineChartVisible;
         dataNotices.forEach(notice => {
@@ -2362,11 +2363,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const ticks = chart.monthTicks(axis);
         const axisWidth = Math.max(960, ticks.length * 78);
         const today = Date.now();
-        const todayLine = today >= axis.start && today < axis.end
-            ? `<span class="deadline-chart-today" style="left:${chart.position(today, axis)}%" title="今日"></span>` : '';
+        const todayVisible = today >= axis.start && today < axis.end;
+        const todayPosition = todayVisible ? chart.position(today, axis) : null;
+        const todayLine = todayVisible
+            ? `<span class="deadline-chart-today" style="left:${todayPosition}%" title="今日"></span>` : '';
+        const todayLabel = todayVisible
+            ? `<span class="deadline-chart-today-label" style="left:${todayPosition}%">Today</span>` : '';
         const gridLines = ticks.map(tick =>
             `<span class="deadline-chart-gridline" style="left:${tick.percent}%"></span>`).join('');
-        const monthFormatter = new Intl.DateTimeFormat('zh-CN', { timeZone: 'UTC', year: 'numeric', month: 'short' });
+        const yearLabels = chart.yearBands(axis).map(band =>
+            `<span class="deadline-chart-year" style="left:${band.percent}%;width:${band.width}%">${band.year}</span>`).join('');
+        const monthFormatter = new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', month: 'short' });
         const monthLabels = ticks.map(tick =>
             `<span class="deadline-chart-month" style="left:${tick.percent}%">${escapeHTML(monthFormatter.format(tick.ms))}</span>`).join('');
         let visibleEvents = 0;
@@ -2383,31 +2390,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     conferenceBar = `<span class="deadline-chart-conference-bar" style="left:${chart.position(first, axis)}%;width:${Math.max(0.45, chart.position(last, axis) - chart.position(first, axis))}%" title="会议日期：${escapeHTML(edition.date)}"></span>`;
                 }
             }
-            const markerPositions = [];
-            const marks = (edition.timeline || []).map((event, index) => {
-                const ms = chart.eventMs(event);
-                const end = event.dateOnly ? chart.dayMs(event.endDate) : null;
-                if (ms === null || ms >= axis.end || (ms < axis.start && (end === null || end < axis.start))) return '';
-                visibleEvents += 1;
+            const events = (edition.timeline || []).map((event, index) => ({ event, index, ms: chart.eventMs(event) }))
+                .filter(item => item.ms !== null && item.ms >= axis.start && item.ms < axis.end)
+                .sort((a, b) => a.ms - b.ms || a.index - b.index);
+            visibleEvents += events.length;
+            const positions = events.map(item => chart.position(item.ms, axis));
+            const firstMarker = positions[0];
+            const lastMarker = positions[positions.length - 1];
+            const shortBar = positions.length === 1 || (positions.length > 1 && (lastMarker - firstMarker) * axisWidth / 100 < 30);
+            const connectingLine = positions.length
+                ? `<span class="deadline-chart-trackbar${shortBar ? ' is-short' : ''}" style="left:${firstMarker}%;${shortBar ? '' : `width:${lastMarker - firstMarker}%`}"></span>` : '';
+            const marks = events.map(({ event, ms }, index) => {
+                const percent = positions[index];
                 const category = chartEventCategory(event);
                 const label = `${event.comment || '时间节点'} · ${formatTimelineEvent(event, edition.timezone)} · ${chartSourceLabel(event.source)}${event.dateOnly ? ' · 仅日期' : ''}`;
-                const lane = index % 4;
+                const collision = events.slice(0, index).filter(previous => Math.abs(previous.ms - ms) / (axis.end - axis.start) * axisWidth < 24).length;
+                const markerTop = 40 + [0, -24, 24][collision % 3];
+                const end = event.dateOnly ? chart.dayMs(event.endDate) : null;
                 const rangeBar = end !== null && end > ms
-                    ? `<span class="deadline-chart-event-range chart-${category}" style="left:${chart.position(Math.max(ms, axis.start), axis)}%;width:${Math.max(0.45, chart.position(Math.min(end, axis.end), axis) - chart.position(Math.max(ms, axis.start), axis))}%"></span>` : '';
-                const markerTop = 18 + lane * 21;
-                if (ms >= axis.start) markerPositions.push(chart.position(ms, axis));
-                const marker = ms >= axis.start
-                    ? `<span class="deadline-chart-stem" style="left:${chart.position(ms, axis)}%;top:${Math.min(markerTop + 10, 58)}px;height:${Math.abs(markerTop + 10 - 58)}px"></span><button type="button" class="deadline-chart-marker chart-${category}${event.dateOnly ? ' is-date-only' : ''}" style="left:${chart.position(ms, axis)}%;top:${markerTop}px" data-chart-conf="${escapeHTML(confKey)}" title="${escapeHTML(label)}" aria-label="${escapeHTML(conf.title + ' ' + label)}"><span class="deadline-chart-marker-dot"></span><span class="deadline-chart-marker-tooltip">${escapeHTML(label)}</span></button>` : '';
-                return rangeBar + marker;
+                    ? `<span class="deadline-chart-event-range chart-${category}" style="left:${percent}%;width:${Math.max(0.45, chart.position(Math.min(end, axis.end), axis) - percent)}%" title="${escapeHTML(label)}"></span>` : '';
+                return `${rangeBar}<span class="deadline-chart-stage chart-${category}" style="left:${percent}%;top:${markerTop + 7}px"></span><button type="button" class="deadline-chart-marker chart-${category}${event.dateOnly ? ' is-date-only' : ''}" style="left:${percent}%;top:${markerTop}px" data-chart-conf="${escapeHTML(confKey)}" title="${escapeHTML(label)}" aria-label="${escapeHTML(conf.title + ' ' + label)}"><span class="deadline-chart-marker-dot"></span><span class="deadline-chart-marker-tooltip">${escapeHTML(label)}</span></button>`;
             }).join('');
-            const firstMarker = Math.min(...markerPositions);
-            const lastMarker = Math.max(...markerPositions);
-            const connectingLine = markerPositions.length > 1
-                ? `<span class="deadline-chart-connector" style="left:${firstMarker}%;width:${lastMarker - firstMarker}%"></span>` : '';
             const dateText = edition.date && edition.date !== 'TBA' ? edition.date : '会议日期待定';
-            return `<div class="deadline-chart-row"><div class="deadline-chart-name"><button type="button" class="no-translate" data-chart-conf="${escapeHTML(confKey)}">${escapeHTML(conf.title)}</button><small>${escapeHTML(dateText)}</small></div><div class="deadline-chart-track">${gridLines}${todayLine}<span class="deadline-chart-baseline"></span>${connectingLine}${conferenceBar}${marks}</div></div>`;
+            return `<div class="deadline-chart-row"><div class="deadline-chart-name"><button type="button" class="no-translate" data-chart-conf="${escapeHTML(confKey)}">${escapeHTML(conf.title)}</button><small>${escapeHTML(dateText)}</small></div><div class="deadline-chart-track">${gridLines}${connectingLine}${conferenceBar}${marks}${todayLine}</div></div>`;
         }).join('');
-        deadlineChartContent.innerHTML = `<div class="deadline-chart-grid" style="--chart-track-width:${axisWidth}px"><div class="deadline-chart-axis"><div class="deadline-chart-axis-title">会议</div><div class="deadline-chart-axis-track">${gridLines}${monthLabels}${todayLine}</div></div>${rowHtml}</div>`;
+        deadlineChartContent.innerHTML = `<div class="deadline-chart-grid" style="--chart-track-width:${axisWidth}px"><div class="deadline-chart-axis"><div class="deadline-chart-axis-title">会议</div><div class="deadline-chart-axis-track">${yearLabels}${gridLines}${monthLabels}${todayLine}${todayLabel}</div></div>${rowHtml}</div>`;
         if (deadlineChartStatus) deadlineChartStatus.textContent = visibleEvents
             ? `显示 ${rows.length} 条会议 · ${visibleEvents} 个时间节点`
             : `显示 ${rows.length} 条会议 · 当前范围无时间节点，试试 ALL`;
@@ -3011,14 +3018,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     deadlineChartToggle?.addEventListener('click', () => {
         deadlineChartVisible = !deadlineChartVisible;
+        if (!deadlineChartVisible && deadlineChartPicker) deadlineChartPicker.open = false;
         renderDeadlineChart();
     });
     deadlineChartSection?.addEventListener('click', event => {
         const modeButton = event.target.closest('[data-chart-mode]');
         if (modeButton) {
+            const enteringCustom = deadlineChartMode !== 'custom' && modeButton.dataset.chartMode === 'custom';
             deadlineChartMode = modeButton.dataset.chartMode;
             saveDeadlineChartSelection();
-            if (deadlineChartMode === 'custom' && !selectedChartSeries.length && deadlineChartPicker) {
+            if (enteringCustom && !selectedChartSeries.length && deadlineChartPicker) {
                 deadlineChartPicker.open = true;
                 deadlineChartSearch?.focus();
             }
@@ -3049,6 +3058,16 @@ document.addEventListener('DOMContentLoaded', () => {
         deadlineChartOptions.querySelector(`input[data-chart-series="${id}"]`)?.focus();
     });
     deadlineChartSearch?.addEventListener('input', renderDeadlineChartPicker);
+    document.addEventListener('pointerdown', event => {
+        if (deadlineChartPicker?.open && !deadlineChartPicker.contains(event.target)) deadlineChartPicker.open = false;
+    });
+    deadlineChartPicker?.addEventListener('keydown', event => {
+        if (event.key !== 'Escape' || !deadlineChartPicker.open) return;
+        deadlineChartPicker.open = false;
+        deadlineChartPicker.querySelector('summary')?.focus();
+        event.preventDefault();
+        event.stopPropagation();
+    });
 
     // 初始化默认模式
     setMode('deadlines');
