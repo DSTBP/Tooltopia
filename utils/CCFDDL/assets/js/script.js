@@ -2387,37 +2387,52 @@ document.addEventListener('DOMContentLoaded', () => {
                 const first = Math.max(axis.start, dates[0]);
                 const last = Math.min(axis.end, dates[1] || dates[0] + 24 * 60 * 60 * 1000);
                 if (last >= first && first < axis.end) {
-                    conferenceBar = `<span class="deadline-chart-conference-bar" style="left:${chart.position(first, axis)}%;width:${Math.max(0.45, chart.position(last, axis) - chart.position(first, axis))}%" title="会议日期：${escapeHTML(edition.date)}"></span>`;
+                    const conferenceHint = `会议举办时间：${edition.date}。该线段表示会议举行日期，不是投稿或审稿截止时间。`;
+                    conferenceBar = `<span class="deadline-chart-conference-bar" style="left:${chart.position(first, axis)}%;width:${Math.max(0.45, chart.position(last, axis) - chart.position(first, axis))}%" tabindex="0" aria-label="${escapeHTML(conferenceHint)}"><span class="deadline-chart-conference-tooltip">${escapeHTML(conferenceHint)}</span></span>`;
                 }
             }
-            const events = (edition.timeline || []).map((event, index) => ({ event, index, ms: chart.eventMs(event) }))
-                .filter(item => item.ms !== null && item.ms >= axis.start && item.ms < axis.end)
+            const timeline = edition.timeline || [];
+            const { periods, used } = chart.eventPeriods(timeline);
+            const visiblePeriods = periods.filter(period => period.end > axis.start && period.start < axis.end);
+            const events = timeline.map((event, index) => ({ event, index, ms: chart.eventMs(event) }))
+                .filter(item => !used.has(item.index) && item.ms !== null && item.ms >= axis.start && item.ms < axis.end)
                 .sort((a, b) => a.ms - b.ms || a.index - b.index);
-            visibleEvents += events.length;
+            visibleEvents += events.length + visiblePeriods.length;
             const positions = events.map(item => chart.position(item.ms, axis));
-            const firstMarker = positions[0];
-            const lastMarker = positions[positions.length - 1];
-            const shortBar = positions.length === 1 || (positions.length > 1 && (lastMarker - firstMarker) * axisWidth / 100 < 30);
-            const connectingLine = positions.length
-                ? `<span class="deadline-chart-trackbar${shortBar ? ' is-short' : ''}" style="left:${firstMarker}%;${shortBar ? '' : `width:${lastMarker - firstMarker}%`}"></span>` : '';
+            for (const period of visiblePeriods) {
+                positions.push(chart.position(Math.max(period.start, axis.start), axis));
+                positions.push(chart.position(Math.min(period.end, axis.end), axis));
+            }
+            const firstMarker = Math.min(...positions);
+            const lastMarker = Math.max(...positions);
+            const connectingLine = positions.length > 1 && lastMarker > firstMarker
+                ? `<span class="deadline-chart-trackbar" style="left:${firstMarker}%;width:${lastMarker - firstMarker}%"></span>` : '';
+            const periodBars = visiblePeriods.map(period => {
+                const category = chartEventCategory(period.startEvent);
+                const start = Math.max(period.start, axis.start);
+                const end = Math.min(period.end, axis.end);
+                const startText = formatTimelineEvent(period.startEvent, edition.timezone);
+                const endText = period.endEvent
+                    ? formatTimelineEvent(period.endEvent, edition.timezone)
+                    : `${period.startEvent.endDate}（仅日期）`;
+                const label = `${period.startEvent.comment || '时间段'}：${startText} 至 ${endText} · ${chartSourceLabel(period.startEvent.source)}`;
+                return `<button type="button" class="deadline-chart-period chart-${category}" style="left:${chart.position(start, axis)}%;width:${Math.max(0.45, chart.position(end, axis) - chart.position(start, axis))}%" data-chart-conf="${escapeHTML(confKey)}" aria-label="${escapeHTML(conf.title + ' ' + label)}"><span class="deadline-chart-period-tooltip">${escapeHTML(label)}</span></button>`;
+            }).join('');
             const marks = events.map(({ event, ms }, index) => {
-                const percent = positions[index];
+                const percent = chart.position(ms, axis);
                 const category = chartEventCategory(event);
                 const label = `${event.comment || '时间节点'} · ${formatTimelineEvent(event, edition.timezone)} · ${chartSourceLabel(event.source)}${event.dateOnly ? ' · 仅日期' : ''}`;
-                const collision = events.slice(0, index).filter(previous => Math.abs(previous.ms - ms) / (axis.end - axis.start) * axisWidth < 24).length;
-                const markerTop = 40 + [0, -24, 24][collision % 3];
-                const end = event.dateOnly ? chart.dayMs(event.endDate) : null;
-                const rangeBar = end !== null && end > ms
-                    ? `<span class="deadline-chart-event-range chart-${category}" style="left:${percent}%;width:${Math.max(0.45, chart.position(Math.min(end, axis.end), axis) - percent)}%" title="${escapeHTML(label)}"></span>` : '';
-                return `${rangeBar}<span class="deadline-chart-stage chart-${category}" style="left:${percent}%;top:${markerTop + 7}px"></span><button type="button" class="deadline-chart-marker chart-${category}${event.dateOnly ? ' is-date-only' : ''}" style="left:${percent}%;top:${markerTop}px" data-chart-conf="${escapeHTML(confKey)}" title="${escapeHTML(label)}" aria-label="${escapeHTML(conf.title + ' ' + label)}"><span class="deadline-chart-marker-dot"></span><span class="deadline-chart-marker-tooltip">${escapeHTML(label)}</span></button>`;
+                const collision = events.slice(0, index).filter(previous => Math.abs(previous.ms - ms) / (axis.end - axis.start) * axisWidth < 18).length;
+                const horizontalOffset = [0, 12, -12, 24, -24][collision % 5];
+                return `<button type="button" class="deadline-chart-marker chart-${category}" style="left:${percent}%;top:40px;margin-left:${horizontalOffset}px" data-chart-conf="${escapeHTML(confKey)}" title="${escapeHTML(label)}" aria-label="${escapeHTML(conf.title + ' ' + label)}"><span class="deadline-chart-marker-dot"></span><span class="deadline-chart-marker-tooltip">${escapeHTML(label)}</span></button>`;
             }).join('');
             const dateText = edition.date && edition.date !== 'TBA' ? edition.date : '会议日期待定';
-            return `<div class="deadline-chart-row"><div class="deadline-chart-name"><button type="button" class="no-translate" data-chart-conf="${escapeHTML(confKey)}">${escapeHTML(conf.title)}</button><small>${escapeHTML(dateText)}</small></div><div class="deadline-chart-track">${gridLines}${connectingLine}${conferenceBar}${marks}${todayLine}</div></div>`;
+            return `<div class="deadline-chart-row"><div class="deadline-chart-name"><button type="button" class="no-translate" data-chart-conf="${escapeHTML(confKey)}">${escapeHTML(conf.title)}</button><small>${escapeHTML(dateText)}</small></div><div class="deadline-chart-track">${gridLines}${connectingLine}${periodBars}${conferenceBar}${marks}${todayLine}</div></div>`;
         }).join('');
         deadlineChartContent.innerHTML = `<div class="deadline-chart-grid" style="--chart-track-width:${axisWidth}px"><div class="deadline-chart-axis"><div class="deadline-chart-axis-title">会议</div><div class="deadline-chart-axis-track">${yearLabels}${gridLines}${monthLabels}${todayLine}${todayLabel}</div></div>${rowHtml}</div>`;
         if (deadlineChartStatus) deadlineChartStatus.textContent = visibleEvents
-            ? `显示 ${rows.length} 条会议 · ${visibleEvents} 个时间节点`
-            : `显示 ${rows.length} 条会议 · 当前范围无时间节点，试试 ALL`;
+            ? `显示 ${rows.length} 条会议 · ${visibleEvents} 个时间信息`
+            : `显示 ${rows.length} 条会议 · 当前范围无时间信息，试试 ALL`;
         scheduleDynamicTranslation();
     }
 

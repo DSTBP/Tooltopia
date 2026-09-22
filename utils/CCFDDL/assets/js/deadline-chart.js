@@ -33,6 +33,37 @@ window.CCFDeadlineChart = (() => {
             : Number.isFinite(event.deadlineMs) ? event.deadlineMs : null;
     }
 
+    function eventPeriods(timeline) {
+        const entries = timeline.map((event, index) => ({ event, index, ms: eventMs(event) }))
+            .filter(entry => entry.ms !== null);
+        const used = new Set();
+        const periods = [];
+        const supplement = window.CCFDeadlineSupplement;
+        const cycleOf = event => String(event.cycle || supplement.roundOf(event.comment) || '').trim().toLowerCase();
+
+        for (const entry of entries) {
+            if (used.has(entry.index)) continue;
+            const endDate = dayMs(entry.event.endDate);
+            if (endDate !== null && endDate > entry.ms) {
+                periods.push({ start: entry.ms, end: endDate, startEvent: entry.event, endEvent: null });
+                used.add(entry.index);
+                continue;
+            }
+            if (supplement.typeOf(entry.event) !== 'rebuttal_start') continue;
+            const cycle = cycleOf(entry.event);
+            const end = entries.filter(candidate =>
+                !used.has(candidate.index) &&
+                supplement.typeOf(candidate.event) === 'rebuttal_end' &&
+                cycleOf(candidate.event) === cycle && candidate.ms > entry.ms
+            ).sort((a, b) => a.ms - b.ms)[0];
+            if (!end) continue;
+            periods.push({ start: entry.ms, end: end.ms, startEvent: entry.event, endEvent: end.event });
+            used.add(entry.index);
+            used.add(end.index);
+        }
+        return { periods, used };
+    }
+
     function conferenceDates(conf) {
         const text = String(conf.confs?.[0]?.date || '').trim();
         const days = text.match(/\b\d{4}-\d{2}-\d{2}\b/g) || [];
@@ -111,5 +142,5 @@ window.CCFDeadlineChart = (() => {
         return bands;
     }
 
-    return { seriesId, latestSeries, selectedRows, dayMs, eventMs, conferenceDates, axisRange, position, monthTicks, yearBands };
+    return { seriesId, latestSeries, selectedRows, dayMs, eventMs, eventPeriods, conferenceDates, axisRange, position, monthTicks, yearBands };
 })();

@@ -2,6 +2,19 @@
 window.CCFDeadlineSupplement = (() => {
     const submissionTypes = new Set(['abstract', 'paper', 'registration', 'commitment_deadline']);
     const acronymAliases = { atc: 'sigopsatc', usenixatc: 'sigopsatc', cgo: 'ieeeacmcgo' };
+    // CCFDDL remains authoritative. The three middle sources are reserved until imported.
+    const sourcePriority = {
+        ccfddl: 0, ccfcycle: 1, aideadlines: 2, paperswithcode: 2,
+        suanlab: 3, 'mpc-deadlines': 4, c01dkit: 5, jiajun: 6
+    };
+
+    function sourceOf(event) {
+        return event.source || 'ccfddl';
+    }
+
+    function priorityOf(event) {
+        return sourcePriority[sourceOf(event)] ?? 7;
+    }
 
     function key(name, year) {
         const acronym = String(name || '').replace(/\s+\d{4}$/, '').replace(/[^a-z0-9]/gi, '').toLowerCase();
@@ -69,6 +82,14 @@ window.CCFDeadlineSupplement = (() => {
         return Boolean(eventDay(a) && eventDay(a) === eventDay(b));
     }
 
+    function sameTimePoint(a, b) {
+        const aMs = eventMs(a);
+        const bMs = eventMs(b);
+        if (aMs !== null && bMs !== null) return Math.abs(aMs - bMs) <= 60000;
+        // A date-only event identifies a calendar day, not a fabricated midnight instant.
+        return Boolean((a.dateOnly || b.dateOnly) && eventDay(a) && eventDay(a) === eventDay(b));
+    }
+
     function sameStage(a, b, existingEvents) {
         if (typeOf(a) !== typeOf(b)) return false;
         if (typeOf(a) === 'milestone' && a.comment !== b.comment) return false;
@@ -117,8 +138,13 @@ window.CCFDeadlineSupplement = (() => {
     function mergeTimeline(base, additions) {
         const result = [...base];
         for (const event of additions) {
-            if (!result.some(existing => sameEvent(existing, event)) &&
-                !base.some(existing => sameStage(existing, event, base))) result.push(event);
+            const conflicts = result.filter(existing => sameEvent(existing, event) ||
+                (sourceOf(existing) !== sourceOf(event) &&
+                    (sameTimePoint(existing, event) ||
+                        (base.includes(existing) && sameStage(existing, event, base)))));
+            if (conflicts.some(existing => priorityOf(existing) <= priorityOf(event))) continue;
+            for (const conflict of conflicts) result.splice(result.indexOf(conflict), 1);
+            result.push(event);
         }
         return result;
     }

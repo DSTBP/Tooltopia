@@ -44,4 +44,16 @@ assert.equal(chart.yearBands(oneYear)[0].percent, 0);
 assert.equal(Math.round(chart.yearBands(oneYear).reduce((sum, band) => sum + band.width, 0)), 100);
 assert.equal(chart.monthTicks(chart.axisRange(custom, '3M', now)).length, 3);
 assert.equal(chart.monthTicks(chart.axisRange(custom, '6M', now)).length, 6);
+const rebuttalEvents = [
+    { type: 'rebuttal_start', cycle: 'Round 1', deadlineMs: Date.parse('2027-01-01T00:00:00Z') },
+    { type: 'rebuttal_end', cycle: 'Round 2', deadlineMs: Date.parse('2027-01-03T00:00:00Z') },
+    { type: 'rebuttal_end', cycle: 'Round 1', deadlineMs: Date.parse('2027-01-05T00:00:00Z') }
+];
+const paired = chart.eventPeriods(rebuttalEvents);
+assert.equal(paired.periods.length, 1);
+assert.equal(paired.periods[0].end, rebuttalEvents[2].deadlineMs);
+assert.deepEqual(Array.from(paired.used), [0, 2]);
+assert.equal(chart.eventPeriods([{ type: 'rebuttal_start', deadlineMs: rebuttalEvents[0].deadlineMs }]).periods.length, 0);
+const datedRange = chart.eventPeriods([{ type: 'rebuttal', dateOnly: true, date: '2027-02-01', endDate: '2027-02-04' }]);
+assert.equal(datedRange.periods[0].end, Date.parse('2027-02-04T12:00:00Z'));
 console.log('CCF deadline chart tests passed');

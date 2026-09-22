@@ -159,6 +159,7 @@ assert.equal(cycleRows.length, 1);
 assert.equal(cycleRows[0].rank.ccf, 'A');
 assert.equal(cycleRows[0].confs[0].link, 'https://sigops.org/');
 assert.equal(cycleRows[0].confs[0].timeline.filter(event => event.type === 'paper').length, 1);
+assert.equal(cycleRows[0].confs[0].timeline.find(event => event.type === 'paper').source, 'ccfddl');
 assert.equal(cycleRows[0].confs[0].timeline.length, 3);
 assert.equal(cycleRows[0].confs[0].dblpUrl, 'https://dblp.org/db/conf/usenix');
 assert.equal(cycleRows[0].confs[0].tags[0], 'systems');
@@ -189,6 +190,7 @@ assert.equal(mixed[0].aiOnly, true);
 assert.equal(mixed[0].cycleEnriched, true);
 assert.equal(mixed[0].confs[0].tags[0], 'AI');
 assert.equal(mixed[0].confs[0].timeline.filter(event => event.type === 'paper').length, 1);
+assert.equal(mixed[0].confs[0].timeline.find(event => event.type === 'paper').source, 'ccfcycle');
 assert.equal(mixed[0].confs[0].timeline.filter(event => event.type === 'camera_ready').length, 1);
 const papersWithCode = merge(base, [{
     short_name: 'NeurIPS', year: 2026, name: 'NeurIPS 2026',
@@ -227,4 +229,35 @@ const distinctSameType = merge([{
 ] }], 'paperswithcode');
 assert.equal(distinctSameType.length, 1);
 assert.equal(distinctSameType[0].confs[0].timeline.filter(event => event.type === 'camera_ready').length, 2);
+
+// Two sources can call the same date-only point by different milestone names.
+// Keep the higher-priority source regardless of fetch/merge order.
+const jiajunPoint = [{ acronym: 'TEST', year: 2027, events: [
+    { type: 'notification', cycle: 'Round 3', date: '2026-12-12' }
+] }];
+const cyclePoint = [{ acronym: 'TEST', year: 2027, events: [
+    { type: 'camera_ready', cycle: 'Round 3', date: '2026-12-12' }
+] }];
+for (const row of [
+    mergeCycle(mergeJiajun([], jiajunPoint), cyclePoint)[0],
+    mergeJiajun(mergeCycle([], cyclePoint), jiajunPoint)[0]
+]) {
+    assert.equal(row.confs[0].timeline.length, 1);
+    assert.equal(row.confs[0].timeline[0].source, 'ccfcycle');
+    assert.equal(row.confs[0].timeline[0].type, 'camera_ready');
+}
+const ccfPoint = [{ title: 'TEST 2027', confs: [{ year: 2027, timeline: [
+    { type: 'notification', comment: '结果通知', dateOnly: true, date: '2026-12-12', source: 'ccfddl' }
+] }] }];
+const ccfWins = mergeCycle(ccfPoint, cyclePoint);
+assert.equal(ccfWins[0].confs[0].timeline.length, 1);
+assert.equal(ccfWins[0].confs[0].timeline[0].source, 'ccfddl');
+
+// Distinct precise times on the same calendar day are not duplicate points.
+const separateTimes = mergeCycle(merge([], [{ title: 'TEST', year: 2027, deadlines: [
+    { type: 'review_release', date: '2026-12-12 10:00:00', timezone: 'UTC' }
+] }]), [{ acronym: 'TEST', year: 2027, events: [
+    { type: 'notification', at: '2026-12-12T16:00:00Z' }
+] }]);
+assert.equal(separateTimes[0].confs[0].timeline.length, 2);
 console.log('CCF deadline merge tests passed');
