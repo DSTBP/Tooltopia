@@ -1,34 +1,5 @@
 const PROMPTS_MANIFEST_URL = './assets/prompts/manifest.json';
 
-const CATEGORY_DEFINITIONS = [
-    {
-        name: '文献研究',
-        titles: ['检索提示词', '标准文献记录模板', '角色与任务目标', '证据与表述原则']
-    },
-    {
-        name: '学术辅助',
-        titles: ['密码学原语解释', '翻译', '快速理解方案', 'GPT 提示词规范']
-    },
-    {
-        name: '工程开发',
-        titles: ['项目结构整理', '代码清理', '代码编写', '反防御性代码']
-    },
-    {
-        name: '科研创新',
-        titles: ['科研创新点合理性与可辩护性审查', '创新点发现与验证', '创新点进阶', '方案正确性检查']
-    },
-    {
-        name: '汇报办公',
-        titles: ['汇报 PPT', '汇报内容', '飞书表格', '综述汇报']
-    }
-];
-
-const CATEGORY_BY_TITLE = new Map(
-    CATEGORY_DEFINITIONS.flatMap(category => (
-        category.titles.map(title => [title, category.name])
-    ))
-);
-
 const collator = new Intl.Collator('zh-CN', {
     numeric: true,
     sensitivity: 'base'
@@ -37,6 +8,7 @@ const collator = new Intl.Collator('zh-CN', {
 const appState = {
     prompts: [],
     filteredPrompts: [],
+    categories: [],
     activeCategory: '全部',
     keyword: '',
     sortMode: 'source',
@@ -170,13 +142,14 @@ async function loadPrompts() {
     showLoadingState();
 
     try {
-        const promptSources = await fetchPromptSources();
+        const { categories, promptSources } = await fetchPromptSources();
         const { sourceSectionCount, prompts } = parsePromptSources(promptSources);
 
         if (prompts.length === 0) {
             throw new Error('没有识别到包含正文的二级标题');
         }
 
+        appState.categories = categories;
         appState.prompts = prompts;
         appState.currentPage = 1;
         UI.promptGrid.dataset.sourceSectionCount = String(sourceSectionCount);
@@ -209,27 +182,58 @@ async function fetchPromptSources() {
         throw new Error('提示词清单不是有效的 JSON', { cause: error });
     }
 
-    if (!manifest || !Array.isArray(manifest.files) || manifest.files.length === 0) {
+    if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) {
+        throw new Error('提示词清单格式无效');
+    }
+
+    const categories = Object.keys(manifest);
+
+    if (categories.length === 0) {
+        throw new Error('提示词清单中没有可加载的分类');
+    }
+
+    const promptEntries = Object.entries(manifest).flatMap(([category, files]) => {
+        if (!Array.isArray(files)) {
+            throw new Error(`分类「${category}」的文件列表格式无效`);
+        }
+
+        return files.map(filePath => ({
+            category,
+            filePath
+        }));
+    });
+
+    if (promptEntries.length === 0) {
         throw new Error('提示词清单中没有可加载的文件');
     }
 
     const manifestUrl = new URL(PROMPTS_MANIFEST_URL, window.location.href);
-    return Promise.all(manifest.files.map(async filePath => {
-        if (typeof filePath !== 'string' || filePath.trim() === '') {
-            throw new Error('提示词清单包含无效路径');
-        }
 
-        const promptUrl = new URL(filePath, manifestUrl);
-        const response = await fetch(promptUrl, { cache: 'no-cache' });
-        if (!response.ok) {
-            throw new Error(`${filePath} HTTP ${response.status}`);
-        }
+    const promptSources = await Promise.all(
+        promptEntries.map(async ({ category, filePath }) => {
+            if (typeof filePath !== 'string' || filePath.trim() === '') {
+                throw new Error(`分类「${category}」包含无效路径`);
+            }
 
-        return {
-            filePath,
-            markdown: await response.text()
-        };
-    }));
+            const promptUrl = new URL(filePath, manifestUrl);
+            const response = await fetch(promptUrl, { cache: 'no-cache' });
+
+            if (!response.ok) {
+                throw new Error(`${filePath} HTTP ${response.status}`);
+            }
+
+            return {
+                filePath,
+                category,
+                markdown: await response.text()
+            };
+        })
+    );
+
+    return {
+        categories,
+        promptSources
+    };
 }
 
 function extractPromptSections(markdown) {
@@ -248,15 +252,22 @@ function extractPromptSections(markdown) {
 }
 
 function parsePromptSources(promptSources) {
-    const sections = promptSources.flatMap(source => extractPromptSections(source.markdown));
+    const sections = promptSources.flatMap(source =>
+        extractPromptSections(source.markdown).map(section => ({
+            ...section,
+            category: source.category
+        }))
+    );
+
     const prompts = sections
         .map((section, sourceIndex) => {
-            const { title, body } = section;
+            const { title, body, category } = section;
+
             return {
                 id: String(sourceIndex),
                 title,
                 body,
-                category: CATEGORY_BY_TITLE.get(title) || '其他',
+                category,
                 sourceIndex,
                 charCount: Array.from(body).length,
                 searchText: `${title}\n${body}`.toLocaleLowerCase('zh-CN')
@@ -278,14 +289,13 @@ function renderCategoryFilters() {
 
     const categories = [
         { name: '全部', count: appState.prompts.length },
-        ...CATEGORY_DEFINITIONS
-            .map(category => ({ name: category.name, count: counts.get(category.name) || 0 }))
+        ...appState.categories
+            .map(category => ({
+                name: category,
+                count: counts.get(category) || 0
+            }))
             .filter(category => category.count > 0)
     ];
-
-    if (counts.has('其他')) {
-        categories.push({ name: '其他', count: counts.get('其他') });
-    }
 
     const fragment = document.createDocumentFragment();
     categories.forEach(category => {

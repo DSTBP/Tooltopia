@@ -1,26 +1,34 @@
 {
-  "files": [
+  "文献研究": [
     "./literature-research/01-literature-search.md",
-    "./academic-support/02-cryptographic-primitives.md",
     "./literature-research/03-standard-literature-record.md",
-    "./academic-support/04-translation.md",
     "./literature-research/05-survey-literature-reading-template.md",
     "./literature-research/06-conference-acceptance-status.md",
-    "./literature-research/07-PPML-search.md",
+    "./literature-research/07-PPML-search.md"
+  ],
+  "学术辅助": [
+    "./academic-support/02-cryptographic-primitives.md",
+    "./academic-support/04-translation.md",
     "./academic-support/08-quick-understanding.md",
-    "./academic-support/09-gpt-prompt-guidelines.md",
+    "./academic-support/09-gpt-prompt-guidelines.md"
+  ],
+  "工程开发": [
     "./engineering/10-project-structure.md",
     "./engineering/11-code-cleanup.md",
+    "./engineering/14-code-writing.md",
+    "./engineering/17-anti-defensive-code.md"
+  ],
+  "科研创新": [
     "./research-innovation/12-innovation-defensibility-review.md",
     "./research-innovation/13-innovation-discovery.md",
-    "./engineering/14-code-writing.md",
     "./research-innovation/15-advanced-innovation.md",
     "./research-innovation/16-solution-correctness.md",
-    "./engineering/17-anti-defensive-code.md",
+    "./research-innovation/22-draw-diagrams.md"
+  ],
+  "汇报办公": [
     "./reporting/18-report-presentation.md",
     "./reporting/19-report-content.md",
     "./reporting/20-feishu-sheet.md",
-    "./reporting/21-survey-report.md",
-    "./research-innovation/22-draw-diagrams.md"
+    "./reporting/21-survey-report.md"
   ]
 }
