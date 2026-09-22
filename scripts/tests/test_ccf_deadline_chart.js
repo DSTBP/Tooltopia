@@ -27,6 +27,19 @@ assert.equal(custom[2].conf, null);
 assert.equal(chart.eventMs({ dateOnly: true, date: '2027-06-05' }), Date.parse('2027-06-05T12:00:00Z'));
 assert.equal(chart.eventMs({ dateOnly: true, date: '' }), null);
 assert.equal(chart.eventMs({ deadlineMs: Date.parse('2026-10-01T23:59:59Z') }), Date.parse('2026-10-01T23:59:59Z'));
+const followed = meeting('S&P 2027', 2027, [
+    { type: 'paper', deadlineMs: Date.parse('2026-09-21T23:59:59Z') },
+    { type: 'review_release', dateOnly: true, date: '2026-09-24' },
+    { type: 'notification', deadlineMs: Date.parse('2026-09-27T23:59:59Z') }
+]);
+assert.equal(chart.nextEvent(followed, Date.parse('2026-09-22T00:00:00Z')).event.type, 'review_release');
+assert.equal(chart.daysUntil('2026-09-24', Date.parse('2026-09-22T00:00:00Z')), 2);
+assert.equal(chart.daysUntil('2026-09-22', Date.parse('2026-09-22T00:00:00Z')), 0);
+assert.equal(chart.nextEvent(meeting('Exact 2027', 2027, [
+    { deadlineMs: Date.parse('2026-09-23T23:59:59Z') },
+    { deadlineMs: Date.parse('2026-09-22T23:59:59Z') }
+]), Date.parse('2026-09-22T00:00:00Z')).ms, Date.parse('2026-09-22T23:59:59Z'));
+assert.equal(chart.nextEvent(followed, Date.parse('2026-10-01T00:00:00Z')), null);
 assert.equal(chart.conferenceDates(meeting('Test 2027', 2027, [], '2027-08-01 — 2027-08-05')).length, 2);
 assert.deepEqual(Array.from(chart.conferenceDates(meeting('SANER 2027', 2027, [], 'March 9-12, 2027'))), [Date.parse('2027-03-09T12:00:00Z'), Date.parse('2027-03-12T12:00:00Z')]);
 assert.deepEqual(Array.from(chart.conferenceDates(meeting('ACNS 2027', 2027, [], 'June 28 - July 1, 2027'))), [Date.parse('2027-06-28T12:00:00Z'), Date.parse('2027-07-01T12:00:00Z')]);

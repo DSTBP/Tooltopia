@@ -33,6 +33,23 @@ window.CCFDeadlineChart = (() => {
             : Number.isFinite(event.deadlineMs) ? event.deadlineMs : null;
     }
 
+    function nextEvent(conf, now = Date.now()) {
+        const current = new Date(now);
+        const today = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+        return (conf.confs?.[0]?.timeline || [])
+            .map(event => ({ event, ms: eventMs(event) }))
+            .filter(({ event, ms }) => ms !== null &&
+                (event.dateOnly ? event.date >= today : ms > now))
+            .sort((a, b) => a.ms - b.ms)[0] || null;
+    }
+
+    function daysUntil(value, now = Date.now()) {
+        const current = new Date(now);
+        const today = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+        const target = dayMs(value);
+        return target === null ? null : Math.round((target - dayMs(today)) / 86400000);
+    }
+
     function eventPeriods(timeline) {
         const entries = timeline.map((event, index) => ({ event, index, ms: eventMs(event) }))
             .filter(entry => entry.ms !== null);
@@ -155,5 +172,5 @@ window.CCFDeadlineChart = (() => {
         return bands;
     }
 
-    return { seriesId, latestSeries, selectedRows, dayMs, eventMs, eventPeriods, conferenceDates, axisRange, panAxis, centeredAxis, position, monthTicks, yearBands };
+    return { seriesId, latestSeries, selectedRows, nextEvent, daysUntil, dayMs, eventMs, eventPeriods, conferenceDates, axisRange, panAxis, centeredAxis, position, monthTicks, yearBands };
 })();

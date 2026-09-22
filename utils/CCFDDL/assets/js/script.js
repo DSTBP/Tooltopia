@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const deadlineChartContent = document.getElementById('deadline-chart-content');
     const deadlineChartScroll = document.getElementById('deadline-chart-scroll');
     const deadlineChartStatus = document.getElementById('deadline-chart-status');
+    const deadlineFollowedCountdowns = document.getElementById('deadline-followed-countdowns');
     const deadlineChartOptions = document.getElementById('deadline-chart-options');
     const deadlineChartSearch = document.getElementById('deadline-chart-search');
     const deadlineChartPicker = document.getElementById('deadline-chart-picker');
@@ -1036,7 +1037,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 分页状态控制
     let currentPage = 1;
     let lastFilteredDeadlineRows = [];
-    let deadlineChartVisible = false;
+    let deadlineChartVisible = true;
     let deadlineChartRange = '1Y';
     let deadlineChartMode = 'auto';
     let deadlineChartAxis = null;
@@ -2379,6 +2380,42 @@ document.addEventListener('DOMContentLoaded', () => {
         if (count) count.textContent = `(${selectedChartSeries.length})`;
     }
 
+    function renderFollowedCountdowns() {
+        if (!deadlineFollowedCountdowns) return;
+        if (!selectedChartSeries.length) {
+            deadlineFollowedCountdowns.innerHTML = '<p class="deadline-followed-empty">尚未关注会议，可从上方“选择会议”添加。</p>';
+            return;
+        }
+        const chart = window.CCFDeadlineChart;
+        const latest = chart.latestSeries(confData);
+        deadlineFollowedCountdowns.innerHTML = selectedChartSeries.map(id => {
+            const conf = latest.get(id);
+            if (!conf) return `<article class="deadline-followed-card"><h4 class="no-translate">${escapeHTML(id)}</h4><p class="deadline-followed-empty">暂无最新会议数据</p></article>`;
+            const next = chart.nextEvent(conf);
+            if (!next) return `<article class="deadline-followed-card"><h4 class="no-translate">${escapeHTML(conf.title)}</h4><p class="deadline-followed-empty">暂无后续事件节点</p></article>`;
+            const { event, ms } = next;
+            const eventLabel = event.comment || '时间节点';
+            const formatted = formatTimelineEvent(event, conf.confs[0].timezone);
+            const dateOnly = event.dateOnly;
+            return `<article class="deadline-followed-card">
+                <h4 class="no-translate">${escapeHTML(conf.title)}</h4>
+                <p class="deadline-followed-event">${escapeHTML(eventLabel)}</p>
+                <time class="deadline-followed-time no-translate">${escapeHTML(formatted)}</time>
+                <div class="countdown-timer-container" data-ts="${dateOnly ? '' : ms}"${dateOnly ? ` data-date="${escapeHTML(event.date)}"` : ''}>
+                    <span class="countdown-running">剩余:
+                        <span class="no-translate" data-countdown-part="days">0</span>天
+                        ${dateOnly ? '' : `<span class="no-translate" data-countdown-part="hours">0</span>时
+                        <span class="no-translate" data-countdown-part="minutes">0</span>分
+                        <span class="no-translate" data-countdown-part="seconds">0</span>秒`}
+                    </span>
+                    <span class="countdown-status countdown-tbd" hidden>状态: 时间未定 (TBD)</span>
+                    <span class="countdown-status countdown-finished" hidden>状态: 已截止</span>
+                </div>
+            </article>`;
+        }).join('');
+        tickCountdowns();
+    }
+
     // Only the calendar grid moves with the visible date window. Conference events
     // remain mounted at their original coordinates and are translated as one layer.
     function updateDeadlineChartViewport({ translate = true, updateFocus = true } = {}) {
@@ -2450,6 +2487,7 @@ document.addEventListener('DOMContentLoaded', () => {
             button.setAttribute('aria-pressed', active ? 'true' : 'false');
         });
         renderDeadlineChartPicker();
+        renderFollowedCountdowns();
 
         const chart = window.CCFDeadlineChart;
         const rows = chart.selectedRows(lastFilteredDeadlineRows, confData, deadlineChartMode, selectedChartSeries);
@@ -3059,8 +3097,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentMode !== 'deadlines') return;
         
         const now = Date.now();
+        let followedEventPassed = false;
         document.querySelectorAll('.countdown-timer-container').forEach(el => {
             const tsAttr = el.getAttribute('data-ts');
+            const dateAttr = el.getAttribute('data-date');
             const running = el.querySelector('.countdown-running');
             const tbdStatus = el.querySelector('.countdown-tbd');
             const finishedStatus = el.querySelector('.countdown-finished');
@@ -3070,6 +3110,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (finishedStatus) finishedStatus.hidden = state !== 'finished';
             };
             el.classList.remove('timer-normal', 'timer-warning', 'timer-urgent', 'timer-finished', 'timer-tbd');
+
+            if (dateAttr) {
+                const days = window.CCFDeadlineChart.daysUntil(dateAttr, now);
+                if (days === null) {
+                    setVisibility('tbd');
+                    el.classList.add('timer-tbd');
+                } else if (days < 0) {
+                    followedEventPassed = true;
+                } else {
+                    setVisibility('running');
+                    const node = el.querySelector('[data-countdown-part="days"]');
+                    if (node && node.textContent !== String(days)) node.textContent = String(days);
+                    el.classList.add(days < 3 ? 'timer-urgent' : days < 10 ? 'timer-warning' : 'timer-normal');
+                }
+                return;
+            }
 
             if (!tsAttr || tsAttr === 'null') {
                 setVisibility('tbd');
@@ -3081,6 +3137,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (diff <= 0) {
                 setVisibility('finished');
                 el.classList.add('timer-finished');
+                if (el.closest('.deadline-followed-card')) followedEventPassed = true;
             } else {
                 const d = Math.floor(diff / (1000 * 60 * 60 * 24));
                 const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
@@ -3098,6 +3155,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 else el.classList.add('timer-normal');
             }
         });
+        if (followedEventPassed) renderFollowedCountdowns();
     }
     setInterval(tickCountdowns, 1000);
 

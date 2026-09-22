@@ -201,7 +201,7 @@
                                 </div>
                                 <span class="page-size-label">条</span>
                             </div>
-                            <button type="button" id="deadline-chart-toggle" class="deadline-chart-toggle" aria-controls="deadline-chart-section" aria-label="显示会议时间轴" aria-pressed="false" title="显示会议时间轴">
+                            <button type="button" id="deadline-chart-toggle" class="deadline-chart-toggle active" aria-controls="deadline-chart-section" aria-label="隐藏会议时间轴" aria-pressed="true" title="隐藏会议时间轴">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
                             </button>
                         </div>
@@ -220,7 +220,7 @@
                     </div>
                 </div>
 
-                <section id="deadline-chart-section" class="deadline-chart-section" aria-label="会议时间轴" hidden>
+                <section id="deadline-chart-section" class="deadline-chart-section" aria-label="会议时间轴">
                     <div class="deadline-chart-heading">
                         <div>
                             <h2>会议时间轴</h2>
@@ -259,6 +259,10 @@
                         <div id="deadline-chart-content"></div>
                     </div>
                     <p id="deadline-chart-status" class="deadline-chart-status" aria-live="polite"></p>
+                    <div class="deadline-followed-section" aria-labelledby="deadline-followed-heading">
+                        <h3 id="deadline-followed-heading">我的关注 · 最近事件倒计时</h3>
+                        <div id="deadline-followed-countdowns" class="deadline-followed-countdowns"></div>
+                    </div>
                 </section>
 
                 <section class="archive-section active" id="main-section">
