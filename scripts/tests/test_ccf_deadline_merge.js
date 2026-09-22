@@ -9,7 +9,7 @@ const source = fs.readFileSync(
 );
 const context = { window: {}, Intl, Date, Set, Map };
 vm.runInNewContext(source, context);
-const { merge, mergeJiajun, mergeCycle, status, key, deadlineMs, roundOf } = context.window.CCFDeadlineSupplement;
+const { merge, mergeTimedSource, mergeCycle, status, key, deadlineMs, roundOf } = context.window.CCFDeadlineSupplement;
 
 assert.equal(deadlineMs('2026-05-06 23:59:59', 'AoE'), Date.parse('2026-05-07T11:59:59Z'));
 assert.equal(deadlineMs('2026-05-06 23:59:59', 'PST'), Date.parse('2026-05-07T07:59:59Z'));
@@ -18,6 +18,9 @@ assert.equal(roundOf('first round'), 'Round 1');
 assert.equal(roundOf('Round 2 Paper Submission'), 'Round 2');
 assert.equal(roundOf('截稿日期 [First Submission]'), 'Round 1');
 assert.equal(roundOf('截稿日期 [Second Submission]'), 'Round 2');
+assert.equal(roundOf('截稿日期 [First Review Cycle]'), 'Round 1');
+assert.equal(roundOf('截稿日期 [Cycle 2 Deadline]'), 'Round 2');
+assert.equal(roundOf('截稿日期 [First Paper submission deadline]'), 'Round 1');
 
 const paperMs = Date.parse('2026-05-07T11:59:00Z');
 const base = [{
@@ -91,7 +94,7 @@ const monthlyCycles = Array.from({ length: 12 }, (_, index) => ({
     at: `2026-${String(index + 1).padStart(2, '0')}-01T17:00:00-07:00`,
     timezone: '5pm PT'
 }));
-const enriched = mergeJiajun(result, [{
+const enriched = mergeTimedSource(result, [{
     acronym: 'NeurIPS', year: 2026,
     events: [
         { type: 'paper', at: '2026-05-06T23:59:00-12:00', timezone: 'AoE' },
@@ -104,7 +107,7 @@ const enriched = mergeJiajun(result, [{
 }, {
     acronym: 'SIGCOMM', year: 2027, conferenceStart: '2027-08-08',
     conferenceEnd: '2027-08-12', events: []
-}]);
+}], 'jiajun');
 assert.equal(enriched.length, 4);
 const neurips = enriched.find(item => key(item.title, item.confs[0].year) === 'neurips|2026');
 assert.equal(neurips.confs[0].timeline.length, 6);
@@ -117,15 +120,15 @@ assert.equal(vldb.confs[0].timeline.length, 12);
 assert.equal(vldb.supplementOnly, true);
 assert.equal(vldb.confs[0].date, '2027-08-23 — 2027-08-27');
 assert.equal(enriched.find(item => item.title === 'SIGCOMM 2027').confs[0].timeline.length, 0);
-const sameDayRounds = mergeJiajun([], [{
+const sameDayRounds = mergeTimedSource([], [{
     acronym: 'ICDE', year: 2027, events: [
         { type: 'paper', cycle: 'Round 1', at: '2026-06-11T17:00:00-07:00' },
         { type: 'paper', cycle: 'Round 2', at: '2026-06-11T17:00:00-07:00' }
     ]
-}]);
+}], 'jiajun');
 assert.equal(sameDayRounds.length, 1);
 assert.equal(sameDayRounds[0].confs[0].timeline.length, 2);
-const aliasRows = mergeJiajun([{
+const aliasRows = mergeTimedSource([{
     title: 'SIGOPS ATC 2026', description: 'ACM SIGOPS Annual Technical Conference',
     sub: 'DS', rank: { ccf: 'A' },
     confs: [{ year: 2026, date: 'TBA', timeline: [] }]
@@ -136,7 +139,7 @@ const aliasRows = mergeJiajun([{
 }], [
     { acronym: 'ATC', year: 2026, events: [{ type: 'paper', at: '2026-06-10T23:59:59-12:00' }] },
     { acronym: 'CGO', year: 2027, events: [{ type: 'paper', at: '2026-09-01T23:59:59-12:00' }] }
-]);
+], 'jiajun');
 assert.equal(aliasRows.length, 2);
 assert.equal(aliasRows[0].confs[0].timeline.length, 1);
 assert.equal(aliasRows[1].confs[0].timeline.length, 1);
@@ -239,8 +242,8 @@ const cyclePoint = [{ acronym: 'TEST', year: 2027, events: [
     { type: 'camera_ready', cycle: 'Round 3', date: '2026-12-12' }
 ] }];
 for (const row of [
-    mergeCycle(mergeJiajun([], jiajunPoint), cyclePoint)[0],
-    mergeJiajun(mergeCycle([], cyclePoint), jiajunPoint)[0]
+    mergeCycle(mergeTimedSource([], jiajunPoint, 'jiajun'), cyclePoint)[0],
+    mergeTimedSource(mergeCycle([], cyclePoint), jiajunPoint, 'jiajun')[0]
 ]) {
     assert.equal(row.confs[0].timeline.length, 1);
     assert.equal(row.confs[0].timeline[0].source, 'ccfcycle');
@@ -260,4 +263,29 @@ const separateTimes = mergeCycle(merge([], [{ title: 'TEST', year: 2027, deadlin
     { type: 'notification', at: '2026-12-12T16:00:00Z' }
 ] }]);
 assert.equal(separateTimes[0].confs[0].timeline.length, 2);
+
+const ccsBase = [{ title: 'CCS 2026', description: 'CCS', sub: 'SC', rank: { ccf: 'A' },
+    confs: [{ year: 2026, date: 'TBA', timeline: [{ type: 'paper',
+        comment: '截稿日期 [First Review Cycle]', deadlineMs: Date.parse('2026-01-14T11:59:00Z') }] }] }];
+const mpcRecords = [{ acronym: 'CCS', year: 2026, name: 'ACM CCS',
+    tags: ['CNF'], events: [
+        { type: 'paper', cycle: 'Round 1', at: '2026-01-15T23:59:00-12:00' },
+        { type: 'rebuttal', cycle: 'Round 1', date: '2026-03-17', endDate: '2026-03-20' }
+    ] }];
+const coldkitRecords = [{ acronym: 'CCS', year: 2026, events: [
+    { type: 'paper', cycle: 'Round 1', at: '2026-01-16T23:59:59-12:00' },
+    { type: 'notification', cycle: 'Round 1', date: '2026-04-09' }
+] }];
+const joined = mergeTimedSource(mergeTimedSource(ccsBase, mpcRecords, 'mpc-deadlines'), coldkitRecords, 'c01dkit');
+assert.equal(joined.length, 1);
+assert.equal(joined[0].rank.ccf, 'A');
+assert.equal(joined[0].confs[0].timeline.filter(item => item.type === 'paper').length, 1);
+assert.equal(joined[0].confs[0].timeline.find(item => item.type === 'paper').source || 'ccfddl', 'ccfddl');
+assert.equal(joined[0].confs[0].timeline.find(item => item.type === 'rebuttal').source, 'mpc-deadlines');
+assert.equal(joined[0].confs[0].timeline.find(item => item.type === 'notification').source, 'c01dkit');
+assert.deepEqual(Array.from(joined[0].confs[0].tags), ['CNF']);
+const reverse = mergeTimedSource(mergeTimedSource([], coldkitRecords, 'c01dkit'), mpcRecords, 'mpc-deadlines');
+assert.equal(reverse.length, 1);
+assert.equal(reverse[0].confs[0].timeline.filter(item => item.type === 'paper').length, 1);
+assert.equal(reverse[0].confs[0].timeline.find(item => item.type === 'paper').source, 'mpc-deadlines');
 console.log('CCF deadline merge tests passed');

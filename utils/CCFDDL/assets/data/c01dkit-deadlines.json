@@ -1,0 +1,369 @@
+{
+  "generatedAt": "2026-09-22T07:20:51.596726+00:00",
+  "count": 3,
+  "conferences": [
+    {
+      "acronym": "S&P",
+      "year": 2027,
+      "name": "S&P",
+      "websiteUrl": "https://sp2027.ieee-security.org/cfpapers.html",
+      "conferenceDate": "TBA, 2027",
+      "place": "Montreal, Canada",
+      "tags": [],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract registration deadline",
+          "at": "2026-06-04T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-06-11T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 1",
+          "label": "Early-reject notification",
+          "date": "2026-07-27"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 1",
+          "label": "Reviews released",
+          "date": "2026-08-20"
+        },
+        {
+          "type": "rebuttal_end",
+          "cycle": "Round 1",
+          "label": "Rebuttal text due",
+          "date": "2026-08-25"
+        },
+        {
+          "type": "rebuttal_start",
+          "cycle": "Round 1",
+          "label": "Beginning of the interactive period for papers assigned an interactive rebuttal",
+          "date": "2026-08-26"
+        },
+        {
+          "type": "rebuttal_end",
+          "cycle": "Round 1",
+          "label": "End of the interactive rebuttal and revised manuscript due",
+          "date": "2026-09-04"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Acceptance notification",
+          "date": "2026-09-11"
+        },
+        {
+          "type": "milestone",
+          "cycle": "Round 1",
+          "label": "Submission to shepherd",
+          "date": "2026-10-02"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Round 1",
+          "label": "Camera-ready deadline",
+          "date": "2026-10-16"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract registration deadline",
+          "at": "2026-11-10T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-11-17T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 2",
+          "label": "Early-reject notification",
+          "date": "2027-01-18"
+        },
+        {
+          "type": "review_release",
+          "cycle": "Round 2",
+          "label": "Reviews released",
+          "date": "2027-02-11"
+        },
+        {
+          "type": "rebuttal_end",
+          "cycle": "Round 2",
+          "label": "Rebuttal text due",
+          "date": "2027-02-16"
+        },
+        {
+          "type": "rebuttal_start",
+          "cycle": "Round 2",
+          "label": "Beginning of the interactive period for papers assigned an interactive rebuttal",
+          "date": "2027-02-17"
+        },
+        {
+          "type": "rebuttal_end",
+          "cycle": "Round 2",
+          "label": "End of the interactive rebuttal and revised manuscript due",
+          "date": "2027-02-26"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Acceptance notification",
+          "date": "2027-03-05"
+        },
+        {
+          "type": "milestone",
+          "cycle": "Round 2",
+          "label": "Submission to shepherd",
+          "date": "2027-03-26"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Round 2",
+          "label": "Camera-ready deadline",
+          "date": "2027-04-08"
+        }
+      ]
+    },
+    {
+      "acronym": "USENIX Security",
+      "year": 2027,
+      "name": "USENIX Security",
+      "websiteUrl": "https://www.usenix.org/conference/usenixsecurity27",
+      "conferenceDate": "August 11–13, 2027",
+      "place": "Hyatt Regency Denver at Colorado Convention Center, Denver, CO, USA",
+      "tags": [],
+      "events": [
+        {
+          "type": "registration",
+          "cycle": "Round 1",
+          "label": "Mandatory registration",
+          "at": "2026-08-18T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submissions",
+          "at": "2026-08-25T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "supplementary",
+          "cycle": "Round 1",
+          "label": "Submission artifacts",
+          "at": "2026-08-28T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 1",
+          "label": "Early reject notification",
+          "date": "2026-10-06"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Rebuttal period",
+          "date": "2026-11-05",
+          "endDate": "2026-11-12"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification to authors",
+          "date": "2026-12-03"
+        },
+        {
+          "type": "milestone",
+          "cycle": "Round 1",
+          "label": "Shepherded approval",
+          "date": "2026-12-15"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Round 1",
+          "label": "Final papers",
+          "date": "2027-01-14"
+        },
+        {
+          "type": "registration",
+          "cycle": "Round 2",
+          "label": "Mandatory registration",
+          "at": "2027-01-19T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submissions",
+          "at": "2027-01-26T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "supplementary",
+          "cycle": "Round 2",
+          "label": "Submission artifacts",
+          "at": "2027-01-29T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 2",
+          "label": "Early reject notification",
+          "date": "2027-03-09"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Rebuttal period",
+          "date": "2027-04-08",
+          "endDate": "2027-04-15"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification to authors",
+          "date": "2027-05-06"
+        },
+        {
+          "type": "milestone",
+          "cycle": "Round 2",
+          "label": "Shepherded approval",
+          "date": "2027-05-18"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Round 2",
+          "label": "Final papers",
+          "date": "2027-06-03"
+        }
+      ]
+    },
+    {
+      "acronym": "CCS",
+      "year": 2026,
+      "name": "CCS",
+      "websiteUrl": "https://www.sigsac.org/ccs/CCS2026/call-for/call-for-papers.html",
+      "conferenceDate": "November 15-19, 2026",
+      "place": "The World Forum, The Hague, The Netherlands.",
+      "tags": [],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract submission deadline",
+          "at": "2026-01-07T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Full paper submission deadline",
+          "at": "2026-01-14T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 1",
+          "label": "Notification of early-rejection papers",
+          "date": "2026-02-20"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Author rebuttal period",
+          "date": "2026-03-17",
+          "endDate": "2026-03-20"
+        },
+        {
+          "type": "rebuttal_end",
+          "cycle": "Round 1",
+          "label": "Rebuttal deadline",
+          "date": "2026-03-20"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Author notification",
+          "date": "2026-04-09"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Round 1",
+          "label": "Minor revision approval deadline",
+          "date": "2026-06-05"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Round 1",
+          "label": "Camera ready deadline",
+          "date": "2026-08-21"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract submission deadline",
+          "at": "2026-04-22T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Full paper submission deadline",
+          "at": "2026-04-29T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 2",
+          "label": "Notification of early-rejection papers",
+          "date": "2026-06-03"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Author rebuttal period",
+          "date": "2026-06-29",
+          "endDate": "2026-07-01"
+        },
+        {
+          "type": "rebuttal_end",
+          "cycle": "Round 2",
+          "label": "Rebuttal deadline",
+          "date": "2026-07-01"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Author notification",
+          "date": "2026-07-17"
+        },
+        {
+          "type": "revision_due",
+          "cycle": "Round 2",
+          "label": "Minor revision approval deadline",
+          "date": "2026-09-06"
+        },
+        {
+          "type": "camera_ready",
+          "cycle": "Round 2",
+          "label": "Camera ready deadline",
+          "date": "2026-09-17"
+        }
+      ]
+    }
+  ]
+}

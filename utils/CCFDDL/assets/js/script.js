@@ -28,6 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let papersWithCodeFallback = null;
     let jiajunSupplement = null;
     let cycleSupplement = null;
+    let mpcSupplement = null;
+    let c01dkitSupplement = null;
     let ccfData = [];
     let eiData = [];
     let sciData = [];
@@ -67,6 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
         supplementLoadPromise: null,
         jiajunLoadPromise: null,
         cycleLoadPromise: null,
+        mpcLoadPromise: null,
+        c01dkitLoadPromise: null,
         acceptanceLoadPromise: null,
         ccfLoadPromise: null,
         eiLoadPromise: null,
@@ -77,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
         supplementWarning: '',
         jiajunWarning: '',
         cycleWarning: '',
+        mpcWarning: '',
+        c01dkitWarning: '',
         ccfLoaded: false,
         eiLoaded: false,
         sciLoaded: false,
@@ -1539,10 +1545,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function combinedDeadlineData() {
         let combined = baseConfData;
+        if (cycleSupplement) combined = window.CCFDeadlineSupplement.mergeCycle(combined, cycleSupplement);
         if (deadlineSupplement) combined = window.CCFDeadlineSupplement.merge(combined, deadlineSupplement);
         if (papersWithCodeFallback) combined = window.CCFDeadlineSupplement.merge(combined, papersWithCodeFallback, 'paperswithcode');
-        if (jiajunSupplement) combined = window.CCFDeadlineSupplement.mergeJiajun(combined, jiajunSupplement);
-        if (cycleSupplement) combined = window.CCFDeadlineSupplement.mergeCycle(combined, cycleSupplement);
+        if (mpcSupplement) combined = window.CCFDeadlineSupplement.mergeTimedSource(combined, mpcSupplement, 'mpc-deadlines');
+        if (c01dkitSupplement) combined = window.CCFDeadlineSupplement.mergeTimedSource(combined, c01dkitSupplement, 'c01dkit');
+        if (jiajunSupplement) combined = window.CCFDeadlineSupplement.mergeTimedSource(combined, jiajunSupplement, 'jiajun');
         return combined.map(finalizeConferenceEntry);
     }
 
@@ -1703,6 +1711,37 @@ document.addEventListener('DOMContentLoaded', () => {
         return runtimeState.cycleLoadPromise;
     }
 
+    async function loadTimedSnapshot(source, forceRefresh = false) {
+        const isMpc = source === 'mpc-deadlines';
+        const promiseKey = isMpc ? 'mpcLoadPromise' : 'c01dkitLoadPromise';
+        const warningKey = isMpc ? 'mpcWarning' : 'c01dkitWarning';
+        const current = isMpc ? mpcSupplement : c01dkitSupplement;
+        if (runtimeState[promiseKey]) return runtimeState[promiseKey];
+        if (current && !forceRefresh) return current;
+        const file = isMpc ? 'mpc-deadlines.json' : 'c01dkit-deadlines.json';
+        runtimeState[promiseKey] = fetch(`./assets/data/${file}`, { cache: 'no-cache' })
+            .then(async response => {
+                if (!response.ok) throw new Error(`JSON HTTP ${response.status}`);
+                const payload = await response.json();
+                if (!payload || !Array.isArray(payload.conferences) || !payload.conferences.length) {
+                    throw new Error(`${source} 快照格式无效`);
+                }
+                if (isMpc) mpcSupplement = payload.conferences;
+                else c01dkitSupplement = payload.conferences;
+                runtimeState[warningKey] = '';
+                applyDeadlineSupplement();
+                return payload.conferences;
+            }).catch(error => {
+                console.warn(`[CCFDDL] ${source} snapshot unavailable:`, error);
+                runtimeState[warningKey] = `${source} 补充暂不可用`;
+                if (currentMode === 'deadlines' && baseConfData.length) scheduleUpdateView();
+                return null;
+            }).finally(() => {
+                runtimeState[promiseKey] = null;
+            });
+        return runtimeState[promiseKey];
+    }
+
     async function fetchConferencesData(forceRefresh = false) {
         if (runtimeState.deadlineLoadPromise && !forceRefresh) {
             return runtimeState.deadlineLoadPromise;
@@ -1718,6 +1757,8 @@ document.addEventListener('DOMContentLoaded', () => {
         loadDeadlineSupplement(forceRefresh);
         loadJiajunSupplement(forceRefresh);
         loadCycleSupplement(forceRefresh);
+        loadTimedSnapshot('mpc-deadlines', forceRefresh);
+        loadTimedSnapshot('c01dkit', forceRefresh);
 
         if (!runtimeState.deadlinesLoaded && hydratedCache.length > 0) {
             baseConfData = hydratedCache;
@@ -2212,15 +2253,17 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!deadlineModal || !deadlineModalContent) return;
         const edition = conf.confs[0];
         const sources = [conf.supplementOnly ? '' : 'CCF-Deadlines',
+            (conf.cycleEnriched || conf.cycleOnly) ? 'CCF Cycle' : '',
             (conf.enriched || conf.aiOnly) ? 'Hugging Face AI Deadlines' : '',
             (conf.pwcEnriched || conf.pwcOnly) ? 'Papers with Code' : '',
-            (conf.jiajunEnriched || conf.jiajunOnly) ? 'Jiajun Huang Deadlines' : '',
-            (conf.cycleEnriched || conf.cycleOnly) ? 'CCF Cycle' : ''].filter(Boolean);
+            (conf.mpcEnriched || conf.mpcOnly) ? 'MPC Deadlines' : '',
+            (conf.c01dkitEnriched || conf.c01dkitOnly) ? 'c01dkit' : '',
+            (conf.jiajunEnriched || conf.jiajunOnly) ? 'Jiajun Huang Deadlines' : ''].filter(Boolean);
         const source = sources.join(' · ');
         const typeNames = {
             abstract: '摘要', paper: '论文投稿', registration: '注册',
             review_release: '审稿意见公布', rebuttal_start: '答辩开始',
-            rebuttal_end: '答辩结束', notification: '结果通知',
+            rebuttal_end: '答辩结束', notification: '结果通知', first_notification: '初步通知',
             camera_ready: '终稿', supplementary: '补充材料', rebuttal: '答辩',
             revision_due: '修订截止', milestone: '时间节点'
         };
@@ -2238,7 +2281,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div class="deadline-timeline-meta">
                         <span>${escapeDisplayText(typeNames[type] || type, '事件')}</span>
-                        <span>${event.source === 'aideadlines' ? 'Hugging Face AI Deadlines' : event.source === 'paperswithcode' ? 'Papers with Code' : event.source === 'jiajun' ? 'Jiajun Huang Deadlines' : event.source === 'ccfcycle' ? 'CCF Cycle' : 'CCF-Deadlines'}</span>
+                        <span>${chartSourceLabel(event.source)}</span>
                     </div>
                     <time class="no-translate">${escapeDisplayText(date, 'TBD')}</time>
                 </div>
@@ -2311,7 +2354,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function chartSourceLabel(source) {
         return {
             aideadlines: 'Hugging Face AI Deadlines', paperswithcode: 'Papers with Code',
-            jiajun: 'Jiajun Huang Deadlines', ccfcycle: 'CCF Cycle'
+            jiajun: 'Jiajun Huang Deadlines', ccfcycle: 'CCF Cycle',
+            'mpc-deadlines': 'MPC Deadlines', c01dkit: 'c01dkit'
         }[source] || 'CCF-Deadlines';
     }
 
@@ -2933,7 +2977,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? ` · ${runtimeState.jiajunWarning}` : '';
             const cycleSuffix = currentMode === 'deadlines' && runtimeState.cycleWarning
                 ? ` · ${runtimeState.cycleWarning}` : '';
-            totalCountSpan.textContent = `已检索到 ${filteredData.length} 个结果${warningSuffix}${supplementSuffix}${jiajunSuffix}${cycleSuffix}`;
+            const mpcSuffix = currentMode === 'deadlines' && runtimeState.mpcWarning
+                ? ` · ${runtimeState.mpcWarning}` : '';
+            const c01dkitSuffix = currentMode === 'deadlines' && runtimeState.c01dkitWarning
+                ? ` · ${runtimeState.c01dkitWarning}` : '';
+            totalCountSpan.textContent = `已检索到 ${filteredData.length} 个结果${warningSuffix}${supplementSuffix}${jiajunSuffix}${cycleSuffix}${mpcSuffix}${c01dkitSuffix}`;
         }
 
         // --- 分页逻辑 ---

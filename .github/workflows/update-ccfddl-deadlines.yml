@@ -25,6 +25,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install YAML parser
+        run: python -m pip install PyYAML==6.0.2
+
       - name: Test deadline parsers
         run: python -m unittest discover -s scripts/tests -p "test_*_deadlines.py" -v
 
@@ -48,6 +51,16 @@ jobs:
         continue-on-error: true
         run: python scripts/update_ccf_deadlines.py
 
+      - name: Refresh MPC Deadlines
+        id: mpc
+        continue-on-error: true
+        run: python scripts/update_ccf_external_deadlines.py mpc
+
+      - name: Refresh c01dkit security timelines
+        id: c01dkit
+        continue-on-error: true
+        run: python scripts/update_ccf_external_deadlines.py c01dkit
+
       - name: Validate Jiajun JSON
         if: steps.jiajun.outcome == 'success'
         run: python -m json.tool utils/CCFDDL/assets/data/jiajun-deadlines.json > /dev/null
@@ -60,19 +73,27 @@ jobs:
         if: steps.paperswithcode.outcome == 'success'
         run: python -m json.tool utils/CCFDDL/assets/data/ai-deadlines.json > /dev/null
 
+      - name: Validate MPC JSON
+        if: steps.mpc.outcome == 'success'
+        run: python -m json.tool utils/CCFDDL/assets/data/mpc-deadlines.json > /dev/null
+
+      - name: Validate c01dkit JSON
+        if: steps.c01dkit.outcome == 'success'
+        run: python -m json.tool utils/CCFDDL/assets/data/c01dkit-deadlines.json > /dev/null
+
       - name: Commit refreshed snapshot
         shell: bash
         run: |
-          if git diff --quiet -- utils/CCFDDL/assets/data/jiajun-deadlines.json utils/CCFDDL/assets/data/ccf-cycle-deadlines.json utils/CCFDDL/assets/data/ai-deadlines.json; then
+          if git diff --quiet -- utils/CCFDDL/assets/data/jiajun-deadlines.json utils/CCFDDL/assets/data/ccf-cycle-deadlines.json utils/CCFDDL/assets/data/ai-deadlines.json utils/CCFDDL/assets/data/mpc-deadlines.json utils/CCFDDL/assets/data/c01dkit-deadlines.json; then
             echo "Conference snapshots are unchanged."
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add utils/CCFDDL/assets/data/jiajun-deadlines.json utils/CCFDDL/assets/data/ccf-cycle-deadlines.json utils/CCFDDL/assets/data/ai-deadlines.json
+            git add utils/CCFDDL/assets/data/jiajun-deadlines.json utils/CCFDDL/assets/data/ccf-cycle-deadlines.json utils/CCFDDL/assets/data/ai-deadlines.json utils/CCFDDL/assets/data/mpc-deadlines.json utils/CCFDDL/assets/data/c01dkit-deadlines.json
             git commit -m "chore: refresh CCFDDL conference snapshots"
             git push
           fi
 
       - name: Report source update failure
-        if: steps.jiajun.outcome == 'failure' || steps.cycle.outcome == 'failure' || steps.paperswithcode.outcome == 'failure'
+        if: steps.jiajun.outcome == 'failure' || steps.cycle.outcome == 'failure' || steps.paperswithcode.outcome == 'failure' || steps.mpc.outcome == 'failure' || steps.c01dkit.outcome == 'failure'
         run: exit 1

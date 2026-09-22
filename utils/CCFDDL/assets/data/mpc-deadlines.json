@@ -1,0 +1,3482 @@
+{
+  "generatedAt": "2026-09-22T07:21:00.718060+00:00",
+  "count": 87,
+  "conferences": [
+    {
+      "acronym": "CCS",
+      "year": 2026,
+      "name": "ACM Conference on Computer and Communications Security",
+      "websiteUrl": "https://www.sigsac.org/ccs/CCS2026/",
+      "conferenceDate": "November 15-19, 2026",
+      "place": "The Hague, Netherlands",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract deadline",
+          "date": "2026-01-07"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-01-14T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Rebuttal period",
+          "date": "2026-03-17",
+          "endDate": "2026-03-20"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract deadline",
+          "date": "2026-04-22"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-04-29T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Rebuttal period",
+          "date": "2026-06-29",
+          "endDate": "2026-07-01"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notifications",
+          "date": "2026-04-09"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notifications",
+          "date": "2026-07-17"
+        }
+      ]
+    },
+    {
+      "acronym": "CRYPTO",
+      "year": 2026,
+      "name": "International Cryptology Conference",
+      "websiteUrl": "https://crypto.iacr.org/2026",
+      "conferenceDate": "August 17-20, 2026",
+      "place": "Santa Barbara, USA",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-02-12T23:59:00-08:00",
+          "timezone": "PT"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2026-04-07",
+          "endDate": "2026-04-13"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-05-04"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "",
+          "label": "Early reject",
+          "date": "2026-04-07"
+        }
+      ]
+    },
+    {
+      "acronym": "EUROCRYPT",
+      "year": 2027,
+      "name": "European Cryptology Conference",
+      "websiteUrl": "https://eurocrypt.iacr.org/2027/callforpapers.php",
+      "conferenceDate": "April 11-15, 2027",
+      "place": "Eindhoven",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-09-17T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "",
+          "label": "Early reject notification",
+          "date": "2026-11-30"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2027-01-18"
+        }
+      ]
+    },
+    {
+      "acronym": "FOCS",
+      "year": 2026,
+      "name": "IEEE Symposium on Foundations of Computer Science",
+      "websiteUrl": "https://focs.computer.org/2026/",
+      "conferenceDate": "November 08-11, 2026",
+      "place": "New York, USA",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-04-01T16:59:00-04:00",
+          "timezone": "EDT"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-07-03"
+        }
+      ]
+    },
+    {
+      "acronym": "INFOCOM",
+      "year": 2027,
+      "name": "IEEE International Conference on Computer Communications",
+      "websiteUrl": "https://infocom2027.ieee-infocom.org",
+      "conferenceDate": "May 24-27, 2027",
+      "place": "Honolulu, HI, USA",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-07-24"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-31T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-12-08"
+        }
+      ]
+    },
+    {
+      "acronym": "S&P",
+      "year": 2027,
+      "name": "IEEE Symposium on Security and Privacy",
+      "websiteUrl": "https://sp2027.ieee-security.org/",
+      "conferenceDate": "TBA likely May 2027",
+      "place": "Montreal, Quebec, Canada",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "SOK",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract deadline",
+          "date": "2026-06-04"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-06-11T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Rebuttal period",
+          "date": "2026-08-20",
+          "endDate": "2026-09-04"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract deadline",
+          "date": "2026-11-10"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-11-17T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Rebuttal period",
+          "date": "2027-02-11",
+          "endDate": "2027-02-26"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 1",
+          "label": "Early reject",
+          "date": "2026-07-27"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 2",
+          "label": "Early reject",
+          "date": "2027-01-18"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-09-11"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2027-03-05"
+        }
+      ]
+    },
+    {
+      "acronym": "NDSS",
+      "year": 2027,
+      "name": "Network and Distributed System Security Symposium",
+      "websiteUrl": "https://www.ndss-symposium.org/ndss2027/",
+      "conferenceDate": "March 22-26, 2027",
+      "place": "Seoul, South Korea",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "SOK",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-05-06T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Rebuttal period",
+          "date": "2026-06-24",
+          "endDate": "2026-06-28"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-08-19T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Rebuttal period",
+          "date": "2026-10-08",
+          "endDate": "2026-10-10"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 1",
+          "label": "Early reject",
+          "date": "2026-06-12"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 2",
+          "label": "Early reject",
+          "date": "2026-09-25"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-07-22"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2026-11-04"
+        }
+      ]
+    },
+    {
+      "acronym": "PODC",
+      "year": 2026,
+      "name": "ACM Symposium on Principles of Distributed Computing",
+      "websiteUrl": "https://www.podc.org/podc2026/",
+      "conferenceDate": "June 06-10, 2026",
+      "place": "Egham, England",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-02-11"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-02-16T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-04-29"
+        }
+      ]
+    },
+    {
+      "acronym": "PODS",
+      "year": 2027,
+      "name": "Principles of Database Systems Symposium",
+      "websiteUrl": "https://2027.sigmod.org",
+      "conferenceDate": "June 13-19, 2027",
+      "place": "Huntington Beach, CA, USA",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract deadline",
+          "date": "2026-05-23"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-05-30T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract deadline",
+          "date": "2026-12-03"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-12-10T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-09-01"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2027-03-01"
+        }
+      ]
+    },
+    {
+      "acronym": "SIGMOD",
+      "year": 2027,
+      "name": "ACM Special Interest Group on Management of Data Conference",
+      "websiteUrl": "https://2027.sigmod.org",
+      "conferenceDate": "June 13-19, 2027",
+      "place": "Huntington Beach, CA, USA",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract deadline",
+          "date": "2026-01-10"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-01-17T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract deadline",
+          "date": "2026-04-10"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-04-17T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 3",
+          "label": "Abstract deadline",
+          "date": "2026-07-10"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 3",
+          "label": "Paper submission deadline",
+          "at": "2026-07-17T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 4",
+          "label": "Abstract deadline",
+          "date": "2026-10-10"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 4",
+          "label": "Paper submission deadline",
+          "at": "2026-10-17T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-06-02"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2026-09-02"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 3",
+          "label": "Notification",
+          "date": "2026-12-02"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 4",
+          "label": "Notification",
+          "date": "2027-03-02"
+        }
+      ]
+    },
+    {
+      "acronym": "USENIX Security",
+      "year": 2027,
+      "name": "Usenix Security Symposium",
+      "websiteUrl": "https://www.usenix.org/conference/usenixsecurity27",
+      "conferenceDate": "August 11-13, 2027",
+      "place": "Denver, CO, USA",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "SOK",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract deadline",
+          "date": "2026-08-18"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-08-25T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Rebuttal period",
+          "date": "2026-11-06",
+          "endDate": "2026-11-13"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract deadline",
+          "date": "2027-01-19"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2027-01-26T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Rebuttal period",
+          "date": "2027-04-16",
+          "endDate": "2027-04-23"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 1",
+          "label": "Early reject",
+          "date": "2026-10-07"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 2",
+          "label": "Early reject",
+          "date": "2027-03-17"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-12-04"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2027-05-14"
+        }
+      ]
+    },
+    {
+      "acronym": "WWW",
+      "year": 2027,
+      "name": "The Web Conference (WWW)",
+      "websiteUrl": "https://acmweb2027.org",
+      "conferenceDate": "May 10-14, 2027",
+      "place": "Dublin, Ireland",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract deadline",
+          "date": "2026-10-18"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-10-25T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract deadline",
+          "date": "2026-11-09"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-11-16T23:59:00-12:00",
+          "timezone": "AoE"
+        }
+      ]
+    },
+    {
+      "acronym": "VLDB",
+      "year": 2027,
+      "name": "International Conference on Very Large Data Bases",
+      "websiteUrl": "https://vldb.org/2027/",
+      "conferenceDate": "August 23-27, 2027",
+      "place": "Athens, Greece",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "APPLIED",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract deadline",
+          "date": "2026-03-25"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-04-01T16:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract deadline",
+          "date": "2026-04-25"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-05-01T16:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 3",
+          "label": "Abstract deadline",
+          "date": "2026-05-25"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 3",
+          "label": "Paper submission deadline",
+          "at": "2026-06-01T16:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 4",
+          "label": "Abstract deadline",
+          "date": "2026-06-25"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 4",
+          "label": "Paper submission deadline",
+          "at": "2026-07-01T16:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 5",
+          "label": "Abstract deadline",
+          "date": "2026-07-25"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 5",
+          "label": "Paper submission deadline",
+          "at": "2026-08-01T16:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 6",
+          "label": "Abstract deadline",
+          "date": "2026-08-25"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 6",
+          "label": "Paper submission deadline",
+          "at": "2026-09-01T16:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 7",
+          "label": "Abstract deadline",
+          "date": "2026-09-25"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 7",
+          "label": "Paper submission deadline",
+          "at": "2026-10-01T16:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 8",
+          "label": "Abstract deadline",
+          "date": "2026-10-25"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 8",
+          "label": "Paper submission deadline",
+          "at": "2026-11-01T16:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 9",
+          "label": "Abstract deadline",
+          "date": "2026-11-25"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 9",
+          "label": "Paper submission deadline",
+          "at": "2026-12-01T16:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 10",
+          "label": "Abstract deadline",
+          "date": "2026-12-25"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 10",
+          "label": "Paper submission deadline",
+          "at": "2027-01-01T16:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 11",
+          "label": "Abstract deadline",
+          "date": "2027-01-25"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 11",
+          "label": "Paper submission deadline",
+          "at": "2027-02-01T16:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 12",
+          "label": "Abstract deadline",
+          "date": "2027-02-25"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 12",
+          "label": "Paper submission deadline",
+          "at": "2027-03-01T16:59:00-12:00",
+          "timezone": "AoE"
+        }
+      ]
+    },
+    {
+      "acronym": "ASIACCS",
+      "year": 2027,
+      "name": "ACM Asia Conference on Computer and Communications Security",
+      "websiteUrl": "https://asiaccs2027.cityu.edu.mo/home/index.html",
+      "conferenceDate": "July 12-16, 2027",
+      "place": "Macau, China",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "SOK",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-08-21T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Rebuttal period",
+          "date": "2026-10-26",
+          "endDate": "2026-10-30"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-12-11T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Rebuttal period",
+          "date": "2027-03-08",
+          "endDate": "2027-03-12"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 1",
+          "label": "Early reject",
+          "date": "2026-09-25"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "Round 2",
+          "label": "Early reject",
+          "date": "2027-02-05"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-11-13"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2027-03-31"
+        }
+      ]
+    },
+    {
+      "acronym": "ACSAC",
+      "year": 2026,
+      "name": "Annual Computer Security Applications Conference",
+      "websiteUrl": "https://www.acsac.org/2026",
+      "conferenceDate": "December 07-11, 2026",
+      "place": "Los Angeles, California",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "CNF",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-05-26T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2026-08-18",
+          "endDate": "2026-08-25"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "",
+          "label": "Early reject",
+          "date": "2026-07-13"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-09-08"
+        }
+      ]
+    },
+    {
+      "acronym": "ASIACRYPT",
+      "year": 2026,
+      "name": "International Conference on the Theory and Application of Cryptology and Information Security",
+      "websiteUrl": "https://asiacrypt.iacr.org/2026/",
+      "conferenceDate": "December 07-11, 2026",
+      "place": "Hong Kong",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-05-22T11:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2026-07-17",
+          "endDate": "2026-07-22"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "",
+          "label": "Early reject",
+          "date": "2026-07-17"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-08-14"
+        }
+      ]
+    },
+    {
+      "acronym": "CHES",
+      "year": 2027,
+      "name": "Cryptographic Hardware and Embedded Systems",
+      "websiteUrl": "https://ches.iacr.org/2027/",
+      "conferenceDate": "September 06-09, 2027",
+      "place": "Cancún, Mexico",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "SOK",
+        "CNF",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-07-15T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Rebuttal period",
+          "date": "2026-08-23",
+          "endDate": "2026-08-28"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-10-15T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Rebuttal period",
+          "date": "2026-11-23",
+          "endDate": "2026-11-28"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 3",
+          "label": "Paper submission deadline",
+          "at": "2027-01-15T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 3",
+          "label": "Rebuttal period",
+          "date": "2027-02-23",
+          "endDate": "2027-02-28"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 4",
+          "label": "Paper submission deadline",
+          "at": "2027-04-15T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 4",
+          "label": "Rebuttal period",
+          "date": "2027-05-23",
+          "endDate": "2027-05-28"
+        }
+      ]
+    },
+    {
+      "acronym": "DISC",
+      "year": 2026,
+      "name": "International Symposium on Distributed Computing",
+      "websiteUrl": "https://www.disc-conference.org/wp/disc2026/",
+      "conferenceDate": "November 09-13, 2026",
+      "place": "Rome, Italy",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "CNF",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-05-27"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-06-01T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2026-07-21",
+          "endDate": "2026-07-25"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-08-05"
+        }
+      ]
+    },
+    {
+      "acronym": "ESORICS",
+      "year": 2026,
+      "name": "European Symposium on Research in Computer Security",
+      "websiteUrl": "https://sites.google.com/di.uniroma1.it/esorics2026/",
+      "conferenceDate": "September 14-18, 2026",
+      "place": "Rome, Italy",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-01-09T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-04-21T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-03-24"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2026-06-12"
+        }
+      ]
+    },
+    {
+      "acronym": "EuroSys",
+      "year": 2027,
+      "name": "The European Conference on Computer Systems",
+      "websiteUrl": "https://2027.eurosys.org",
+      "conferenceDate": "April 19-23, 2027",
+      "place": "Rabat, Morocco",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract deadline",
+          "date": "2026-05-07"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-05-14T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Rebuttal period",
+          "date": "2026-07-29",
+          "endDate": "2026-07-31"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract deadline",
+          "date": "2026-09-17"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-09-24T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Rebuttal period",
+          "date": "2027-01-06",
+          "endDate": "2027-01-08"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-08-21"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2027-01-29"
+        }
+      ]
+    },
+    {
+      "acronym": "FC",
+      "year": 2027,
+      "name": "Financial Cryptography and Data Security",
+      "websiteUrl": "https://fc27.ifca.ai",
+      "conferenceDate": "February 8-12, 2027",
+      "place": "Barbados",
+      "tags": [
+        "PRACT",
+        "SOK",
+        "CNF",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-09-17T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-11-05"
+        }
+      ]
+    },
+    {
+      "acronym": "CSF",
+      "year": 2027,
+      "name": "IEEE Computer Security Foundations Symposium",
+      "websiteUrl": "https://www.ieee-security.org/TC/CSF2027/",
+      "conferenceDate": "July 26-29, 2027",
+      "place": "Tokyo, Japan",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREA",
+        "SOK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-08-03T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-10-15T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 3",
+          "label": "Paper submission deadline",
+          "at": "2027-01-28T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-10-07"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2026-12-14"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 3",
+          "label": "Notification",
+          "date": "2027-04-05"
+        }
+      ]
+    },
+    {
+      "acronym": "Euro S&P",
+      "year": 2027,
+      "name": "IEEE European Symposium on Security and Privacy",
+      "websiteUrl": "https://www.ieee-security.org/TC/EuroSP2027/",
+      "conferenceDate": "July 05-09, 2027",
+      "place": "Madrid, Spain",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "SOK",
+        "CNF",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-11-25"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-12-02T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2027-02-24",
+          "endDate": "2027-03-01"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2027-03-18"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "",
+          "label": "Early reject",
+          "date": "2027-01-28"
+        }
+      ]
+    },
+    {
+      "acronym": "ICDCS",
+      "year": 2026,
+      "name": "IEEE International Conference on Distributed Computing Systems",
+      "websiteUrl": "https://icdcs2026.icdcs.org",
+      "conferenceDate": "July 22-25, 2026",
+      "place": "South Korea",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "CNF",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-01-07"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-01-14T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-04-02"
+        }
+      ]
+    },
+    {
+      "acronym": "ITCS",
+      "year": 2027,
+      "name": "Innovations in Theoretical Computer Science",
+      "websiteUrl": "http://itcs-conf.org/",
+      "conferenceDate": "January 12-15, 2027",
+      "place": "UC Berkeley",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-09-02"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-09-04T11:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-11-06"
+        }
+      ]
+    },
+    {
+      "acronym": "PETS",
+      "year": 2027,
+      "name": "Privacy Enhancing Technologies Symposium",
+      "websiteUrl": "https://petsymposium.org/cfp27.php",
+      "conferenceDate": "July 15-20, 2027",
+      "place": "Delft, The Netherlands",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "SOK",
+        "CNF",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-05-31T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Rebuttal period",
+          "date": "2026-07-11",
+          "endDate": "2026-07-17"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-08-31T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Rebuttal period",
+          "date": "2026-10-10",
+          "endDate": "2026-10-16"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 3",
+          "label": "Paper submission deadline",
+          "at": "2026-11-30T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 3",
+          "label": "Rebuttal period",
+          "date": "2027-01-12",
+          "endDate": "2027-01-19"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 4",
+          "label": "Paper submission deadline",
+          "at": "2027-02-28T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 4",
+          "label": "Rebuttal period",
+          "date": "2027-04-10",
+          "endDate": "2027-04-16"
+        }
+      ]
+    },
+    {
+      "acronym": "SOUPS",
+      "year": 2026,
+      "name": "Symposium on Usable Privacy and Security",
+      "websiteUrl": "https://soups.page",
+      "conferenceDate": "August 23-26, 2026",
+      "place": "Hannover, Germany",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "SOK",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-02-12"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-02-19T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2026-04-23",
+          "endDate": "2026-04-30"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-05-19"
+        }
+      ]
+    },
+    {
+      "acronym": "ACISP",
+      "year": 2027,
+      "name": "Australasian Conference on Information Security and Privacy",
+      "websiteUrl": "https://acisp.org",
+      "conferenceDate": "July 07-10, 2027",
+      "place": "Melbourne, Australia",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "SOK",
+        "CNF",
+        "COREB"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-11-30T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2027-03-01T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2027-01-15"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2027-04-16"
+        }
+      ]
+    },
+    {
+      "acronym": "ACNS",
+      "year": 2027,
+      "name": "International Conference on Applied Cryptography and Network Security",
+      "websiteUrl": "https://acns2027.isg.rhul.ac.uk",
+      "conferenceDate": "June 28 - July 1, 2027",
+      "place": "Royal Holloway, University of London, UK",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "SOK",
+        "CNF",
+        "COREB"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-09-24T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2027-01-21T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-11-26"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2027-03-25"
+        }
+      ]
+    },
+    {
+      "acronym": "ARES",
+      "year": 2026,
+      "name": "International Conference on Availability, Reliability and Security",
+      "websiteUrl": "https://www.ares-conference.eu",
+      "conferenceDate": "August 24-27, 2026",
+      "place": "Linköping, Sweden",
+      "tags": [
+        "PRACT",
+        "SOK",
+        "CNF",
+        "COREB"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-03-02"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-03-09T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-05-13"
+        }
+      ]
+    },
+    {
+      "acronym": "CANS",
+      "year": 2026,
+      "name": "International Conference on Cryptology and Network Security",
+      "websiteUrl": "https://uow-ic2.github.io/cans2026/index.html",
+      "conferenceDate": "November 23-25, 2026",
+      "place": "Wollongong, Australia",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "COREB"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-06-10T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-08-10"
+        }
+      ]
+    },
+    {
+      "acronym": "CT-RSAC",
+      "year": 2027,
+      "name": "RSA Conference Cryptographers’ Track",
+      "websiteUrl": "https://www.esat.kuleuven.be/cosic/events/ct-rsa-2027/",
+      "conferenceDate": "April 05-08, 2027",
+      "place": "San Francisco, CA, USA",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "CNF",
+        "COREB"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-10-22T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-12-10"
+        }
+      ]
+    },
+    {
+      "acronym": "ISIT",
+      "year": 2026,
+      "name": "IEEE International Symposium on Information Theory",
+      "websiteUrl": "https://2026.ieee-isit.org",
+      "conferenceDate": "June 28 - July 03, 2026",
+      "place": "Guangzhou, China",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREB"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-01-16T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-04-01"
+        }
+      ]
+    },
+    {
+      "acronym": "PKC",
+      "year": 2027,
+      "name": "International Conference on Practice and Theory of Public Key Cryptography",
+      "websiteUrl": "https://pkc.iacr.org/2027/",
+      "conferenceDate": "March 01-04, 2027",
+      "place": "Taipei, Taiwan",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREB"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-08-16T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2026-10-09",
+          "endDate": "2026-10-16"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "",
+          "label": "First round notification",
+          "date": "2026-10-09"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Final notification",
+          "date": "2026-11-26"
+        }
+      ]
+    },
+    {
+      "acronym": "SAC",
+      "year": 2026,
+      "name": "Conference on Selected Areas in Cryptography",
+      "websiteUrl": "https://sacworkshop.org/SAC26/",
+      "conferenceDate": "August 26-28, 2026",
+      "place": "Ottawa, Ontario",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "CNF",
+        "COREB"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-02-02T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-05-11T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-03-19"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2026-06-25"
+        }
+      ]
+    },
+    {
+      "acronym": "TCC",
+      "year": 2026,
+      "name": "Theory of Cryptography Conference",
+      "websiteUrl": "https://tcc.iacr.org/2026/",
+      "conferenceDate": "November 10-13, 2026",
+      "place": "New York City, USA",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREB"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-05-19T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-08-20"
+        }
+      ]
+    },
+    {
+      "acronym": "SECRYPT",
+      "year": 2026,
+      "name": "International Conference on Information Security and Cryptography",
+      "websiteUrl": "https://secrypt.scitevents.org",
+      "conferenceDate": "July 16-18, 2026",
+      "place": "Porto, Portugal",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "POS",
+        "CNF",
+        "COREC"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-03-23T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-04-16T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-04-30"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2026-05-22"
+        }
+      ]
+    },
+    {
+      "acronym": "ICDCN",
+      "year": 2027,
+      "name": "International Conference on Distributed Computing and Networking",
+      "websiteUrl": "https://cs3-lab.github.io/icdcn/index.html",
+      "conferenceDate": "January 04-07, 2027",
+      "place": "Surathkal, Karnataka, India",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "CNF",
+        "COREN"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-30T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-10-01"
+        }
+      ]
+    },
+    {
+      "acronym": "ICISS",
+      "year": 2026,
+      "name": "International Conference on Information Systems Security",
+      "websiteUrl": "https://iciss.in",
+      "conferenceDate": "December 16-20, 2026",
+      "place": "Chennai, India",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "CNF",
+        "COREN"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-30T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-09-10"
+        }
+      ]
+    },
+    {
+      "acronym": "INDOCRYPT",
+      "year": 2026,
+      "name": "International Conference on Cryptology in India",
+      "websiteUrl": "https://indocrypt2026.cdacb.in/#home",
+      "conferenceDate": "December 13-16, 2026",
+      "place": "Bengaluru, India",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "CNF",
+        "COREN"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-08-27T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-10-10"
+        }
+      ]
+    },
+    {
+      "acronym": "SCN",
+      "year": 2026,
+      "name": "Conference on Security and Cryptography for Networks",
+      "websiteUrl": "https://scn.unisa.it/scn26/",
+      "conferenceDate": "September 14-16, 2026",
+      "place": "Amalfy, Italy",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "CNF",
+        "COREN"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-02-28T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-04-28"
+        }
+      ]
+    },
+    {
+      "acronym": "SoCC",
+      "year": 2026,
+      "name": "ACM Symposium on Cloud Computing",
+      "websiteUrl": "https://acmsocc.org/2026/papers.html",
+      "conferenceDate": "November 18-20, 2026",
+      "place": "Singapore",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "CNF",
+        "COREO"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract deadline",
+          "date": "2026-02-06"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-02-13T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Rebuttal period",
+          "date": "2026-04-12",
+          "endDate": "2026-04-14"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract deadline",
+          "date": "2026-07-07"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-07-14T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Rebuttal period",
+          "date": "2026-09-10",
+          "endDate": "2026-09-12"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-04-29"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2026-09-26"
+        }
+      ]
+    },
+    {
+      "acronym": "AfricaCrypt",
+      "year": 2026,
+      "name": "International Conference on Cryptology",
+      "websiteUrl": "https://www.africacrypt2026.tn",
+      "conferenceDate": "July 08-10, 2026",
+      "place": "Hammamet, Tunisia",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "CNF",
+        "COREO"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-03-01T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-04-20"
+        }
+      ]
+    },
+    {
+      "acronym": "ArcticCrypt",
+      "year": 2025,
+      "name": "European Cryptology Conference",
+      "websiteUrl": "https://simula-uib.com/arcticcrypt2025/",
+      "conferenceDate": "July 06 - 11, 2025",
+      "place": "Longyearbyen",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREO"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2024-09-13T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2024-10-23"
+        }
+      ]
+    },
+    {
+      "acronym": "FLTA",
+      "year": 2026,
+      "name": "International Conference on Federated Learning Technologies and Applications",
+      "websiteUrl": "https://flta-conference.org/flta-2026/",
+      "conferenceDate": "October 27-30, 2026",
+      "place": "Paris, France",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "CNF",
+        "COREO"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-30T23:59:00-12:00",
+          "timezone": "AoE"
+        }
+      ]
+    },
+    {
+      "acronym": "ITC",
+      "year": 2026,
+      "name": "Information-Theoretic Cryptography",
+      "websiteUrl": "https://itcrypto.github.io/2026/index.html",
+      "conferenceDate": "August 15-16, 2026",
+      "place": "Santa Barbara, CA, USA",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREO"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-03-16T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-05-08"
+        }
+      ]
+    },
+    {
+      "acronym": "SPACE",
+      "year": 2026,
+      "name": "Sixteenth International Conference on Security, Privacy and Applied Cryptographic Engineering",
+      "websiteUrl": "https://space2026.isec.tugraz.at",
+      "conferenceDate": "December 18-21, 2026",
+      "place": "Bangalore, India",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "APPLIED",
+        "CNF",
+        "COREO"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract deadline",
+          "date": "2026-07-07"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-07-10T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract deadline",
+          "date": "2026-09-04"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-09-11T23:59:00-12:00",
+          "timezone": "AoE"
+        }
+      ]
+    },
+    {
+      "acronym": "TRUST",
+      "year": 2027,
+      "name": "ACM Conference on Trustworthy and Responsible AI and Computing Systems",
+      "websiteUrl": "https://eigtrust.acm.org/trust2027/",
+      "conferenceDate": "March 07-09, 2027",
+      "place": "Washington DC",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "CNF",
+        "COREO"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-06-15T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-10-31T23:59:00-12:00",
+          "timezone": "AoE"
+        }
+      ]
+    },
+    {
+      "acronym": "AISec",
+      "year": 2026,
+      "name": "Workshop on Artificial Intelligence and Security",
+      "websiteUrl": "https://aisec.cc",
+      "conferenceDate": "November 19, 2026",
+      "place": "The Hague, Netherlands",
+      "tags": [
+        "PRACT",
+        "PPML",
+        "SOK",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-24T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-09-03"
+        }
+      ]
+    },
+    {
+      "acronym": "APKC",
+      "year": 2026,
+      "name": "ACM ASIA Public-Key Cryptography Workshop",
+      "websiteUrl": "https://iseclab.ec.t.kanazawa-u.ac.jp/en/APKC2026.html",
+      "conferenceDate": "June 02, 2026",
+      "place": "Bangalore, India",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-01-20T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-03-30"
+        }
+      ]
+    },
+    {
+      "acronym": "CPSIoTSec",
+      "year": 2026,
+      "name": "Workshop on CPS&IoT Security and Privacy",
+      "websiteUrl": "https://sites.google.com/view/cpsiotsec2026",
+      "conferenceDate": "November 15, 2026",
+      "place": "The Hague, Netherlands",
+      "tags": [
+        "APPLIED",
+        "SOK",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-15T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-08-15"
+        }
+      ]
+    },
+    {
+      "acronym": "CPSS",
+      "year": 2026,
+      "name": "ACM Cyber-Physical System Security Workshop",
+      "websiteUrl": "https://cpss26.github.io",
+      "conferenceDate": "June 02, 2026",
+      "place": "Bangalore, India",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-01-31T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-03-15"
+        }
+      ]
+    },
+    {
+      "acronym": "Data Privacy in Machine Learning",
+      "year": 2026,
+      "name": "Privacy-preserving Machine Learning and Privacy in Distributed Settings",
+      "websiteUrl": "https://p1dpml.github.io/workshops/workshop-2.html",
+      "conferenceDate": "November 02-04, 2026",
+      "place": "Aarhus, Denmark",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-09-10T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-09-17"
+        }
+      ]
+    },
+    {
+      "acronym": "DeCaF",
+      "year": 2026,
+      "name": "7th MICCAI Workshop on Distributed, Collaborative and Federated Learning",
+      "websiteUrl": "https://workshop-decaf.github.io/decaf-2026/",
+      "conferenceDate": "October 1, 2026",
+      "place": "Strasbourg, France",
+      "tags": [
+        "APPLIED",
+        "PPML",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-24T23:59:00-07:00",
+          "timezone": "PT"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-08-12"
+        }
+      ]
+    },
+    {
+      "acronym": "FHE Conference",
+      "year": 2027,
+      "name": "Annual FHE.org Conference on Fully Homomorphic Encryption",
+      "websiteUrl": "https://fhe.org/conferences/conference-2027",
+      "conferenceDate": "April 07, 2027",
+      "place": "Seattle, USA",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-11-01T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-12-18"
+        }
+      ]
+    },
+    {
+      "acronym": "FL-AsiaCCS",
+      "year": 2026,
+      "name": "Secure and Efficient Federated Learning",
+      "websiteUrl": "https://federated-learning.org/fl-asiaccs-2026/",
+      "conferenceDate": "June 02, 2026",
+      "place": "Bangalore, India",
+      "tags": [
+        "APPLIED",
+        "PPML",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-02-22T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-03-22"
+        }
+      ]
+    },
+    {
+      "acronym": "LAMPS",
+      "year": 2026,
+      "name": "Workshop on Large AI Systems and Models with Privacy and Security Analysis",
+      "websiteUrl": "https://lamps2026-ccs.github.io/home/",
+      "conferenceDate": "November 15, 2026",
+      "place": "The Hague, Netherlands",
+      "tags": [
+        "APPLIED",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-19T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-08-08"
+        }
+      ]
+    },
+    {
+      "acronym": "LM-SHIELD",
+      "year": 2026,
+      "name": "Privacy in Large Language Models (LLM) and Natural Language Processing (NLP)",
+      "websiteUrl": "https://sites.google.com/view/lm-shield2026/",
+      "conferenceDate": "June 02, 2026",
+      "place": "Bangalore, India",
+      "tags": [
+        "PRACT",
+        "PPML",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-03-20T23:59:00-12:00",
+          "timezone": "AoE"
+        }
+      ]
+    },
+    {
+      "acronym": "FL4Industry",
+      "year": 2026,
+      "name": "Workshop on Federated Learning for Industry",
+      "websiteUrl": "https://fedlearn-hub.github.io",
+      "conferenceDate": "October 27, 2026",
+      "place": "Paris, France",
+      "tags": [
+        "APPLIED",
+        "PPML",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-08-02T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-09-05"
+        }
+      ]
+    },
+    {
+      "acronym": "LightSec",
+      "year": 2026,
+      "name": "Workshop on Lightweight Cryptography for Security & Privacy",
+      "websiteUrl": "https://lightsec2026.com",
+      "conferenceDate": "October 09-10, 2026",
+      "place": "Antalya, Turkey",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-13T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-08-21"
+        }
+      ]
+    },
+    {
+      "acronym": "MPC Security in Practice",
+      "year": 2026,
+      "name": "MPC Security in Practice",
+      "websiteUrl": "https://mpcinthewild.github.io",
+      "conferenceDate": "May 18, 2026",
+      "place": "Aarhus, Denmark",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-03-02T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-03-31"
+        }
+      ]
+    },
+    {
+      "acronym": "PPML CRYPTO",
+      "year": 2026,
+      "name": "Privacy-Preserving Machine Learning Workshop",
+      "websiteUrl": "https://crypto-ppml.github.io/2026/",
+      "conferenceDate": "August 16, 2026",
+      "place": "Santa Barbara, USA",
+      "tags": [
+        "PRACT",
+        "PPML",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-06-10T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-06-19"
+        }
+      ]
+    },
+    {
+      "acronym": "Responsibly Enabling Data for Foundation Models",
+      "year": 2026,
+      "name": "Workshop on Responsibly Enabling Data for Foundation Models @ COLM 2026",
+      "websiteUrl": "https://re-data-colm2026.github.io/",
+      "conferenceDate": "October 9, 2026",
+      "place": "TBA",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "PPML",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-06-23T23:59:00-12:00",
+          "timezone": "AoE"
+        }
+      ]
+    },
+    {
+      "acronym": "RWC",
+      "year": 2027,
+      "name": "Real World Crypto",
+      "websiteUrl": "https://rwc.iacr.org/2027/",
+      "conferenceDate": "April 05-07, 2027",
+      "place": "Seattle",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-10-15T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-12-10"
+        }
+      ]
+    },
+    {
+      "acronym": "RWMPC",
+      "year": 2026,
+      "name": "Real World MPC",
+      "websiteUrl": "https://www.mpcalliance.org/rwmpc-2026",
+      "conferenceDate": "March 07, 2026",
+      "place": "Taipei, Taiwan",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-01-31T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-02-13"
+        }
+      ]
+    },
+    {
+      "acronym": "SAFE-AI",
+      "year": 2026,
+      "name": "Workshop on Systems & Architectures For Encrypted AI",
+      "websiteUrl": "https://cmu-caos.github.io/safeAI/2026/",
+      "conferenceDate": "June 27, 2026",
+      "place": "Raleigh, NC, USA",
+      "tags": [
+        "PRACT",
+        "HW",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-05-21T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-06-01"
+        }
+      ]
+    },
+    {
+      "acronym": "SeQureDB",
+      "year": 2026,
+      "name": "Workshop on Secure and Private Data Management",
+      "websiteUrl": "https://sequredb.github.io",
+      "conferenceDate": "May 31, 2026",
+      "place": "Bengaluru, India",
+      "tags": [
+        "PRACT",
+        "PPML",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-03-12T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-03-31"
+        }
+      ]
+    },
+    {
+      "acronym": "SysteMPC",
+      "year": 2026,
+      "name": "Workshop on Systems for Secure Multi-Party Computation",
+      "websiteUrl": "https://www.bu.edu/riscs/systempc-2026/",
+      "conferenceDate": "September 29, 2026",
+      "place": "Prague, Czechia",
+      "tags": [
+        "PRACT",
+        "HW",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-10T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-07-24"
+        }
+      ]
+    },
+    {
+      "acronym": "TrustFL-SIS",
+      "year": 2026,
+      "name": "Trustworthy Federated Learning for Smart Industrial Systems",
+      "websiteUrl": "https://modal-unina.github.io/TrustFL-SIS/",
+      "conferenceDate": "November 12, 2026",
+      "place": "TBA",
+      "tags": [
+        "PRACT",
+        "APPLIED",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-08-20T23:59:00-12:00",
+          "timezone": "AoE"
+        }
+      ]
+    },
+    {
+      "acronym": "WATCH",
+      "year": 2026,
+      "name": "Workshop on Analytics, Telemetry, and Cybersecurity for HPCC",
+      "websiteUrl": "https://watch-miniconf.github.io",
+      "conferenceDate": "November 15, 2026",
+      "place": "The Hague, Netherlands",
+      "tags": [
+        "APPLIED",
+        "SOK",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-17T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-08-21"
+        }
+      ]
+    },
+    {
+      "acronym": "WAHC",
+      "year": 2026,
+      "name": "14th Workshop on Encrypted Computing & Applied Homomorphic Cryptography",
+      "websiteUrl": "https://homomorphicencryption.org/wahc-2026-14th-workshop-on-encrypted-computing-applied-homomorphic-cryptography/",
+      "conferenceDate": "November 15, 2026",
+      "place": "The Hague, Netherlands",
+      "tags": [
+        "APPLIED",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-19T23:59:00-12:00",
+          "timezone": "AoE"
+        }
+      ]
+    },
+    {
+      "acronym": "WPEC",
+      "year": 2026,
+      "name": "NIST Workshop on Privacy-Enhancing Cryptography 2026",
+      "websiteUrl": "https://csrc.nist.gov/Events/2026/wpec2026",
+      "conferenceDate": "October 26-29, 2026",
+      "place": "Online",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "APPLIED",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-09-14T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-10-05"
+        }
+      ]
+    },
+    {
+      "acronym": "WPES",
+      "year": 2026,
+      "name": "Workshop on Privacy in the Electronic Society",
+      "websiteUrl": "https://wpes2026.github.io",
+      "conferenceDate": "November 16, 2026",
+      "place": "The Hague, Netherlands",
+      "tags": [
+        "PRACT",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-17T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "acronym": "AAAI",
+      "year": 2027,
+      "name": "Conference on Artificial Intelligence",
+      "websiteUrl": "https://aaai.org/conference/aaai/aaai-27/",
+      "conferenceDate": "February 16-23, 2027",
+      "place": "Montreal, Canada",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "PPML",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-07-21"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-28T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2026-10-19",
+          "endDate": "2026-10-25"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-11-30"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "",
+          "label": "Early reject",
+          "date": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "acronym": "ACML",
+      "year": 2026,
+      "name": "Asian Conference on Machine Learning",
+      "websiteUrl": "https://www.acml-conf.org/2026/",
+      "conferenceDate": "December 01-04, 2026",
+      "place": "Melbourne, Australia",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "PPML",
+        "COREC"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-06-06T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-07-05T23:59:00-12:00",
+          "timezone": "AoE"
+        }
+      ]
+    },
+    {
+      "acronym": "AISTATS",
+      "year": 2027,
+      "name": "Annual Conference on Artificial Intelligence and Statistics",
+      "websiteUrl": "https://virtual.aistats.org",
+      "conferenceDate": "May 03-06, 2027",
+      "place": "Montreal, Canada",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "PPML",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-09-29"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-10-06T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2026-11-16",
+          "endDate": "2026-11-23"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2027-01-20"
+        }
+      ]
+    },
+    {
+      "acronym": "ECMLPKDD",
+      "year": 2026,
+      "name": "European Conference on Machine Learning and Principles and Practice of Knowledge Discovery in Databases",
+      "websiteUrl": "https://ecmlpkdd.org/2026/",
+      "conferenceDate": "September 07-11, 2026",
+      "place": "Naples, Italy",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "PPML",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-03-05"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-03-12T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-05-27"
+        }
+      ]
+    },
+    {
+      "acronym": "ECMLPKDD (Industrial)",
+      "year": 2026,
+      "name": "European Conference on Machine Learning and Principles and Practice of Knowledge Discovery in Databases",
+      "websiteUrl": "https://ecmlpkdd.org/2026/",
+      "conferenceDate": "September 07-11, 2026",
+      "place": "Naples, Italy",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "PPML",
+        "COREA"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-04-26T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-05-27"
+        }
+      ]
+    },
+    {
+      "acronym": "ICLR",
+      "year": 2027,
+      "name": "International Conference on Learning Representations",
+      "websiteUrl": "https://iclr.cc/Conferences/2027",
+      "conferenceDate": "April 26-30, 2027",
+      "place": "California, USA",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "PPML",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-09-18"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-09-25T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2026-11-05",
+          "endDate": "2026-11-18"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-12-16"
+        }
+      ]
+    },
+    {
+      "acronym": "ICML",
+      "year": 2026,
+      "name": "International Conference on Machine Learning",
+      "websiteUrl": "https://icml.cc/Conferences/2026",
+      "conferenceDate": "July 07-12, 2026",
+      "place": "COEX Convention & Exhibition Center, Seoul Korea",
+      "tags": [
+        "PRACT",
+        "POS",
+        "CNF",
+        "PPML",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-01-23"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-01-28T23:59:00-12:00",
+          "timezone": "AoE"
+        }
+      ]
+    },
+    {
+      "acronym": "IJCAI-ECAI",
+      "year": 2026,
+      "name": "International Joint Conference on Artificial Intelligence",
+      "websiteUrl": "https://2026.ijcai.org",
+      "conferenceDate": "August 15-21, 2026",
+      "place": "Bremen, Germany",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "PPML",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-01-12"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-01-19T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2026-04-06",
+          "endDate": "2026-04-09"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-04-29"
+        },
+        {
+          "type": "first_notification",
+          "cycle": "",
+          "label": "Early reject",
+          "date": "2026-03-04"
+        }
+      ]
+    },
+    {
+      "acronym": "SaTML",
+      "year": 2027,
+      "name": "IEEE Conference on Secure and Trustworthy Machine Learning",
+      "websiteUrl": "http://satml.org",
+      "conferenceDate": "May 08-10, 2027",
+      "place": "Reykjavik, Iceland",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "PPML",
+        "SOK",
+        "COREO"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-09-22"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-09-29T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2026-11-25",
+          "endDate": "2026-12-09"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-12-16"
+        }
+      ]
+    },
+    {
+      "acronym": "KDD",
+      "year": 2027,
+      "name": "SIGKDD Conference on Knowledge Discovery and Data Mining",
+      "websiteUrl": "https://kdd2027.kdd.org",
+      "conferenceDate": "August 09-13, 2027",
+      "place": "San Jose, USA",
+      "tags": [
+        "PRACT",
+        "PPML",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract deadline",
+          "date": "2026-07-19"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-07-26T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 1",
+          "label": "Rebuttal period",
+          "date": "2026-09-29",
+          "endDate": "2026-10-13"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2027-01-28T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "Round 2",
+          "label": "Rebuttal period",
+          "date": "2027-04-04",
+          "endDate": "2027-04-18"
+        }
+      ]
+    },
+    {
+      "acronym": "NeurIPS",
+      "year": 2026,
+      "name": "Conference on Neural Information Processing Systems",
+      "websiteUrl": "https://neurips.cc/Conferences/2026",
+      "conferenceDate": "December 06-12, 2026",
+      "place": "Sydney, Australia",
+      "tags": [
+        "PRACT",
+        "POS",
+        "CNF",
+        "PPML",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-05-04"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-05-06T07:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "acronym": "MLSys",
+      "year": 2027,
+      "name": "Conference on Machine Learning and Systems",
+      "websiteUrl": "https://mlsys.org/Conferences/2027",
+      "conferenceDate": "May 17-22, 2027",
+      "place": "Bellevue, WA",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "PPML",
+        "COREO"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-10-30T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2027-01-18",
+          "endDate": "2027-01-21"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2027-02-28"
+        }
+      ]
+    },
+    {
+      "acronym": "AsianHOST",
+      "year": 2026,
+      "name": "Asian Hardware Oriented Security and Trust Symposium",
+      "websiteUrl": "https://www.asianhost.org/2026/",
+      "conferenceDate": "December 11-13, 2026",
+      "place": "Kolkata, India",
+      "tags": [
+        "HW",
+        "APPLIED",
+        "CNF",
+        "COREO"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-07-14T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2026-09-04"
+        }
+      ]
+    },
+    {
+      "acronym": "HOST",
+      "year": 2027,
+      "name": "IEEE International Symposium on Hardware Oriented Security and Trust",
+      "websiteUrl": "https://host.conferences.computer.org/2027/call-for-papers/",
+      "conferenceDate": "May, 2027",
+      "place": "Washington DC, USA",
+      "tags": [
+        "HW",
+        "APPLIED",
+        "CNF",
+        "COREO"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract deadline",
+          "date": "2026-07-15"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-07-22T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract deadline",
+          "date": "2026-11-01"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-11-08T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-10-22"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2027-02-09"
+        }
+      ]
+    }
+  ]
+}

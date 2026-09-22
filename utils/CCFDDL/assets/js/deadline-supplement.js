@@ -2,7 +2,7 @@
 window.CCFDeadlineSupplement = (() => {
     const submissionTypes = new Set(['abstract', 'paper', 'registration', 'commitment_deadline']);
     const acronymAliases = { atc: 'sigopsatc', usenixatc: 'sigopsatc', cgo: 'ieeeacmcgo' };
-    // CCFDDL remains authoritative. The three middle sources are reserved until imported.
+    // CCFDDL remains authoritative; suanlab is reserved for a future source.
     const sourcePriority = {
         ccfddl: 0, ccfcycle: 1, aideadlines: 2, paperswithcode: 2,
         suanlab: 3, 'mpc-deadlines': 4, c01dkit: 5, jiajun: 6
@@ -33,10 +33,10 @@ window.CCFDeadlineSupplement = (() => {
 
     function roundOf(label) {
         const raw = String(label || '');
-        const match = raw.match(/round\s*(\d+)|(?:first|second|third)\s+(?:round|cycle|submission)|第[一二三四1234]轮/i);
+        const match = raw.match(/(?:round|cycle)\s*(\d+)|\b(first|second|third|fourth)\b(?:\s+(?:review|paper))?\s+(?:round|cycle|submission|deadline)|第[一二三四1234]轮/i);
         if (!match) return '';
-        const words = { first: 1, second: 2, third: 3, '一': 1, '二': 2, '三': 3, '四': 4 };
-        return `Round ${match[1] || words[match[0].split(/\s+/)[0].toLowerCase()] || words[match[0].charAt(1)] || match[0].match(/\d+/)?.[0]}`;
+        const words = { first: 1, second: 2, third: 3, fourth: 4, '一': 1, '二': 2, '三': 3, '四': 4 };
+        return `Round ${match[1] || words[match[2]?.toLowerCase()] || words[match[0].charAt(1)] || match[0].match(/\d+/)?.[0]}`;
     }
 
     function eventMs(event) {
@@ -149,7 +149,7 @@ window.CCFDeadlineSupplement = (() => {
         return result;
     }
 
-    function fromJiajun(record) {
+    function fromTimedSource(record, source) {
         const labels = {
             abstract: '摘要截稿', paper: '论文投稿', notification: '结果通知',
             camera_ready: '终稿', review_release: '审稿意见公布',
@@ -173,25 +173,28 @@ window.CCFDeadlineSupplement = (() => {
                 date: event.date || '',
                 endDate: event.endDate || '',
                 localDate: event.at ? event.at.slice(0, 10) : event.date || '',
-                source: 'jiajun'
+                source
             };
         }).filter(event => event.deadlineMs !== null || event.date);
-        const conferenceDate = [record.conferenceStart, record.conferenceEnd].filter(Boolean).join(' — ') || 'TBA';
+        const conferenceDate = record.conferenceDate ||
+            [record.conferenceStart, record.conferenceEnd].filter(Boolean).join(' — ') || 'TBA';
+        const onlyFlag = { jiajun: 'jiajunOnly', 'mpc-deadlines': 'mpcOnly', c01dkit: 'c01dkitOnly' }[source];
         return {
             title: `${record.acronym} ${record.year}`,
-            description: record.acronym,
+            description: record.name || record.acronym,
             sub: 'EXT',
             rank: { ccf: 'N' },
             supplementOnly: true,
-            jiajunOnly: true,
+            [onlyFlag]: true,
             confs: [{
-                year: record.year, link: '#', timezone: 'UTC',
-                date: conferenceDate, place: 'TBA', tags: [], timeline: events
+                year: record.year, link: record.websiteUrl || '#', timezone: 'UTC',
+                date: conferenceDate, place: record.place || 'TBA',
+                tags: record.tags || [], timeline: events
             }]
         };
     }
 
-    function mergeJiajun(base, records) {
+    function mergeTimedSource(base, records, source) {
         const output = base.map(entry => ({
             ...entry,
             confs: [{ ...entry.confs[0], timeline: [...(entry.confs[0].timeline || [])] }]
@@ -199,7 +202,7 @@ window.CCFDeadlineSupplement = (() => {
         const byKey = new Map(output.map((entry, index) => [key(entry.title, entry.confs[0].year), index]));
         for (const record of records) {
             if (!record.acronym || !record.year || !Array.isArray(record.events)) continue;
-            const supplement = fromJiajun(record);
+            const supplement = fromTimedSource(record, source);
             const identity = key(record.acronym, record.year);
             const match = byKey.get(identity);
             if (match === undefined) {
@@ -210,9 +213,14 @@ window.CCFDeadlineSupplement = (() => {
             const entry = output[match];
             const conf = entry.confs[0];
             const extra = supplement.confs[0];
+            if (!entry.description || entry.description === 'TBA') entry.description = supplement.description;
+            if (!conf.link || conf.link === '#') conf.link = extra.link;
             if (!conf.date || conf.date === 'TBA') conf.date = extra.date;
+            if (!conf.place || conf.place === 'TBA') conf.place = extra.place;
+            conf.tags = [...new Set([...(conf.tags || []), ...extra.tags])];
             conf.timeline = mergeTimeline(conf.timeline || [], extra.timeline);
-            entry.jiajunEnriched = true;
+            const enrichedFlag = { jiajun: 'jiajunEnriched', 'mpc-deadlines': 'mpcEnriched', c01dkit: 'c01dkitEnriched' }[source];
+            entry[enrichedFlag] = true;
         }
         return output;
     }
@@ -375,5 +383,5 @@ window.CCFDeadlineSupplement = (() => {
             : { ms: null, event: null, comment: '', isUrgent: false, state: 'tbd' };
     }
 
-    return { key, merge, mergeJiajun, mergeCycle, status, typeOf, roundOf, deadlineMs };
+    return { key, merge, mergeTimedSource, mergeCycle, status, typeOf, roundOf, deadlineMs };
 })();
