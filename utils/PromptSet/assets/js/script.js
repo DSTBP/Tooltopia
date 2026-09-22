@@ -143,16 +143,15 @@ async function loadPrompts() {
 
     try {
         const { categories, promptSources } = await fetchPromptSources();
-        const { sourceSectionCount, prompts } = parsePromptSources(promptSources);
+        const prompts = parsePromptSources(promptSources);
 
         if (prompts.length === 0) {
-            throw new Error('没有识别到包含正文的二级标题');
+            throw new Error('提示词清单中没有可加载的提示词');
         }
 
         appState.categories = categories;
         appState.prompts = prompts;
         appState.currentPage = 1;
-        UI.promptGrid.dataset.sourceSectionCount = String(sourceSectionCount);
         UI.promptGrid.dataset.promptCount = String(prompts.length);
 
         renderCategoryFilters();
@@ -192,14 +191,14 @@ async function fetchPromptSources() {
         throw new Error('提示词清单中没有可加载的分类');
     }
 
-    const promptEntries = Object.entries(manifest).flatMap(([category, files]) => {
-        if (!Array.isArray(files)) {
-            throw new Error(`分类「${category}」的文件列表格式无效`);
+    const promptEntries = Object.entries(manifest).flatMap(([category, prompts]) => {
+        if (!Array.isArray(prompts)) {
+            throw new Error(`分类「${category}」的提示词列表格式无效`);
         }
 
-        return files.map(filePath => ({
+        return prompts.map(prompt => ({
             category,
-            filePath
+            ...prompt
         }));
     });
 
@@ -210,20 +209,30 @@ async function fetchPromptSources() {
     const manifestUrl = new URL(PROMPTS_MANIFEST_URL, window.location.href);
 
     const promptSources = await Promise.all(
-        promptEntries.map(async ({ category, filePath }) => {
-            if (typeof filePath !== 'string' || filePath.trim() === '') {
-                throw new Error(`分类「${category}」包含无效路径`);
+        promptEntries.map(async ({ category, name, path, tag }) => {
+            if (typeof name !== 'string' || name.trim() === '') {
+                throw new Error(`分类「${category}」包含无效 name`);
             }
 
-            const promptUrl = new URL(filePath, manifestUrl);
+            if (typeof path !== 'string' || path.trim() === '') {
+                throw new Error(`提示词「${name}」包含无效 path`);
+            }
+
+            if (typeof tag !== 'string' || tag.trim() === '') {
+                throw new Error(`提示词「${name}」包含无效 tag`);
+            }
+
+            const promptUrl = new URL(path, manifestUrl);
             const response = await fetch(promptUrl, { cache: 'no-cache' });
 
             if (!response.ok) {
-                throw new Error(`${filePath} HTTP ${response.status}`);
+                throw new Error(`${path} HTTP ${response.status}`);
             }
 
             return {
-                filePath,
+                name,
+                path,
+                tag,
                 category,
                 markdown: await response.text()
             };
@@ -236,49 +245,32 @@ async function fetchPromptSources() {
     };
 }
 
-function extractPromptSections(markdown) {
-    const normalizedMarkdown = markdown.replace(/\r\n?/g, '\n');
-    const headingPattern = /^##[ \t]+(.+?)[ \t]*$/gm;
-    const headings = Array.from(normalizedMarkdown.matchAll(headingPattern));
-
-    return headings.map((heading, headingIndex) => {
-            const title = heading[1].trim();
-            const bodyStart = heading.index + heading[0].length;
-            const bodyEnd = headings[headingIndex + 1]?.index ?? normalizedMarkdown.length;
-            const body = normalizedMarkdown.slice(bodyStart, bodyEnd).replace(/^\n/, '').trim();
-
-            return { title, body };
-        });
+function extractPromptBody(markdown) {
+    return markdown
+        .replace(/\r\n?/g, '\n')
+        .replace(/^##[ \t]+[^\n]+(?:\n+|$)/, '')
+        .trim();
 }
 
 function parsePromptSources(promptSources) {
-    const sections = promptSources.flatMap(source =>
-        extractPromptSections(source.markdown).map(section => ({
-            ...section,
-            category: source.category
-        }))
-    );
-
-    const prompts = sections
-        .map((section, sourceIndex) => {
-            const { title, body, category } = section;
+    return promptSources
+        .map((source, sourceIndex) => {
+            const body = extractPromptBody(source.markdown);
 
             return {
                 id: String(sourceIndex),
-                title,
+                name: source.name,
+                tag: source.tag,
+                category: source.category,
+                path: source.path,
                 body,
-                category,
                 sourceIndex,
                 charCount: Array.from(body).length,
-                searchText: `${title}\n${body}`.toLocaleLowerCase('zh-CN')
+                searchText: `${source.name}\n${source.tag}\n${body}`
+                    .toLocaleLowerCase('zh-CN')
             };
         })
         .filter(prompt => prompt.body.length > 0);
-
-    return {
-        sourceSectionCount: sections.length,
-        prompts
-    };
 }
 
 function renderCategoryFilters() {
@@ -354,9 +346,9 @@ function sortPrompts(prompts, mode) {
         let comparison = 0;
 
         if (mode === 'title-asc') {
-            comparison = collator.compare(left.title, right.title);
+            comparison = collator.compare(left.name, right.name);
         } else if (mode === 'title-desc') {
-            comparison = collator.compare(right.title, left.title);
+            comparison = collator.compare(right.name, left.name);
         } else if (mode === 'length-asc') {
             comparison = left.charCount - right.charCount;
         } else if (mode === 'length-desc') {
@@ -404,16 +396,28 @@ function createPromptCard(prompt) {
     const header = document.createElement('header');
     header.className = 'card-header';
 
-    const badge = document.createElement('span');
-    badge.className = 'category-badge';
-    badge.textContent = prompt.category;
+    const badgeGroup = document.createElement('div');
+    badgeGroup.style.display = 'flex';
+    badgeGroup.style.alignItems = 'center';
+    badgeGroup.style.gap = '0.5rem';
+    badgeGroup.style.flexWrap = 'wrap';
+
+    const categoryBadge = document.createElement('span');
+    categoryBadge.className = 'category-badge';
+    categoryBadge.textContent = prompt.category;
+
+    const tagBadge = document.createElement('span');
+    tagBadge.className = 'category-badge';
+    tagBadge.textContent = prompt.tag;
+
+    badgeGroup.append(categoryBadge, tagBadge);
 
     const number = document.createElement('span');
     number.className = 'prompt-number';
     number.textContent = `#${String(prompt.sourceIndex + 1).padStart(2, '0')}`;
 
     const title = document.createElement('h3');
-    title.textContent = prompt.title;
+    title.textContent = prompt.name;
 
     const excerpt = document.createElement('p');
     excerpt.className = 'prompt-excerpt';
@@ -433,7 +437,7 @@ function createPromptCard(prompt) {
         createCardAction('复制提示词', 'copy', prompt.id, true)
     );
 
-    header.append(badge, number);
+    header.append(badgeGroup, number);
     footer.append(meta, actions);
     card.append(header, title, excerpt, footer);
     return card;
@@ -526,8 +530,8 @@ function createPageButton(label, page, options = {}) {
 function openPromptModal(prompt, trigger) {
     appState.currentPrompt = prompt;
     appState.lastFocusedElement = trigger || document.activeElement;
-    UI.modalTitle.textContent = prompt.title;
-    UI.modalCategory.textContent = prompt.category;
+    UI.modalTitle.textContent = prompt.name;
+    UI.modalCategory.textContent = `${prompt.category} · ${prompt.tag}`;
     UI.modalMeta.textContent = `${formatNumber(prompt.charCount)} 字`;
     UI.modalBody.textContent = prompt.body;
     UI.modalBody.scrollTop = 0;
@@ -588,7 +592,7 @@ function handleDocumentKeydown(event) {
 async function copyPrompt(prompt) {
     try {
         await writeToClipboard(prompt.body);
-        showToast(`“${prompt.title}”已复制`);
+        showToast(`“${prompt.name}”已复制`);
     } catch (error) {
         console.error('[PromptSet] Failed to copy prompt:', error);
         showToast('复制失败，请在详情中手动选择文本', true);

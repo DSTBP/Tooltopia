@@ -1,34 +1,126 @@
 {
   "文献研究": [
-    "./literature-research/literature-search.md",
-    "./literature-research/standard-literature-record.md",
-    "./literature-research/survey-literature-reading-template.md",
-    "./literature-research/conference-acceptance-status.md",
-    "./literature-research/PPML-search.md"
+    {
+      "name": "主题文献检索",
+      "path": "./literature-research/literature-search.md",
+      "tag": "需适配"
+    },
+    {
+      "name": "标准文献记录",
+      "path": "./literature-research/standard-literature-record.md",
+      "tag": "直接使用"
+    },
+    {
+      "name": "综述文献阅读",
+      "path": "./literature-research/survey-literature-reading-template.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "顶会录用状态",
+      "path": "./literature-research/conference-acceptance-status.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "PPML 文献检索",
+      "path": "./literature-research/PPML-search.md",
+      "tag": "需要适配"
+    }
   ],
+
   "学术辅助": [
-    "./academic-support/cryptographic-primitives.md",
-    "./academic-support/translation.md",
-    "./academic-support/quick-understanding.md",
-    "./academic-support/gpt-prompt-guidelines.md"
+    {
+      "name": "密码学原语解释",
+      "path": "./academic-support/cryptographic-primitives.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "论文段落翻译",
+      "path": "./academic-support/translation.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "快速理解论文方案",
+      "path": "./academic-support/quick-understanding.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "GPT 提示词规范",
+      "path": "./academic-support/gpt-prompt-guidelines.md",
+      "tag": "直接使用"
+    }
   ],
+
   "工程开发": [
-    "./engineering/project-structure.md",
-    "./engineering/code-cleanup.md",
-    "./engineering/code-writing.md",
-    "./engineering/anti-defensive-code.md"
+    {
+      "name": "项目结构整理",
+      "path": "./engineering/project-structure.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "代码清理",
+      "path": "./engineering/code-cleanup.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "代码编写",
+      "path": "./engineering/code-writing.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "反防御性代码",
+      "path": "./engineering/anti-defensive-code.md",
+      "tag": "需要适配"
+    }
   ],
+
   "科研创新": [
-    "./research-innovation/innovation-defensibility-review.md",
-    "./research-innovation/innovation-discovery.md",
-    "./research-innovation/advanced-innovation.md",
-    "./research-innovation/solution-correctness.md",
-    "./research-innovation/draw-diagrams.md"
+    {
+      "name": "创新点合理性与可辩护性审查",
+      "path": "./research-innovation/innovation-defensibility-review.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "创新点发现与验证",
+      "path": "./research-innovation/innovation-discovery.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "创新点进阶",
+      "path": "./research-innovation/advanced-innovation.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "方案正确性检查",
+      "path": "./research-innovation/solution-correctness.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "科研画图",
+      "path": "./research-innovation/draw-diagrams.md",
+      "tag": "需要适配"
+    }
   ],
+
   "汇报办公": [
-    "./reporting/report-presentation.md",
-    "./reporting/report-content.md",
-    "./reporting/feishu-sheet.md",
-    "./reporting/survey-report.md"
+    {
+      "name": "汇报 PPT",
+      "path": "./reporting/report-presentation.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "汇报内容",
+      "path": "./reporting/report-content.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "飞书表格",
+      "path": "./reporting/feishu-sheet.md",
+      "tag": "需要适配"
+    },
+    {
+      "name": "综述汇报",
+      "path": "./reporting/survey-report.md",
+      "tag": "需要适配"
+    }
   ]
 }
