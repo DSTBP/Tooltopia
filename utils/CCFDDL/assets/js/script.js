@@ -2056,6 +2056,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${tzDate.getUTCFullYear()}-${pad(tzDate.getUTCMonth()+1)}-${pad(tzDate.getUTCDate())} ${pad(tzDate.getUTCHours())}:${pad(tzDate.getUTCMinutes())}:${pad(tzDate.getUTCSeconds())} (${tzLabel})`;
     }
 
+    function selectedCalendarDate(now, originalTimezone) {
+        return formatToSelectedTz(now, selectedTimezone, originalTimezone).slice(0, 10);
+    }
+
     function getTimelineDeadlineMs(item, fallbackTimezone) {
         if (item.dateOnly) return null;
         if (Number.isFinite(item.deadlineMs)) return item.deadlineMs;
@@ -2391,7 +2395,9 @@ document.addEventListener('DOMContentLoaded', () => {
         deadlineFollowedCountdowns.innerHTML = selectedChartSeries.map(id => {
             const conf = latest.get(id);
             if (!conf) return `<article class="deadline-followed-card"><h4 class="no-translate">${escapeHTML(id)}</h4><p class="deadline-followed-empty">暂无最新会议数据</p></article>`;
-            const next = chart.nextEvent(conf);
+            const now = Date.now();
+            const next = chart.nextEvent(conf, now,
+                event => selectedCalendarDate(now, event.timezone || conf.confs[0].timezone));
             if (!next) return `<article class="deadline-followed-card"><h4 class="no-translate">${escapeHTML(conf.title)}</h4><p class="deadline-followed-empty">暂无后续事件节点</p></article>`;
             const { event, ms } = next;
             const eventLabel = event.comment || '时间节点';
@@ -2401,7 +2407,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <h4 class="no-translate">${escapeHTML(conf.title)}</h4>
                 <p class="deadline-followed-event">${escapeHTML(eventLabel)}</p>
                 <time class="deadline-followed-time no-translate">${escapeHTML(formatted)}</time>
-                <div class="countdown-timer-container" data-ts="${dateOnly ? '' : ms}"${dateOnly ? ` data-date="${escapeHTML(event.date)}"` : ''}>
+                <div class="countdown-timer-container" data-ts="${dateOnly ? '' : ms}"${dateOnly ? ` data-date="${escapeHTML(event.date)}" data-timezone="${escapeHTML(event.timezone || conf.confs[0].timezone)}"` : ''}>
                     <span class="countdown-running">剩余:
                         <span class="no-translate" data-countdown-part="days">0</span>天
                         ${dateOnly ? '' : `<span class="no-translate" data-countdown-part="hours">0</span>时
@@ -3112,7 +3118,8 @@ document.addEventListener('DOMContentLoaded', () => {
             el.classList.remove('timer-normal', 'timer-warning', 'timer-urgent', 'timer-finished', 'timer-tbd');
 
             if (dateAttr) {
-                const days = window.CCFDeadlineChart.daysUntil(dateAttr, now);
+                const today = selectedCalendarDate(now, el.dataset.timezone);
+                const days = window.CCFDeadlineChart.daysUntil(dateAttr, today);
                 if (days === null) {
                     setVisibility('tbd');
                     el.classList.add('timer-tbd');

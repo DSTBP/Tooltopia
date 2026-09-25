@@ -33,19 +33,15 @@ window.CCFDeadlineChart = (() => {
             : Number.isFinite(event.deadlineMs) ? event.deadlineMs : null;
     }
 
-    function nextEvent(conf, now = Date.now()) {
-        const current = new Date(now);
-        const today = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+    function nextEvent(conf, now, todayForEvent) {
         return (conf.confs?.[0]?.timeline || [])
             .map(event => ({ event, ms: eventMs(event) }))
             .filter(({ event, ms }) => ms !== null &&
-                (event.dateOnly ? event.date >= today : ms > now))
+                (event.dateOnly ? event.date >= todayForEvent(event) : ms > now))
             .sort((a, b) => a.ms - b.ms)[0] || null;
     }
 
-    function daysUntil(value, now = Date.now()) {
-        const current = new Date(now);
-        const today = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+    function daysUntil(value, today) {
         const target = dayMs(value);
         return target === null ? null : Math.round((target - dayMs(today)) / 86400000);
     }
