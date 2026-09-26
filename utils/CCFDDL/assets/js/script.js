@@ -3119,7 +3119,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (dateAttr) {
                 const today = selectedCalendarDate(now, el.dataset.timezone);
-                const days = window.CCFDeadlineChart.daysUntil(dateAttr, today);
+                const days = window.CCFDeadlineChart.daysUntil(dateAttr, now, today);
                 if (days === null) {
                     setVisibility('tbd');
                     el.classList.add('timer-tbd');
