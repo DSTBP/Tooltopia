@@ -47,6 +47,7 @@ jobs:
         run: python scripts/update_ccf_cycle_deadlines.py
 
       - name: Refresh Papers with Code fallback
+        if: ${{ false }} # Source disabled; keep the step for easy restoration.
         id: paperswithcode
         continue-on-error: true
         run: python scripts/update_ccf_deadlines.py

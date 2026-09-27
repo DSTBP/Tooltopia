@@ -1548,7 +1548,8 @@ document.addEventListener('DOMContentLoaded', () => {
         let combined = baseConfData;
         if (cycleSupplement) combined = window.CCFDeadlineSupplement.mergeCycle(combined, cycleSupplement);
         if (deadlineSupplement) combined = window.CCFDeadlineSupplement.merge(combined, deadlineSupplement);
-        if (papersWithCodeFallback) combined = window.CCFDeadlineSupplement.merge(combined, papersWithCodeFallback, 'paperswithcode');
+        // Papers with Code is retained as an inactive fallback.
+        // if (papersWithCodeFallback) combined = window.CCFDeadlineSupplement.merge(combined, papersWithCodeFallback, 'paperswithcode');
         if (mpcSupplement) combined = window.CCFDeadlineSupplement.mergeTimedSource(combined, mpcSupplement, 'mpc-deadlines');
         if (c01dkitSupplement) combined = window.CCFDeadlineSupplement.mergeTimedSource(combined, c01dkitSupplement, 'c01dkit');
         if (jiajunSupplement) combined = window.CCFDeadlineSupplement.mergeTimedSource(combined, jiajunSupplement, 'jiajun');
@@ -1623,39 +1624,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadDeadlineSupplement(forceRefresh = false) {
         if (runtimeState.supplementLoadPromise) return runtimeState.supplementLoadPromise;
-        if ((deadlineSupplement || papersWithCodeFallback) && !forceRefresh) {
-            return deadlineSupplement || papersWithCodeFallback;
-        }
-        runtimeState.supplementLoadPromise = fetchDeadlineSupplement().then(async ({ records, failed }) => {
+        if (deadlineSupplement && !forceRefresh) return deadlineSupplement;
+        runtimeState.supplementLoadPromise = fetchDeadlineSupplement().then(({ records, failed }) => {
             deadlineSupplement = records;
             papersWithCodeFallback = null;
-            runtimeState.supplementWarning = '';
-            if (failed) {
-                try {
-                    papersWithCodeFallback = await fetchPapersWithCodeFallback(records);
-                    runtimeState.supplementWarning = `AI Deadlines 部分文件加载失败 (${failed})，已使用 Papers with Code 补缺`;
-                } catch (fallbackError) {
-                    console.warn('[CCFDDL] Papers with Code fallback unavailable:', fallbackError);
-                    runtimeState.supplementWarning = `AI Deadlines 部分文件加载失败 (${failed})，备用数据暂不可用`;
-                }
-            }
+            runtimeState.supplementWarning = failed ? `AI Deadlines 部分文件加载失败 (${failed})` : '';
             applyDeadlineSupplement();
             return records;
-        }).catch(async error => {
+        }).catch(error => {
             console.warn('[CCFDDL] AI Deadlines supplement unavailable:', error);
             deadlineSupplement = null;
-            try {
-                papersWithCodeFallback = await fetchPapersWithCodeFallback();
-                runtimeState.supplementWarning = 'AI Deadlines 在线数据不可用，已使用 Papers with Code 备用数据';
-                applyDeadlineSupplement();
-                return papersWithCodeFallback;
-            } catch (fallbackError) {
-                console.warn('[CCFDDL] Papers with Code fallback unavailable:', fallbackError);
-                papersWithCodeFallback = null;
-                runtimeState.supplementWarning = 'AI Deadlines 与 Papers with Code 备用数据暂不可用';
-                applyDeadlineSupplement();
-                return null;
-            }
+            papersWithCodeFallback = null;
+            runtimeState.supplementWarning = 'AI Deadlines 在线数据不可用';
+            applyDeadlineSupplement();
+            return null;
         }).finally(() => {
             runtimeState.supplementLoadPromise = null;
         });
