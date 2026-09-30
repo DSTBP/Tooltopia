@@ -83,7 +83,7 @@ Do not search for low-hanging fruit.
 
 Search for the hidden reformulation, invariant, equivalence, or mathematical structure that previous approaches may have overlooked. 
 
-Do not copy or adapt existing mainstream solutions, and prioritize original, brand-new scheme design rather than incremental improvements on prior work. And reject schemes that only pursue superficial formal compactness or cosmetic mathematical elegance while harboring hidden logical flaws, unsound reasoning, or unstated invalid assumptions underneath.
+Do not copy or adapt existing mainstream solutions, and prioritize original, brand-new scheme design rather than incremental improvements on prior work. And reject schemes that only pursue superficial formal compactness or cosmetic mathematical elegance while harboring hidden logical flaws, unsound reasoning, or unstated invalid assumptions underneath. Explore structures or ideas that have not been applied to private sigmoid computation. You do not need to build underlying cryptographic primitives completely from scratch.
 
 The final goal is not merely **a workable solution**, but a solution that makes us ask:
 
