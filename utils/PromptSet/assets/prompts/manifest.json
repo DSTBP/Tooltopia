@@ -130,5 +130,43 @@
       "path": "./writing/experiment-section.md",
       "tag": []
     }
+  ],
+
+  "图片生成": [
+    {
+      "name": "图生文",
+      "path": "./text-to-image/image-to-prompt.md",
+      "tag": []
+    },
+    {
+      "name": "裂缝水彩图",
+      "path": "./text-to-image/crack-watercolor.md",
+      "tag": []
+    },
+    {
+      "name": "胶带拼接图",
+      "path": "./text-to-image/tape-collage.md",
+      "tag": []
+    },
+    {
+      "name": "日式手绘漫画图",
+      "path": "./text-to-image/japanese-hand-drawn-manga.md",
+      "tag": []
+    },
+    {
+      "name": "像素图",
+      "path": "./text-to-image/pixel-art.md",
+      "tag": []
+    },
+    {
+      "name": "蜡笔手绘图",
+      "path": "./text-to-image/crayon-illustration.md",
+      "tag": []
+    },
+    {
+      "name": "线条手绘图",
+      "path": "./text-to-image/hand-drawn-line-drawing.md",
+      "tag": []
+    }
   ]
 }
