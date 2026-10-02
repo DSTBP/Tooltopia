@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-02T13:14:53Z",
+  "generatedAt": "2026-10-02T22:36:50Z",
   "conferences": [
     {
       "acronym": "ASPLOS",
@@ -536,7 +536,8 @@
           "type": "rebuttal",
           "label": "Revision/rebuttal",
           "date": "2026-09-28",
-          "endDate": "2026-10-09"
+          "endDate": "2026-10-11",
+          "timezone": "AoE"
         },
         {
           "type": "notification",
@@ -787,6 +788,40 @@
       "conferenceEnd": "2026-07-09"
     },
     {
+      "acronym": "ICS",
+      "year": 2027,
+      "events": [
+        {
+          "type": "abstract",
+          "at": "2026-12-01T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "at": "2026-12-07T23:59:59-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "milestone",
+          "label": "Early reject",
+          "date": "2027-02-11"
+        },
+        {
+          "type": "milestone",
+          "label": "Author revision",
+          "date": "2027-02-11",
+          "endDate": "2027-02-23",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "date": "2027-03-12"
+        }
+      ],
+      "conferenceStart": "2027-06-05",
+      "conferenceEnd": "2027-06-11"
+    },
+    {
       "acronym": "IPDPS",
       "year": 2026,
       "events": [
@@ -861,12 +896,12 @@
         },
         {
           "type": "notification",
-          "date": "2027-02-01"
+          "date": "2027-02-02"
         },
         {
           "type": "camera_ready",
           "label": "Camera ready",
-          "date": "2027-02-19"
+          "date": "2027-02-20"
         }
       ],
       "conferenceStart": "2027-06-01",
@@ -1271,13 +1306,30 @@
         {
           "type": "rebuttal",
           "label": "Author response",
-          "date": "2026-10-06",
-          "endDate": "2026-10-08",
+          "date": "2026-10-08",
+          "endDate": "2026-10-10",
           "timezone": "AoE"
         },
         {
           "type": "notification",
           "date": "2026-10-26"
+        },
+        {
+          "type": "milestone",
+          "label": "Artifact submission",
+          "date": "2026-11-09",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "label": "Artifact notification",
+          "date": "2026-12-14"
+        },
+        {
+          "type": "camera_ready",
+          "label": "Final paper",
+          "date": "2026-12-18",
+          "timezone": "AoE"
         }
       ],
       "conferenceStart": "2027-03-20",
