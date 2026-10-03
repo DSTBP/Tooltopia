@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-03T12:07:30.843396+00:00",
-  "count": 87,
+  "generatedAt": "2026-10-03T16:49:24.502896+00:00",
+  "count": 89,
   "conferences": [
     {
       "acronym": "CCS",
@@ -67,6 +67,34 @@
           "cycle": "Round 2",
           "label": "Notifications",
           "date": "2026-07-17"
+        }
+      ]
+    },
+    {
+      "acronym": "STOC",
+      "year": 2027,
+      "name": "ACM Symposium on Theory of Computing",
+      "websiteUrl": "https://acm-stoc.org/stoc2027/",
+      "conferenceDate": "June 06-11, 2027",
+      "place": "Atlanta, Georgia",
+      "tags": [
+        "THEORY",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-11-02T19:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2027-02-01"
         }
       ]
     },
@@ -3392,6 +3420,35 @@
           "cycle": "",
           "label": "Notification",
           "date": "2027-02-28"
+        }
+      ]
+    },
+    {
+      "acronym": "PAKDD",
+      "year": 2027,
+      "name": "Pacific-Asia Conference on Knowledge Discovery and Data Mining",
+      "websiteUrl": "https://www.pakdd2027.org",
+      "conferenceDate": "June 29 - July 02, 2027",
+      "place": "Wellington, New Zealand",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "PPML",
+        "COREB"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-11-20T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2027-02-26"
         }
       ]
     },
