@@ -174,8 +174,18 @@
       "tag": []
     },
     {
-      "name": "旅行明信片图",
-      "path": "./text-to-image/travel-postcard.md",
+      "name": "旅行明信片图（样式一）",
+      "path": "./text-to-image/travel-postcard1.md",
+      "tag": []
+    },
+    {
+      "name": "超现实极简版画",
+      "path": "./text-to-image/surreal-minimalist-printmaking.md",
+      "tag": []
+    },
+    {
+      "name": "社论风格海报图",
+      "path": "./text-to-image/editorial-poster.md",
       "tag": []
     },
     {
