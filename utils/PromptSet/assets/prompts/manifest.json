@@ -164,6 +164,16 @@
       "tag": []
     },
     {
+      "name": "简约几何画风图",
+      "path": "./text-to-image/minimalist-geometric.md",
+      "tag": []
+    },
+    {
+      "name": "剪纸画风图",
+      "path": "./text-to-image/paper-cut.md",
+      "tag": []
+    },
+    {
       "name": "线条手绘图",
       "path": "./text-to-image/hand-drawn-line-drawing.md",
       "tag": []
