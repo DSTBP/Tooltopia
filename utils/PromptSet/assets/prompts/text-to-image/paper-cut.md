@@ -20,5 +20,5 @@
 
 **参考图**
 
-<div align="center">   <div style="display:inline-block; text-align:center; margin:0 10px;">     <img src="picture/tape-collage1.jpg" width="400">     <p>图1</p>   </div>   <div style="display:inline-block; text-align:center; margin:0 10px;">     <img src="picture/tape-collage2.jpg" width="400">     <p>图2</p>   </div> </div>
+<div align="center">   <div style="display:inline-block; text-align:center; margin:0 10px;">     <img src="picture/paper-cut1.jpg" width="400">     <p>图1</p>   </div>   <div style="display:inline-block; text-align:center; margin:0 10px;">     <img src="picture/paper-cut2.jpg" width="400">     <p>图2</p>   </div> </div>
 
