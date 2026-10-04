@@ -194,6 +194,26 @@
       "tag": []
     },
     {
+      "name": "水墨画风格图",
+      "path": "./text-to-image/chinese-ink-wash.md",
+      "tag": []
+    },
+    {
+      "name": "纸雕微缩图",
+      "path": "./text-to-image/paper-diorama.md",
+      "tag": []
+    },
+    {
+      "name": "丙烯马克笔图",
+      "path": "./text-to-image/acrylic-marker-illustration.md",
+      "tag": []
+    },
+    {
+      "name": "",
+      "path": "./text-to-image/.md",
+      "tag": []
+    },
+    {
       "name": "线条手绘图",
       "path": "./text-to-image/hand-drawn-line-drawing.md",
       "tag": []
