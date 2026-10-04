@@ -214,6 +214,11 @@
       "tag": []
     },
     {
+      "name": "3D厚涂油画图",
+      "path": "./text-to-image/3D-impasto-oil-painting.md",
+      "tag": []
+    },
+    {
       "name": "线条手绘图",
       "path": "./text-to-image/hand-drawn-line-drawing.md",
       "tag": []
