@@ -190,6 +190,7 @@ button { color: inherit; }
 .card-action:focus-visible,
 .page-button:focus-visible,
 .modal-close:focus-visible,
+.modal-view-tab:focus-visible,
 .clear-search:focus-visible,
 input:focus-visible,
 select:focus-visible {
@@ -228,10 +229,8 @@ select:focus-visible {
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    white-space: nowrap;
+    display: block;
+    white-space: inherit;
     animation: shad-anim 60s linear infinite;
 }
 
@@ -776,6 +775,36 @@ select:focus-visible {
     padding: 1.25rem;
 }
 
+.modal-view-tabs {
+    display: inline-flex;
+    align-self: flex-start;
+    flex-shrink: 0;
+    gap: 0.25rem;
+    margin: 0.75rem 1.25rem 0;
+    padding: 0.25rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+}
+
+.modal-view-tab {
+    min-height: 2.25rem;
+    padding: 0.45rem 0.85rem;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.modal-view-tab:hover,
+.modal-view-tab[aria-selected="true"] {
+    background: var(--surface-raised);
+    color: var(--text-primary);
+}
+
 .prompt-full-text {
     width: 100%;
     min-height: 100%;
@@ -791,6 +820,54 @@ select:focus-visible {
     overflow-wrap: anywhere;
     user-select: text;
 }
+
+.prompt-rendered {
+    width: 100%;
+    min-height: 100%;
+    padding: 1.125rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: rgba(0, 0, 0, 0.22);
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+    line-height: 1.8;
+    overflow-wrap: anywhere;
+    user-select: text;
+}
+
+.prompt-rendered p,
+.prompt-rendered ul,
+.prompt-rendered ol,
+.prompt-rendered blockquote,
+.prompt-rendered pre,
+.prompt-rendered .prompt-table-scroll { margin: 0.9rem 0; }
+.prompt-rendered h1,
+.prompt-rendered h2,
+.prompt-rendered h3,
+.prompt-rendered h4,
+.prompt-rendered h5,
+.prompt-rendered h6 { margin: 1.4rem 0 0.65rem; font-size: 1.1rem; line-height: 1.5; }
+.prompt-rendered h1 { font-size: 1.4rem; }
+.prompt-rendered h2 { font-size: 1.25rem; }
+.prompt-rendered > :first-child { margin-top: 0; }
+.prompt-rendered > :last-child { margin-bottom: 0; }
+.prompt-rendered ul,
+.prompt-rendered ol { padding-left: 1.5rem; }
+.prompt-rendered li { margin: 0.3rem 0; }
+.prompt-rendered blockquote { padding: 0.25rem 1rem; border-left: 3px solid var(--border-strong); color: var(--text-secondary); }
+.prompt-rendered a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.prompt-rendered code { padding: 0.15rem 0.3rem; border-radius: 4px; background: var(--surface-raised); font-family: 'Consolas', 'Monaco', monospace; font-size: 0.9em; }
+.prompt-rendered pre { padding: 1rem; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); overflow: auto; }
+.prompt-rendered pre code { padding: 0; background: transparent; }
+.prompt-rendered hr { margin: 1.25rem 0; border: 0; border-top: 1px solid var(--border); }
+.prompt-rendered img { max-width: 100%; height: auto; vertical-align: middle; }
+.prompt-rendered [align="center"] { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; }
+.prompt-rendered [align="center"] > div { flex: 1 1 15rem; min-width: 0; max-width: 400px; }
+.prompt-table-scroll { overflow-x: auto; }
+.prompt-rendered table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.prompt-rendered th,
+.prompt-rendered td { min-width: 8rem; padding: 0.5rem 0.65rem; border: 1px solid var(--border); text-align: left; vertical-align: top; }
+.prompt-rendered th { background: var(--surface-raised); }
 
 .modal-footer {
     display: flex;
@@ -952,7 +1029,8 @@ body.day-mode .modal-dialog {
     box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
 }
 
-body.day-mode .prompt-full-text { border-color: rgba(0, 0, 0, 0.1); background: rgba(241, 245, 249, 0.86); color: #1a202c; }
+body.day-mode .prompt-full-text,
+body.day-mode .prompt-rendered { border-color: rgba(0, 0, 0, 0.1); background: rgba(241, 245, 249, 0.86); color: #1a202c; }
 body.day-mode .toast { border-color: rgba(0, 0, 0, 0.16); background: rgba(255, 255, 255, 0.96); color: #1a202c; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18); }
 body.day-mode .toast.is-error { border-color: rgba(185, 28, 28, 0.28); color: #991b1b; }
 body.day-mode ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); }
@@ -964,6 +1042,7 @@ body.day-mode .filter-chip:focus-visible,
 body.day-mode .card-action:focus-visible,
 body.day-mode .page-button:focus-visible,
 body.day-mode .modal-close:focus-visible,
+body.day-mode .modal-view-tab:focus-visible,
 body.day-mode .clear-search:focus-visible,
 body.day-mode input:focus-visible,
 body.day-mode select:focus-visible { outline-color: rgba(0, 0, 0, 0.58); }
@@ -1191,6 +1270,7 @@ body.day-mode .footer p { color: rgba(0, 0, 0, 0.5); }
     .select-control select { width: min(14rem, 70%); }
     .prompt-modal { padding: 0.5rem; }
     .modal-header, .modal-content { padding: 1rem; }
+    .modal-view-tabs { margin: 0.75rem 1rem 0; }
     .modal-footer { padding: 0.875rem 1rem 1rem; }
     .modal-copy-button { width: 100%; }
 }

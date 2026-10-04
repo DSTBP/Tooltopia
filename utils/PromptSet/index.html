@@ -160,8 +160,13 @@
                 </div>
                 <button id="modalCloseButton" class="modal-close" type="button" aria-label="关闭提示词详情">×</button>
             </header>
-            <div class="modal-content">
-                <pre id="modalBody" class="prompt-full-text no-translate" tabindex="0"></pre>
+            <div id="modalViewTabs" class="modal-view-tabs" role="tablist" aria-label="全文视图">
+                <button id="rawPromptTab" class="modal-view-tab" type="button" role="tab" data-prompt-view="raw" aria-controls="modalBody" aria-selected="false" tabindex="-1">原始文本</button>
+                <button id="renderedPromptTab" class="modal-view-tab" type="button" role="tab" data-prompt-view="rendered" aria-controls="modalRenderedBody" aria-selected="true">渲染文本</button>
+            </div>
+            <div id="modalContent" class="modal-content">
+                <pre id="modalBody" class="prompt-full-text no-translate" role="tabpanel" aria-labelledby="rawPromptTab" tabindex="0" hidden></pre>
+                <div id="modalRenderedBody" class="prompt-rendered no-translate" role="tabpanel" aria-labelledby="renderedPromptTab" tabindex="0"></div>
             </div>
             <footer class="modal-footer">
                 <button id="modalCopyButton" class="btn modal-copy-button" type="button">
@@ -180,6 +185,7 @@
     <script src="../../assets/js/loader.js"></script>
     <script src="./assets/js/translate-init.js"></script>
     <script src="./assets/js/theme-toggle.js"></script>
+    <script src="./assets/js/vendor/marked.umd.js"></script>
     <script src="./assets/js/script.js"></script>
 </body>
 </html>

@@ -15,6 +15,7 @@ const appState = {
     pageSize: 9,
     currentPage: 1,
     currentPrompt: null,
+    promptViewMode: 'rendered',
     lastFocusedElement: null,
     toastTimer: null
 };
@@ -50,7 +51,10 @@ function cacheDom() {
         modalTitle: document.getElementById('modalTitle'),
         modalCategory: document.getElementById('modalCategory'),
         modalMeta: document.getElementById('modalMeta'),
+        modalViewTabs: document.getElementById('modalViewTabs'),
+        modalContent: document.getElementById('modalContent'),
         modalBody: document.getElementById('modalBody'),
+        modalRenderedBody: document.getElementById('modalRenderedBody'),
         modalCloseButton: document.getElementById('modalCloseButton'),
         modalCopyButton: document.getElementById('modalCopyButton'),
         toast: document.getElementById('toast')
@@ -127,6 +131,27 @@ function bindEvents() {
     UI.modalCloseButton.addEventListener('click', closePromptModal);
     UI.modalCopyButton.addEventListener('click', () => {
         if (appState.currentPrompt) copyPrompt(appState.currentPrompt);
+    });
+
+    UI.modalViewTabs.addEventListener('click', event => {
+        const tab = event.target.closest('[data-prompt-view]');
+        if (tab) setPromptView(tab.dataset.promptView);
+    });
+
+    UI.modalViewTabs.addEventListener('keydown', event => {
+        const tabs = Array.from(UI.modalViewTabs.querySelectorAll('[role="tab"]'));
+        const index = tabs.indexOf(document.activeElement);
+        let nextIndex;
+
+        if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length;
+        else if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length;
+        else if (event.key === 'Home') nextIndex = 0;
+        else if (event.key === 'End') nextIndex = tabs.length - 1;
+        else return;
+
+        event.preventDefault();
+        setPromptView(tabs[nextIndex].dataset.promptView);
+        tabs[nextIndex].focus();
     });
 
     UI.modal.addEventListener('click', event => {
@@ -235,6 +260,7 @@ async function fetchPromptSources() {
             return {
                 name,
                 path,
+                sourceUrl: promptUrl.href,
                 tag,
                 category,
                 markdown: await response.text()
@@ -266,6 +292,7 @@ function parsePromptSources(promptSources) {
                 tag: source.tag,
                 category: source.category,
                 path: source.path,
+                sourceUrl: source.sourceUrl,
                 body,
                 sourceIndex,
                 charCount: Array.from(body).length,
@@ -542,12 +569,49 @@ function openPromptModal(prompt, trigger) {
     `${prompt.category} · ${prompt.tag.join(' · ')}`;
     UI.modalMeta.textContent = `${formatNumber(prompt.charCount)} 字`;
     UI.modalBody.textContent = prompt.body;
-    UI.modalBody.scrollTop = 0;
+    UI.modalRenderedBody.replaceChildren(createRenderedPrompt(prompt));
+    setPromptView(appState.promptViewMode);
     UI.modal.hidden = false;
     UI.modal.setAttribute('aria-hidden', 'false');
     document.body.classList.add('modal-open');
 
     requestAnimationFrame(() => UI.modalCloseButton.focus());
+}
+
+function createRenderedPrompt(prompt) {
+    const template = document.createElement('template');
+    template.innerHTML = marked.parse(prompt.body, { gfm: true });
+
+    // Relative resources belong to the Markdown file, not index.html.
+    template.content.querySelectorAll('img[src]').forEach(image => {
+        image.src = new URL(image.getAttribute('src'), prompt.sourceUrl).href;
+        image.loading = 'lazy';
+    });
+    template.content.querySelectorAll('a[href]').forEach(link => {
+        link.href = new URL(link.getAttribute('href'), prompt.sourceUrl).href;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+    });
+    template.content.querySelectorAll('table').forEach(table => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'prompt-table-scroll';
+        table.replaceWith(wrapper);
+        wrapper.appendChild(table);
+    });
+
+    return template.content;
+}
+
+function setPromptView(mode) {
+    appState.promptViewMode = mode;
+    UI.modalViewTabs.querySelectorAll('[data-prompt-view]').forEach(tab => {
+        const selected = tab.dataset.promptView === mode;
+        tab.setAttribute('aria-selected', String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+    });
+    UI.modalBody.hidden = mode !== 'raw';
+    UI.modalRenderedBody.hidden = mode !== 'rendered';
+    UI.modalContent.scrollTop = 0;
 }
 
 function closePromptModal() {
@@ -577,7 +641,7 @@ function handleDocumentKeydown(event) {
 
     const focusableElements = Array.from(
         UI.modalDialog.querySelectorAll('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')
-    ).filter(element => !element.hidden);
+    ).filter(element => element.getClientRects().length > 0);
 
     if (focusableElements.length === 0) {
         event.preventDefault();
