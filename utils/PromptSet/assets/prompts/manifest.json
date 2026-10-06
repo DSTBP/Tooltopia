@@ -219,6 +219,51 @@
       "tag": []
     },
     {
+      "name": "手绘扩展图",
+      "path": "./text-to-image/hand-drawn-expansion-drawing.md",
+      "tag": []
+    },
+    {
+      "name": "复古印章图",
+      "path": "./text-to-image/vintage-stamp.md",
+      "tag": []
+    },
+    {
+      "name": "插画纪念票",
+      "path": "./text-to-image/illustrated-commemorative-ticket.md",
+      "tag": []
+    },
+    {
+      "name": "日系社论海报",
+      "path": "./text-to-image/japanese-editorial-poster.md",
+      "tag": []
+    },
+    {
+      "name": "纸偶舞台图",
+      "path": "./text-to-image/paper-puppet-theatre.md",
+      "tag": []
+    },
+    {
+      "name": "旧报纸图",
+      "path": "./text-to-image/old-newspaper-supplement.md",
+      "tag": []
+    },
+    {
+      "name": "洞口切面图",
+      "path": "./text-to-image/cave-cutaway-view.md",
+      "tag": []
+    },
+    {
+      "name": "立体卷页纸图",
+      "path": "./text-to-image/3D-curled-paper.md",
+      "tag": []
+    },
+    {
+      "name": "缝线刺绣图",
+      "path": "./text-to-image/embroidery-collage.md",
+      "tag": []
+    },
+    {
       "name": "线条手绘图",
       "path": "./text-to-image/hand-drawn-line-drawing.md",
       "tag": []
