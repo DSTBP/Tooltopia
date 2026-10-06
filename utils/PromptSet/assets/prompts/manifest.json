@@ -139,6 +139,16 @@
       "tag": []
     },
     {
+      "name": "电影海报人物替换",
+      "path": "./text-to-image/character-replacement-movie-poster.md",
+      "tag": []
+    },
+    {
+      "name": "线条手绘图",
+      "path": "./text-to-image/hand-drawn-line-drawing.md",
+      "tag": []
+    },
+    {
       "name": "裂缝水彩图",
       "path": "./text-to-image/cracked-watercolor.md",
       "tag": []
@@ -264,8 +274,13 @@
       "tag": []
     },
     {
-      "name": "线条手绘图",
-      "path": "./text-to-image/hand-drawn-line-drawing.md",
+      "name": "拼豆图",
+      "path": "./text-to-image/perler-beads.md",
+      "tag": []
+    },
+    {
+      "name": "实体浮雕图",
+      "path": "./text-to-image/physical-relief-sculpture.md",
       "tag": []
     }
   ]
