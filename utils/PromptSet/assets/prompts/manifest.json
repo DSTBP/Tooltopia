@@ -150,7 +150,7 @@
     },
     {
       "name": "日式手绘漫画图",
-      "path": "./text-to-image/japanese-hand-drawn-manga.md",
+      "path": "./text-to-image/Japanese-hand-drawn-manga.md",
       "tag": []
     },
     {
@@ -235,7 +235,7 @@
     },
     {
       "name": "日系社论海报",
-      "path": "./text-to-image/japanese-editorial-poster.md",
+      "path": "./text-to-image/Japanese-editorial-poster.md",
       "tag": []
     },
     {
