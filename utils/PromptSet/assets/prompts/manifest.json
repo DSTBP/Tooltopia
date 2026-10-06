@@ -185,7 +185,7 @@
     },
     {
       "name": "社论风格海报图",
-      "path": "./text-to-image/editorial-poster.md",
+      "path": "./text-to-image/editorial-poster1.md",
       "tag": []
     },
     {
@@ -235,7 +235,7 @@
     },
     {
       "name": "日系社论海报",
-      "path": "./text-to-image/japanese-editorial-poster.md",
+      "path": "./text-to-image/editorial-poster2.md",
       "tag": []
     },
     {
