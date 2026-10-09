@@ -144,6 +144,11 @@
       "tag": []
     },
     {
+      "name": "诺贝尔奖风格图",
+      "path": "./text-to-image/nobel-prize.md",
+      "tag": []
+    },
+    {
       "name": "线条手绘图",
       "path": "./text-to-image/hand-drawn-line-drawing.md",
       "tag": []
