@@ -1760,7 +1760,7 @@ document.addEventListener('DOMContentLoaded', () => {
         runtimeState.deadlineLoadPromise = (async () => {
             const subs = Object.keys(subMap).filter(sub => sub !== 'EXT');
             const results = await Promise.allSettled(subs.map(async (sub) => {
-                const url = `https://ccfddl.com/conference/deadlines_zh_${sub}.ics`;
+                const url = `https://ccfddl.com/conference/deadlines/deadlines_zh_${sub}.ics`;
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 10000);
                 try {
