@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-10T05:52:25Z",
+  "generatedAt": "2026-10-10T12:31:35Z",
   "total": 87,
   "stations": [
     {
@@ -10,7 +10,7 @@
       "summary": "AgentRouter 是一条速度很快的公益 API 线路，目前可用 Claude Opus 4.8 和 GPT-5.6 Sol。首次注册可领 175 美元新人额度",
       "category": "API 中转",
       "registrationStatus": "open",
-      "updatedAt": "2026-10-09",
+      "updatedAt": "2026-10-10",
       "sourceIds": [
         "baipiao",
         "dengdeng",
@@ -36,6 +36,9 @@
         "Claude Code",
         "Claude",
         "GPT",
+        "gpt-6-astra",
+        "opus 5.5",
+        "deepseek v4.1 flash",
         "gpt-5.6",
         "opus 5"
       ],
@@ -56,10 +59,11 @@
       "notes": [
         "GitHub 登录，送100刀。",
         "用 2026 年之前注册的 GitHub 老账号注册通过。",
-        "拉取模型列表可能失败。取不到就直接手填模型名：gpt-5.6-sol、claude-opus-5。",
-        "每日签到需要重新登录一次，可领 25 额度。"
+        "拉取模型列表可能失败。取不到就从站点的模型列表里复制原始字符串手填，大小写和连字符别自己改。",
+        "每日签到需要重新登录一次，可领 25 额度。",
+        "拉取模型列表可能失败。取不到就直接手填模型名：gpt-5.6-sol、claude-opus-5。"
       ],
-      "checkedAt": "2026-10-10T05:51:58Z",
+      "checkedAt": "2026-10-10T12:31:08Z",
       "healthStatus": "available"
     },
     {
@@ -110,7 +114,7 @@
       "notes": [
         "用 GitHub 账号注册通过。"
       ],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "responding"
     },
     {
@@ -156,7 +160,7 @@
         "实测可用。",
         "正常使用有机会获得平台赠送 $500 额度。"
       ],
-      "checkedAt": "2026-10-10T05:52:02Z",
+      "checkedAt": "2026-10-10T12:31:11Z",
       "healthStatus": "available"
     },
     {
@@ -167,7 +171,7 @@
       "summary": "JustWoker 是一个签到送额度的公益 API，每日签到可随机获得额度。注册需要 GitHub 账号且账号年限满一年。",
       "category": "API 中转",
       "registrationStatus": "open",
-      "updatedAt": "2026-10-04",
+      "updatedAt": "2026-10-10",
       "sourceIds": [
         "baipiao",
         "ai-relay",
@@ -199,7 +203,7 @@
       "notes": [
         "用注册满一年以上的 GitHub 账号注册通过。"
       ],
-      "checkedAt": "2026-10-10T05:52:02Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -245,7 +249,7 @@
       "notes": [
         "登录送35硬币，大概可以用150次，有 DeepSeek。"
       ],
-      "checkedAt": "2026-10-10T05:52:00Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "available"
     },
     {
@@ -288,7 +292,7 @@
       "notes": [
         "来源页面标记为暂停或失效，仍以本次连通性检测为准"
       ],
-      "checkedAt": "2026-10-10T05:52:00Z",
+      "checkedAt": "2026-10-10T12:31:08Z",
       "healthStatus": "available"
     },
     {
@@ -328,7 +332,44 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:59Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
+      "healthStatus": "available"
+    },
+    {
+      "id": "artbloom.tech",
+      "name": "artbloom 公益站",
+      "domain": "api.artbloom.tech",
+      "url": "https://api.artbloom.tech/",
+      "summary": "注册即得 $100 额度；1x 倍率；实测 opus 5.5 可用。",
+      "category": "API 中转",
+      "registrationStatus": "open",
+      "updatedAt": "2026-10-10",
+      "sourceIds": [
+        "ai-relay"
+      ],
+      "recommended": true,
+      "tags": [
+        "API 中转"
+      ],
+      "models": [
+        "opus 5.5",
+        "opus 5",
+        "glm 5.3",
+        "glm 5.3 flash",
+        "grok 4.7"
+      ],
+      "benefits": [
+        "注册即得 $100 额度",
+        "1x 倍率"
+      ],
+      "requirements": [
+        "注册即送 $100 额度",
+        "有 Claude Opus 5.5/5、GLM 5.3、Grok 4.7"
+      ],
+      "notes": [
+        "实测 opus 5.5 可用。"
+      ],
+      "checkedAt": "2026-10-10T12:31:14Z",
       "healthStatus": "available"
     },
     {
@@ -364,7 +405,7 @@
         "群主人很好，周一和周五固定时段Codex放肆蹬，一般是四小时左右。首字速度2-5秒左右。有问题也会迅速修复。",
         "提供 Claude、GPT、生图分组和签到额度，周一和周五有固定时段 Codex 可用；openAI【限定】已降价至0.08。"
       ],
-      "checkedAt": "2026-10-10T05:52:03Z",
+      "checkedAt": "2026-10-10T12:31:11Z",
       "healthStatus": "responding"
     },
     {
@@ -400,7 +441,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:57Z",
+      "checkedAt": "2026-10-10T12:31:08Z",
       "healthStatus": "available"
     },
     {
@@ -438,7 +479,7 @@
         "爽到爆，不过不支持并发"
       ],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:59Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "responding"
     },
     {
@@ -474,7 +515,7 @@
       "notes": [
         "注册送10刀，邀请1个人送10刀，每天签到送2刀；可用 Claude、GPT、OpenAI、Anthropic 和 gpt-image-2 生图，QQ讨论群：1040758372。"
       ],
-      "checkedAt": "2026-10-10T05:52:05Z",
+      "checkedAt": "2026-10-10T12:31:12Z",
       "healthStatus": "available"
     },
     {
@@ -506,7 +547,7 @@
       "notes": [
         "BlazeAPI 免费计划每天1000次请求，每分钟20次，支持 SSE 流式；模型包含 Kimi K2.5、MiniMax、DeepSeek R1、Gemma4、Grok、Qwen3.5/Qwen3.6 等，部分模型支持 vision、image gen、tools。"
       ],
-      "checkedAt": "2026-10-10T05:52:03Z",
+      "checkedAt": "2026-10-10T12:31:11Z",
       "healthStatus": "available"
     },
     {
@@ -538,7 +579,7 @@
       "notes": [
         "【0526新增】每周送70刀额度，有 Claude，签到奖励比较多，注意需要绑定手机。"
       ],
-      "checkedAt": "2026-10-10T05:52:03Z",
+      "checkedAt": "2026-10-10T12:31:11Z",
       "healthStatus": "available"
     },
     {
@@ -569,7 +610,7 @@
       "notes": [
         "送7元，倍率0.06，相当于110刀。"
       ],
-      "checkedAt": "2026-10-10T05:52:05Z",
+      "checkedAt": "2026-10-10T12:31:12Z",
       "healthStatus": "available"
     },
     {
@@ -601,7 +642,7 @@
       "notes": [
         "ModelScope 官方模型社区，支持筛选 API-Inference 模型，可用于开源模型体验和免费推理调用。"
       ],
-      "checkedAt": "2026-10-10T05:52:04Z",
+      "checkedAt": "2026-10-10T12:31:14Z",
       "healthStatus": "available"
     },
     {
@@ -631,7 +672,7 @@
         "不算纯公益站，有充值入口介意勿入"
       ],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:06Z",
+      "checkedAt": "2026-10-10T12:31:13Z",
       "healthStatus": "available"
     },
     {
@@ -660,7 +701,7 @@
       "notes": [
         "NVIDIA 官方 API Catalog / NIM 入口，开发者可用于模型体验、原型测试和 API 调用。"
       ],
-      "checkedAt": "2026-10-10T05:52:02Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -690,7 +731,7 @@
       "notes": [
         "OpenRouter 免费模型集合，支持模型 ID 的 :free 变体，也可以使用 openrouter/free 路由。"
       ],
-      "checkedAt": "2026-10-10T05:52:02Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -719,7 +760,7 @@
       "notes": [
         "OpenCode 的 Zen 免费模型通道，可通过 Zen API 查看可用模型，适合编码代理临时测试。"
       ],
-      "checkedAt": "2026-10-10T05:52:02Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -744,7 +785,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:08Z",
+      "checkedAt": "2026-10-10T12:31:16Z",
       "healthStatus": "available"
     },
     {
@@ -769,7 +810,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:06Z",
+      "checkedAt": "2026-10-10T12:31:14Z",
       "healthStatus": "available"
     },
     {
@@ -794,7 +835,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:07Z",
+      "checkedAt": "2026-10-10T12:31:14Z",
       "healthStatus": "available"
     },
     {
@@ -844,7 +885,7 @@
         "模型清单经常变，以定价页为准"
       ],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:58Z",
+      "checkedAt": "2026-10-10T12:31:08Z",
       "healthStatus": "available"
     },
     {
@@ -891,7 +932,7 @@
         "签到按 7 天循环，第 1 天金额最高"
       ],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:57Z",
+      "checkedAt": "2026-10-10T12:31:07Z",
       "healthStatus": "available"
     },
     {
@@ -939,7 +980,7 @@
         "公益组为临时短期活动，无法保证长期使用"
       ],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:57Z",
+      "checkedAt": "2026-10-10T12:31:07Z",
       "healthStatus": "available"
     },
     {
@@ -987,7 +1028,7 @@
         "禁止批量测活否则封号"
       ],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:03Z",
+      "checkedAt": "2026-10-10T12:31:11Z",
       "healthStatus": "available"
     },
     {
@@ -1029,7 +1070,7 @@
       "notes": [
         "无限额度，有很多国模。"
       ],
-      "checkedAt": "2026-10-10T05:52:00Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -1074,7 +1115,7 @@
         "必须走邀请链接注册，否则没有余额"
       ],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:57Z",
+      "checkedAt": "2026-10-10T12:31:07Z",
       "healthStatus": "available"
     },
     {
@@ -1112,7 +1153,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:57Z",
+      "checkedAt": "2026-10-10T12:31:07Z",
       "healthStatus": "available"
     },
     {
@@ -1150,7 +1191,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:57Z",
+      "checkedAt": "2026-10-10T12:31:07Z",
       "healthStatus": "responding"
     },
     {
@@ -1190,7 +1231,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -1226,7 +1267,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:00Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -1262,7 +1303,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:58Z",
+      "checkedAt": "2026-10-10T12:31:08Z",
       "healthStatus": "available"
     },
     {
@@ -1298,7 +1339,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:57Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "available"
     },
     {
@@ -1338,47 +1379,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:57Z",
-      "healthStatus": "available"
-    },
-    {
-      "id": "dgbmc.top",
-      "name": "DGB 公益站",
-      "domain": "freeapi.dgbmc.top",
-      "url": "https://freeapi.dgbmc.top/",
-      "summary": "注册随机送钱、临时邮箱也能薅的公益免费 API 站，OpenAI 兼容直连。一个站把 Gemini 3、Grok 4 全家桶、GPT 绘图分成三条线挂着，自己建个 key 选对分组就能调，白嫖党拿去接客户端正好。",
-      "category": "API 中转",
-      "registrationStatus": "open",
-      "updatedAt": "2026-09-06",
-      "sourceIds": [
-        "baipiao",
-        "dengdeng"
-      ],
-      "recommended": false,
-      "tags": [
-        "免费api",
-        "gemini",
-        "grok",
-        "gpt绘图",
-        "注册送额度",
-        "临时邮箱",
-        "签到",
-        "生图"
-      ],
-      "models": [
-        "GPT",
-        "Gemini",
-        "Grok"
-      ],
-      "benefits": [
-        "注册随机送钱、临时邮箱也能薅的公益免费 API 站，OpenAI 兼容直连",
-        "注册和签到都有额度，支持生图，缺点是当前可用模型数量不多"
-      ],
-      "requirements": [],
-      "notes": [
-        "注册80刀，签到40刀，目前只有 image2、GLM5.1、gork4.2。"
-      ],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:07Z",
       "healthStatus": "available"
     },
     {
@@ -1419,7 +1420,7 @@
       "notes": [
         "来源页面状态：expired"
       ],
-      "checkedAt": "2026-10-10T05:52:02Z",
+      "checkedAt": "2026-10-10T12:31:11Z",
       "healthStatus": "available"
     },
     {
@@ -1457,7 +1458,7 @@
         "我没注册成功，具体的不太清楚"
       ],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:59Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "available"
     },
     {
@@ -1496,7 +1497,7 @@
       "notes": [
         "注册100刀，签到60刀，不稳定。"
       ],
-      "checkedAt": "2026-10-10T05:51:57Z",
+      "checkedAt": "2026-10-10T12:31:07Z",
       "healthStatus": "available"
     },
     {
@@ -1532,7 +1533,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -1566,7 +1567,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:03Z",
+      "checkedAt": "2026-10-10T12:31:12Z",
       "healthStatus": "available"
     },
     {
@@ -1604,7 +1605,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:59Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "responding"
     },
     {
@@ -1640,7 +1641,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:58Z",
+      "checkedAt": "2026-10-10T12:31:08Z",
       "healthStatus": "responding"
     },
     {
@@ -1679,7 +1680,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:58Z",
+      "checkedAt": "2026-10-10T12:31:08Z",
       "healthStatus": "available"
     },
     {
@@ -1714,7 +1715,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -1747,7 +1748,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:02Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "available"
     },
     {
@@ -1780,7 +1781,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:59Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "available"
     },
     {
@@ -1814,7 +1815,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "responding"
     },
     {
@@ -1848,7 +1849,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -1885,7 +1886,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:59Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "responding"
     },
     {
@@ -1922,7 +1923,7 @@
       "notes": [
         "站点不算传统公益站，小叶币只可通过注册、签到、不定时群内兑换码或找群主获取；部分模型可能有速率限制或不可用，模型列表建议用 OpenAI 协议接口自行获取。"
       ],
-      "checkedAt": "2026-10-10T05:52:00Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "available"
     },
     {
@@ -1957,7 +1958,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:58Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "available"
     },
     {
@@ -1994,7 +1995,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:57Z",
+      "checkedAt": "2026-10-10T12:31:07Z",
       "healthStatus": "available"
     },
     {
@@ -2028,7 +2029,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:59Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "available"
     },
     {
@@ -2062,7 +2063,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -2097,7 +2098,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:58Z",
+      "checkedAt": "2026-10-10T12:31:08Z",
       "healthStatus": "responding"
     },
     {
@@ -2129,7 +2130,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "responding"
     },
     {
@@ -2163,7 +2164,7 @@
       "benefits": [],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:02Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -2196,7 +2197,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:58Z",
+      "checkedAt": "2026-10-10T12:31:08Z",
       "healthStatus": "available"
     },
     {
@@ -2228,7 +2229,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:58Z",
+      "checkedAt": "2026-10-10T12:31:08Z",
       "healthStatus": "available"
     },
     {
@@ -2261,7 +2262,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:59Z",
+      "checkedAt": "2026-10-10T12:31:08Z",
       "healthStatus": "available"
     },
     {
@@ -2294,7 +2295,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:57Z",
+      "checkedAt": "2026-10-10T12:31:07Z",
       "healthStatus": "available"
     },
     {
@@ -2325,7 +2326,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -2356,8 +2357,41 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:57Z",
+      "checkedAt": "2026-10-10T12:31:08Z",
       "healthStatus": "responding"
+    },
+    {
+      "id": "motomoto.lol",
+      "name": "MotoMoto",
+      "domain": "motomoto.lol",
+      "url": "https://motomoto.lol/",
+      "summary": "MotoMoto 是不收费的 AI 公益站，目前提供 gpt-5.5 和 gpt-5.6-sol；注册赠送 $30 额度，每天签到还能领取 $50。",
+      "category": "API 中转",
+      "registrationStatus": "open",
+      "updatedAt": "2026-09-15",
+      "sourceIds": [
+        "baipiao"
+      ],
+      "recommended": false,
+      "tags": [
+        "免费api",
+        "gpt",
+        "gpt-5.5",
+        "gpt-5.6",
+        "注册送额度",
+        "每日签到",
+        "by MotoMoto"
+      ],
+      "models": [
+        "GPT"
+      ],
+      "benefits": [
+        "注册赠送 $30 额度，每天签到还能领取 $50"
+      ],
+      "requirements": [],
+      "notes": [],
+      "checkedAt": "2026-10-10T12:31:08Z",
+      "healthStatus": "available"
     },
     {
       "id": "nofx.one",
@@ -2387,7 +2421,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:58Z",
+      "checkedAt": "2026-10-10T12:31:07Z",
       "healthStatus": "available"
     },
     {
@@ -2419,7 +2453,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:11Z",
       "healthStatus": "available"
     },
     {
@@ -2450,7 +2484,7 @@
       "benefits": [],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:00Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "available"
     },
     {
@@ -2482,7 +2516,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:58Z",
+      "checkedAt": "2026-10-10T12:31:08Z",
       "healthStatus": "available"
     },
     {
@@ -2516,7 +2550,7 @@
         "已经领取到了50刀。",
         "试用额度找群主领50刀；GPT 当前倍率0.065，截图中包含 plus 满血号池、GPT Image 2、CC-Kiro、CC-反重力 opus4.6，以及暂不可用的 CC-Google Vertex 渠道。"
       ],
-      "checkedAt": "2026-10-10T05:52:03Z",
+      "checkedAt": "2026-10-10T12:31:11Z",
       "healthStatus": "available"
     },
     {
@@ -2546,7 +2580,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:00Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "available"
     },
     {
@@ -2576,36 +2610,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:01Z",
-      "healthStatus": "available"
-    },
-    {
-      "id": "claude.now",
-      "name": "Claude Now 镜像站",
-      "domain": "claude.now",
-      "url": "https://claude.now/",
-      "summary": "Claude Now 公益站主打一个「零门槛」——浏览器打开 claude.now 就是完整的 Claude 网页聊天，不用注册、不用登录、不用魔法，连 API 是什么都不用懂。背后是公益号池共享普通账号在扛，跟着官方周限和封号节奏波动，能用尽量用、别当稳定饭碗。",
-      "category": "API 中转",
-      "registrationStatus": "unknown",
-      "updatedAt": "2026-07-05",
-      "sourceIds": [
-        "baipiao"
-      ],
-      "recommended": false,
-      "tags": [
-        "免注册",
-        "免登录",
-        "claude",
-        "镜像站",
-        "网页版"
-      ],
-      "models": [
-        "Claude"
-      ],
-      "benefits": [],
-      "requirements": [],
-      "notes": [],
-      "checkedAt": "2026-10-10T05:52:05Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "available"
     },
     {
@@ -2634,7 +2639,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:57Z",
+      "checkedAt": "2026-10-10T12:31:07Z",
       "healthStatus": "available"
     },
     {
@@ -2663,7 +2668,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:59Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "available"
     },
     {
@@ -2692,7 +2697,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -2722,7 +2727,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -2753,7 +2758,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:01Z",
+      "checkedAt": "2026-10-10T12:31:10Z",
       "healthStatus": "available"
     },
     {
@@ -2782,7 +2787,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:51:59Z",
+      "checkedAt": "2026-10-10T12:31:09Z",
       "healthStatus": "available"
     },
     {
@@ -2813,7 +2818,7 @@
       "notes": [
         "NexaHub AI 免费订阅额度为每日30刀、总计120刀；充值比例1:15，Codex 余额计费分组0.8倍，免费订阅分组1倍。"
       ],
-      "checkedAt": "2026-10-10T05:52:03Z",
+      "checkedAt": "2026-10-10T12:31:12Z",
       "healthStatus": "available"
     },
     {
@@ -2842,7 +2847,7 @@
       "notes": [
         "注册送2刀，找群主再拿2刀，特价分组0.06；综合相当于60刀。"
       ],
-      "checkedAt": "2026-10-10T05:52:06Z",
+      "checkedAt": "2026-10-10T12:31:13Z",
       "healthStatus": "available"
     },
     {
@@ -2870,7 +2875,7 @@
       "notes": [
         "【0526新增】纯公益站，每天签到10刀左右，有 DeepSeek。"
       ],
-      "checkedAt": "2026-10-10T05:52:03Z",
+      "checkedAt": "2026-10-10T12:31:11Z",
       "healthStatus": "available"
     },
     {
@@ -2899,7 +2904,7 @@
       "notes": [
         "登录送50刀，有 Claude。"
       ],
-      "checkedAt": "2026-10-10T05:52:07Z",
+      "checkedAt": "2026-10-10T12:31:13Z",
       "healthStatus": "available"
     },
     {
@@ -2926,7 +2931,7 @@
       "notes": [
         "来源页面标记为暂停或失效，仍以本次连通性检测为准"
       ],
-      "checkedAt": "2026-10-10T05:52:07Z",
+      "checkedAt": "2026-10-10T12:31:15Z",
       "healthStatus": "available"
     },
     {
@@ -2954,7 +2959,7 @@
       "notes": [
         "这个登录送4刀，但是倍率是0.001，等于4000刀。"
       ],
-      "checkedAt": "2026-10-10T05:52:05Z",
+      "checkedAt": "2026-10-10T12:31:13Z",
       "healthStatus": "available"
     },
     {
@@ -2979,7 +2984,7 @@
       ],
       "requirements": [],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:06Z",
+      "checkedAt": "2026-10-10T12:31:14Z",
       "healthStatus": "available"
     },
     {
@@ -3006,7 +3011,7 @@
         "服务器爆炸"
       ],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:07Z",
+      "checkedAt": "2026-10-10T12:31:15Z",
       "healthStatus": "available"
     },
     {
@@ -3033,7 +3038,7 @@
         "服务器爆炸"
       ],
       "notes": [],
-      "checkedAt": "2026-10-10T05:52:07Z",
+      "checkedAt": "2026-10-10T12:31:15Z",
       "healthStatus": "available"
     }
   ]
