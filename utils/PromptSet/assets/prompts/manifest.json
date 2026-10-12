@@ -121,6 +121,11 @@
       "tag": ["需适配"]
     },
     {
+      "name": "论文一致性、逻辑与语言规范性审查",
+      "path": "./writing/paper-proofreading.md",
+      "tag": ["需适配"]
+    },
+    {
       "name": "整体行文",
       "path": "./writing/overall-writing.md",
       "tag": ["需适配"]
