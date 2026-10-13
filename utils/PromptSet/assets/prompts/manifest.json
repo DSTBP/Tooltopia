@@ -131,8 +131,13 @@
       "tag": ["需适配"]
     },
     {
-      "name": "实验部分",
+      "name": "实验内容撰写",
       "path": "./writing/experiment-section.md",
+      "tag": []
+    },
+    {
+      "name": "实验作图",
+      "path": "./writing/experimental-drawing.md",
       "tag": []
     },
     {
