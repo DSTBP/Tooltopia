@@ -134,6 +134,11 @@
       "name": "实验部分",
       "path": "./writing/experiment-section.md",
       "tag": []
+    },
+    {
+      "name": "审稿自查",
+      "path": "./writing/peer-review.md",
+      "tag": ["需适配"]
     }
   ],
 
