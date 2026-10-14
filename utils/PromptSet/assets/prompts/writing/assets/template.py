@@ -1,643 +1,903 @@
-"""
-Reads `results/val_vs_scar_leakage_*.txt` produced by `experiments/compare_val_scar_leakage.py`
-and plots:
-  - Figure 1: Line plot with x=leakage rate, y=correct recovery rate (main axis)
-              + recall/accuracy on secondary axis or subplot
-              + 95% CI error bars from multiple runs
-
-Usage:
-  python plots/plot_leakage_comparison.py --input results/val_vs_scar_leakage_2025-12-15_xx.xx.xx.txt
-  python plots/plot_leakage_comparison.py  # uses the latest results/val_vs_scar_leakage_*.txt
-"""
-
 from __future__ import annotations
 
 import argparse
-import glob
-import os
+import csv
+import math
 import re
-import tempfile
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
+import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import numpy as np
 
 
-# Color scheme for dual-dataset comparison
-VAL_COLOR = "#74C4E3"      # Blue RGB(116, 196, 227)
-SCAR_COLOR = "#EC8F8F"     # Pink RGB(236, 143, 143)
-
-# 解析正则表达式
-_HEADER_RE = re.compile(r"^Dataset=(?P<dataset>[^,]+),\s*Keywords=(?P<keywords>\d+)$")
-_LEAKAGE_HEADER_RE = re.compile(r"^Leakage rates=\[(?P<rates>[^\]]+)\],\s*Runs=(?P<runs>\d+)$")
-_MULTIPLIER_RE = re.compile(r"^Multiplier=(?P<multiplier>[\d.]+),\s*External blend weight=(?P<weight>[\d.]+)$")
-
-# 每个 run 的详细数据行
-# Run 1: VAL=38.30% (召回=100.00%, 准确=38.30%), SCAR=40.12% (召回=100.00%, 准确=40.12%)
-# Also accepts VAL-K instead of SCAR
-_RUN_LINE_RE = re.compile(
-    r"^\s*Run\s+(?P<run>\d+):\s*"
-    r"VAL=(?P<val_correct>[\d.]+)%\s*\(召回=(?P<val_recall>[\d.]+)%,\s*准确=(?P<val_acc>[\d.]+)%\),\s*"
-    r"(?:SCAR|VAL-K)=(?P<scar_correct>[\d.]+)%\s*\(召回=(?P<scar_recall>[\d.]+)%,\s*准确=(?P<scar_acc>[\d.]+)%\)$"
-)
-
-# 泄露率标题行
-_LEAKAGE_RATE_RE = re.compile(r"^Leakage Rate\s+(?P<rate>[\d.]+)%:$")
-
-# 平均值行 (accepts both SCAR and VAL-K)
-_AVG_LINE_RE = re.compile(
-    r"^\s*平均:\s*VAL=(?P<val_avg>[\d.]+)%\s*\(±(?P<val_std>[\d.]+)%\),\s*"
-    r"(?:SCAR|VAL-K)=(?P<scar_avg>[\d.]+)%\s*\(±(?P<scar_std>[\d.]+)%\)"
-)
-
-
-def _find_latest_result(pattern: str) -> str:
-    candidates = glob.glob(pattern)
-    if not candidates:
-        raise FileNotFoundError(f"No result file found: pattern={pattern!r}")
-    return max(candidates, key=os.path.getmtime)
-
-
-def _parse_leakage_results(path: str) -> Dict[str, Any]:
-    """
-    解析泄露率对比实验结果文件。
-
-    Returns:
-        {
-            "meta": {...},
-            "by_leakage_rate": {
-                rate: {
-                    "runs": [
-                        {"val_correct": ..., "val_recall": ..., "val_acc": ...,
-                         "scar_correct": ..., "scar_recall": ..., "scar_acc": ...},
-                        ...
-                    ],
-                    "val_avg": ..., "val_std": ...,
-                    "scar_avg": ..., "scar_std": ...,
-                }
-            }
-        }
-    """
-    result: Dict[str, Any] = {
-        "meta": {"source": path},
-        "by_leakage_rate": {},
+plt.rcParams.update(
+    {
+        "font.family": "serif",
+        "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
+        "font.weight": "bold",
+        "font.size": 21,
+        "axes.labelsize": 24,
+        "axes.labelweight": "bold",
+        "axes.titlesize": 23,
+        "axes.titleweight": "bold",
+        "xtick.labelsize": 22,
+        "ytick.labelsize": 22,
+        "legend.fontsize": 18,
+        "axes.spines.top": True,
+        "axes.spines.right": True,
+        "axes.linewidth": 1.4,
+        "axes.edgecolor": "black",
+        "axes.grid": True,
+        "grid.alpha": 0.30,
+        "grid.linestyle": "--",
+        "grid.linewidth": 0.9,
+        "lines.linewidth": 2.8,
+        "lines.markersize": 8.5,
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
+        "mathtext.fontset": "stix",
+        "savefig.dpi": 600,
+        "figure.dpi": 300,
+        "figure.facecolor": "white",
+        "savefig.facecolor": "white",
     }
-
-    current_leakage_rate: Optional[float] = None
-    current_runs: List[Dict[str, float]] = []
-
-    with open(path, "r", encoding="utf-8") as fh:
-        for raw_line in fh:
-            line = raw_line.strip()
-            if not line:
-                continue
-
-            # 解析元数据
-            if match := _HEADER_RE.match(line):
-                result["meta"]["dataset"] = match.group("dataset")
-                result["meta"]["keywords"] = int(match.group("keywords"))
-                continue
-
-            if match := _LEAKAGE_HEADER_RE.match(line):
-                rates_str = match.group("rates")
-                result["meta"]["leakage_rates"] = [float(r.strip()) for r in rates_str.split(",")]
-                result["meta"]["runs"] = int(match.group("runs"))
-                continue
-
-            if match := _MULTIPLIER_RE.match(line):
-                result["meta"]["multiplier"] = float(match.group("multiplier"))
-                result["meta"]["external_blend_weight"] = float(match.group("weight"))
-                continue
-
-            # 检测泄露率标题
-            if match := _LEAKAGE_RATE_RE.match(line):
-                # 保存上一个泄露率的数据
-                if current_leakage_rate is not None and current_runs:
-                    result["by_leakage_rate"][current_leakage_rate] = {
-                        "runs": current_runs.copy(),
-                    }
-                current_leakage_rate = float(match.group("rate"))
-                current_runs = []
-                continue
-
-            # 解析每个 run 的数据
-            if match := _RUN_LINE_RE.match(line):
-                if current_leakage_rate is not None:
-                    current_runs.append({
-                        "run": int(match.group("run")),
-                        "val_correct": float(match.group("val_correct")),
-                        "val_recall": float(match.group("val_recall")),
-                        "val_acc": float(match.group("val_acc")),
-                        "scar_correct": float(match.group("scar_correct")),
-                        "scar_recall": float(match.group("scar_recall")),
-                        "scar_acc": float(match.group("scar_acc")),
-                    })
-                continue
-
-            # 解析平均值行
-            if match := _AVG_LINE_RE.match(line):
-                if current_leakage_rate is not None:
-                    if current_leakage_rate not in result["by_leakage_rate"]:
-                        result["by_leakage_rate"][current_leakage_rate] = {"runs": current_runs.copy()}
-                    result["by_leakage_rate"][current_leakage_rate]["val_avg"] = float(match.group("val_avg"))
-                    result["by_leakage_rate"][current_leakage_rate]["val_std"] = float(match.group("val_std"))
-                    result["by_leakage_rate"][current_leakage_rate]["scar_avg"] = float(match.group("scar_avg"))
-                    result["by_leakage_rate"][current_leakage_rate]["scar_std"] = float(match.group("scar_std"))
-                continue
-
-    # 保存最后一个泄露率的数据
-    if current_leakage_rate is not None and current_runs:
-        if current_leakage_rate not in result["by_leakage_rate"]:
-            result["by_leakage_rate"][current_leakage_rate] = {"runs": current_runs.copy()}
-
-    return result
+)
 
 
-def _compute_95ci(values: List[float]) -> float:
-    """计算 95% 置信区间的半宽度。"""
-    if len(values) < 2:
-        return 0.0
-    std = np.std(values, ddof=1)  # 样本标准差
-    n = len(values)
-    return 1.96 * std / np.sqrt(n)
+METHOD_DIRS = {
+    "Plaintext": "Plaintext",
+    "SecureDeepFM": "SecureDeepFM",
+    "FedCTR": "FedCTR",
+    "DP-AFedDFM": "AFedDFM",
+}
+
+METHOD_LABELS = {
+    "Plaintext": "Plaintext",
+    "SecureDeepFM": "Ours",
+    "FedCTR": "FedCTR",
+    "DP-AFedDFM": "AFedDFM",
+}
+
+# Soft, template-aligned palette. SecureDeepFM is the highlighted ours method.
+# The curves stay in a light red/blue/green family with clear but not
+# over-saturated separation.
+REFERENCE_COLORS = {
+    "neutral_gray": "#6F7478",
+    "ours_red": "#E57373",
+    "pastel_blue": "#8BCFDC",
+    "pastel_green": "#9CCB9E",
+}
+
+METHOD_STYLES = {
+    "Plaintext": {
+        "color": REFERENCE_COLORS["neutral_gray"],
+        "linestyle": "--",
+        "linewidth": 2.5,
+        "marker": None,
+        "zorder": 6,
+    },
+    "SecureDeepFM": {
+        "color": REFERENCE_COLORS["ours_red"],
+        "linestyle": "-",
+        "linewidth": 2.5,
+        "marker": "D",
+        "markersize": 7.0,
+        "markeredgecolor": REFERENCE_COLORS["ours_red"],
+        "markeredgewidth": 0.0,
+        "zorder": 5,
+    },
+    "FedCTR": {
+        "color": REFERENCE_COLORS["pastel_blue"],
+        "linestyle": "-",
+        "linewidth": 2.5,
+        "marker": "s",
+        "markersize": 7.0,
+        "markeredgecolor": REFERENCE_COLORS["pastel_blue"],
+        "markeredgewidth": 0.0,
+        "zorder": 3,
+    },
+    "DP-AFedDFM": {
+        "color": REFERENCE_COLORS["pastel_green"],
+        "linestyle": "-",
+        "linewidth": 2.5,
+        "marker": "o",
+        "markersize": 7.0,
+        "markeredgecolor": REFERENCE_COLORS["pastel_green"],
+        "markeredgewidth": 0.0,
+        "zorder": 3,
+    },
+}
+
+# In the compact two-panel layout, color/marker identifies the method and
+# line style identifies the training scale. This preserves every original
+# data series while allowing the two scales of each dataset to share one axis.
+SCALE_LINESTYLES = ("-", "--", "-.", ":")
 
 
-def plot_leakage_comparison(
-    *,
-    meta: Dict[str, Any],  # noqa: ARG001 - kept for API compatibility
-    by_leakage_rate: Dict[float, Dict[str, Any]],
-    output_path: str,
-    dpi: int = 150,
-) -> None:
-    """
-    绘制泄露率对比折线图（图 1）。
+AUC_SCALE_BREAK = 0.70
+AUC_UPPER_EXPANSION = 4.0
 
-    主图：恢复正确率 (VAL vs SCAR) + 95% CI 误差条
-    """
+
+def auc_piecewise_forward(values):
+    """Expand the high-AUC region while keeping tick labels in true AUC units."""
+    arr = np.asarray(values)
+    return np.where(
+        arr <= AUC_SCALE_BREAK,
+        arr,
+        AUC_SCALE_BREAK + (arr - AUC_SCALE_BREAK) * AUC_UPPER_EXPANSION,
+    )
+
+
+def auc_piecewise_inverse(values):
+    """Inverse transform for the piecewise AUC axis."""
+    arr = np.asarray(values)
+    return np.where(
+        arr <= AUC_SCALE_BREAK,
+        arr,
+        AUC_SCALE_BREAK + (arr - AUC_SCALE_BREAK) / AUC_UPPER_EXPANSION,
+    )
+
+
+def auc_piecewise_ticks(lo: float, hi: float) -> List[float]:
+    ticks = [0.50, 0.55, 0.60, 0.65, 0.70, 0.72, 0.74, 0.76, 0.78]
+    return [tick for tick in ticks if lo <= tick <= hi]
+
+
+@dataclass(frozen=True)
+class MetricRecord:
+    method: str
+    dataset: str
+    scale: int
+    epsilon: Optional[float]
+    metric: str
+    value: float
+    source_file: Path
+    epoch: int
+
+
+def parse_float(value: object, default: float = math.nan) -> float:
+    if value is None:
+        return default
+    text = str(value).strip()
+    if not text:
+        return default
+    if text.lower() in {"inf", "+inf", "infinity", "+infinity"}:
+        return math.inf
     try:
-        os.environ.setdefault(
-            "MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matplotlib")
+        return float(text)
+    except ValueError:
+        return default
+
+
+def parse_int(value: object, default: int = 0) -> int:
+    parsed = parse_float(value, math.nan)
+    if math.isnan(parsed) or math.isinf(parsed):
+        return default
+    return int(parsed)
+
+
+def normalize_text(value: object) -> str:
+    return str(value or "").strip().lower()
+
+
+def split_list(text: str) -> List[str]:
+    return [part.strip() for part in re.split(r"[,; ]+", text) if part.strip()]
+
+
+def scale_label(scale: int) -> str:
+    if scale >= 1000 and scale % 1000 == 0:
+        return f"{scale // 1000}K"
+    return str(scale)
+
+
+def epsilon_label(epsilon: float) -> str:
+    if math.isinf(epsilon):
+        return r"$\infty$"
+    if abs(epsilon - round(epsilon)) < 1e-12:
+        return str(int(round(epsilon)))
+    return f"{epsilon:g}"
+
+
+def parse_epsilon_token(text: str) -> Optional[float]:
+    cleaned = text.strip().lower().replace("_", ".")
+    if cleaned in {"inf", "infinity"}:
+        return math.inf
+    value = parse_float(cleaned, math.nan)
+    return None if math.isnan(value) else value
+
+
+def parse_epsilon_from_path(path: Path) -> Optional[float]:
+    match = re.search(r"(?:^|[_-])eps[-_]?([0-9]+(?:_[0-9]+)?|inf)(?:[_-]|\.|$)", path.name, re.I)
+    if not match:
+        return None
+    return parse_epsilon_token(match.group(1))
+
+
+def parse_epoch_from_path(path: Path) -> int:
+    match = re.search(r"(?:^|[_-])epoch[-_]?(\d+)(?:[_-]|\.|$)", path.name, re.I)
+    return int(match.group(1)) if match else 0
+
+
+def parse_scale_from_text(text: str) -> int:
+    patterns = [
+        r"train[-_](\d+)",
+        r"streaming_results_(\d+)",
+        r"sample[-_]?(\d+)",
+        r"sample_rows=(\d+)",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, re.I)
+        if match:
+            return int(match.group(1))
+    return 0
+
+
+def parse_dataset_from_text(text: str) -> str:
+    lowered = text.lower()
+    for dataset in ("criteo", "avazu", "movielens", "ml-100k", "ml-1m"):
+        if dataset in lowered:
+            return "movielens" if dataset.startswith("ml-") else dataset
+    return ""
+
+
+def read_csv_rows(path: Path) -> List[Dict[str, str]]:
+    with path.open("r", newline="", encoding="utf-8-sig") as handle:
+        return list(csv.DictReader(handle))
+
+
+def extract_metric(rows: Sequence[Dict[str, str]], metric: str) -> float:
+    metric_key = metric.lower()
+
+    # SecureDeepFM uses a long table: metric, online, test, metrics, auc, value.
+    for row in rows:
+        if (
+            normalize_text(row.get("record_type")) == "metric"
+            and normalize_text(row.get("phase")) == "online"
+            and normalize_text(row.get("split")) == "test"
+            and normalize_text(row.get("component")) == "metrics"
+            and normalize_text(row.get("metric")) == metric_key
+        ):
+            return parse_float(row.get("value"))
+
+    # Plaintext/FedCTR/AFedDFM use a wide table with summary/test rows.
+    candidates: List[float] = []
+    for row in rows:
+        if normalize_text(row.get("record_type")) == "summary" and normalize_text(row.get("mode")) == "test":
+            value = parse_float(row.get(metric_key))
+            if not math.isnan(value):
+                candidates.append(value)
+    if candidates:
+        return candidates[-1]
+
+    # Fallback for future files: use the last test row with a matching metric column.
+    for row in reversed(rows):
+        if normalize_text(row.get("mode") or row.get("split")) == "test":
+            value = parse_float(row.get(metric_key))
+            if not math.isnan(value):
+                return value
+
+    return math.nan
+
+
+def infer_metadata(path: Path, rows: Sequence[Dict[str, str]], method: str) -> Tuple[str, int, Optional[float], int]:
+    combined = " ".join([path.name, path.as_posix()])
+    dataset = parse_dataset_from_text(combined)
+    scale = parse_scale_from_text(combined)
+    epoch = parse_epoch_from_path(path)
+    epsilon = parse_epsilon_from_path(path)
+
+    if rows:
+        first = rows[0]
+        row_text = " ".join(str(value) for value in first.values())
+        dataset = dataset or parse_dataset_from_text(row_text)
+        scale = scale or parse_scale_from_text(row_text)
+        epoch = epoch or parse_int(first.get("epochs") or first.get("num_rounds") or first.get("epoch_index"), 0)
+
+        if epsilon is None and method in {"FedCTR", "DP-AFedDFM"}:
+            for key in ("ldp_epsilon", "ldp_implied_epsilon", "dp_implied_epsilon", "epsilon", "privacy_budget"):
+                value = parse_float(first.get(key), math.nan)
+                if not math.isnan(value):
+                    epsilon = value
+                    break
+
+        if not scale:
+            for key in ("train_rows", "num_train_rows", "max_samples"):
+                scale = parse_int(first.get(key), 0)
+                if scale:
+                    break
+
+    return dataset, scale, epsilon, epoch
+
+
+def discover_records(
+    scheme_root: Path,
+    datasets: Sequence[str],
+    scales: Sequence[int],
+    metric: str,
+) -> List[MetricRecord]:
+    wanted_datasets = {dataset.lower() for dataset in datasets}
+    wanted_scales = set(scales)
+    records: Dict[Tuple[str, str, int, Optional[float]], MetricRecord] = {}
+
+    for method, subdir in METHOD_DIRS.items():
+        method_dir = scheme_root / subdir
+        if not method_dir.exists():
+            print(f"Warning: missing method directory: {method_dir}")
+            continue
+
+        for path in sorted(method_dir.glob("*.csv")):
+            rows = read_csv_rows(path)
+            value = extract_metric(rows, metric)
+            if math.isnan(value):
+                continue
+
+            dataset, scale, epsilon, epoch = infer_metadata(path, rows, method)
+            if not dataset or not scale:
+                continue
+            if wanted_datasets and dataset.lower() not in wanted_datasets:
+                continue
+            if wanted_scales and scale not in wanted_scales:
+                continue
+
+            if method in {"FedCTR", "DP-AFedDFM"} and epsilon is None:
+                continue
+            if method in {"Plaintext", "SecureDeepFM"}:
+                epsilon = None
+
+            record = MetricRecord(
+                method=method,
+                dataset=dataset,
+                scale=scale,
+                epsilon=epsilon,
+                metric=metric,
+                value=value,
+                source_file=path,
+                epoch=epoch,
+            )
+            key = (method, dataset, scale, epsilon)
+            old = records.get(key)
+            if old is None or (record.epoch, record.source_file.stat().st_mtime) > (
+                old.epoch,
+                old.source_file.stat().st_mtime,
+            ):
+                records[key] = record
+
+    return sorted(records.values(), key=lambda r: (r.dataset, r.scale, r.method, epsilon_sort_key(r.epsilon)))
+
+
+def epsilon_sort_key(epsilon: Optional[float]) -> Tuple[int, float]:
+    if epsilon is None:
+        return (2, 0.0)
+    if math.isinf(epsilon):
+        return (1, 0.0)
+    return (0, epsilon)
+
+
+def choose_epsilon_axis(records: Sequence[MetricRecord], requested: Optional[Sequence[float]]) -> List[float]:
+    if requested:
+        return sorted(requested, key=lambda value: (math.isinf(value), value if not math.isinf(value) else 0.0))
+    epsilons = {
+        record.epsilon
+        for record in records
+        if record.method in {"FedCTR", "DP-AFedDFM"} and record.epsilon is not None
+    }
+    return sorted(epsilons, key=lambda value: (math.isinf(value), value if not math.isinf(value) else 0.0))
+
+
+def write_summary_csv(records: Sequence[MetricRecord], output_path: Path) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with output_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=[
+                "dataset",
+                "scale",
+                "method",
+                "epsilon",
+                "epsilon_label",
+                "metric",
+                "value",
+                "epoch",
+                "source_file",
+            ],
         )
-        os.makedirs(os.environ["MPLCONFIGDIR"], exist_ok=True)
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ModuleNotFoundError as exc:
-        raise SystemExit("Missing dependency: matplotlib (e.g. `pip install matplotlib`)") from exc
-
-    # 按泄露率排序
-    leakage_rates = sorted(by_leakage_rate.keys())
-
-    # 收集数据
-    val_correct_means = []
-    val_correct_cis = []
-    scar_correct_means = []
-    scar_correct_cis = []
-
-    for rate in leakage_rates:
-        data = by_leakage_rate[rate]
-        runs = data.get("runs", [])
-
-        if runs:
-            # 从原始数据计算
-            val_corrects = [r["val_correct"] for r in runs]
-            scar_corrects = [r["scar_correct"] for r in runs]
-
-            val_correct_means.append(np.mean(val_corrects))
-            val_correct_cis.append(_compute_95ci(val_corrects))
-            scar_correct_means.append(np.mean(scar_corrects))
-            scar_correct_cis.append(_compute_95ci(scar_corrects))
-        else:
-            # 使用预计算的平均值（无 CI）
-            val_correct_means.append(data.get("val_avg", 0))
-            val_correct_cis.append(0)
-            scar_correct_means.append(data.get("scar_avg", 0))
-            scar_correct_cis.append(0)
-
-    # 创建图形
-    fig, ax1 = plt.subplots(figsize=(12, 7))
-
-    # ========== 主图：恢复正确率 ==========
-    # VAL 曲线
-    ax1.errorbar(
-        leakage_rates, val_correct_means, yerr=val_correct_cis,
-        marker="o", markersize=8, capsize=5, capthick=2,
-        color="#4c72b0", linewidth=2.5, elinewidth=2,
-        linestyle="--",
-        label="VAL"
-    )
-    ax1.fill_between(
-        leakage_rates,
-        [m - c for m, c in zip(val_correct_means, val_correct_cis)],
-        [m + c for m, c in zip(val_correct_means, val_correct_cis)],
-        alpha=0.15, color="#4c72b0"
-    )
-
-    # SCAR 曲线
-    ax1.errorbar(
-        leakage_rates, scar_correct_means, yerr=scar_correct_cis,
-        marker="s", markersize=8, capsize=5, capthick=2,
-        color="#c44e52", linewidth=2.5, elinewidth=2,
-        label="SCAR"
-    )
-    ax1.fill_between(
-        leakage_rates,
-        [m - c for m, c in zip(scar_correct_means, scar_correct_cis)],
-        [m + c for m, c in zip(scar_correct_means, scar_correct_cis)],
-        alpha=0.15, color="#c44e52"
-    )
-
-    # 标注每个点的差值
-    for i, rate in enumerate(leakage_rates):
-        diff = scar_correct_means[i] - val_correct_means[i]
-        if diff > 0:
-            y_pos = max(val_correct_means[i], scar_correct_means[i]) + max(val_correct_cis[i], scar_correct_cis[i]) + 1
-            ax1.annotate(
-                f"+{diff:.1f}%",
-                xy=(rate, y_pos),
-                ha="center", va="bottom",
-                fontsize=8, fontweight="bold", color="#2e7d32"
+        writer.writeheader()
+        for record in records:
+            writer.writerow(
+                {
+                    "dataset": record.dataset,
+                    "scale": record.scale,
+                    "method": record.method,
+                    "epsilon": "" if record.epsilon is None else ("inf" if math.isinf(record.epsilon) else f"{record.epsilon:g}"),
+                    "epsilon_label": "baseline" if record.epsilon is None else epsilon_label(record.epsilon),
+                    "metric": record.metric,
+                    "value": f"{record.value:.10g}",
+                    "epoch": record.epoch,
+                    "source_file": str(record.source_file),
+                }
             )
 
-    ax1.set_xlabel("Leakage Rate (%)", fontsize=20, labelpad=10)
-    ax1.set_ylabel("Correct Recovery Rate (%)", fontsize=20, labelpad=10)
-    ax1.set_xticks(leakage_rates)
-    ax1.set_xticklabels([f"{r:.1f}" for r in leakage_rates])
-    ax1.grid(True, alpha=0.3, linestyle="--")
-    ax1.legend(loc="lower right", fontsize=14)
 
-    # 设置 Y 轴范围
-    all_vals = val_correct_means + scar_correct_means
-    all_cis = val_correct_cis + scar_correct_cis
-    y_min = min(all_vals) - max(all_cis) - 5
-    y_max = max(all_vals) + max(all_cis) + 8
-    ax1.set_ylim(max(0, y_min), min(100, y_max))
-
-    # 保存
-    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
-    plt.close(fig)
-
-    print(f"Saved: {output_path}")
+def get_record(
+    records: Sequence[MetricRecord],
+    method: str,
+    dataset: str,
+    scale: int,
+    epsilon: Optional[float] = None,
+) -> Optional[MetricRecord]:
+    for record in records:
+        if record.method != method or record.dataset != dataset or record.scale != scale:
+            continue
+        if epsilon is None:
+            if record.epsilon is None:
+                return record
+        elif record.epsilon is not None and epsilon_equal(record.epsilon, epsilon):
+            return record
+    return None
 
 
-def plot_improvement_bar(
-    *,
-    meta: Dict[str, Any],
-    by_leakage_rate: Dict[float, Dict[str, Any]],
-    output_path: str,
-    dpi: int = 150,
-) -> None:
-    """
-    绘制 SCAR 相对于 VAL 的提升柱状图。
-    """
-    try:
-        os.environ.setdefault(
-            "MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matplotlib")
-        )
-        os.makedirs(os.environ["MPLCONFIGDIR"], exist_ok=True)
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ModuleNotFoundError as exc:
-        raise SystemExit("Missing dependency: matplotlib (e.g. `pip install matplotlib`)") from exc
-
-    leakage_rates = sorted(by_leakage_rate.keys())
-
-    improvements = []
-    for rate in leakage_rates:
-        data = by_leakage_rate[rate]
-        runs = data.get("runs", [])
-        if runs:
-            val_mean = np.mean([r["val_correct"] for r in runs])
-            scar_mean = np.mean([r["scar_correct"] for r in runs])
-        else:
-            val_mean = data.get("val_avg", 0)
-            scar_mean = data.get("scar_avg", 0)
-        improvements.append(scar_mean - val_mean)
-
-    fig, ax = plt.subplots(figsize=(10, 6))
-
-    colors = ["#2e7d32" if imp >= 0 else "#c62828" for imp in improvements]
-    bars = ax.bar([f"{r:.1f}%" for r in leakage_rates], improvements, color=colors, alpha=0.8, edgecolor="black")
-
-    # 在柱子上方/下方标注数值
-    for bar, imp in zip(bars, improvements):
-        height = bar.get_height()
-        va = "bottom" if height >= 0 else "top"
-        offset = 0.3 if height >= 0 else -0.3
-        ax.annotate(
-            f"{imp:+.2f}%",
-            xy=(bar.get_x() + bar.get_width() / 2, height + offset),
-            ha="center", va=va,
-            fontsize=10, fontweight="bold"
-        )
-
-    ax.axhline(y=0, color="black", linewidth=1)
-    ax.set_xlabel("Leakage Rate", fontsize=12)
-    ax.set_ylabel("Improvement (SCAR - VAL) (%)", fontsize=12)
-    ax.set_title(
-        f"SCAR Improvement over VAL by Leakage Rate\n"
-        f"(dataset={meta.get('dataset', 'unknown')})",
-        fontsize=14
-    )
-    ax.grid(True, axis="y", alpha=0.3, linestyle="--")
-
-    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=dpi, bbox_inches="tight")
-    plt.close(fig)
-
-    print(f"Saved: {output_path}")
+def epsilon_equal(left: float, right: float) -> bool:
+    if math.isinf(left) or math.isinf(right):
+        return math.isinf(left) and math.isinf(right)
+    return abs(left - right) < 1e-12
 
 
-def plot_dual_dataset_comparison(
-    *,
-    enron_data: Dict[str, Any],
-    ccnews_data: Dict[str, Any],
-    output_path: str,
-    dpi: int = 300,
-) -> None:
-    """
-    Plot dual-dataset leakage comparison as two horizontal subplots.
-    Left: Enron dataset, Right: CC-News dataset.
-    Uses unified color scheme: VAL (blue), SCAR (pink).
-    """
-    try:
-        os.environ.setdefault(
-            "MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "matplotlib")
-        )
-        os.makedirs(os.environ["MPLCONFIGDIR"], exist_ok=True)
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
-    except ModuleNotFoundError as exc:
-        raise SystemExit("Missing dependency: matplotlib (e.g. `pip install matplotlib`)") from exc
-
-    # Global Style Configuration (Times New Roman, matching demo.py)
-    plt.rcParams.update({
-        'font.family': 'serif',
-        'font.serif': ['Times New Roman'],
-        'pdf.fonttype': 42,
-        'ps.fonttype': 42,
-        'font.size': 30,
-        'axes.labelsize': 32,
-        'axes.titlesize': 32,
-        'xtick.labelsize': 34,
-        'ytick.labelsize': 34,
-        'legend.fontsize': 32,
-        'axes.spines.top': True,
-        'axes.spines.right': True,
-        'axes.linewidth': 1.5,
-        'axes.grid': True,
-        'grid.alpha': 0.3,
-        'grid.linestyle': '--',
-        'grid.linewidth': 1.0,
-    })
-
-    # Create 1x2 subplot layout
-    fig, axes = plt.subplots(1, 2, figsize=(18, 7))
-
-    # Calculate unified y-axis range across both datasets
-    all_values = []
-    for data in [enron_data, ccnews_data]:
-        by_leakage = data["by_leakage_rate"]
-        for rate_data in by_leakage.values():
-            runs = rate_data.get("runs", [])
-            if runs:
-                all_values.extend([r["val_correct"] for r in runs])
-                all_values.extend([r["scar_correct"] for r in runs])
-            else:
-                all_values.append(rate_data.get("val_avg", 0))
-                all_values.append(rate_data.get("scar_avg", 0))
+def axis_limits(values: Sequence[float]) -> Tuple[float, float]:
+    finite = [value for value in values if not math.isnan(value) and not math.isinf(value)]
+    if not finite:
+        return 0.0, 1.0
+    lo = max(0.0, min(finite) - 0.03)
+    hi = min(1.0, max(finite) + 0.025)
+    if hi - lo < 0.08:
+        mid = (hi + lo) / 2.0
+        lo = max(0.0, mid - 0.04)
+        hi = min(1.0, mid + 0.04)
+    return lo, hi
 
 
-    datasets = [
-        ("Enron", enron_data),
-        ("CC-News", ccnews_data),
+def plot_tradeoff(
+    records: Sequence[MetricRecord],
+    datasets: Sequence[str],
+    scales: Sequence[int],
+    epsilons: Sequence[float],
+    metric: str,
+    output_dir: Path,
+    output_name: str,
+    output_format: str,
+) -> List[Path]:
+    panels = [(dataset, scale) for dataset in datasets for scale in scales]
+    panels = [
+        panel
+        for panel in panels
+        if any(record.dataset == panel[0] and record.scale == panel[1] for record in records)
     ]
+    if not panels:
+        raise RuntimeError("No matching records were found for the requested datasets/scales.")
+    if not epsilons:
+        raise RuntimeError("No privacy-budget points were found for FedCTR or DP-AFedDFM.")
 
-    for idx, (dataset_name, data) in enumerate(datasets):
-        ax = axes[idx]
-        by_leakage_rate = data["by_leakage_rate"]
-        leakage_rates = sorted(by_leakage_rate.keys())
+    active_datasets = [
+        dataset
+        for dataset in datasets
+        if any(panel_dataset == dataset for panel_dataset, _ in panels)
+    ]
+    dataset_scales = {
+        dataset: [scale for scale in scales if (dataset, scale) in panels]
+        for dataset in active_datasets
+    }
 
-        # Collect data
-        val_correct_means = []
-        val_correct_cis = []
-        scar_correct_means = []
-        scar_correct_cis = []
+    # Use two side-by-side dataset panels when the standard 2-dataset x 2-scale
+    # evaluation is available. Each panel overlays the two scales, with method
+    # encoded by color/marker and scale encoded by line style. For other input
+    # shapes, retain a compact multi-panel layout.
+    use_two_panel = (
+        len(active_datasets) == 2
+        and len(scales) == 2
+        and all(len(dataset_scales[dataset]) == 2 for dataset in active_datasets)
+    )
 
-        for rate in leakage_rates:
-            rate_data = by_leakage_rate[rate]
-            runs = rate_data.get("runs", [])
+    x_positions = list(range(len(epsilons)))
+    x_labels = [epsilon_label(value) for value in epsilons]
 
-            if runs:
-                val_corrects = [r["val_correct"] for r in runs]
-                scar_corrects = [r["scar_correct"] for r in runs]
+    def configure_axis(
+        ax: plt.Axes,
+        panel_values: Sequence[float],
+        dataset: str,
+    ) -> None:
+        dataset_key = dataset.lower()
+        y_limits = axis_limits(panel_values)
 
-                val_correct_means.append(np.mean(val_corrects))
-                val_correct_cis.append(_compute_95ci(val_corrects))
-                scar_correct_means.append(np.mean(scar_corrects))
-                scar_correct_cis.append(_compute_95ci(scar_corrects))
+        # Avazu 保留原有数据范围和较密的纵轴刻度。
+        if dataset_key == "avazu":
+            finite_values = [
+                value
+                for value in panel_values
+                if not math.isnan(value) and not math.isinf(value)
+            ]
+            if finite_values:
+                y_limits = (
+                    y_limits[0],
+                    min(1.0, max(finite_values) + 0.004),
+                )
+
+        if metric.lower() == "auc":
+            ax.set_yscale(
+                "function",
+                functions=(auc_piecewise_forward, auc_piecewise_inverse),
+            )
+
+            if dataset_key == "criteo":
+                # Criteo 删除拥挤的 0.55 和 0.65，
+                # 最高显示 0.77，并预留少量顶部空间。
+                auc_ticks = [
+                    0.50,
+                    0.60,
+                    0.70,
+                    0.72,
+                    0.74,
+                    0.76,
+                    0.78,
+                ]
+                y_limits = (
+                    y_limits[0],
+                    min(y_limits[1], 0.774),
+                )
             else:
-                val_correct_means.append(rate_data.get("val_avg", 0))
-                val_correct_cis.append(0)
-                scar_correct_means.append(rate_data.get("scar_avg", 0))
-                scar_correct_cis.append(0)
+                # Avazu 使用原有的较密刻度。
+                auc_ticks = [
+                    0.50,
+                    0.55,
+                    0.60,
+                    0.65,
+                    0.70,
+                    0.72,
+                    0.74,
+                ]
 
-        # Plot VAL curve
-        ax.errorbar(
-            leakage_rates, val_correct_means, yerr=val_correct_cis,
-            marker="o", markersize=8, capsize=5, capthick=2,
-            color=VAL_COLOR, linewidth=2.5, elinewidth=2,
+            ax.set_yticks(
+                [
+                    tick
+                    for tick in auc_ticks
+                    if y_limits[0] <= tick <= y_limits[1]
+                ]
+            )
+
+        ax.set_ylim(*y_limits)
+
+        ax.set_xticks(x_positions)
+        ax.set_xticklabels(x_labels)
+        ax.set_xlim(-0.18, len(x_positions) - 0.82)
+
+        ax.grid(
+            True,
+            which="both",
+            axis="y",
             linestyle="--",
-            label="VAL"
-        )
-        ax.fill_between(
-            leakage_rates,
-            [m - c for m, c in zip(val_correct_means, val_correct_cis)],
-            [m + c for m, c in zip(val_correct_means, val_correct_cis)],
-            alpha=0.2, color=VAL_COLOR
+            linewidth=0.8,
+            alpha=0.30,
         )
 
-        # Plot SCAR curve
-        ax.errorbar(
-            leakage_rates, scar_correct_means, yerr=scar_correct_cis,
-            marker="s", markersize=8, capsize=5, capthick=2,
-            color=SCAR_COLOR, linewidth=2.5, elinewidth=2,
-            label="Whisper"
-        )
-        ax.fill_between(
-            leakage_rates,
-            [m - c for m, c in zip(scar_correct_means, scar_correct_cis)],
-            [m + c for m, c in zip(scar_correct_means, scar_correct_cis)],
-            alpha=0.2, color=SCAR_COLOR
+        ax.spines["top"].set_visible(True)
+        ax.spines["right"].set_visible(True)
+
+        ax.tick_params(
+            axis="both",
+            which="major",
+            labelsize=22,
+            width=1.7,
+            length=6,
+            pad=3,
         )
 
-        # Annotate improvement at each point
-        # for i, rate in enumerate(leakage_rates):
-        #     diff = scar_correct_means[i] - val_correct_means[i]
-        #     if diff > 0:
-        #         y_pos = max(val_correct_means[i], scar_correct_means[i]) + max(val_correct_cis[i], scar_correct_cis[i]) + 1
-        #         ax.annotate(
-        #             f"+{diff:.1f}%",
-        #             xy=(rate, y_pos),
-        #             ha="center", va="bottom",
-        #             fontsize=12, fontweight="bold", color="#2e7d32"
-        #         )
+        # 横、纵坐标刻度统一加粗。
+        for label in ax.get_xticklabels() + ax.get_yticklabels():
+            label.set_fontweight("bold")
 
-        # X-axis label
-        ax.set_xlabel("Known Data Rate (%)", labelpad=15, fontsize=40)
+        for spine in ax.spines.values():
+            spine.set_linewidth(1.5)
+            spine.set_color("black")
+            
+    if use_two_panel:
+        fig, axes = plt.subplots(
+            1,
+            2,
+            figsize=(9.6, 3.85),
+            squeeze=False,
+            constrained_layout=False,
+        )
+        scale_styles = {
+            scale: SCALE_LINESTYLES[index % len(SCALE_LINESTYLES)]
+            for index, scale in enumerate(scales)
+        }
 
-        # Subplot labels: (a) Enron, (b) CC-News - positioned below the x-axis
-        subplot_label = "(a)" if idx == 0 else "(b)"
-        ax.text(0.5, -0.3, f"{subplot_label} {dataset_name}",
-                transform=ax.transAxes, fontsize=40, fontweight='bold',
-                ha='center', va='top')
+        for ax, dataset in zip(axes.ravel(), active_datasets):
+            panel_values: List[float] = []
+            for scale in dataset_scales[dataset]:
+                scale_linestyle = scale_styles[scale]
 
-        ax.set_ylabel("Correct Recovery Rate (%)", fontsize=34, labelpad=10)
+                for method in ("Plaintext", "SecureDeepFM"):
+                    record = get_record(records, method, dataset, scale)
+                    if record is None:
+                        continue
+                    y_values = [record.value] * len(x_positions)
+                    panel_values.extend(y_values)
+                    style = dict(METHOD_STYLES[method])
+                    style["linestyle"] = scale_linestyle
+                    ax.plot(x_positions, y_values, **style)
 
-        # Show x-ticks at 0.2 intervals (0, 0.2, 0.4, 0.6, 0.8, 1.0)
-        filtered_ticks = [r for r in leakage_rates if abs(r % 0.2) < 0.01 or abs(r % 0.2 - 0.2) < 0.01]
-        # Add 0 tick at the beginning
-        if 0 not in filtered_ticks:
-            filtered_ticks = [0] + filtered_ticks
-        ax.set_xticks(filtered_ticks)
-        ax.set_yticks([25, 50, 75, 100])
-        ax.set_xticklabels(["0" if r == 0 else f"{r:.1f}" for r in filtered_ticks])
-        ax.grid(True, alpha=0.3, linestyle="--")
-        ax.set_ylim(0,105)
-        ax.set_xlim(0,1.05)
+                for method in ("FedCTR", "DP-AFedDFM"):
+                    y_values: List[float] = []
+                    for epsilon in epsilons:
+                        record = get_record(records, method, dataset, scale, epsilon)
+                        y_values.append(record.value if record is not None else math.nan)
+                    if all(math.isnan(value) for value in y_values):
+                        continue
+                    panel_values.extend(
+                        value for value in y_values if not math.isnan(value)
+                    )
+                    style = dict(METHOD_STYLES[method])
+                    style["linestyle"] = scale_linestyle
+                    ax.plot(x_positions, y_values, **style)
 
-        # Add legend inside each subplot
-        ax.legend(loc="lower right", fontsize=30, frameon=True, fancybox=True, shadow=True)
+            ax.set_title(dataset.capitalize(), pad=4)
+            configure_axis(ax, panel_values, dataset)
 
+        method_handles: List[Line2D] = []
+        for method in ("Plaintext", "SecureDeepFM", "FedCTR", "DP-AFedDFM"):
+            style = METHOD_STYLES[method]
+            method_handles.append(
+                Line2D(
+                    [0],
+                    [0],
+                    color=style["color"],
+                    linestyle="-",
+                    linewidth=style.get("linewidth", 2.8),
+                    marker=style.get("marker", None),
+                    markersize=style.get("markersize", 8.0),
+                    markerfacecolor=style.get("color"),
+                    markeredgecolor=style["color"],
+                    markeredgewidth=0.0,
+                    label=METHOD_LABELS[method],
+                )
+            )
 
-    # Save
-    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
-    plt.tight_layout()
-    plt.subplots_adjust(top=1.1, wspace=0.3)
-    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+        scale_handles = [
+            Line2D(
+                [0],
+                [0],
+                color="black",
+                linestyle=scale_styles[scale],
+                linewidth=2.6,
+                label=scale_label(scale),
+            )
+            for scale in scales
+        ]
+
+        fig.legend(
+            handles=method_handles + scale_handles,
+            loc="upper center",
+            ncol=6,
+            frameon=False,
+            fontsize=16,
+            handlelength=1.65,
+            handletextpad=0.38,
+            columnspacing=0.72,
+            borderaxespad=0.0,
+            bbox_to_anchor=(0.5, 0.935),
+        )
+
+        ylabel = "AUC" if metric.lower() == "auc" else metric
+        axes[0, 0].set_ylabel(ylabel, labelpad=7, fontsize=20, fontweight="bold")
+        fig.supxlabel(
+            r"Privacy budget $\epsilon$ (strict $\rightarrow$ loose)",
+            y=0.012,
+            fontsize=20,
+            fontweight="bold",
+        )
+        fig.subplots_adjust(
+            left=0.102,
+            right=0.992,
+            bottom=0.200,
+            top=0.785,
+            wspace=0.18,
+        )
+
+    else:
+        ncols = 2 if len(panels) > 1 else 1
+        nrows = math.ceil(len(panels) / ncols)
+        fig_width = 9.0 if ncols == 2 else 4.9
+        fig_height = 5.25 if nrows == 2 else 3.55
+        fig, axes = plt.subplots(
+            nrows,
+            ncols,
+            figsize=(fig_width, fig_height),
+            squeeze=False,
+            constrained_layout=False,
+        )
+
+        for ax, (dataset, scale) in zip(axes.ravel(), panels):
+            panel_values: List[float] = []
+            for method in ("Plaintext", "SecureDeepFM"):
+                record = get_record(records, method, dataset, scale)
+                if record is None:
+                    continue
+                y_values = [record.value] * len(x_positions)
+                panel_values.extend(y_values)
+                ax.plot(x_positions, y_values, **METHOD_STYLES[method])
+
+            for method in ("FedCTR", "DP-AFedDFM"):
+                y_values: List[float] = []
+                for epsilon in epsilons:
+                    record = get_record(records, method, dataset, scale, epsilon)
+                    y_values.append(record.value if record is not None else math.nan)
+                if all(math.isnan(value) for value in y_values):
+                    continue
+                panel_values.extend(value for value in y_values if not math.isnan(value))
+                ax.plot(x_positions, y_values, **METHOD_STYLES[method])
+
+            ax.set_title(f"{dataset.capitalize()} {scale_label(scale)}", pad=4)
+            configure_axis(ax, panel_values, dataset)
+
+        for ax in axes.ravel()[len(panels):]:
+            ax.axis("off")
+
+        legend_handles = []
+        for method in ("Plaintext", "SecureDeepFM", "FedCTR", "DP-AFedDFM"):
+            style = METHOD_STYLES[method]
+            legend_handles.append(
+                Line2D(
+                    [0],
+                    [0],
+                    color=style["color"],
+                    linestyle=style.get("linestyle", "-"),
+                    linewidth=style.get("linewidth", 2.8),
+                    marker=style.get("marker", None),
+                    markersize=style.get("markersize", 8.0),
+                    markerfacecolor=style.get("color"),
+                    markeredgecolor=style["color"],
+                    markeredgewidth=0.0,
+                    label=METHOD_LABELS[method],
+                )
+            )
+
+        fig.legend(
+            handles=legend_handles,
+            loc="upper center",
+            ncol=4,
+            frameon=False,
+            fontsize=16,
+            handlelength=1.8,
+            handletextpad=0.40,
+            columnspacing=0.80,
+            borderaxespad=0.0,
+            bbox_to_anchor=(0.5, 0.992),
+        )
+
+        ylabel = "AUC" if metric.lower() == "auc" else metric
+        fig.supylabel(ylabel, x=0.016, fontsize=21, fontweight="bold")
+        fig.supxlabel(
+            r"Privacy budget $\epsilon$ (strict $\rightarrow$ loose)",
+            y=0.012,
+            fontsize=21,
+            fontweight="bold",
+        )
+        fig.subplots_adjust(
+            left=0.092,
+            right=0.992,
+            bottom=0.125,
+            top=0.855,
+            hspace=0.24,
+            wspace=0.18,
+        )
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    saved: List[Path] = []
+    formats = ["pdf", "png"] if output_format == "both" else [output_format]
+    for fmt in formats:
+        path = output_dir / f"{output_name}.{fmt}"
+        fig.savefig(
+            path,
+            dpi=600 if fmt == "png" else None,
+            bbox_inches="tight",
+            pad_inches=0.02,
+        )
+        saved.append(path)
     plt.close(fig)
+    return saved
 
-    print(f"Saved: {output_path}")
+def parse_args() -> argparse.Namespace:
+    script_dir = Path(__file__).resolve().parent
+    parser = argparse.ArgumentParser(
+        description="Draw Privacy-Utility Trade-off curves from result CSV files."
+    )
+    parser.add_argument(
+        "--scheme-root",
+        type=Path,
+        default=script_dir / "Scheme",
+        help="Root directory containing Plaintext/SecureDeepFM/FedCTR/AFedDFM CSV folders.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=script_dir / "Outs",
+        help="Directory for the generated figure and normalized summary CSV.",
+    )
+    parser.add_argument(
+        "--output-name",
+        default="privacy_utility_tradeoff",
+        help="Output file stem for the generated figure.",
+    )
+    parser.add_argument(
+        "--datasets",
+        default="criteo,avazu",
+        help="Comma/space separated dataset names. Default: criteo,avazu.",
+    )
+    parser.add_argument(
+        "--scales",
+        default="50000,100000",
+        help="Comma/space separated train data scales. Default: 50000,100000.",
+    )
+    parser.add_argument(
+        "--eps",
+        default="",
+        help="Optional comma/space separated epsilon values, e.g. 0.1,0.5,1,5,10,inf.",
+    )
+    parser.add_argument(
+        "--metric",
+        default="auc",
+        help="Metric column to plot. Default: auc.",
+    )
+    parser.add_argument(
+        "--format",
+        choices=("pdf", "png", "both"),
+        default="both",
+        help="Figure output format. Default: both.",
+    )
+    return parser.parse_args()
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Plot leakage rate comparison results from compare_val_scar_leakage.py"
-    )
-    parser.add_argument(
-        "--input",
-        "-i",
-        default=None,
-        help="Path to results txt (default: latest results/val_vs_scar_leakage_*.txt)",
-    )
-    parser.add_argument(
-        "--output",
-        "-o",
-        default=None,
-        help="Output image path prefix (default: photos/leakage/<input>)",
-    )
-    parser.add_argument("--dpi", type=int, default=300)
-    parser.add_argument(
-        "--only-main",
-        action="store_true",
-        help="Only generate the main comparison plot",
-    )
-    parser.add_argument(
-        "--only-improvement",
-        action="store_true",
-        help="Only generate the improvement bar chart",
-    )
-    # Dual-dataset mode arguments
-    parser.add_argument(
-        "--dual",
-        action="store_true",
-        help="Generate dual-dataset comparison plot (Enron vs CC-News)",
-    )
-    parser.add_argument(
-        "--enron",
-        default=None,
-        help="Path to Enron results file (for dual mode)",
-    )
-    parser.add_argument(
-        "--ccnews",
-        default=None,
-        help="Path to CC-News results file (for dual mode)",
+    args = parse_args()
+    datasets = [item.lower() for item in split_list(args.datasets)]
+    scales = [int(item) for item in split_list(args.scales)]
+    requested_eps = [parse_epsilon_token(item) for item in split_list(args.eps)] if args.eps else None
+    requested_eps = [value for value in requested_eps or [] if value is not None] or None
+
+    records = discover_records(args.scheme_root, datasets, scales, args.metric)
+    epsilons = choose_epsilon_axis(records, requested_eps)
+    selected_records = [
+        record
+        for record in records
+        if record.epsilon is None
+        or any(record.epsilon is not None and epsilon_equal(record.epsilon, eps) for eps in epsilons)
+    ]
+
+    summary_path = args.output_dir / f"{args.output_name}_summary.csv"
+    write_summary_csv(selected_records, summary_path)
+    figure_paths = plot_tradeoff(
+        selected_records,
+        datasets,
+        scales,
+        epsilons,
+        args.metric,
+        args.output_dir,
+        args.output_name,
+        args.format,
     )
 
-    args = parser.parse_args()
+    print(f"Summary CSV: {summary_path}")
+    for path in figure_paths:
+        print(f"Figure: {path}")
 
-    # Dual-dataset mode
-    if args.dual or (args.enron and args.ccnews):
-        enron_path = args.enron or "results/enron_overall.txt"
-        ccnews_path = args.ccnews or "results/ccnews_overall.txt"
-
-        if not os.path.exists(enron_path):
-            raise FileNotFoundError(f"Enron results file not found: {enron_path}")
-        if not os.path.exists(ccnews_path):
-            raise FileNotFoundError(f"CC-News results file not found: {ccnews_path}")
-
-        enron_data = _parse_leakage_results(enron_path)
-        ccnews_data = _parse_leakage_results(ccnews_path)
-
-        print(f"Parsed Enron results from {enron_path}")
-        print(f"  Leakage rates: {sorted(enron_data['by_leakage_rate'].keys())}")
-        print(f"Parsed CC-News results from {ccnews_path}")
-        print(f"  Leakage rates: {sorted(ccnews_data['by_leakage_rate'].keys())}")
-
-        output_path = args.output or "photos/enron_ccnews_leakage_comparison.pdf"
-
-        plot_dual_dataset_comparison(
-            enron_data=enron_data,
-            ccnews_data=ccnews_data,
-            output_path=output_path,
-            dpi=args.dpi,
-        )
-        return
-
-    # Single-dataset mode (original behavior)
-    input_path = args.input or _find_latest_result("results/val_vs_scar_leakage_*.txt")
-    stem = os.path.splitext(os.path.basename(input_path))[0]
-
-    if args.output:
-        output_prefix = args.output
-    else:
-        output_prefix = os.path.join("photos", "leakage", stem)
-
-    # 确保输出目录存在
-    os.makedirs(os.path.dirname(output_prefix) or ".", exist_ok=True)
-
-    # 解析结果
-    results = _parse_leakage_results(input_path)
-    meta = results["meta"]
-    by_leakage_rate = results["by_leakage_rate"]
-
-    print(f"Parsed results from {input_path}")
-    print(f"  Dataset: {meta.get('dataset', 'unknown')}")
-    print(f"  Leakage rates: {sorted(by_leakage_rate.keys())}")
-    print(f"  Runs per rate: {meta.get('runs', 'unknown')}")
-
-    # 生成图表
-    generate_all = not (args.only_main or args.only_improvement)
-
-    if generate_all or args.only_main:
-        plot_leakage_comparison(
-            meta=meta,
-            by_leakage_rate=by_leakage_rate,
-            output_path=f"{output_prefix}_comparison.png",
-            dpi=args.dpi,
-        )
-
-    if generate_all or args.only_improvement:
-        plot_improvement_bar(
-            meta=meta,
-            by_leakage_rate=by_leakage_rate,
-            output_path=f"{output_prefix}_improvement.png",
-            dpi=args.dpi,
-        )
+    available = {(record.dataset, record.scale, record.method, record.epsilon) for record in selected_records}
+    for dataset in datasets:
+        for scale in scales:
+            for method in ("Plaintext", "SecureDeepFM"):
+                if (dataset, scale, method, None) not in available:
+                    print(f"Warning: missing {method} baseline for {dataset} {scale_label(scale)}.")
 
 
 if __name__ == "__main__":
