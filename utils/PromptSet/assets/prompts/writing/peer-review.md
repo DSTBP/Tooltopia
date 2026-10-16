@@ -117,3 +117,7 @@
 - 不要求所有细节达到系统论文级别；
 - 不因为缺少非核心实验或附录扩展而过度拒绝；
 - 所有批评必须基于论文实际内容，不提出文本之外的假设性漏洞。
+
+
+
+**Goole Deep Review：**[Deep Review](https://research.google/deepreview/)
