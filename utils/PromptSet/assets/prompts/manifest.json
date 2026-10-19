@@ -49,12 +49,12 @@
       "tag": []
     },
     {
-      "name": "方案符号体系规范",
+      "name": "笔记：方案符号体系规范",
       "path": "./academic-support/symbol-convention.md",
       "tag": ["需适配"]
     },
     {
-      "name": "方案/协议表述规范",
+      "name": "笔记：方案/协议表述规范",
       "path": "./academic-support/protocol-standards.md",
       "tag": ["需适配"]
     }
