@@ -333,5 +333,12 @@
       "path": "./text-to-image/physical-relief-sculpture.md",
       "tag": []
     }
+  ],
+  "其他": [
+    {
+      "name": "本科工程类毕设选题",
+      "path": "./others/thesis-topic-selection.md",
+      "tag": []
+    }
   ]
 }
