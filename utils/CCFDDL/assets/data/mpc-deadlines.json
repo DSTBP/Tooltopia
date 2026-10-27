@@ -1,75 +1,7 @@
 {
-  "generatedAt": "2026-10-27T05:45:19.618285+00:00",
-  "count": 89,
+  "generatedAt": "2026-10-27T12:47:27.505933+00:00",
+  "count": 93,
   "conferences": [
-    {
-      "acronym": "CCS",
-      "year": 2026,
-      "name": "ACM Conference on Computer and Communications Security",
-      "websiteUrl": "https://www.sigsac.org/ccs/CCS2026/",
-      "conferenceDate": "November 15-19, 2026",
-      "place": "The Hague, Netherlands",
-      "tags": [
-        "PRACT",
-        "APPLIED",
-        "CNF",
-        "COREAS"
-      ],
-      "events": [
-        {
-          "type": "abstract",
-          "cycle": "Round 1",
-          "label": "Abstract deadline",
-          "date": "2026-01-07"
-        },
-        {
-          "type": "paper",
-          "cycle": "Round 1",
-          "label": "Paper submission deadline",
-          "at": "2026-01-14T23:59:00-12:00",
-          "timezone": "AoE"
-        },
-        {
-          "type": "rebuttal",
-          "cycle": "Round 1",
-          "label": "Rebuttal period",
-          "date": "2026-03-17",
-          "endDate": "2026-03-20"
-        },
-        {
-          "type": "abstract",
-          "cycle": "Round 2",
-          "label": "Abstract deadline",
-          "date": "2026-04-22"
-        },
-        {
-          "type": "paper",
-          "cycle": "Round 2",
-          "label": "Paper submission deadline",
-          "at": "2026-04-29T23:59:00-12:00",
-          "timezone": "AoE"
-        },
-        {
-          "type": "rebuttal",
-          "cycle": "Round 2",
-          "label": "Rebuttal period",
-          "date": "2026-06-29",
-          "endDate": "2026-07-01"
-        },
-        {
-          "type": "notification",
-          "cycle": "Round 1",
-          "label": "Notifications",
-          "date": "2026-04-09"
-        },
-        {
-          "type": "notification",
-          "cycle": "Round 2",
-          "label": "Notifications",
-          "date": "2026-07-17"
-        }
-      ]
-    },
     {
       "acronym": "STOC",
       "year": 2027,
@@ -370,7 +302,7 @@
           "type": "first_notification",
           "cycle": "Round 2",
           "label": "Early reject",
-          "date": "2026-09-25"
+          "date": "2026-10-16"
         },
         {
           "type": "notification",
@@ -382,7 +314,7 @@
           "type": "notification",
           "cycle": "Round 2",
           "label": "Notification",
-          "date": "2026-11-04"
+          "date": "2026-11-24"
         }
       ]
     },
@@ -2178,6 +2110,49 @@
       ]
     },
     {
+      "acronym": "FORC",
+      "year": 2027,
+      "name": "Symposium on Foundations of Responsible Computing",
+      "websiteUrl": "https://responsiblecomputing.org/forc-2027-call-for-papers/",
+      "conferenceDate": "June 02-04, 2027",
+      "place": "Stanford University",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "CNF",
+        "PPML",
+        "COREO"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-11-11T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2027-02-17T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2026-12-23"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2027-03-31"
+        }
+      ]
+    },
+    {
       "acronym": "ITC",
       "year": 2026,
       "name": "Information-Theoretic Cryptography",
@@ -2202,6 +2177,41 @@
           "cycle": "",
           "label": "Notification",
           "date": "2026-05-08"
+        }
+      ]
+    },
+    {
+      "acronym": "SAIS",
+      "year": 2027,
+      "name": "USENIX Conference on Secure Agentic-AI Systems",
+      "websiteUrl": "https://www.usenix.org/conference/sais27/call-for-papers",
+      "conferenceDate": "June 07-08, 2027",
+      "place": "Hannover, Germany",
+      "tags": [
+        "PRACT",
+        "CNF",
+        "COREO"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2027-02-04T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "rebuttal",
+          "cycle": "",
+          "label": "Rebuttal period",
+          "date": "2027-04-23",
+          "endDate": "2027-04-30"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2027-03-16"
         }
       ]
     },
@@ -2899,6 +2909,35 @@
       ]
     },
     {
+      "acronym": "WICE",
+      "year": 2027,
+      "name": "1st Workshop on Incentives and Contribution Evaluation",
+      "websiteUrl": "https://wice-satml.github.io",
+      "conferenceDate": "May 03, 2027",
+      "place": "Reykjavik, Iceland",
+      "tags": [
+        "THEORY",
+        "PRACT",
+        "PPML",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-12-18T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2027-01-31"
+        }
+      ]
+    },
+    {
       "acronym": "WPEC",
       "year": 2026,
       "name": "NIST Workshop on Privacy-Enhancing Cryptography 2026",
@@ -3482,6 +3521,41 @@
       ]
     },
     {
+      "acronym": "DAC",
+      "year": 2027,
+      "name": "Design Automation Conference",
+      "websiteUrl": "https://dac.com/2027/",
+      "conferenceDate": "July 11-14, 2027",
+      "place": "San Jose, CA",
+      "tags": [
+        "HW",
+        "APPLIED",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "",
+          "label": "Abstract deadline",
+          "date": "2026-11-11"
+        },
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2026-11-18T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2027-03-08"
+        }
+      ]
+    },
+    {
       "acronym": "HOST",
       "year": 2027,
       "name": "IEEE International Symposium on Hardware Oriented Security and Trust",
@@ -3532,6 +3606,48 @@
           "cycle": "Round 2",
           "label": "Notification",
           "date": "2027-02-09"
+        }
+      ]
+    },
+    {
+      "acronym": "ISCA",
+      "year": 2027,
+      "name": "International Symposium on Computer Architecture",
+      "websiteUrl": "https://iscaconf.org/isca2027",
+      "conferenceDate": "June 05-09, 2027",
+      "place": "Atlanta, GA, USA",
+      "tags": [
+        "HW",
+        "APPLIED",
+        "CNF",
+        "COREAS"
+      ],
+      "events": [
+        {
+          "type": "abstract",
+          "cycle": "Round 1",
+          "label": "Abstract deadline",
+          "date": "2026-11-10"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-11-17T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "abstract",
+          "cycle": "Round 2",
+          "label": "Abstract deadline",
+          "date": "2026-12-05"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2026-12-12T23:59:00-12:00",
+          "timezone": "AoE"
         }
       ]
     }
