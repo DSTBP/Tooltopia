@@ -344,6 +344,11 @@
       "name": "本科工程类毕设选题",
       "path": "./others/thesis-topic-selection.md",
       "tag": ["需适配"]
+    },
+    {
+      "name": "教育类 PPT 美化",
+      "path": "./others/educational-visual-design.md",
+      "tag": []
     }
   ]
 }
