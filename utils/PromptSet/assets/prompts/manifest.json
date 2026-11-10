@@ -24,6 +24,11 @@
 
   "学术辅助": [
     {
+      "name": "GPT 提示词规范",
+      "path": "./academic-support/gpt-prompt-guidelines.md",
+      "tag": []
+    },
+    {
       "name": "密码学原语解释",
       "path": "./academic-support/cryptographic-primitives.md",
       "tag": []
@@ -44,11 +49,6 @@
       "tag": ["需适配"]
     },
     {
-      "name": "GPT 提示词规范",
-      "path": "./academic-support/gpt-prompt-guidelines.md",
-      "tag": []
-    },
-    {
       "name": "笔记：方案符号体系规范",
       "path": "./academic-support/symbol-convention.md",
       "tag": ["需适配"]
@@ -56,6 +56,11 @@
     {
       "name": "笔记：方案/协议表述规范",
       "path": "./academic-support/protocol-standards.md",
+      "tag": ["需适配"]
+    },
+    {
+      "name": "实验设计",
+      "path": "./academic-support/experiment-design.md",
       "tag": ["需适配"]
     }
   ],
