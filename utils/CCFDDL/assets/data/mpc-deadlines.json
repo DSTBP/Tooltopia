@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-27T09:11:56.607327+00:00",
-  "count": 93,
+  "generatedAt": "2026-11-27T21:42:58.326344+00:00",
+  "count": 97,
   "conferences": [
     {
       "acronym": "STOC",
@@ -1529,6 +1529,47 @@
       ]
     },
     {
+      "acronym": "WiSec",
+      "year": 2027,
+      "name": "Security and Privacy in Wireless and Mobile Networks",
+      "websiteUrl": "https://ntu-dtc.github.io/wisec2027/",
+      "conferenceDate": "June 29 - July 02, 2027",
+      "place": "Singapore",
+      "tags": [
+        "APPLIED",
+        "CNF",
+        "COREB"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "Round 1",
+          "label": "Paper submission deadline",
+          "at": "2026-11-30T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "paper",
+          "cycle": "Round 2",
+          "label": "Paper submission deadline",
+          "at": "2027-02-15T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 1",
+          "label": "Notification",
+          "date": "2027-01-11"
+        },
+        {
+          "type": "notification",
+          "cycle": "Round 2",
+          "label": "Notification",
+          "date": "2027-04-12"
+        }
+      ]
+    },
+    {
       "acronym": "ACNS",
       "year": 2027,
       "name": "International Conference on Applied Cryptography and Network Security",
@@ -2563,6 +2604,34 @@
       ]
     },
     {
+      "acronym": "FL@FM",
+      "year": 2027,
+      "name": "International Workshop on Federated Foundation Models for the Web",
+      "websiteUrl": "https://federated-learning.org/fl@fm-www-2027/",
+      "conferenceDate": "May 10-14, 2027",
+      "place": "Dublin, Ireland",
+      "tags": [
+        "APPLIED",
+        "PPML",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2027-01-04T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2027-02-01"
+        }
+      ]
+    },
+    {
       "acronym": "FL4Industry",
       "year": 2026,
       "name": "Workshop on Federated Learning for Industry",
@@ -2587,6 +2656,34 @@
           "cycle": "",
           "label": "Notification",
           "date": "2026-09-05"
+        }
+      ]
+    },
+    {
+      "acronym": "HybridPETs",
+      "year": 2027,
+      "name": "1st International Workshop on Hybrid Privacy-Enhancing Technologies",
+      "websiteUrl": "https://hybridpets.github.io",
+      "conferenceDate": "June 28 - July 01, 2027",
+      "place": "Egham, United Kingdom",
+      "tags": [
+        "APPLIED",
+        "PPML",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2027-02-19T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2027-03-21"
         }
       ]
     },
@@ -2806,6 +2903,34 @@
           "cycle": "",
           "label": "Notification",
           "date": "2026-03-31"
+        }
+      ]
+    },
+    {
+      "acronym": "SiMLA",
+      "year": 2027,
+      "name": "International Workshop on Security in Machine Learning and its Applications",
+      "websiteUrl": "https://simla-acns.github.io/simla2027/",
+      "conferenceDate": "June 28 - July 01, 2027",
+      "place": "Egham, United Kingdom",
+      "tags": [
+        "APPLIED",
+        "PPML",
+        "WK"
+      ],
+      "events": [
+        {
+          "type": "paper",
+          "cycle": "",
+          "label": "Paper submission deadline",
+          "at": "2027-02-19T23:59:00-12:00",
+          "timezone": "AoE"
+        },
+        {
+          "type": "notification",
+          "cycle": "",
+          "label": "Notification",
+          "date": "2027-04-11"
         }
       ]
     },
